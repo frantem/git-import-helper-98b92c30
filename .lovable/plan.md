@@ -1,85 +1,107 @@
 
 
-## Plan: Migrate "Furniture Haven / Fermers" Project to Locus
+## Упрощение мобильного интерфейса /admin и /seller
 
-### Project Analysis
+### Проблемы сейчас
+- Форма товара открывается в модальном окне (Dialog) -- на телефоне скролл прыгает, кнопка закрытия крошечная (16x16px), курсор скачет
+- Кнопки удаления/закрытия слишком маленькие (12-16px) -- пальцем не попасть
+- Длинная форма товара (КБЖУ, добавки, кастомные поля, варианты) -- бесконечная прокрутка в модалке
+- Кнопки действий в заказах ("Подтвердить", "Удалить", "Доставлен") маленькие
 
-I successfully accessed the GitHub repository. The project is a **farmer products marketplace** (currently branded "Fermers"), not "Furniture Haven" as the repo name suggests. It is a full-stack React + Supabase app with:
+### Что будет сделано
 
-**Pages (14 total):**
-- Index, Catalog, Product, Cart, Checkout, Auth, Profile, Orders, Favorites, SellerDashboard, SellerProfile, Settings
-- Admin panel: AdminBanners, AdminBlocks, AdminCategories, AdminOrders, AdminPickupPoints, AdminSellerApplications, AdminSellers, AdminSettings
+**1. Полноэкранная форма товара вместо модалки**
 
-**Components (10 custom):**
-- BannerCarousel, BottomNavigation, DynamicMeta, Header, PageHeader, PickupSettingsSection, ProductCard, ProductCardSkeleton, ProductReviews, SellerApplicationForm
+Заменить Dialog на полноэкранный оверлей (fixed inset-0) на мобильных. Форма будет открываться на весь экран как отдельная "страница" внутри компонента:
+- Кнопка "Назад" вверху (крупная, 44px+) вместо маленького X
+- Нормальная прокрутка без конфликтов с модалкой
+- Кнопка "Сохранить" внизу, закрепленная (sticky)
 
-**Hooks (14 custom):**
-- useAdminMetrics, useBanners, useCategories, useDeliveryTime, useFavorites, useHomepageBlocks, usePendingOrdersCount, useProduct, useProductCustomFields, useProducts, useProductsRequiredFields, useScrollRestoration, useVisitorTracking, plus standard use-mobile/use-toast
+**2. Увеличение всех мелких touch-целей до минимум 44x44px**
 
-**Contexts:** AuthContext, CartContext
+Конкретные элементы:
+- Кнопки удаления фото товара (X): с `p-0.5` / `h-3 w-3` до `p-2` / `h-5 w-5`
+- Кнопки удаления вариантов, добавок, кастомных полей: с `p-1.5` до `min-h-[44px] min-w-[44px] p-2`
+- Кнопки удаления опций кастомных полей: с `p-0.5` до `p-2`
+- Switch и Pencil/Trash кнопки в списке товаров: уже `size="icon"` (40px) -- оставить
+- Кнопки в заказах продавца ("Собран"): оставить как есть (уже нормальные)
 
-**Data:** products.ts
+**3. Убрать визуальные излишества**
 
-### Critical Issue: Database Schema
+- Убрать `transition-colors`, `hover:bg-secondary` анимации с карточек админ-панели
+- Убрать `hover:bg-destructive/10` с кнопок удаления -- оставить простые цвета
+- Упростить стили -- без лишних визуальных эффектов
 
-The old project connects to a **different Supabase instance** (`lmzpkssvigloabvxueyz`) that has many tables (products, orders, categories, banners, sellers, etc.). Your new Supabase project (`jxklppwhgmndlivvtxdd`) currently has **zero tables**. The app will not function without recreating the database schema.
+**4. Улучшение кнопок в AdminOrders**
 
-### Implementation Plan
+- Кнопки "Подтвердить", "Удалить", "Доставлен": с `size="sm"` (h-9) до обычного `size="default"` (h-10) для удобного нажатия
+- Кнопка "Назад" (стрелка): с `size="icon"` до более крупной зоны нажатия
 
-The work will be done in **multiple steps** due to the large number of files (~50+ source files):
+**5. PickupSettingsSection -- увеличение элементов**
 
-#### Step 1: Fetch and write all source files from GitHub
-Read every file from the repository and write it into the current project. This includes:
-- `index.html` (with Meta Pixel code)
-- `src/App.tsx` (with all routes and providers)
-- `src/App.css`, `src/index.css`
-- All 14 page files
-- All 10 component files
-- All 14 hook files
-- 2 context files
-- `src/data/products.ts`
-- `tailwind.config.ts` (has custom theme)
-- `package.json` (adds `@lovable.dev/cloud-auth-js`, `@tailwindcss/typography`)
+- SelectTrigger для времени: с `w-24 h-8 text-xs` до `w-28 h-10 text-sm`
+- Checkbox зона нажатия: увеличить label padding
 
-#### Step 2: Update Supabase connection
-The old client uses `import.meta.env.VITE_SUPABASE_URL` which is fine -- the `.env` file in this project already has the correct values for the new Supabase instance (`jxklppwhgmndlivvtxdd`). The `supabase/client.ts` will keep using the existing hardcoded approach from this project.
+### Файлы которые будут изменены
 
-The `src/integrations/supabase/types.ts` from the old project (~32KB) contains the full database schema types. This file will be copied as-is, but **it will be out of sync** with the new empty database.
+1. **src/pages/SellerDashboard.tsx** -- основные изменения:
+   - Заменить Dialog на полноэкранный оверлей для формы товара
+   - Увеличить все мелкие кнопки удаления (X)
+   - Убрать hover-анимации
 
-#### Step 3: Rename branding to "Locus"
-Search-and-replace across all files:
-- "Fermers" → "Locus"
-- "Furniture Haven" → "Locus"
-- "MebelHub" → "Locus"
-- "fermersMarket" → "locus" (Twitter handle in meta tags)
-- "фермерских продуктов" → appropriate Locus description
-- Update all Russian-language marketplace descriptions
+2. **src/pages/Admin.tsx** -- убрать hover-анимации с карточек, упростить стили
 
-#### Step 4: Database migration
-Create the required tables in the new Supabase to match the old schema. Based on the types.ts, this likely includes tables for:
-- products, categories, orders, order_items
-- profiles, sellers, seller_applications
-- banners, homepage_blocks, pickup_points
-- favorites, reviews, visitors
-- site_settings, product_custom_fields, products_required_fields
+3. **src/pages/admin/AdminOrders.tsx** -- увеличить кнопки действий, кнопку "Назад"
 
-This will require a SQL migration with all table definitions and RLS policies.
+4. **src/components/PickupSettingsSection.tsx** -- увеличить селекторы времени и зоны нажатия
 
-### Important Notes
+### Что НЕ будет затронуто
+- Кнопка "Сохранить" внизу форм -- она уже крупная (`w-full`, h-10)
+- Кнопка "Добавить" товар -- уже нормального размера
+- Табы (Товары/Заказы/Настройки) -- уже удобные
+- Логика работы и данные -- только визуальные изменения
+- Другие страницы (Checkout, каталог и т.д.)
 
-1. **This is a very large migration** -- roughly 50+ files totaling ~400KB+ of source code. It will require multiple implementation steps.
-2. **The database must be recreated** -- without the tables, the app will show errors. The old types.ts file tells us exactly what schema to create.
-3. **The old Supabase data will NOT transfer** -- only the schema (structure) can be recreated. Product data, user accounts, orders etc. from the old instance will not be available.
-4. **Dependencies change** -- the project adds `@lovable.dev/cloud-auth-js` and `@tailwindcss/typography` as new dependencies.
+### Технические детали
 
-### Recommended Approach
+**Полноэкранная форма товара (SellerDashboard.tsx)**
 
-Due to the size, I recommend we proceed in batches:
-1. First batch: Core files (App.tsx, index.html, package.json, contexts, data, integrations, CSS, config)
-2. Second batch: All pages
-3. Third batch: All components and hooks
-4. Fourth batch: Branding rename to "Locus"
-5. Fifth batch: Database migration SQL
+Вместо:
+```tsx
+<Dialog open={showProductForm} onOpenChange={setShowProductForm}>
+  <DialogContent className="max-h-[90vh] overflow-y-auto">
+    ...form...
+  </DialogContent>
+</Dialog>
+```
 
-Shall I proceed with this plan?
+Будет:
+```tsx
+{showProductForm && (
+  <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+    <div className="sticky top-0 z-10 bg-background border-b p-3 flex items-center gap-3">
+      <button onClick={resetProductForm} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+        <ArrowLeft className="h-6 w-6" />
+      </button>
+      <h2 className="text-lg font-bold">{editingProduct ? "Редактировать" : "Новый товар"}</h2>
+    </div>
+    <div className="p-4 pb-24 space-y-4">
+      ...form fields...
+    </div>
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
+      <Button onClick={handleSaveProduct} className="w-full" disabled={isSaving}>
+        ...
+      </Button>
+    </div>
+  </div>
+)}
+```
+
+**Увеличение кнопок удаления**
+
+Все кнопки с иконкой X получат:
+```tsx
+className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive"
+```
+Иконки X с `h-3 w-3` станут `h-5 w-5`.
 
