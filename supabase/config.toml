@@ -1,1 +1,4 @@
-project_id = "jxklppwhgmndlivvtxdd"
+project_id = "lmzpkssvigloabvxueyz"
+
+[functions.meta-conversions-api]
+verify_jwt = false
