@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN delivery_address TEXT DEFAULT NULL;

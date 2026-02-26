@@ -1,0 +1,1 @@
+ALTER TABLE public.products ALTER COLUMN prep_time_minutes SET DEFAULT 0;
