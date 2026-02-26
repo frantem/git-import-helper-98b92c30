@@ -248,7 +248,7 @@ export default function Profile() {
         <div className="mb-4 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 p-4">
             <h2 className="mb-1 font-bold text-foreground">Стать продавцом</h2>
             <p className="mb-3 text-xs text-muted-foreground">
-              Продавайте свои фермерские продукты на Fermers
+              Продавайте свои продукты на Locus
             </p>
             <div className="flex gap-2">
               {canApply &&

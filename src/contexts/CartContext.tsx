@@ -65,7 +65,7 @@ const getItemKey = (item: CartItem): string => {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('fermers-cart');
+      const saved = localStorage.getItem('locus-cart');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -73,7 +73,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('fermers-cart', JSON.stringify(items));
+    localStorage.setItem('locus-cart', JSON.stringify(items));
   }, [items]);
 
   const addToCart = (product: Product, variant?: CartItemVariant, customFields?: CartItemCustomField[], addons?: CartItemAddon[]) => {

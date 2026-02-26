@@ -33,8 +33,8 @@ export default function Auth() {
   // Redirect if already logged in (and not resetting password)
   useEffect(() => {
     if (user && mode !== "reset") {
-      const returnTo = localStorage.getItem('fermers-return-to');
-      localStorage.removeItem('fermers-return-to');
+      const returnTo = localStorage.getItem('locus-return-to');
+      localStorage.removeItem('locus-return-to');
       navigate(returnTo || "/profile");
     }
   }, [user, navigate, mode]);
@@ -120,8 +120,8 @@ export default function Auth() {
           }
         } else {
           toast.success("Вы успешно вошли!");
-          const returnTo = localStorage.getItem('fermers-return-to');
-          localStorage.removeItem('fermers-return-to');
+          const returnTo = localStorage.getItem('locus-return-to');
+          localStorage.removeItem('locus-return-to');
           navigate(returnTo || "/profile");
         }
       } else if (mode === "register") {
@@ -147,8 +147,8 @@ export default function Auth() {
           }
         } else {
           toast.success("Регистрация успешна!");
-          const returnTo = localStorage.getItem('fermers-return-to');
-          localStorage.removeItem('fermers-return-to');
+          const returnTo = localStorage.getItem('locus-return-to');
+          localStorage.removeItem('locus-return-to');
           navigate(returnTo || "/profile");
         }
       } else if (mode === "forgot") {
@@ -384,7 +384,7 @@ export default function Auth() {
                       const { error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
-                          redirectTo: 'https://fermers.by/',
+                          redirectTo: window.location.origin + '/',
                         },
                       });
                       if (error) {
