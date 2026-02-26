@@ -1,0 +1,25 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  emoji: string | null;
+}
+
+export function useCategories() {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, slug, emoji")
+        .order("sort_order");
+
+      if (error) throw error;
+      return (data as Category[]) || [];
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes - categories change rarely
+  });
+}
