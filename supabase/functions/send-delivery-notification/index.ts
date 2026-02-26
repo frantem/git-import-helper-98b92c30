@@ -169,12 +169,12 @@ const handler = async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Фермеры BY <noreply@fermers.by>",
+        from: "Locus <noreply@locus.app>",
         to: [buyerEmail],
         subject: "Ваш заказ прибыл в пункт выдачи!",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #22c55e; margin-bottom: 20px;">Это Fermers!</h1>
+            <h1 style="color: #22c55e; margin-bottom: 20px;">Это Locus!</h1>
             <p style="font-size: 16px; line-height: 1.6; color: #333;">
               Ваш заказ прибыл в <strong>${pickupPointName}</strong> (${pickupPointWorkingHours}) 
               стоимостью <strong>${priceFormatted}</strong>.
@@ -184,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
             <p style="font-size: 14px; color: #666;">
-              С уважением,<br>Команда Fermers
+              С уважением,<br>Команда Locus
             </p>
           </div>
         `,

@@ -383,7 +383,7 @@ export default function Product() {
       try {
         await navigator.share({
           title: shareTitle,
-          text: `Смотрите: ${shareTitle} на Fermers`,
+          text: `Смотрите: ${shareTitle} на Locus`,
           url: shareUrl
         });
         return;

@@ -56,7 +56,7 @@ export default function Cart() {
 
   const handleCheckout = async () => {
     if (!user) {
-      localStorage.setItem('fermers-return-to', '/cart');
+      localStorage.setItem('locus-return-to', '/cart');
       navigate("/auth");
       return;
     }

@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fermers Design System - Green (#22c55e) and Yellow (#facc15) accents */
+/* Locus Design System - Green (#22c55e) and Yellow (#facc15) accents */
 
 @layer base {
   :root {
