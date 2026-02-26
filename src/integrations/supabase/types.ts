@@ -87,7 +87,6 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
-          parent_id: string | null
           slug: string
           sort_order: number | null
         }
@@ -97,7 +96,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
-          parent_id?: string | null
           slug: string
           sort_order?: number | null
         }
@@ -107,19 +105,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
-          parent_id?: string | null
           slug?: string
           sort_order?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       farmers: {
         Row: {
