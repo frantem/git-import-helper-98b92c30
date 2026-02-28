@@ -1,107 +1,74 @@
 
 
-## Упрощение мобильного интерфейса /admin и /seller
+## Problem
 
-### Проблемы сейчас
-- Форма товара открывается в модальном окне (Dialog) -- на телефоне скролл прыгает, кнопка закрытия крошечная (16x16px), курсор скачет
-- Кнопки удаления/закрытия слишком маленькие (12-16px) -- пальцем не попасть
-- Длинная форма товара (КБЖУ, добавки, кастомные поля, варианты) -- бесконечная прокрутка в модалке
-- Кнопки действий в заказах ("Подтвердить", "Удалить", "Доставлен") маленькие
+On `locusfood.by` (custom domain), Google OAuth for **new users** fails — they get redirected to the homepage without account creation. Existing users work fine. This is caused by Lovable's auth-bridge intercepting the OAuth redirect flow on custom domains.
 
-### Что будет сделано
+## Root Cause
 
-**1. Полноэкранная форма товара вместо модалки**
+Lines 384-389 in `Auth.tsx` use the standard `signInWithOAuth` flow. On custom domains (not `*.lovable.app`), the auth-bridge incorrectly handles the redirect, breaking new user registration.
 
-Заменить Dialog на полноэкранный оверлей (fixed inset-0) на мобильных. Форма будет открываться на весь экран как отдельная "страница" внутри компонента:
-- Кнопка "Назад" вверху (крупная, 44px+) вместо маленького X
-- Нормальная прокрутка без конфликтов с модалкой
-- Кнопка "Сохранить" внизу, закрепленная (sticky)
+## Fix
 
-**2. Увеличение всех мелких touch-целей до минимум 44x44px**
+Modify the Google sign-in button handler (lines 382-394) to:
 
-Конкретные элементы:
-- Кнопки удаления фото товара (X): с `p-0.5` / `h-3 w-3` до `p-2` / `h-5 w-5`
-- Кнопки удаления вариантов, добавок, кастомных полей: с `p-1.5` до `min-h-[44px] min-w-[44px] p-2`
-- Кнопки удаления опций кастомных полей: с `p-0.5` до `p-2`
-- Switch и Pencil/Trash кнопки в списке товаров: уже `size="icon"` (40px) -- оставить
-- Кнопки в заказах продавца ("Собран"): оставить как есть (уже нормальные)
+1. Detect if running on a custom domain (not `*.lovable.app` / `*.lovableproject.com`)
+2. If custom domain: use `skipBrowserRedirect: true` to get the OAuth URL directly, then redirect manually via `window.location.href`
+3. If Lovable domain: keep current behavior
 
-**3. Убрать визуальные излишества**
+### Code Change (Auth.tsx, ~line 382-394)
 
-- Убрать `transition-colors`, `hover:bg-secondary` анимации с карточек админ-панели
-- Убрать `hover:bg-destructive/10` с кнопок удаления -- оставить простые цвета
-- Упростить стили -- без лишних визуальных эффектов
+Replace the `onClick` handler with:
 
-**4. Улучшение кнопок в AdminOrders**
+```typescript
+onClick={async () => {
+  setIsLoading(true);
+  const isCustomDomain =
+    !window.location.hostname.includes("lovable.app") &&
+    !window.location.hostname.includes("lovableproject.com");
 
-- Кнопки "Подтвердить", "Удалить", "Доставлен": с `size="sm"` (h-9) до обычного `size="default"` (h-10) для удобного нажатия
-- Кнопка "Назад" (стрелка): с `size="icon"` до более крупной зоны нажатия
-
-**5. PickupSettingsSection -- увеличение элементов**
-
-- SelectTrigger для времени: с `w-24 h-8 text-xs` до `w-28 h-10 text-sm`
-- Checkbox зона нажатия: увеличить label padding
-
-### Файлы которые будут изменены
-
-1. **src/pages/SellerDashboard.tsx** -- основные изменения:
-   - Заменить Dialog на полноэкранный оверлей для формы товара
-   - Увеличить все мелкие кнопки удаления (X)
-   - Убрать hover-анимации
-
-2. **src/pages/Admin.tsx** -- убрать hover-анимации с карточек, упростить стили
-
-3. **src/pages/admin/AdminOrders.tsx** -- увеличить кнопки действий, кнопку "Назад"
-
-4. **src/components/PickupSettingsSection.tsx** -- увеличить селекторы времени и зоны нажатия
-
-### Что НЕ будет затронуто
-- Кнопка "Сохранить" внизу форм -- она уже крупная (`w-full`, h-10)
-- Кнопка "Добавить" товар -- уже нормального размера
-- Табы (Товары/Заказы/Настройки) -- уже удобные
-- Логика работы и данные -- только визуальные изменения
-- Другие страницы (Checkout, каталог и т.д.)
-
-### Технические детали
-
-**Полноэкранная форма товара (SellerDashboard.tsx)**
-
-Вместо:
-```tsx
-<Dialog open={showProductForm} onOpenChange={setShowProductForm}>
-  <DialogContent className="max-h-[90vh] overflow-y-auto">
-    ...form...
-  </DialogContent>
-</Dialog>
+  if (isCustomDomain) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/auth',
+        skipBrowserRedirect: true,
+      },
+    });
+    if (error) {
+      toast.error("Ошибка входа через Google: " + error.message);
+      setIsLoading(false);
+      return;
+    }
+    if (data?.url) {
+      const oauthUrl = new URL(data.url);
+      if (oauthUrl.hostname !== "accounts.google.com" &&
+          !oauthUrl.hostname.endsWith(".supabase.co")) {
+        toast.error("Invalid OAuth redirect URL");
+        setIsLoading(false);
+        return;
+      }
+      window.location.href = data.url;
+    }
+  } else {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/auth',
+      },
+    });
+    if (error) {
+      toast.error("Ошибка входа через Google: " + error.message);
+      setIsLoading(false);
+    }
+  }
+}}
 ```
 
-Будет:
-```tsx
-{showProductForm && (
-  <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
-    <div className="sticky top-0 z-10 bg-background border-b p-3 flex items-center gap-3">
-      <button onClick={resetProductForm} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
-        <ArrowLeft className="h-6 w-6" />
-      </button>
-      <h2 className="text-lg font-bold">{editingProduct ? "Редактировать" : "Новый товар"}</h2>
-    </div>
-    <div className="p-4 pb-24 space-y-4">
-      ...form fields...
-    </div>
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
-      <Button onClick={handleSaveProduct} className="w-full" disabled={isSaving}>
-        ...
-      </Button>
-    </div>
-  </div>
-)}
-```
+### Supabase Dashboard Configuration Required
 
-**Увеличение кнопок удаления**
+The user must verify these settings in **Supabase Dashboard → Authentication → URL Configuration**:
 
-Все кнопки с иконкой X получат:
-```tsx
-className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive"
-```
-Иконки X с `h-3 w-3` станут `h-5 w-5`.
+- **Site URL**: `https://locusfood.by`
+- **Redirect URLs**: must include `https://locusfood.by/auth`
 
