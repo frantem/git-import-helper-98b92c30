@@ -381,15 +381,44 @@ export default function Auth() {
                     className="w-full gap-2"
                     onClick={async () => {
                       setIsLoading(true);
-                      const { error } = await supabase.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: {
-                          redirectTo: window.location.origin + '/',
-                        },
-                      });
-                      if (error) {
-                        toast.error("Ошибка входа через Google: " + error.message);
-                        setIsLoading(false);
+                      const isCustomDomain =
+                        !window.location.hostname.includes("lovable.app") &&
+                        !window.location.hostname.includes("lovableproject.com");
+
+                      if (isCustomDomain) {
+                        const { data, error } = await supabase.auth.signInWithOAuth({
+                          provider: 'google',
+                          options: {
+                            redirectTo: window.location.origin + '/auth',
+                            skipBrowserRedirect: true,
+                          },
+                        });
+                        if (error) {
+                          toast.error("Ошибка входа через Google: " + error.message);
+                          setIsLoading(false);
+                          return;
+                        }
+                        if (data?.url) {
+                          const oauthUrl = new URL(data.url);
+                          if (oauthUrl.hostname !== "accounts.google.com" &&
+                              !oauthUrl.hostname.endsWith(".supabase.co")) {
+                            toast.error("Invalid OAuth redirect URL");
+                            setIsLoading(false);
+                            return;
+                          }
+                          window.location.href = data.url;
+                        }
+                      } else {
+                        const { error } = await supabase.auth.signInWithOAuth({
+                          provider: 'google',
+                          options: {
+                            redirectTo: window.location.origin + '/auth',
+                          },
+                        });
+                        if (error) {
+                          toast.error("Ошибка входа через Google: " + error.message);
+                          setIsLoading(false);
+                        }
                       }
                     }}
                     disabled={isLoading}
