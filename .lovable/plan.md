@@ -1,74 +1,37 @@
 
 
-## Problem
+## Plan: Privacy Policy Page for Belarus
 
-On `locusfood.by` (custom domain), Google OAuth for **new users** fails — they get redirected to the homepage without account creation. Existing users work fine. This is caused by Lovable's auth-bridge intercepting the OAuth redirect flow on custom domains.
+### Data collected by the app (based on codebase analysis):
 
-## Root Cause
+1. **Account data**: email, full name, phone, avatar (via registration or Google OAuth)
+2. **Order data**: delivery address, order items, payment method
+3. **Visitor tracking**: visitor_id (localStorage UUID), page path, referrer, user agent, visit duration → stored in `site_visits` table
+4. **Meta Pixel (Facebook)**: PageView, Purchase events with order value in BYN
+5. **Meta Conversions API**: server-side event tracking (email hash, user agent, IP)
+6. **localStorage**: cart contents (`locus-cart`), visitor ID, Supabase auth session tokens
+7. **Seller data**: company name, description, address, phone, village
 
-Lines 384-389 in `Auth.tsx` use the standard `signInWithOAuth` flow. On custom domains (not `*.lovable.app`), the auth-bridge incorrectly handles the redirect, breaking new user registration.
+### Legal framework for Belarus:
+- Law of the Republic of Belarus No. 99-З "On Personal Data Protection" (effective 15.11.2021)
+- Requires: legal basis for processing, list of data collected, purposes, retention periods, third-party transfers, data subject rights
 
-## Fix
+### Implementation:
 
-Modify the Google sign-in button handler (lines 382-394) to:
+1. **Create `src/pages/PrivacyPolicy.tsx`** — full privacy policy page in Russian, covering:
+   - Operator info (Locus / locusfood.by)
+   - Types of personal data collected
+   - Purposes of processing
+   - Legal basis (consent, contract execution)
+   - Cookies and tracking technologies (localStorage, Meta Pixel)
+   - Third-party services (Supabase, Google OAuth, Meta/Facebook)
+   - Data retention periods
+   - Data subject rights (access, correction, deletion, withdrawal of consent)
+   - Cross-border data transfer notice
+   - Contact information for data protection inquiries
+   - Effective date
 
-1. Detect if running on a custom domain (not `*.lovable.app` / `*.lovableproject.com`)
-2. If custom domain: use `skipBrowserRedirect: true` to get the OAuth URL directly, then redirect manually via `window.location.href`
-3. If Lovable domain: keep current behavior
+2. **Add route in `src/App.tsx`**: `/privacy-policy`
 
-### Code Change (Auth.tsx, ~line 382-394)
-
-Replace the `onClick` handler with:
-
-```typescript
-onClick={async () => {
-  setIsLoading(true);
-  const isCustomDomain =
-    !window.location.hostname.includes("lovable.app") &&
-    !window.location.hostname.includes("lovableproject.com");
-
-  if (isCustomDomain) {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/auth',
-        skipBrowserRedirect: true,
-      },
-    });
-    if (error) {
-      toast.error("Ошибка входа через Google: " + error.message);
-      setIsLoading(false);
-      return;
-    }
-    if (data?.url) {
-      const oauthUrl = new URL(data.url);
-      if (oauthUrl.hostname !== "accounts.google.com" &&
-          !oauthUrl.hostname.endsWith(".supabase.co")) {
-        toast.error("Invalid OAuth redirect URL");
-        setIsLoading(false);
-        return;
-      }
-      window.location.href = data.url;
-    }
-  } else {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/auth',
-      },
-    });
-    if (error) {
-      toast.error("Ошибка входа через Google: " + error.message);
-      setIsLoading(false);
-    }
-  }
-}}
-```
-
-### Supabase Dashboard Configuration Required
-
-The user must verify these settings in **Supabase Dashboard → Authentication → URL Configuration**:
-
-- **Site URL**: `https://locusfood.by`
-- **Redirect URLs**: must include `https://locusfood.by/auth`
+3. **Add link to privacy policy** in the Profile page footer or BottomNavigation area, and optionally on the Auth page near the sign-up button
 
