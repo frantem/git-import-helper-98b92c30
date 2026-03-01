@@ -153,61 +153,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold">6. Третьи лица и передача данных</h2>
-            <p>Для обеспечения работы Приложения мы используем услуги следующих третьих лиц:</p>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border border-border rounded-lg mt-2">
-                <thead>
-                  <tr className="bg-muted">
-                    <th className="text-left p-2 border-b border-border font-semibold">Сервис</th>
-                    <th className="text-left p-2 border-b border-border font-semibold">Назначение</th>
-                    <th className="text-left p-2 border-b border-border font-semibold">Страна</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-2 border-b border-border">Supabase (США)</td>
-                    <td className="p-2 border-b border-border">Хранение данных, аутентификация, серверные функции</td>
-                    <td className="p-2 border-b border-border">США</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-border">Google (Google OAuth)</td>
-                    <td className="p-2 border-b border-border">Аутентификация через аккаунт Google</td>
-                    <td className="p-2 border-b border-border">США</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-b border-border">Meta Platforms (Facebook)</td>
-                    <td className="p-2 border-b border-border">Аналитика, таргетированная реклама</td>
-                    <td className="p-2 border-b border-border">США / ЕС</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="mt-2">
-              Передача данных указанным третьим лицам осуществляется в объёме, необходимом для
-              выполнения их функций, и на основании договорных обязательств по обеспечению
-              конфиденциальности.
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="text-base font-bold">7. Трансграничная передача данных</h2>
-            <p>
-              В связи с использованием сервисов Supabase, Google и Meta персональные данные
-              могут передаваться и обрабатываться на серверах, расположенных за пределами
-              Республики Беларусь, в том числе в Соединённых Штатах Америки и странах
-              Европейского союза.
-            </p>
-            <p>
-              Используя Приложение, вы даёте согласие на такую трансграничную передачу данных
-              в соответствии со ст. 9 Закона Республики Беларусь № 99-З.
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="text-base font-bold">8. Сроки хранения данных</h2>
+            <h2 className="text-base font-bold">6. Сроки хранения данных</h2>
             <ul className="list-disc pl-5 space-y-1">
               <li>
                 <strong>Данные учётной записи</strong> — хранятся в течение всего периода
@@ -230,7 +176,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold">9. Права субъекта персональных данных</h2>
+            <h2 className="text-base font-bold">7. Права субъекта персональных данных</h2>
             <p>
               В соответствии с Законом Республики Беларусь № 99-З вы имеете следующие права:
             </p>
@@ -258,12 +204,12 @@ export default function PrivacyPolicy() {
             </ul>
             <p>
               Для реализации своих прав направьте запрос по контактным данным, указанным в
-              разделе 11 настоящей Политики.
+              разделе 9 настоящей Политики.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold">10. Защита персональных данных</h2>
+            <h2 className="text-base font-bold">8. Защита персональных данных</h2>
             <p>
               Оператор принимает необходимые правовые, организационные и технические меры для
               защиты персональных данных от неправомерного или случайного доступа, уничтожения,
@@ -279,7 +225,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold">11. Контактная информация</h2>
+            <h2 className="text-base font-bold">9. Контактная информация</h2>
             <p>
               По всем вопросам, связанным с обработкой персональных данных, вы можете обратиться:
             </p>
@@ -299,7 +245,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold">12. Изменения в Политике</h2>
+            <h2 className="text-base font-bold">10. Изменения в Политике</h2>
             <p>
               Оператор оставляет за собой право вносить изменения в настоящую Политику.
               Актуальная версия Политики размещается по адресу{" "}
