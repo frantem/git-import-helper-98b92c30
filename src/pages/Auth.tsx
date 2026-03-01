@@ -469,7 +469,7 @@ export default function Auth() {
             )}
 
             {mode === "register" && (
-              <div className="mt-4 text-center">
+              <div className="mt-4 space-y-2 text-center">
                 <button
                   type="button"
                   onClick={() => setMode("login")}
@@ -477,6 +477,11 @@ export default function Auth() {
                 >
                   Уже есть аккаунт? Войдите
                 </button>
+                <div>
+                  <a href="/privacy-policy" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                    Политика конфиденциальности
+                  </a>
+                </div>
               </div>
             )}
           </div>
