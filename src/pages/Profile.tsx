@@ -313,6 +313,13 @@ export default function Profile() {
             </span>
           </button>
         }
+
+        {/* Privacy Policy link */}
+        <div className="mt-4 text-center">
+          <Link to="/privacy-policy" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+            Политика конфиденциальности
+          </Link>
+        </div>
       </main>
 
       <BottomNavigation />

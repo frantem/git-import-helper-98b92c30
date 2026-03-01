@@ -28,6 +28,7 @@ import AdminPickupPoints from "./pages/admin/AdminPickupPoints";
 import AdminBlocks from "./pages/admin/AdminBlocks";
 import AdminSettings from "./pages/admin/AdminSettings";
 import Settings from "./pages/Settings";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/admin/pickup-points" element={<AdminPickupPoints />} />
               <Route path="/admin/blocks" element={<AdminBlocks />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
