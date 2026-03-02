@@ -896,6 +896,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_seller_update_order: { Args: { _order_id: string }; Returns: boolean }
       get_orders_count_by_dates: {
         Args: { p_check_dates: string[]; p_farmer_ids: string[] }
         Returns: {
