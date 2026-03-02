@@ -80,8 +80,11 @@ interface OrderItem {
     title: string;
   } | null;
   order: {
+    id: string;
     created_at: string;
     buyer_id: string;
+    delivery_type: string;
+    status: string;
     pickup_point: {
       name: string;
     } | null;
@@ -236,7 +239,7 @@ export default function SellerDashboard() {
           variant_label,
           custom_fields,
           product:products(title),
-          order:orders(created_at, buyer_id, pickup_point:pickup_points(name))
+          order:orders(id, created_at, buyer_id, delivery_type, status, pickup_point:pickup_points(name))
         `)
         .eq("farmer_id", farmerData.id)
         .order("created_at", { ascending: false });
@@ -779,6 +782,20 @@ export default function SellerDashboard() {
     }
   };
 
+  const handleMarkDelivered = async (orderId: string) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "delivered" })
+      .eq("id", orderId);
+
+    if (error) {
+      toast.error("Ошибка при обновлении статуса заказа");
+    } else {
+      toast.success("Заказ выдан");
+      fetchData();
+    }
+  };
+
   const handleSaveSettings = async () => {
     if (!farmer) return;
 
@@ -1010,6 +1027,44 @@ export default function SellerDashboard() {
                 })}
               </div>
             )}
+
+            {/* "Выдан" buttons for self_pickup orders where all items are collected */}
+            {(() => {
+              // Group items by order_id for self_pickup orders
+              const selfPickupOrders = new Map<string, { allCollected: boolean; orderStatus: string }>();
+              orderItems.forEach(item => {
+                if (item.order?.delivery_type === "self_pickup" && item.order?.id) {
+                  const orderId = item.order.id;
+                  if (!selfPickupOrders.has(orderId)) {
+                    selfPickupOrders.set(orderId, { allCollected: true, orderStatus: item.order.status });
+                  }
+                  const entry = selfPickupOrders.get(orderId)!;
+                  if (item.status !== "collected") {
+                    entry.allCollected = false;
+                  }
+                }
+              });
+
+              const readyOrders = Array.from(selfPickupOrders.entries())
+                .filter(([_, v]) => v.allCollected && v.orderStatus !== "delivered");
+
+              if (readyOrders.length === 0) return null;
+
+              return (
+                <div className="space-y-2 mt-4">
+                  <h3 className="text-sm font-medium text-foreground">Готовы к выдаче (самовывоз)</h3>
+                  {readyOrders.map(([orderId]) => (
+                    <div key={orderId} className="flex items-center justify-between rounded-xl bg-card p-3">
+                      <span className="text-sm text-muted-foreground">Заказ ...{orderId.slice(-6)}</span>
+                      <Button size="sm" onClick={() => handleMarkDelivered(orderId)}>
+                        <Check className="h-3 w-3 mr-1" />
+                        Выдан
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* Settings Tab */}

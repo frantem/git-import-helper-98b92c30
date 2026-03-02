@@ -116,6 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
         id,
         total_amount,
         buyer_id,
+        delivery_type,
         pickup_point:pickup_points(name, working_hours)
       `,
       )
@@ -125,6 +126,15 @@ const handler = async (req: Request): Promise<Response> => {
     if (orderError || !order) {
       return new Response(JSON.stringify({ error: "Order not found" }), {
         status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Safety net: only send email for pickup orders
+    if (order.delivery_type !== "pickup") {
+      console.log(`Skipping email for delivery_type: ${order.delivery_type}`);
+      return new Response(JSON.stringify({ message: "No email needed for this delivery type" }), {
+        status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
