@@ -13,7 +13,7 @@ async function sendEmail(to: string[], subject: string, html: string) {
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Locus <info@locusfood.by>",
+      from: Deno.env.get("SENDER_EMAIL") || "Locus <info@locusfood.by>",
       to,
       subject,
       html,

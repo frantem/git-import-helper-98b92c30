@@ -2,3 +2,9 @@ project_id = "jxklppwhgmndlivvtxdd"
 
 [functions.meta-conversions-api]
 verify_jwt = false
+
+[functions.send-new-order-notification]
+verify_jwt = false
+
+[functions.send-delivery-notification]
+verify_jwt = false
