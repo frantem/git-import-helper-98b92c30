@@ -1,48 +1,48 @@
 
 
-## Аудит email-уведомлений в проекте Locus
+## Plan: Delivery type-aware notifications and "Выдан" button
 
-### Таблица всех мест отправки email
+### Current state
 
-```text
-┌──────────────────────────────────────────────────┬──────────────────────────────────┬───────────┬────────┐
-│ Файл                                             │ Назначение                       │ Провайдер │ Статус │
-├──────────────────────────────────────────────────┼──────────────────────────────────┼───────────┼────────┤
-│ supabase/functions/send-new-order-notification/  │ Новый заказ → письмо админу      │ Resend    │ ✅     │
-│ index.ts                                         │ + письмо каждому фермеру         │           │        │
-│                                                  │ Вызов: src/pages/Checkout.tsx:381 │           │        │
-├──────────────────────────────────────────────────┼──────────────────────────────────┼───────────┼────────┤
-│ supabase/functions/send-delivery-notification/   │ Заказ доставлен → письмо         │ Resend    │ ✅     │
-│ index.ts                                         │ покупателю                       │           │        │
-│                                                  │ Вызов: src/pages/admin/          │           │        │
-│                                                  │ AdminOrders.tsx:209              │           │        │
-├──────────────────────────────────────────────────┼──────────────────────────────────┼───────────┼────────┤
-│ supabase/functions/meta-conversions-api/         │ Meta Pixel server-side events     │ Meta CAPI │ ✅     │
-│ index.ts                                         │ (НЕ email, аналитика)            │           │        │
-│                                                  │ Вызов: src/pages/Checkout.tsx:398 │           │        │
-└──────────────────────────────────────────────────┴──────────────────────────────────┴───────────┴────────┘
-```
+- `AdminOrders.tsx` `handleDeliverOrder` always calls `send-delivery-notification` edge function regardless of `delivery_type`
+- `send-delivery-notification` always sends "Заказ прибыл в пункт выдачи" email
+- `SellerDashboard.tsx` shows order items with "Собран" button but has no "Выдан" button for self-pickup orders
+- `delivery_type` values in the system: `pickup`, `courier`, `self_pickup`
 
-### Выводы
+### Changes
 
-**Дубликатов и мусора нет.** В проекте всего 2 edge-функции, отправляющие email, и обе активно используются:
+#### 1. `AdminOrders.tsx` — `handleDeliverOrder` logic
 
-1. **send-new-order-notification** — отправляет при оформлении заказа (Checkout). Уже использует `Resend` + `info@locusfood.by`.
-2. **send-delivery-notification** — отправляет при смене статуса на «доставлен» (AdminOrders). Уже использует `Resend` + `info@locusfood.by`.
-3. **meta-conversions-api** — это НЕ email, а отправка событий в Meta/Facebook. Не трогаем.
+Split behavior by `delivery_type`:
+- **`pickup`**: update status to `delivered` + send email via `send-delivery-notification` (pickup point notification)
+- **`courier`**: update status to `delivered`, NO email
+- **`self_pickup`**: update status to `delivered`, NO email
 
-### Текущее состояние
+Change button label based on `delivery_type`:
+- `pickup` → "Прибыл в ПВЗ"
+- `courier` → "Доставлен"
+- `self_pickup` → "Выдан"
 
-- Обе email-функции уже используют `RESEND_API_KEY` из секретов Supabase (секрет настроен).
-- Обе уже отправляют от `Locus <info@locusfood.by>` — домен корректный.
-- `ADMIN_EMAIL` тоже настроен в секретах.
-- В `config.toml` отсутствуют записи для `send-delivery-notification` и `send-new-order-notification` (есть только для `meta-conversions-api`). Это означает, что для них используются настройки по умолчанию (`verify_jwt = true`), что корректно — обе функции проверяют авторизацию внутри кода.
+#### 2. `send-delivery-notification/index.ts` — add `delivery_type` check
 
-### Рекомендуемый план
+Fetch `delivery_type` along with order data. If `delivery_type !== 'pickup'`, return early with success (no email sent). This is a safety net in case the function is called incorrectly.
 
-Удалять ничего не нужно — обе функции рабочие и без дубликатов. Однако есть мелкие улучшения:
+#### 3. `SellerDashboard.tsx` — add "Выдан" button for self-pickup
 
-1. **Добавить записи в `config.toml`** для `send-delivery-notification` и `send-new-order-notification` с `verify_jwt = false` (обе функции уже проверяют JWT вручную внутри кода, а двойная проверка может вызывать проблемы с CORS preflight).
+The seller dashboard currently shows individual order items, not full orders. For `self_pickup` orders, after all items are marked "Собран", show a "Выдан" button that updates the order status to `delivered` without sending any email. This requires fetching `delivery_type` from the order join.
 
-2. **Вынести адрес отправителя в секрет `SENDER_EMAIL`** (уже есть в секретах, но не используется в коде). Вместо хардкода `"Locus <info@locusfood.by>"` обе функции могут читать `Deno.env.get("SENDER_EMAIL")` — так при смене домена менять код не придётся.
+### Technical details
+
+**AdminOrders.tsx changes (~lines 190-230, 492-501):**
+- In `handleDeliverOrder`: wrap email sending in `if (order.delivery_type === 'pickup')` conditional
+- In button rendering: show different label/icon per `delivery_type`, all call `handleDeliverOrder` which internally decides whether to email
+
+**send-delivery-notification/index.ts (~lines 112-123):**
+- Add `delivery_type` to the select query
+- After fetching order, if `delivery_type !== 'pickup'`, return `{ message: "No email needed for this delivery type" }` with 200
+
+**SellerDashboard.tsx (~lines 69-89, 228-242, 933-1013):**
+- Add `delivery_type` and `order_id` to the `OrderItem` interface and query (from the `order` join)
+- After the order items list, for items where `delivery_type === 'self_pickup'` and `status === 'collected'`, group by `order_id` and show a "Выдан" button
+- The button calls a new `handleMarkDelivered(orderId)` function that updates `orders.status = 'delivered'` without any email
 
