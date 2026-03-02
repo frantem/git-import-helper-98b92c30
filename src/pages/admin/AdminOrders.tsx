@@ -492,14 +492,14 @@ export default function AdminOrders() {
                       </>
                     )}
 
-                    {order.status === "confirmed" && (
+                    {order.status === "confirmed" && order.delivery_type !== "self_pickup" && (
                       <Button
                         onClick={() => handleDeliverOrder(order)}
                         disabled={isProcessing}
                         className="flex items-center gap-1"
                       >
                         <Truck className="h-4 w-4" />
-                        {order.delivery_type === "pickup" ? "Прибыл в ПВЗ" : order.delivery_type === "self_pickup" ? "Выдан" : "Доставлен"}
+                        {order.delivery_type === "pickup" ? "Прибыл в ПВЗ" : "Доставлен"}
                       </Button>
                     )}
                   </div>
