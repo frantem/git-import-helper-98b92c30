@@ -1,0 +1,375 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { BottomNavigation } from "@/components/BottomNavigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { formatPrice } from "@/lib/priceUtils";
+import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Truck, Check } from "lucide-react";
+import { toast } from "sonner";
+
+interface SellerOrderItem {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  status: string;
+  variant_label: string | null;
+  custom_fields: {
+    fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
+    addons?: Array<{ addonId: string; name: string; price: number }>;
+  } | null;
+  product: { title: string } | null;
+}
+
+interface SellerOrder {
+  id: string;
+  created_at: string;
+  status: string;
+  delivery_type: string;
+  delivery_address: string | null;
+  delivery_date: string | null;
+  delivery_cost: number;
+  notes: string | null;
+  pickup_point: { name: string; address: string; working_hours: string | null } | null;
+  buyer: { full_name: string | null; phone: string | null } | null;
+  items: SellerOrderItem[];
+  itemsTotal: number;
+}
+
+const statusLabels: Record<string, { label: string; color: string }> = {
+  pending: { label: "Ожидает", color: "bg-amber-100 text-amber-700" },
+  confirmed: { label: "Подтверждён", color: "bg-blue-100 text-blue-700" },
+  processing: { label: "В обработке", color: "bg-blue-100 text-blue-700" },
+  collected: { label: "Собран", color: "bg-primary/10 text-primary" },
+  delivered: { label: "Доставлен", color: "bg-success/10 text-success" },
+  cancelled: { label: "Отменён", color: "bg-destructive/10 text-destructive" },
+};
+
+export default function SellerOrders() {
+  const { user, role, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<SellerOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { navigate("/auth"); return; }
+    if (role !== "seller" && role !== "admin") { navigate("/"); return; }
+    fetchOrders();
+  }, [user, role, authLoading]);
+
+  const fetchOrders = async () => {
+    // Get farmer id
+    const { data: farmer } = await supabase
+      .from("farmers")
+      .select("id")
+      .eq("user_id", user!.id)
+      .maybeSingle();
+
+    if (!farmer) { setIsLoading(false); return; }
+
+    // Fetch order items for this farmer, with order + product info
+    const { data: items, error } = await supabase
+      .from("order_items")
+      .select(`
+        id, quantity, unit_price, status, variant_label, custom_fields,
+        product:products(title),
+        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, buyer_id,
+          pickup_point:pickup_points(name, address, working_hours)
+        )
+      `)
+      .eq("farmer_id", farmer.id)
+      .order("created_at", { ascending: false });
+
+    if (error || !items) {
+      console.error("Error fetching seller orders:", error);
+      setIsLoading(false);
+      return;
+    }
+
+    // Group by order
+    const orderMap = new Map<string, { order: any; items: SellerOrderItem[]; total: number }>();
+    for (const item of items as any[]) {
+      const o = item.order;
+      if (!o?.id) continue;
+      if (!orderMap.has(o.id)) {
+        orderMap.set(o.id, { order: o, items: [], total: 0 });
+      }
+      const entry = orderMap.get(o.id)!;
+      entry.items.push({
+        id: item.id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        status: item.status,
+        variant_label: item.variant_label,
+        custom_fields: item.custom_fields,
+        product: item.product,
+      });
+      entry.total += item.unit_price * item.quantity;
+    }
+
+    // Fetch buyer profiles
+    const buyerIds = [...new Set(Array.from(orderMap.values()).map(e => e.order.buyer_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, phone")
+      .in("user_id", buyerIds);
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+    // Build final list sorted by date desc
+    const result: SellerOrder[] = Array.from(orderMap.values())
+      .map(e => {
+        const buyer = profileMap.get(e.order.buyer_id) || null;
+        return {
+          id: e.order.id,
+          created_at: e.order.created_at,
+          status: e.order.status,
+          delivery_type: e.order.delivery_type,
+          delivery_address: e.order.delivery_address,
+          delivery_date: e.order.delivery_date,
+          delivery_cost: e.order.delivery_cost,
+          notes: e.order.notes,
+          pickup_point: e.order.pickup_point,
+          buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
+          items: e.items,
+          itemsTotal: e.total,
+        };
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    setOrders(result);
+    setIsLoading(false);
+  };
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("ru-RU", {
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+
+  const handleMarkCollected = async (itemId: string) => {
+    setProcessingId(itemId);
+    const { error } = await supabase
+      .from("order_items")
+      .update({ status: "collected" })
+      .eq("id", itemId);
+    if (error) toast.error("Ошибка при обновлении статуса");
+    else { toast.success("Товар собран"); fetchOrders(); }
+    setProcessingId(null);
+  };
+
+  const handleMarkDelivered = async (orderId: string) => {
+    setProcessingId(orderId);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "delivered" })
+      .eq("id", orderId);
+    if (error) toast.error("Ошибка при обновлении статуса заказа");
+    else { toast.success("Заказ выдан"); fetchOrders(); }
+    setProcessingId(null);
+  };
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-16 md:pb-0">
+        <Header />
+        <main className="container mx-auto px-4 py-16 flex justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </main>
+        <BottomNavigation />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <Header />
+      <main className="container mx-auto px-3 py-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Link to="/seller">
+            <Button variant="ghost" className="p-2 min-h-[44px] min-w-[44px]">
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+          </Link>
+          <h1 className="text-xl font-bold text-foreground">Мои заказы</h1>
+        </div>
+
+        {orders.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground">Нет заказов</div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const price = formatPrice(order.itemsTotal);
+              const status = statusLabels[order.status] || statusLabels.pending;
+              const allCollected = order.items.length > 0 && order.items.every(i => i.status === "collected");
+              const isSelfPickup = order.delivery_type === "self";
+              const canMarkDelivered = isSelfPickup && allCollected && order.status !== "delivered";
+
+              return (
+                <div key={order.id} className="rounded-xl bg-card p-4">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
+                      <p className="text-lg font-bold text-foreground">
+                        {price.rubles} р. {price.kopecks > 0 && `${price.kopecks} к.`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`rounded-full px-3 py-1 text-xs font-medium ${status.color}`}>
+                        {status.label}
+                      </span>
+                      {allCollected && (
+                        <p className="text-xs text-success mt-1">✓ Все товары собраны</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Buyer info */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <User className="h-4 w-4" />
+                    <span>{order.buyer?.full_name || "Покупатель"}</span>
+                  </div>
+                  {order.buyer?.phone ? (
+                    <a href={`tel:${order.buyer.phone}`} className="flex items-center gap-2 text-sm text-primary hover:underline mb-2">
+                      <Phone className="h-4 w-4" />
+                      <span>{order.buyer.phone}</span>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <Phone className="h-4 w-4" />
+                      <span>Не указан</span>
+                    </div>
+                  )}
+
+                  {/* Delivery info */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Truck className="h-4 w-4" />
+                    <span>
+                      {order.delivery_type === "courier"
+                        ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + "р." : "бесплатно"})`
+                        : order.delivery_type === "pickup"
+                          ? "Пункт выдачи"
+                          : "Самовывоз у фермера"}
+                    </span>
+                  </div>
+
+                  {order.delivery_type === "courier" && order.delivery_address && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{order.delivery_address}</span>
+                    </div>
+                  )}
+
+                  {order.pickup_point && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{order.pickup_point.name}</span>
+                      {order.pickup_point.working_hours && (
+                        <span className="text-xs">({order.pickup_point.working_hours})</span>
+                      )}
+                    </div>
+                  )}
+
+                  {order.delivery_date && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Доставка: {new Date(order.delivery_date).toLocaleDateString("ru-RU")}</span>
+                    </div>
+                  )}
+
+                  {order.notes && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Package className="h-4 w-4" />
+                      <span>{order.notes}</span>
+                    </div>
+                  )}
+
+                  {/* Items */}
+                  <div className="border-t border-border pt-3 space-y-1">
+                    <p className="text-sm font-medium text-foreground mb-2">Мои товары:</p>
+                    {order.items.map((item) => {
+                      const itemTotal = formatPrice(item.unit_price * item.quantity);
+                      const isCollected = item.status === "collected";
+                      return (
+                        <div key={item.id} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-1 flex-1 min-w-0">
+                            <span className={isCollected ? "text-success" : "text-muted-foreground"}>
+                              {isCollected ? "✓" : "○"}
+                            </span>
+                            <span className="text-foreground truncate">
+                              {item.product?.title}
+                              {item.variant_label && <span className="text-muted-foreground"> ({item.variant_label})</span>}
+                            </span>
+                            <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                            <span className="text-muted-foreground whitespace-nowrap">
+                              {itemTotal.rubles}р.{itemTotal.kopecks > 0 ? `${itemTotal.kopecks.toString().padStart(2, '0')}к.` : ''}
+                            </span>
+                            {!isCollected && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={processingId === item.id}
+                                onClick={() => handleMarkCollected(item.id)}
+                                className="h-7 px-2 text-xs"
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Собран
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Custom fields / addons detail for each item */}
+                    {order.items.map((item) => {
+                      const hasFields = item.custom_fields?.fields && item.custom_fields.fields.length > 0;
+                      const hasAddons = item.custom_fields?.addons && item.custom_fields.addons.length > 0;
+                      if (!hasFields && !hasAddons) return null;
+                      return (
+                        <div key={`cf-${item.id}`} className="pl-5 space-y-0.5">
+                          {item.custom_fields?.fields?.map((f, i) => (
+                            <p key={i} className="text-xs text-muted-foreground">
+                              {f.label}: <span className="font-medium">«{f.value}»</span>
+                            </p>
+                          ))}
+                          {item.custom_fields?.addons?.map((a, i) => {
+                            const ap = formatPrice(a.price);
+                            return (
+                              <p key={i} className="text-xs text-muted-foreground">
+                                + {a.name}{a.price > 0 && ` (${ap.rubles}${ap.kopecks > 0 ? `,${ap.kopecks.toString().padStart(2, '0')}` : ''} р.)`}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Выдан button for self-pickup */}
+                  {canMarkDelivered && (
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <Button
+                        onClick={() => handleMarkDelivered(order.id)}
+                        disabled={processingId === order.id}
+                        className="w-full"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Выдан
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+      <BottomNavigation />
+    </div>
+  );
+}
