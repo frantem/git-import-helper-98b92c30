@@ -1,48 +1,44 @@
 
 
-## Plan: Delivery type-aware notifications and "Выдан" button
+## Problem
 
-### Current state
+The RLS policy "Sellers can update orders for self_pickup delivery" on the `orders` table contains a subquery that joins `order_items` back to `orders`, causing infinite recursion. This blocks ALL updates to the `orders` table, including admin actions like "Подтвердить".
 
-- `AdminOrders.tsx` `handleDeliverOrder` always calls `send-delivery-notification` edge function regardless of `delivery_type`
-- `send-delivery-notification` always sends "Заказ прибыл в пункт выдачи" email
-- `SellerDashboard.tsx` shows order items with "Собран" button but has no "Выдан" button for self-pickup orders
-- `delivery_type` values in the system: `pickup`, `courier`, `self_pickup`
+## Fix
 
-### Changes
+1. **Create a security definer function** `can_seller_update_order(order_id uuid)` that checks if the current user is a farmer with items in the given order and the order's `delivery_type` is `self_pickup`. Since it runs as `SECURITY DEFINER`, it bypasses RLS and avoids recursion.
 
-#### 1. `AdminOrders.tsx` — `handleDeliverOrder` logic
+2. **Drop the broken policy** "Sellers can update orders for self_pickup delivery" and **recreate it** using the new function.
 
-Split behavior by `delivery_type`:
-- **`pickup`**: update status to `delivered` + send email via `send-delivery-notification` (pickup point notification)
-- **`courier`**: update status to `delivered`, NO email
-- **`self_pickup`**: update status to `delivered`, NO email
+### SQL Migration
 
-Change button label based on `delivery_type`:
-- `pickup` → "Прибыл в ПВЗ"
-- `courier` → "Доставлен"
-- `self_pickup` → "Выдан"
+```sql
+-- 1. Security definer function to avoid recursion
+CREATE OR REPLACE FUNCTION public.can_seller_update_order(_order_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM order_items oi
+    JOIN farmers f ON f.id = oi.farmer_id
+    JOIN orders o ON o.id = oi.order_id
+    WHERE oi.order_id = _order_id
+      AND f.user_id = auth.uid()
+      AND o.delivery_type = 'self_pickup'
+  );
+$$;
 
-#### 2. `send-delivery-notification/index.ts` — add `delivery_type` check
+-- 2. Replace the recursive policy
+DROP POLICY IF EXISTS "Sellers can update orders for self_pickup delivery" ON orders;
 
-Fetch `delivery_type` along with order data. If `delivery_type !== 'pickup'`, return early with success (no email sent). This is a safety net in case the function is called incorrectly.
+CREATE POLICY "Sellers can update orders for self_pickup delivery"
+ON orders FOR UPDATE TO authenticated
+USING (public.can_seller_update_order(id));
+```
 
-#### 3. `SellerDashboard.tsx` — add "Выдан" button for self-pickup
-
-The seller dashboard currently shows individual order items, not full orders. For `self_pickup` orders, after all items are marked "Собран", show a "Выдан" button that updates the order status to `delivered` without sending any email. This requires fetching `delivery_type` from the order join.
-
-### Technical details
-
-**AdminOrders.tsx changes (~lines 190-230, 492-501):**
-- In `handleDeliverOrder`: wrap email sending in `if (order.delivery_type === 'pickup')` conditional
-- In button rendering: show different label/icon per `delivery_type`, all call `handleDeliverOrder` which internally decides whether to email
-
-**send-delivery-notification/index.ts (~lines 112-123):**
-- Add `delivery_type` to the select query
-- After fetching order, if `delivery_type !== 'pickup'`, return `{ message: "No email needed for this delivery type" }` with 200
-
-**SellerDashboard.tsx (~lines 69-89, 228-242, 933-1013):**
-- Add `delivery_type` and `order_id` to the `OrderItem` interface and query (from the `order` join)
-- After the order items list, for items where `delivery_type === 'self_pickup'` and `status === 'collected'`, group by `order_id` and show a "Выдан" button
-- The button calls a new `handleMarkDelivered(orderId)` function that updates `orders.status = 'delivered'` without any email
+No frontend changes needed -- the admin "Подтвердить" button will work again immediately after this migration.
 
