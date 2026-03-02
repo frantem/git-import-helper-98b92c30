@@ -17,6 +17,9 @@ import Auth from "./pages/Auth";
 import Orders from "./pages/Orders";
 import Favorites from "./pages/Favorites";
 import SellerDashboard from "./pages/SellerDashboard";
+import SellerProducts from "./pages/seller/SellerProducts";
+import SellerOrders from "./pages/seller/SellerOrders";
+import SellerSettings from "./pages/seller/SellerSettings";
 import SellerProfile from "./pages/SellerProfile";
 import Admin from "./pages/Admin";
 import AdminSellers from "./pages/admin/AdminSellers";
@@ -59,6 +62,9 @@ const App = () => (
               <Route path="/orders" element={<Orders />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/seller" element={<SellerDashboard />} />
+              <Route path="/seller/products" element={<SellerProducts />} />
+              <Route path="/seller/orders" element={<SellerOrders />} />
+              <Route path="/seller/settings" element={<SellerSettings />} />
               <Route path="/seller/:id" element={<SellerProfile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
