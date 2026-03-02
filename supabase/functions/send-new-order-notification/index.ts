@@ -10,28 +10,27 @@ async function sendEmail(to: string[], subject: string, html: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Locus <noreply@locus.app>",
+      from: "Locus <info@locusfood.by>",
       to,
       subject,
       html,
     }),
   });
-  
+
   if (!res.ok) {
     const error = await res.text();
     throw new Error(`Resend API error: ${error}`);
   }
-  
+
   return res.json();
 }
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface OrderItemRaw {
@@ -58,48 +57,50 @@ const handler = async (req: Request): Promise<Response> => {
     // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Authorization header required" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Authorization header required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Create Supabase client with user's auth context
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     // Verify user is authenticated
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid authentication" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Parse request body
     const { order_id }: NewOrderNotificationRequest = await req.json();
 
     if (!order_id) {
-      return new Response(
-        JSON.stringify({ error: "order_id is required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "order_id is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Use service role client for fetching all data
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     // Fetch order data
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
-      .select(`
+      .select(
+        `
         id,
         total_amount,
         buyer_id,
@@ -107,16 +108,17 @@ const handler = async (req: Request): Promise<Response> => {
         delivery_address,
         delivery_cost,
         pickup_point:pickup_points(name)
-      `)
+      `,
+      )
       .eq("id", order_id)
       .single();
 
     if (orderError || !order) {
       console.error("Order fetch error:", orderError);
-      return new Response(
-        JSON.stringify({ error: "Order not found" }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Order not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Fetch buyer's profile
@@ -129,12 +131,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch order items with product info
     const { data: orderItems } = await supabaseAdmin
       .from("order_items")
-      .select(`
+      .select(
+        `
         quantity,
         unit_price,
         farmer_id,
         product:products(title, unit)
-      `)
+      `,
+      )
       .eq("order_id", order_id);
 
     const items = (orderItems || []) as unknown as OrderItemRaw[];
@@ -155,18 +159,19 @@ const handler = async (req: Request): Promise<Response> => {
     const buyerPhone = buyerProfile?.phone || "не указан";
     const pickupPointData = order.pickup_point as unknown as { name: string } | null;
     const pickupPointName = pickupPointData?.name || "не указан";
-    
+
     // Delivery type info
     const deliveryType = (order as any).delivery_type || "pickup";
     const deliveryAddress = (order as any).delivery_address || null;
     const deliveryCost = (order as any).delivery_cost || 0;
-    
-    const deliveryTypeText = deliveryType === "pickup" 
-      ? `📦 Пункт выдачи: ${pickupPointName}`
-      : deliveryType === "courier"
-        ? `🚗 Доставка на дом: ${deliveryAddress || "адрес не указан"}`
-        : "🏠 Самовывоз";
-    
+
+    const deliveryTypeText =
+      deliveryType === "pickup"
+        ? `📦 Пункт выдачи: ${pickupPointName}`
+        : deliveryType === "courier"
+          ? `🚗 Доставка на дом: ${deliveryAddress || "адрес не указан"}`
+          : "🏠 Самовывоз";
+
     const deliveryCostText = deliveryCost > 0 ? ` (+${Math.floor(deliveryCost / 100)} р. за доставку)` : "";
 
     const emailHtml = `
@@ -184,11 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email to admin
     if (ADMIN_EMAIL) {
       try {
-        await sendEmail(
-          [ADMIN_EMAIL],
-          `🛒 Новый заказ на ${formattedTotal}`,
-          emailHtml
-        );
+        await sendEmail([ADMIN_EMAIL], `🛒 Новый заказ на ${formattedTotal}`, emailHtml);
         emailsSent.push(`admin: ${ADMIN_EMAIL}`);
         console.log("Admin email sent");
       } catch (e) {
@@ -200,15 +201,12 @@ const handler = async (req: Request): Promise<Response> => {
     const farmerIds = [...new Set(items.map((item) => item.farmer_id))];
 
     // Fetch farmer user_ids
-    const { data: farmers } = await supabaseAdmin
-      .from("farmers")
-      .select("id, user_id, name")
-      .in("id", farmerIds);
+    const { data: farmers } = await supabaseAdmin.from("farmers").select("id, user_id, name").in("id", farmerIds);
 
     if (farmers && farmers.length > 0) {
       // Fetch farmer emails from profiles
       const farmerUserIds = farmers.map((f) => f.user_id).filter(Boolean);
-      
+
       const { data: farmerProfiles } = await supabaseAdmin
         .from("profiles")
         .select("user_id, email")
@@ -236,11 +234,7 @@ const handler = async (req: Request): Promise<Response> => {
           `;
 
           try {
-            await sendEmail(
-              [farmerProfile.email],
-              `🛒 Новый заказ для ${farmer.name}`,
-              farmerEmailHtml
-            );
+            await sendEmail([farmerProfile.email], `🛒 Новый заказ для ${farmer.name}`, farmerEmailHtml);
             emailsSent.push(`farmer: ${farmerProfile.email}`);
             console.log(`Farmer email sent to ${farmerProfile.email}`);
           } catch (e) {
@@ -250,22 +244,16 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ success: true, emailsSent }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ success: true, emailsSent }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: unknown) {
     console.error("Error in send-new-order-notification:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
