@@ -1,37 +1,48 @@
 
 
-## Plan: Privacy Policy Page for Belarus
+## Аудит email-уведомлений в проекте Locus
 
-### Data collected by the app (based on codebase analysis):
+### Таблица всех мест отправки email
 
-1. **Account data**: email, full name, phone, avatar (via registration or Google OAuth)
-2. **Order data**: delivery address, order items, payment method
-3. **Visitor tracking**: visitor_id (localStorage UUID), page path, referrer, user agent, visit duration → stored in `site_visits` table
-4. **Meta Pixel (Facebook)**: PageView, Purchase events with order value in BYN
-5. **Meta Conversions API**: server-side event tracking (email hash, user agent, IP)
-6. **localStorage**: cart contents (`locus-cart`), visitor ID, Supabase auth session tokens
-7. **Seller data**: company name, description, address, phone, village
+```text
+┌──────────────────────────────────────────────────┬──────────────────────────────────┬───────────┬────────┐
+│ Файл                                             │ Назначение                       │ Провайдер │ Статус │
+├──────────────────────────────────────────────────┼──────────────────────────────────┼───────────┼────────┤
+│ supabase/functions/send-new-order-notification/  │ Новый заказ → письмо админу      │ Resend    │ ✅     │
+│ index.ts                                         │ + письмо каждому фермеру         │           │        │
+│                                                  │ Вызов: src/pages/Checkout.tsx:381 │           │        │
+├──────────────────────────────────────────────────┼──────────────────────────────────┼───────────┼────────┤
+│ supabase/functions/send-delivery-notification/   │ Заказ доставлен → письмо         │ Resend    │ ✅     │
+│ index.ts                                         │ покупателю                       │           │        │
+│                                                  │ Вызов: src/pages/admin/          │           │        │
+│                                                  │ AdminOrders.tsx:209              │           │        │
+├──────────────────────────────────────────────────┼──────────────────────────────────┼───────────┼────────┤
+│ supabase/functions/meta-conversions-api/         │ Meta Pixel server-side events     │ Meta CAPI │ ✅     │
+│ index.ts                                         │ (НЕ email, аналитика)            │           │        │
+│                                                  │ Вызов: src/pages/Checkout.tsx:398 │           │        │
+└──────────────────────────────────────────────────┴──────────────────────────────────┴───────────┴────────┘
+```
 
-### Legal framework for Belarus:
-- Law of the Republic of Belarus No. 99-З "On Personal Data Protection" (effective 15.11.2021)
-- Requires: legal basis for processing, list of data collected, purposes, retention periods, third-party transfers, data subject rights
+### Выводы
 
-### Implementation:
+**Дубликатов и мусора нет.** В проекте всего 2 edge-функции, отправляющие email, и обе активно используются:
 
-1. **Create `src/pages/PrivacyPolicy.tsx`** — full privacy policy page in Russian, covering:
-   - Operator info (Locus / locusfood.by)
-   - Types of personal data collected
-   - Purposes of processing
-   - Legal basis (consent, contract execution)
-   - Cookies and tracking technologies (localStorage, Meta Pixel)
-   - Third-party services (Supabase, Google OAuth, Meta/Facebook)
-   - Data retention periods
-   - Data subject rights (access, correction, deletion, withdrawal of consent)
-   - Cross-border data transfer notice
-   - Contact information for data protection inquiries
-   - Effective date
+1. **send-new-order-notification** — отправляет при оформлении заказа (Checkout). Уже использует `Resend` + `info@locusfood.by`.
+2. **send-delivery-notification** — отправляет при смене статуса на «доставлен» (AdminOrders). Уже использует `Resend` + `info@locusfood.by`.
+3. **meta-conversions-api** — это НЕ email, а отправка событий в Meta/Facebook. Не трогаем.
 
-2. **Add route in `src/App.tsx`**: `/privacy-policy`
+### Текущее состояние
 
-3. **Add link to privacy policy** in the Profile page footer or BottomNavigation area, and optionally on the Auth page near the sign-up button
+- Обе email-функции уже используют `RESEND_API_KEY` из секретов Supabase (секрет настроен).
+- Обе уже отправляют от `Locus <info@locusfood.by>` — домен корректный.
+- `ADMIN_EMAIL` тоже настроен в секретах.
+- В `config.toml` отсутствуют записи для `send-delivery-notification` и `send-new-order-notification` (есть только для `meta-conversions-api`). Это означает, что для них используются настройки по умолчанию (`verify_jwt = true`), что корректно — обе функции проверяют авторизацию внутри кода.
+
+### Рекомендуемый план
+
+Удалять ничего не нужно — обе функции рабочие и без дубликатов. Однако есть мелкие улучшения:
+
+1. **Добавить записи в `config.toml`** для `send-delivery-notification` и `send-new-order-notification` с `verify_jwt = false` (обе функции уже проверяют JWT вручную внутри кода, а двойная проверка может вызывать проблемы с CORS preflight).
+
+2. **Вынести адрес отправителя в секрет `SENDER_EMAIL`** (уже есть в секретах, но не используется в коде). Вместо хардкода `"Locus <info@locusfood.by>"` обе функции могут читать `Deno.env.get("SENDER_EMAIL")` — так при смене домена менять код не придётся.
 
