@@ -2,43 +2,24 @@
 
 ## Problem
 
-The RLS policy "Sellers can update orders for self_pickup delivery" on the `orders` table contains a subquery that joins `order_items` back to `orders`, causing infinite recursion. This blocks ALL updates to the `orders` table, including admin actions like "Подтвердить".
+In AdminOrders, for `self_pickup` orders the admin sees a "Выдан" button after confirming the order. But self-pickup flow should be fully handled by the seller: seller marks items as "Собран", then presses "Выдан" in their dashboard. The admin should not need to interact with self-pickup orders beyond confirming them.
 
 ## Fix
 
-1. **Create a security definer function** `can_seller_update_order(order_id uuid)` that checks if the current user is a farmer with items in the given order and the order's `delivery_type` is `self_pickup`. Since it runs as `SECURITY DEFINER`, it bypasses RLS and avoids recursion.
+**`src/pages/admin/AdminOrders.tsx` (line 495-504):**
 
-2. **Drop the broken policy** "Sellers can update orders for self_pickup delivery" and **recreate it** using the new function.
+Hide the deliver button for `self_pickup` orders. Only show it for `pickup` ("Прибыл в ПВЗ") and `courier` ("Доставлен"):
 
-### SQL Migration
-
-```sql
--- 1. Security definer function to avoid recursion
-CREATE OR REPLACE FUNCTION public.can_seller_update_order(_order_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM order_items oi
-    JOIN farmers f ON f.id = oi.farmer_id
-    JOIN orders o ON o.id = oi.order_id
-    WHERE oi.order_id = _order_id
-      AND f.user_id = auth.uid()
-      AND o.delivery_type = 'self_pickup'
-  );
-$$;
-
--- 2. Replace the recursive policy
-DROP POLICY IF EXISTS "Sellers can update orders for self_pickup delivery" ON orders;
-
-CREATE POLICY "Sellers can update orders for self_pickup delivery"
-ON orders FOR UPDATE TO authenticated
-USING (public.can_seller_update_order(id));
+```
+{order.status === "confirmed" && order.delivery_type !== "self_pickup" && (
+  <Button ...>
+    <Truck />
+    {order.delivery_type === "pickup" ? "Прибыл в ПВЗ" : "Доставлен"}
+  </Button>
+)}
 ```
 
-No frontend changes needed -- the admin "Подтвердить" button will work again immediately after this migration.
+For self_pickup orders, the admin will see only the status badge (e.g. "Подтверждён") and a note that the seller handles handover. The seller uses the existing "Выдан" button in their SellerDashboard.
+
+No other changes needed — the seller dashboard already has the "Выдан" button working via `handleMarkDelivered`.
 
