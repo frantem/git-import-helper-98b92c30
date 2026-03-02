@@ -203,27 +203,30 @@ export default function AdminOrders() {
       return;
     }
 
-    // Send email notification via edge function
-    if (order.buyer?.email) {
-      try {
-        const response = await supabase.functions.invoke("send-delivery-notification", {
-          body: {
-            order_id: order.id,
-          },
-        });
+    // Send email notification only for pickup orders
+    if (order.delivery_type === "pickup") {
+      if (order.buyer?.email) {
+        try {
+          const response = await supabase.functions.invoke("send-delivery-notification", {
+            body: { order_id: order.id },
+          });
 
-        if (response.error) {
-          console.error("Email notification error:", response.error);
-          toast.warning("Заказ доставлен, но email не отправлен");
-        } else {
-          toast.success("Заказ доставлен, покупатель уведомлён");
+          if (response.error) {
+            console.error("Email notification error:", response.error);
+            toast.warning("Статус обновлён, но email не отправлен");
+          } else {
+            toast.success("Заказ прибыл в ПВЗ, покупатель уведомлён");
+          }
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+          toast.success("Статус обновлён");
         }
-      } catch (err) {
-        console.error("Failed to send notification:", err);
-        toast.success("Заказ доставлен");
+      } else {
+        toast.success("Статус обновлён (email покупателя не найден)");
       }
     } else {
-      toast.success("Заказ доставлен (email покупателя не найден)");
+      const label = order.delivery_type === "self_pickup" ? "Заказ выдан" : "Заказ доставлен";
+      toast.success(label);
     }
 
     fetchOrders();
@@ -496,7 +499,7 @@ export default function AdminOrders() {
                         className="flex items-center gap-1"
                       >
                         <Truck className="h-4 w-4" />
-                        Доставлен
+                        {order.delivery_type === "pickup" ? "Прибыл в ПВЗ" : order.delivery_type === "self_pickup" ? "Выдан" : "Доставлен"}
                       </Button>
                     )}
                   </div>
