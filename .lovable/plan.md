@@ -1,42 +1,49 @@
 
 
-## Problem
+## Plan: Split Seller Dashboard into Separate Pages (like Admin)
 
-The SELECT policy "Sellers can read orders with their items" added in the last migration causes infinite recursion. It queries `order_items` which has RLS policies that query back to `orders`.
+### Current State
+- `/seller` is a monolithic 1792-line file with 3 tabs: Products, Orders, Settings
+- `/admin` is a hub page with links to `/admin/orders`, `/admin/sellers`, etc.
 
-This blocks ALL operations on the `orders` table, including INSERT (checkout).
+### Target State
+- `/seller` becomes a hub page (like `/admin`) with links to sub-pages
+- `/seller/products` -- products management (existing Products tab logic)
+- `/seller/orders` -- orders page styled like `/admin/orders` but for seller's items only
+- `/seller/settings` -- settings page (existing Settings tab logic)
 
-## Fix
+### Files to Create/Modify
 
-Replace the inline policy with a `SECURITY DEFINER` function (same pattern used for the update policy):
+**1. `src/pages/SellerDashboard.tsx`** -- Rewrite as hub page
+- Grid of 3 cards linking to products, orders, settings
+- Show pending orders count badge on Orders card
+- Keep auth/farmer checks
 
-### SQL Migration
+**2. `src/pages/seller/SellerProducts.tsx`** -- New file
+- Extract Products tab content (product list, product form overlay, all product CRUD logic)
+- Back button links to `/seller`
 
-```sql
--- 1. Create security definer function for seller order reads
-CREATE OR REPLACE FUNCTION public.can_seller_read_order(_order_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM order_items oi
-    JOIN farmers f ON f.id = oi.farmer_id
-    WHERE oi.order_id = _order_id
-      AND f.user_id = auth.uid()
-  );
-$$;
+**3. `src/pages/seller/SellerOrders.tsx`** -- New file
+- Fetch orders via `order_items` joined with `orders`, grouped by order (like AdminOrders layout)
+- Show order cards with: date, buyer name/phone, delivery type, items list with collected status
+- Buttons: "Собран" per item, "Выдан" for self-pickup orders when all items collected
+- No confirm/delete buttons (that's admin-only)
+- Style matches AdminOrders card layout
 
--- 2. Replace the recursive policy
-DROP POLICY IF EXISTS "Sellers can read orders with their items" ON orders;
+**4. `src/pages/seller/SellerSettings.tsx`** -- New file
+- Extract Settings tab content (farmer profile form, avatar, pickup settings)
 
-CREATE POLICY "Sellers can read orders with their items"
-ON orders FOR SELECT TO authenticated
-USING (public.can_seller_read_order(id));
-```
+**5. `src/App.tsx`** -- Add routes
+- `/seller/products`, `/seller/orders`, `/seller/settings`
+- Keep `/seller` as hub
+- Ensure `/seller/:id` (SellerProfile) still works by placing it after specific routes
 
-No frontend changes needed. The checkout will work again immediately.
+### Seller Orders Page Differences from Admin Orders
+- Only shows orders containing the seller's items (filtered by farmer_id)
+- Only shows the seller's own items within each order (not all items)
+- No "Подтвердить" or "Удалить" buttons
+- Has "Собран" button per item (mark item as collected)
+- Has "Выдан" button for self-pickup orders when all seller's items are collected
+- No buyer email shown (privacy)
+- Shows buyer name and phone for coordination
 
