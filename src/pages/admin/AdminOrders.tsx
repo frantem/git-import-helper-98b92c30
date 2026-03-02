@@ -225,7 +225,7 @@ export default function AdminOrders() {
         toast.success("Статус обновлён (email покупателя не найден)");
       }
     } else {
-      const label = order.delivery_type === "self_pickup" ? "Заказ выдан" : "Заказ доставлен";
+      const label = order.delivery_type === "self" ? "Заказ выдан" : "Заказ доставлен";
       toast.success(label);
     }
 
@@ -492,7 +492,7 @@ export default function AdminOrders() {
                       </>
                     )}
 
-                    {order.status === "confirmed" && order.delivery_type !== "self_pickup" && (
+                    {order.status === "confirmed" && order.delivery_type !== "self" && (
                       <Button
                         onClick={() => handleDeliverOrder(order)}
                         disabled={isProcessing}

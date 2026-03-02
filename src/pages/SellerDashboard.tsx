@@ -1033,7 +1033,7 @@ export default function SellerDashboard() {
               // Group items by order_id for self_pickup orders
               const selfPickupOrders = new Map<string, { allCollected: boolean; orderStatus: string }>();
               orderItems.forEach(item => {
-                if (item.order?.delivery_type === "self_pickup" && item.order?.id) {
+                if (item.order?.delivery_type === "self" && item.order?.id) {
                   const orderId = item.order.id;
                   if (!selfPickupOrders.has(orderId)) {
                     selfPickupOrders.set(orderId, { allCollected: true, orderStatus: item.order.status });
