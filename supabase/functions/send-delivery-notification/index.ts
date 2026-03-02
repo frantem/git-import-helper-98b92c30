@@ -5,8 +5,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface DeliveryNotificationRequest {
@@ -25,19 +24,29 @@ function formatPrice(kopecks: number): string {
 function getStorageDeadline(workingHours: string): string {
   // Parse closing time from working hours (e.g., "9:00-21:00" -> "21:00")
   const closingTime = workingHours?.split("-")[1]?.trim() || "21:00";
-  
+
   // Calculate date 2 days from now
   const deadlineDate = new Date();
   deadlineDate.setDate(deadlineDate.getDate() + 2);
-  
+
   // Format date in Russian
   const day = deadlineDate.getDate();
   const months = [
-    "января", "февраля", "марта", "апреля", "мая", "июня",
-    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
   ];
   const month = months[deadlineDate.getMonth()];
-  
+
   return `${day} ${month} ${closingTime}`;
 }
 
@@ -51,33 +60,28 @@ const handler = async (req: Request): Promise<Response> => {
     // 1. Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // 2. Create Supabase client with user's auth context
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     // 3. Verify user authentication
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // 4. Verify caller is an admin
@@ -88,48 +92,41 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("role", "admin");
 
     if (rolesError || !roles || roles.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden - Admin access required" }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // 5. Parse request body - only accept order_id
     const { order_id }: DeliveryNotificationRequest = await req.json();
 
     if (!order_id) {
-      return new Response(
-        JSON.stringify({ error: "order_id is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "order_id is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // 6. Fetch order data from database (don't trust client-provided data)
     const { data: order, error: orderError } = await supabaseClient
       .from("orders")
-      .select(`
+      .select(
+        `
         id,
         total_amount,
         buyer_id,
         pickup_point:pickup_points(name, working_hours)
-      `)
+      `,
+      )
       .eq("id", order_id)
       .single();
 
     if (orderError || !order) {
-      return new Response(
-        JSON.stringify({ error: "Order not found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Order not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // 7. Fetch buyer's email from profiles
@@ -140,20 +137,15 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (profileError || !profile?.email) {
-      return new Response(
-        JSON.stringify({ error: "Buyer email not found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Buyer email not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const buyerEmail = profile.email;
     // Handle pickup_point which can be an object or array from the join
-    const pickupPoint = Array.isArray(order.pickup_point) 
-      ? order.pickup_point[0] 
-      : order.pickup_point;
+    const pickupPoint = Array.isArray(order.pickup_point) ? order.pickup_point[0] : order.pickup_point;
     const pickupPointName = pickupPoint?.name || "Пункт выдачи";
     const pickupPointWorkingHours = pickupPoint?.working_hours || "9:00-21:00";
     const totalAmount = order.total_amount;
@@ -166,10 +158,10 @@ const handler = async (req: Request): Promise<Response> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Locus <noreply@locus.app>",
+        from: "Locus <info@locusfood.by>",
         to: [buyerEmail],
         subject: "Ваш заказ прибыл в пункт выдачи!",
         html: `
@@ -204,13 +196,10 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in send-delivery-notification function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
