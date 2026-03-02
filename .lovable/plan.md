@@ -2,33 +2,41 @@
 
 ## Problem
 
-The seller can't see the "Выдан" button because the `order:orders(...)` join in the order_items query returns `null`. The `orders` table RLS only allows SELECT for admins and buyers (`buyer_id = auth.uid()`). The seller is neither, so `item.order` is always `null`, which means:
+The SELECT policy "Sellers can read orders with their items" added in the last migration causes infinite recursion. It queries `order_items` which has RLS policies that query back to `orders`.
 
-1. `item.order?.delivery_type === "self_pickup"` is never true
-2. The "Выдан" section never renders
+This blocks ALL operations on the `orders` table, including INSERT (checkout).
 
 ## Fix
 
-Add an RLS SELECT policy on the `orders` table so sellers can read orders that contain their products:
+Replace the inline policy with a `SECURITY DEFINER` function (same pattern used for the update policy):
+
+### SQL Migration
 
 ```sql
-CREATE POLICY "Sellers can read orders with their items"
-ON orders FOR SELECT TO authenticated
-USING (
-  EXISTS (
+-- 1. Create security definer function for seller order reads
+CREATE OR REPLACE FUNCTION public.can_seller_read_order(_order_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
     SELECT 1
     FROM order_items oi
     JOIN farmers f ON f.id = oi.farmer_id
-    WHERE oi.order_id = orders.id
+    WHERE oi.order_id = _order_id
       AND f.user_id = auth.uid()
-  )
-);
+  );
+$$;
+
+-- 2. Replace the recursive policy
+DROP POLICY IF EXISTS "Sellers can read orders with their items" ON orders;
+
+CREATE POLICY "Sellers can read orders with their items"
+ON orders FOR SELECT TO authenticated
+USING (public.can_seller_read_order(id));
 ```
 
-This single migration is all that's needed. The frontend code already correctly:
-- Shows "Собран" button per item
-- Groups self_pickup items by order after all are collected
-- Shows "Выдан" button for ready orders
-
-No frontend changes required.
+No frontend changes needed. The checkout will work again immediately.
 
