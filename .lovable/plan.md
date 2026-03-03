@@ -2,21 +2,59 @@
 
 ## Problem
 
-When navigating back from a product page to the homepage, the user lands at the wrong scroll position. Root cause: `allBlockLimit` is stored in React `useState` which resets to `10` on every component mount. When the user presses back, the Index component re-mounts, `allBlockLimit` resets to 10, fewer products render, and the saved scroll position (e.g. 3000px) points to content that no longer exists. The scroll restoration fires before the full list is rendered.
+The buyer's Orders page (`/orders`) shows only the order date, total amount, status, and pickup point. It does not show:
+- What products were ordered (item names, quantities)
+- Delivery type (pickup point / courier / self-pickup at farmer)
+- Delivery address (for courier orders)
+- Delivery date context based on delivery type
 
 ## Fix
 
-Two changes:
+Expand the query and UI in `src/pages/Orders.tsx`:
 
-### 1. Persist `allBlockLimit` outside the component (module-level variable)
-Store the "all" block limit in a module-scoped variable (like `scrollPositions` in the scroll restoration hook) so it survives re-mounts. On back navigation, the same number of products will render immediately.
+### Data changes
+- Add `delivery_type`, `delivery_address`, `notes` to the order query
+- Join `order_items` with `products` to get item names, quantities, unit prices, and variant labels
 
-**File: `src/pages/Index.tsx`**
-- Replace `useState(ALL_BLOCK_STEP)` with a module-level `let savedAllBlockLimit = 10`
-- Use `useState(savedAllBlockLimit)` as initial value
-- Sync the module variable on every limit change
+### Interface update
+```typescript
+interface OrderItem {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  variant_label: string | null;
+  product: { title: string } | null;
+}
 
-### 2. Delay scroll restoration until content renders
-**File: `src/hooks/useScrollRestoration.tsx`**
-- Increase the `setTimeout` delay from `0` to `100` for POP navigation to allow the DOM to settle after products render
+interface Order {
+  // existing fields...
+  delivery_type: string;
+  delivery_address: string | null;
+  notes: string | null;
+  items: OrderItem[];
+}
+```
+
+### Query update
+```sql
+select id, total_amount, status, delivery_date, delivery_type, delivery_address, notes, created_at,
+  pickup_point:pickup_points(name, address),
+  items:order_items(id, quantity, unit_price, variant_label, product:products(title))
+```
+
+### UI additions per order card
+1. **Delivery info section** -- show delivery type label with icon:
+   - `pickup` -> "Пункт выдачи" + pickup point name & address
+   - `courier` -> "Доставка курьером" + delivery address
+   - `self` -> "Самовывоз у фермера"
+
+2. **Delivery date** -- contextual label:
+   - `pickup`/`courier` -> "Доставка: {date}"
+   - `self` -> "Забрать: {date}"
+
+3. **Items list** -- below delivery info, a bordered section listing each product:
+   - Product title (with variant if present), quantity, and line total
+
+### File: `src/pages/Orders.tsx`
+Single file change. No database or migration changes needed.
 
