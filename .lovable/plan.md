@@ -2,18 +2,26 @@
 
 ## Problem
 
-`useProducts()` fetches only 50 most recent products (`.limit(50)`). There are 76 active products total. All honey products were created in January 2026 and are among the oldest, so they don't make it into the top 50. This means:
+The delete check in `AdminCategories` counts ALL products linked to the category (including inactive/hidden ones). The catalog only shows `is_active = true` products. So a deactivated product still blocks category deletion, but doesn't appear in the catalog -- confusing the admin.
 
-1. The "Мёд" block on the homepage shows nothing (no honey products in the fetched set)
-2. The catalog page for honey category shows "Товары не найдены" (same reason)
-3. Any other older products are also missing
+For the "К 23 февраля" category, there's likely 1 inactive product (or a `product_categories` junction record for a deleted/inactive product) still referencing it.
 
 ## Fix
 
-Remove the `.limit(50)` from `useProducts()` in `src/hooks/useProducts.ts`. With 76 products this is perfectly fine to fetch all at once. If the catalog grows significantly in the future, a proper pagination or per-block server-side query would be needed, but for now fetching all ~76 products is the correct approach.
+Change `handleDelete` in `AdminCategories.tsx` to:
 
-### File: `src/hooks/useProducts.ts`
-- Remove `.limit(50)` from the query (line ~68)
+1. Instead of blocking deletion when products exist, give the admin the option to **force-delete** by unlinking products first
+2. When confirmed, remove `product_categories` references and nullify `products.category_id` for that category, then delete the category
 
-One line change, no other files affected.
+### Implementation
+
+**File: `src/pages/admin/AdminCategories.tsx`** -- Update `handleDelete`:
+
+- Keep the product count check
+- If products exist, show a confirm dialog: "В этой категории {N} товар(ов). Открепить товары и удалить категорию?"
+- If confirmed:
+  - `DELETE FROM product_categories WHERE category_id = X`
+  - `UPDATE products SET category_id = NULL WHERE category_id = X`
+  - `DELETE FROM categories WHERE id = X`
+- This safely removes the category without deleting any products
 
