@@ -336,6 +336,7 @@ export type Database = {
           delivery_cost: number | null
           delivery_date: string | null
           delivery_type: string
+          estimated_delivery_time: string | null
           id: string
           notes: string | null
           pickup_point_id: string | null
@@ -350,6 +351,7 @@ export type Database = {
           delivery_cost?: number | null
           delivery_date?: string | null
           delivery_type?: string
+          estimated_delivery_time?: string | null
           id?: string
           notes?: string | null
           pickup_point_id?: string | null
@@ -364,6 +366,7 @@ export type Database = {
           delivery_cost?: number | null
           delivery_date?: string | null
           delivery_type?: string
+          estimated_delivery_time?: string | null
           id?: string
           notes?: string | null
           pickup_point_id?: string | null

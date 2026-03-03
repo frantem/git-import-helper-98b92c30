@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN estimated_delivery_time text NULL;
