@@ -1,24 +1,30 @@
 
 
-## Plan: Add `estimated_delivery_time` to Admin and Seller order panels
+## Problem
 
-### 1. Admin Orders (`src/pages/admin/AdminOrders.tsx`)
+When admin clicks "Прибыл в ПВЗ", the edge function `send-delivery-notification` fails and the email is not sent. The toast shows "Статус обновлён, но email не отправлен".
 
-- Add `estimated_delivery_time` to the `Order` interface
-- Add `estimated_delivery_time` to the Supabase query (line ~88-110)
-- Display it in the order card UI with a Clock icon, same style as on `/orders`
+## Root Cause Analysis
 
-### 2. Seller Orders (`src/pages/seller/SellerOrders.tsx`)
+The edge function uses the user's auth token (anon key + Authorization header) to query the database. This means all queries go through RLS policies. The `orders` RLS policy for admin checks `user_roles` via a subquery, while `user_roles` itself has RLS -- this creates a nested RLS check that can fail or cause issues in the edge function context.
 
-- Add `estimated_delivery_time` to the `SellerOrder` interface
-- Add `estimated_delivery_time` to the nested order query inside the `order_items` select (line ~79)
-- Pass it through when building the order map
-- Display it in the order card UI with a Clock icon
+I redeployed the function, which might fix it if it was a stale deployment issue. But to make it robust, the fix is:
 
-### No database changes needed
-The column already exists from the previous migration.
+## Fix
 
-### Files to modify
-- `src/pages/admin/AdminOrders.tsx` -- query + interface + UI
-- `src/pages/seller/SellerOrders.tsx` -- query + interface + UI
+**File: `supabase/functions/send-delivery-notification/index.ts`**
+
+Use a two-client approach in the edge function:
+1. **Auth client** (anon key + user token) -- only for `getUser()` to verify identity
+2. **Service role client** (service role key) -- for all data queries (orders, profiles, user_roles), bypassing RLS entirely
+
+This eliminates any RLS-related failures while still verifying the caller is an authenticated admin.
+
+Changes:
+- Create a second supabase client using `SUPABASE_SERVICE_ROLE_KEY`
+- Use it for the admin role check, order fetch, and profile fetch
+- Keep auth validation with the user-token client
+- Add better error logging with specific failure points
+
+This is a single-file change to the edge function. It will be automatically redeployed.
 
