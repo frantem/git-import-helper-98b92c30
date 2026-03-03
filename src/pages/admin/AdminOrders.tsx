@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
-import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2 } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -40,6 +40,7 @@ interface Order {
   delivery_address: string | null;
   delivery_cost: number;
   notes: string | null;
+  estimated_delivery_time: string | null;
   created_at: string;
   buyer_id: string;
   pickup_point: {
@@ -94,6 +95,7 @@ export default function AdminOrders() {
         delivery_address,
         delivery_cost,
         notes,
+        estimated_delivery_time,
         created_at,
         buyer_id,
         pickup_point:pickup_points(name, address, working_hours),
@@ -390,6 +392,13 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                       <Package className="h-4 w-4" />
                       <span>{order.notes}</span>
+                    </div>
+                  )}
+
+                  {order.estimated_delivery_time && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Clock className="h-4 w-4 shrink-0" />
+                      <span>Ожидаемое время: {order.estimated_delivery_time}</span>
                     </div>
                   )}
 

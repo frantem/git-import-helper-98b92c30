@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
-import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Truck, Check } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Truck, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface SellerOrderItem {
@@ -31,6 +31,7 @@ interface SellerOrder {
   delivery_date: string | null;
   delivery_cost: number;
   notes: string | null;
+  estimated_delivery_time: string | null;
   pickup_point: { name: string; address: string; working_hours: string | null } | null;
   buyer: { full_name: string | null; phone: string | null } | null;
   items: SellerOrderItem[];
@@ -76,7 +77,7 @@ export default function SellerOrders() {
       .select(`
         id, quantity, unit_price, status, variant_label, custom_fields,
         product:products(title),
-        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, buyer_id,
+        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, buyer_id,
           pickup_point:pickup_points(name, address, working_hours)
         )
       `)
@@ -131,6 +132,7 @@ export default function SellerOrders() {
           delivery_date: e.order.delivery_date,
           delivery_cost: e.order.delivery_cost,
           notes: e.order.notes,
+          estimated_delivery_time: e.order.estimated_delivery_time,
           pickup_point: e.order.pickup_point,
           buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
           items: e.items,
@@ -283,6 +285,13 @@ export default function SellerOrders() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                       <Package className="h-4 w-4" />
                       <span>{order.notes}</span>
+                    </div>
+                  )}
+
+                  {order.estimated_delivery_time && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Clock className="h-4 w-4 shrink-0" />
+                      <span>Ожидаемое время: {order.estimated_delivery_time}</span>
                     </div>
                   )}
 
