@@ -2,59 +2,36 @@
 
 ## Problem
 
-The buyer's Orders page (`/orders`) shows only the order date, total amount, status, and pickup point. It does not show:
-- What products were ordered (item names, quantities)
-- Delivery type (pickup point / courier / self-pickup at farmer)
-- Delivery address (for courier orders)
-- Delivery date context based on delivery type
+When a buyer places an order, they see an estimated delivery/pickup time window (e.g. "Сегодня 18:30-19:30") on the checkout page. But this value is never stored in the database, so on the `/orders` page there's no way to show it.
 
-## Fix
+The `orders` table has `delivery_date` (stores date like "2025-06-15") and `notes` (stores scheduled time text), but no field for the calculated delivery time window.
 
-Expand the query and UI in `src/pages/Orders.tsx`:
+## Plan
 
-### Data changes
-- Add `delivery_type`, `delivery_address`, `notes` to the order query
-- Join `order_items` with `products` to get item names, quantities, unit prices, and variant labels
+### 1. Add `estimated_delivery_time` column to `orders` table
 
-### Interface update
-```typescript
-interface OrderItem {
-  id: string;
-  quantity: number;
-  unit_price: number;
-  variant_label: string | null;
-  product: { title: string } | null;
-}
+New column: `estimated_delivery_time text NULL` -- stores the display string like "Сегодня 18:30–19:30" or "Завтра 10:00–11:00".
 
-interface Order {
-  // existing fields...
-  delivery_type: string;
-  delivery_address: string | null;
-  notes: string | null;
-  items: OrderItem[];
-}
+### 2. Save the value at checkout (`src/pages/Checkout.tsx`)
+
+In `handleOrder`, add `estimated_delivery_time` to the insert payload:
+- For **courier + "nearest"** mode: save `fastDeliveryResult.text`
+- For **courier + "scheduled"** mode: save the selected date+time string
+- For **pickup**: save `fastDeliveryResult.text` (the pickup point delivery estimate)
+- For **self**: save pickup time text per seller (or the overall estimate)
+
+### 3. Display on Orders page (`src/pages/Orders.tsx`)
+
+Add `estimated_delivery_time` to the query and `Order` interface. Show it in each order card with a clock icon, e.g.:
+```
+🕐 Ожидаемое время: Сегодня 18:30–19:30
 ```
 
-### Query update
-```sql
-select id, total_amount, status, delivery_date, delivery_type, delivery_address, notes, created_at,
-  pickup_point:pickup_points(name, address),
-  items:order_items(id, quantity, unit_price, variant_label, product:products(title))
-```
+### Variable name
+The new database column and TypeScript field: **`estimated_delivery_time`**
 
-### UI additions per order card
-1. **Delivery info section** -- show delivery type label with icon:
-   - `pickup` -> "Пункт выдачи" + pickup point name & address
-   - `courier` -> "Доставка курьером" + delivery address
-   - `self` -> "Самовывоз у фермера"
-
-2. **Delivery date** -- contextual label:
-   - `pickup`/`courier` -> "Доставка: {date}"
-   - `self` -> "Забрать: {date}"
-
-3. **Items list** -- below delivery info, a bordered section listing each product:
-   - Product title (with variant if present), quantity, and line total
-
-### File: `src/pages/Orders.tsx`
-Single file change. No database or migration changes needed.
+### Files changed
+- **Migration**: Add column `estimated_delivery_time text` to `orders`
+- **`src/pages/Checkout.tsx`**: Save `estimated_delivery_time` on order insert
+- **`src/pages/Orders.tsx`**: Fetch and display `estimated_delivery_time`
 
