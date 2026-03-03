@@ -70,8 +70,7 @@ export function useProducts() {
           product_variants(id, label, price, unit, is_default, sort_order)
         `)
         .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return (data as DBProduct[]) || [];
