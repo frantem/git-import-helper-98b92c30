@@ -1,49 +1,19 @@
 
 
-## Plan: Split Seller Dashboard into Separate Pages (like Admin)
+## Problem
 
-### Current State
-- `/seller` is a monolithic 1792-line file with 3 tabs: Products, Orders, Settings
-- `/admin` is a hub page with links to `/admin/orders`, `/admin/sellers`, etc.
+`useProducts()` fetches only 50 most recent products (`.limit(50)`). There are 76 active products total. All honey products were created in January 2026 and are among the oldest, so they don't make it into the top 50. This means:
 
-### Target State
-- `/seller` becomes a hub page (like `/admin`) with links to sub-pages
-- `/seller/products` -- products management (existing Products tab logic)
-- `/seller/orders` -- orders page styled like `/admin/orders` but for seller's items only
-- `/seller/settings` -- settings page (existing Settings tab logic)
+1. The "Мёд" block on the homepage shows nothing (no honey products in the fetched set)
+2. The catalog page for honey category shows "Товары не найдены" (same reason)
+3. Any other older products are also missing
 
-### Files to Create/Modify
+## Fix
 
-**1. `src/pages/SellerDashboard.tsx`** -- Rewrite as hub page
-- Grid of 3 cards linking to products, orders, settings
-- Show pending orders count badge on Orders card
-- Keep auth/farmer checks
+Remove the `.limit(50)` from `useProducts()` in `src/hooks/useProducts.ts`. With 76 products this is perfectly fine to fetch all at once. If the catalog grows significantly in the future, a proper pagination or per-block server-side query would be needed, but for now fetching all ~76 products is the correct approach.
 
-**2. `src/pages/seller/SellerProducts.tsx`** -- New file
-- Extract Products tab content (product list, product form overlay, all product CRUD logic)
-- Back button links to `/seller`
+### File: `src/hooks/useProducts.ts`
+- Remove `.limit(50)` from the query (line ~68)
 
-**3. `src/pages/seller/SellerOrders.tsx`** -- New file
-- Fetch orders via `order_items` joined with `orders`, grouped by order (like AdminOrders layout)
-- Show order cards with: date, buyer name/phone, delivery type, items list with collected status
-- Buttons: "Собран" per item, "Выдан" for self-pickup orders when all items collected
-- No confirm/delete buttons (that's admin-only)
-- Style matches AdminOrders card layout
-
-**4. `src/pages/seller/SellerSettings.tsx`** -- New file
-- Extract Settings tab content (farmer profile form, avatar, pickup settings)
-
-**5. `src/App.tsx`** -- Add routes
-- `/seller/products`, `/seller/orders`, `/seller/settings`
-- Keep `/seller` as hub
-- Ensure `/seller/:id` (SellerProfile) still works by placing it after specific routes
-
-### Seller Orders Page Differences from Admin Orders
-- Only shows orders containing the seller's items (filtered by farmer_id)
-- Only shows the seller's own items within each order (not all items)
-- No "Подтвердить" or "Удалить" buttons
-- Has "Собран" button per item (mark item as collected)
-- Has "Выдан" button for self-pickup orders when all seller's items are collected
-- No buyer email shown (privacy)
-- Shows buyer name and phone for coordination
+One line change, no other files affected.
 
