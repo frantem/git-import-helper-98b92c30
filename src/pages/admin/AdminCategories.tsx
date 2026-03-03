@@ -130,12 +130,19 @@ export default function AdminCategories() {
     
     const totalProducts = (productsCheck.count || 0) + (productCategoriesCheck.count || 0);
     
-    if (totalProducts > 0) {
-      toast.error(`Нельзя удалить категорию с ${totalProducts} товарами. Сначала переместите товары в другую категорию.`);
-      return;
-    }
+    const confirmMsg = totalProducts > 0
+      ? `В этой категории ${totalProducts} товар(ов). Открепить товары и удалить категорию?`
+      : "Удалить категорию?";
     
-    if (!confirm("Удалить категорию?")) return;
+    if (!confirm(confirmMsg)) return;
+
+    // Unlink products first
+    if (totalProducts > 0) {
+      await Promise.all([
+        supabase.from("product_categories").delete().eq("category_id", categoryId),
+        supabase.from("products").update({ category_id: null }).eq("category_id", categoryId),
+      ]);
+    }
 
     const { error } = await supabase
       .from("categories")
