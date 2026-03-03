@@ -2,26 +2,21 @@
 
 ## Problem
 
-The delete check in `AdminCategories` counts ALL products linked to the category (including inactive/hidden ones). The catalog only shows `is_active = true` products. So a deactivated product still blocks category deletion, but doesn't appear in the catalog -- confusing the admin.
-
-For the "К 23 февраля" category, there's likely 1 inactive product (or a `product_categories` junction record for a deleted/inactive product) still referencing it.
+When navigating back from a product page to the homepage, the user lands at the wrong scroll position. Root cause: `allBlockLimit` is stored in React `useState` which resets to `10` on every component mount. When the user presses back, the Index component re-mounts, `allBlockLimit` resets to 10, fewer products render, and the saved scroll position (e.g. 3000px) points to content that no longer exists. The scroll restoration fires before the full list is rendered.
 
 ## Fix
 
-Change `handleDelete` in `AdminCategories.tsx` to:
+Two changes:
 
-1. Instead of blocking deletion when products exist, give the admin the option to **force-delete** by unlinking products first
-2. When confirmed, remove `product_categories` references and nullify `products.category_id` for that category, then delete the category
+### 1. Persist `allBlockLimit` outside the component (module-level variable)
+Store the "all" block limit in a module-scoped variable (like `scrollPositions` in the scroll restoration hook) so it survives re-mounts. On back navigation, the same number of products will render immediately.
 
-### Implementation
+**File: `src/pages/Index.tsx`**
+- Replace `useState(ALL_BLOCK_STEP)` with a module-level `let savedAllBlockLimit = 10`
+- Use `useState(savedAllBlockLimit)` as initial value
+- Sync the module variable on every limit change
 
-**File: `src/pages/admin/AdminCategories.tsx`** -- Update `handleDelete`:
-
-- Keep the product count check
-- If products exist, show a confirm dialog: "В этой категории {N} товар(ов). Открепить товары и удалить категорию?"
-- If confirmed:
-  - `DELETE FROM product_categories WHERE category_id = X`
-  - `UPDATE products SET category_id = NULL WHERE category_id = X`
-  - `DELETE FROM categories WHERE id = X`
-- This safely removes the category without deleting any products
+### 2. Delay scroll restoration until content renders
+**File: `src/hooks/useScrollRestoration.tsx`**
+- Increase the `setTimeout` delay from `0` to `100` for POP navigation to allow the DOM to settle after products render
 
