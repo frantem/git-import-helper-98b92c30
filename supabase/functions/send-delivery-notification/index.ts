@@ -66,39 +66,46 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // 2. Create Supabase client with user's auth context
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    // 2. Auth client — only for verifying the caller's identity
+    const authClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // 3. Verify user authentication
+    // 3. Service role client — bypasses RLS for all data queries
+    const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // 4. Verify user authentication
     const {
       data: { user },
       error: userError,
-    } = await supabaseClient.auth.getUser();
+    } = await authClient.auth.getUser();
 
     if (userError || !user) {
+      console.error("Auth verification failed:", userError?.message);
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // 4. Verify caller is an admin
-    const { data: roles, error: rolesError } = await supabaseClient
+    console.log("Authenticated user:", user.id);
+
+    // 5. Verify caller is an admin (using service client to bypass RLS)
+    const { data: roles, error: rolesError } = await serviceClient
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin");
 
     if (rolesError || !roles || roles.length === 0) {
+      console.error("Admin check failed:", rolesError?.message, "roles:", roles);
       return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // 5. Parse request body - only accept order_id
+    // 6. Parse request body - only accept order_id
     const { order_id }: DeliveryNotificationRequest = await req.json();
 
     if (!order_id) {
@@ -108,8 +115,8 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // 6. Fetch order data from database (don't trust client-provided data)
-    const { data: order, error: orderError } = await supabaseClient
+    // 7. Fetch order data from database (using service client to bypass RLS)
+    const { data: order, error: orderError } = await serviceClient
       .from("orders")
       .select(
         `
@@ -124,6 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (orderError || !order) {
+      console.error("Order fetch failed:", orderError?.message);
       return new Response(JSON.stringify({ error: "Order not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -139,14 +147,15 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // 7. Fetch buyer's email from profiles
-    const { data: profile, error: profileError } = await supabaseClient
+    // 8. Fetch buyer's email from profiles (using service client)
+    const { data: profile, error: profileError } = await serviceClient
       .from("profiles")
       .select("email")
       .eq("user_id", order.buyer_id)
       .single();
 
     if (profileError || !profile?.email) {
+      console.error("Profile fetch failed:", profileError?.message, "buyer_id:", order.buyer_id);
       return new Response(JSON.stringify({ error: "Buyer email not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json", ...corsHeaders },
