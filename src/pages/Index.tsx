@@ -7,13 +7,15 @@ import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useProducts, useProductRatings, transformProduct, Product } from "@/hooks/useProducts";
 import { useBanners } from "@/hooks/useBanners";
 import { useHomepageBlocks, HomepageBlock } from "@/hooks/useHomepageBlocks";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { Skeleton } from "@/components/ui/skeleton";
+
+let savedAllBlockLimit = 10;
 
 const Index = () => {
   useScrollRestoration();
@@ -37,7 +39,11 @@ const Index = () => {
   );
 
   const ALL_BLOCK_STEP = 10;
-  const [allBlockLimit, setAllBlockLimit] = useState(ALL_BLOCK_STEP);
+  const [allBlockLimit, setAllBlockLimit] = useState(savedAllBlockLimit);
+
+  useEffect(() => {
+    savedAllBlockLimit = allBlockLimit;
+  }, [allBlockLimit]);
 
   // Helper to get products for a block - memoized
   // Supports hybrid approach: pinned products first, then auto-fill with block type filter
