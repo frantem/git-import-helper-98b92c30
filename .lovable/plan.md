@@ -1,37 +1,24 @@
 
 
-## Problem
+## Plan: Add `estimated_delivery_time` to Admin and Seller order panels
 
-When a buyer places an order, they see an estimated delivery/pickup time window (e.g. "Сегодня 18:30-19:30") on the checkout page. But this value is never stored in the database, so on the `/orders` page there's no way to show it.
+### 1. Admin Orders (`src/pages/admin/AdminOrders.tsx`)
 
-The `orders` table has `delivery_date` (stores date like "2025-06-15") and `notes` (stores scheduled time text), but no field for the calculated delivery time window.
+- Add `estimated_delivery_time` to the `Order` interface
+- Add `estimated_delivery_time` to the Supabase query (line ~88-110)
+- Display it in the order card UI with a Clock icon, same style as on `/orders`
 
-## Plan
+### 2. Seller Orders (`src/pages/seller/SellerOrders.tsx`)
 
-### 1. Add `estimated_delivery_time` column to `orders` table
+- Add `estimated_delivery_time` to the `SellerOrder` interface
+- Add `estimated_delivery_time` to the nested order query inside the `order_items` select (line ~79)
+- Pass it through when building the order map
+- Display it in the order card UI with a Clock icon
 
-New column: `estimated_delivery_time text NULL` -- stores the display string like "Сегодня 18:30–19:30" or "Завтра 10:00–11:00".
+### No database changes needed
+The column already exists from the previous migration.
 
-### 2. Save the value at checkout (`src/pages/Checkout.tsx`)
-
-In `handleOrder`, add `estimated_delivery_time` to the insert payload:
-- For **courier + "nearest"** mode: save `fastDeliveryResult.text`
-- For **courier + "scheduled"** mode: save the selected date+time string
-- For **pickup**: save `fastDeliveryResult.text` (the pickup point delivery estimate)
-- For **self**: save pickup time text per seller (or the overall estimate)
-
-### 3. Display on Orders page (`src/pages/Orders.tsx`)
-
-Add `estimated_delivery_time` to the query and `Order` interface. Show it in each order card with a clock icon, e.g.:
-```
-🕐 Ожидаемое время: Сегодня 18:30–19:30
-```
-
-### Variable name
-The new database column and TypeScript field: **`estimated_delivery_time`**
-
-### Files changed
-- **Migration**: Add column `estimated_delivery_time text` to `orders`
-- **`src/pages/Checkout.tsx`**: Save `estimated_delivery_time` on order insert
-- **`src/pages/Orders.tsx`**: Fetch and display `estimated_delivery_time`
+### Files to modify
+- `src/pages/admin/AdminOrders.tsx` -- query + interface + UI
+- `src/pages/seller/SellerOrders.tsx` -- query + interface + UI
 
