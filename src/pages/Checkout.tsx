@@ -330,6 +330,34 @@ export default function Checkout() {
     }
     setIsLoading(true);
     try {
+      // Build estimated_delivery_time string
+      let estimatedDeliveryTime: string | null = null;
+      if (deliveryType === "courier") {
+        if (courierDeliveryMode === "scheduled" && selectedDate && selectedTime) {
+          const dateStr = format(selectedDate, "d MMMM", { locale: ru });
+          estimatedDeliveryTime = `${dateStr} ${selectedTime}`;
+        } else {
+          estimatedDeliveryTime = fastDeliveryResult.text;
+        }
+      } else if (deliveryType === "pickup") {
+        estimatedDeliveryTime = fastDeliveryResult.text;
+      } else if (deliveryType === "self") {
+        const firstFarmerId = items[0]?.product.farmer_id;
+        if (firstFarmerId) {
+          const s = sellerPickupSettings.get(firstFarmerId);
+          const result = calculatePickupTime(
+            (items[0].product as any).prep_time_minutes || 90,
+            s?.pickup_slots as PickupSlots | null ?? null,
+            s?.max_orders_per_day ?? 5,
+            s?.busy_dates ?? null,
+            s?.vacation_dates ?? null,
+            orderCountsMap,
+            firstFarmerId
+          );
+          estimatedDeliveryTime = result.text;
+        }
+      }
+
       const {
         data: order,
         error: orderError
@@ -346,8 +374,9 @@ export default function Checkout() {
         null,
         notes: deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedTime ?
         `Доставка в указанное время: ${selectedTime}` :
-        null
-      }).select().single();
+        null,
+        estimated_delivery_time: estimatedDeliveryTime
+      } as any).select().single();
       if (orderError) throw orderError;
 
       // Create order_items for each cart item (use variant price if available)

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
-import { Package, Calendar, MapPin, Truck, Store } from "lucide-react";
+import { Package, Calendar, MapPin, Truck, Store, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface OrderItem {
@@ -25,6 +25,7 @@ interface Order {
   delivery_type: string;
   delivery_address: string | null;
   notes: string | null;
+  estimated_delivery_time: string | null;
   created_at: string;
   pickup_point: {
     name: string;
@@ -72,6 +73,7 @@ export default function Orders() {
         delivery_type,
         delivery_address,
         notes,
+        estimated_delivery_time,
         created_at,
         pickup_point:pickup_points(name, address),
         items:order_items(id, quantity, unit_price, variant_label, product:products(title))
@@ -177,6 +179,14 @@ export default function Orders() {
                 <p className="ml-6 text-sm text-muted-foreground mb-1">
                       {order.delivery_address}
                     </p>
+                }
+
+                  {/* Estimated delivery time */}
+                  {order.estimated_delivery_time &&
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Clock className="h-4 w-4 shrink-0" />
+                      <span>Ожидаемое время: {order.estimated_delivery_time}</span>
+                    </div>
                 }
 
                   {/* Delivery date */}
