@@ -25,7 +25,7 @@ export function useScrollRestoration() {
       if (savedPosition !== undefined) {
         setTimeout(() => {
           window.scrollTo(0, savedPosition);
-        }, 0);
+        }, 100);
       }
     } else if (navigationType === "PUSH") {
       // Save current position before navigating away
