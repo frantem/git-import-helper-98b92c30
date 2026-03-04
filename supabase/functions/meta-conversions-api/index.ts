@@ -37,7 +37,11 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     if (!ACCESS_TOKEN) {
-      throw new Error("META_ACCESS_TOKEN is not configured");
+      console.warn("META_ACCESS_TOKEN is not configured, skipping");
+      return new Response(JSON.stringify({ skipped: true, message: "META_ACCESS_TOKEN not configured" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const body: RequestBody = await req.json();
