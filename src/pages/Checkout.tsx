@@ -32,6 +32,9 @@ interface FarmerInfo {
   id: string;
   city: string | null;
   street: string | null;
+  house: string | null;
+  entrance: string | null;
+  apartment: string | null;
   district: string;
   name: string;
 }
@@ -222,7 +225,7 @@ export default function Checkout() {
     if (farmerIds.length === 0) return;
     const {
       data
-    } = await supabase.from("farmers").select("id, name, city, street, district").in("id", farmerIds);
+    } = await supabase.from("farmers").select("id, name, city, street, house, entrance, apartment, district").in("id", farmerIds);
     if (data) {
       const map = new Map<string, FarmerInfo>();
       data.forEach((farmer) => map.set(farmer.id, farmer));
@@ -291,17 +294,14 @@ export default function Checkout() {
     const farmer = farmersMap.get(farmerId);
     if (!farmer) return "Адрес уточняйте у продавца";
 
-    // Format: "Витебск ул. Целинная"
-    if (farmer.city && farmer.street) {
-      return `${farmer.city} ул. ${farmer.street}`;
-    }
-    if (farmer.city) {
-      return farmer.city;
-    }
-    if (farmer.street) {
-      return `ул. ${farmer.street}`;
-    }
-    return "Адрес уточняйте у продавца";
+    const parts: string[] = [];
+    if (farmer.city) parts.push(farmer.city);
+    if (farmer.street) parts.push(`ул. ${farmer.street}`);
+    if ((farmer as any).house) parts.push(`д. ${(farmer as any).house}`);
+    if ((farmer as any).entrance) parts.push(`подъезд ${(farmer as any).entrance}`);
+    if ((farmer as any).apartment) parts.push(`кв. ${(farmer as any).apartment}`);
+
+    return parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
   };
   const priceFormatted = formatPrice(finalTotalPrice);
   const handleOrder = async () => {
@@ -412,6 +412,15 @@ export default function Checkout() {
           order_id: order.id
         }
       }).catch((err) => console.error("Failed to send notification:", err));
+
+      // Send self-pickup notification to buyer if delivery_type is "self"
+      if (deliveryType === "self") {
+        supabase.functions.invoke("send-self-pickup-notification", {
+          body: {
+            order_id: order.id
+          }
+        }).catch((err) => console.error("Failed to send self-pickup notification:", err));
+      }
 
       // Meta Pixel + Conversions API Purchase event
       const totalRubles = Math.floor(finalTotalPrice / 100);
