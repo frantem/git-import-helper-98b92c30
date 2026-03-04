@@ -2,29 +2,35 @@
 
 ## Plan
 
-Update `supabase/functions/send-self-pickup-notification/index.ts` with these changes:
+### Problem
+The self-pickup email currently shows one global time (`estimated_delivery_time` from the order), but the user wants per-seller pickup times displayed next to each farmer's block.
 
-### 1. Include product names in order items query
-Change the `order_items` select from `"farmer_id"` to `"farmer_id, quantity, product:products(title, unit)"` so we can list what the buyer needs to pick up from each seller.
+### Approach
+Pass per-seller pickup times from Checkout to the edge function, since Checkout already has all the seller pickup settings loaded.
 
-### 2. Group items by farmer and build per-farmer blocks
-For each farmer, show:
-- Farmer name + full address (city, street, house, entrance, apartment — already fetched, already rendered correctly in the code but the user says it's missing house/entrance/apartment — this is likely because the seller hadn't filled them in yet, but the code at lines 137-139 already handles them. No code change needed for address logic.)
-- List of products to pick up from that farmer (name × quantity)
+### Changes
 
-### 3. Update email template text
-- Title: `"🏠 Самовывоз у фермера"` → `"LocusFood 🏠 Самовывоз"`
-- Footer: replace "свяжитесь с продавцом через наш сайт" → "свяжитесь с менеджером +375297399485 (Артём)"
-- Email subject: `"🏠 Адрес для самовывоза — Locus"` → `"LocusFood 🏠 Самовывоз"`
+**1. `src/pages/Checkout.tsx`** (lines 344-358, 416-423)
+- Instead of computing pickup time for only the first farmer, compute it for ALL farmers in the cart
+- Store the combined text in `estimated_delivery_time` (for order-level display)
+- Pass a `seller_times` map (`{ farmerId: "Сегодня 18:30–20:00", ... }`) in the edge function invocation body
 
-### 4. Build per-farmer blocks with products
-Each farmer block will show:
+**2. `supabase/functions/send-self-pickup-notification/index.ts`**
+- Accept optional `seller_times` object from the request body (`{ farmerId: timeText }`)
+- In the per-farmer email block, show each farmer's individual time instead of the single global `⏰ Время` section
+- Remove the global time block; instead show time per farmer like:
+
 ```
-Анна: Витебск, ул. Зеньковой, д. 5, подъезд 2, кв. 10
-  • Мёд — 2 шт.
-  • Творог — 1 кг
+Валентина: д.Сокольники, ул. Северная, д. 14
+⏰ Сегодня 18:30–20:00
+  • Косичка — 1 100гр
+
+Екатерина: Витебск, ул. Чкалова, д. 21, подъезд 2, кв. 46
+⏰ Сегодня 19:00–22:30
+  • Муссовый торт — 1 1шт
 ```
 
-### File to modify
-- `supabase/functions/send-self-pickup-notification/index.ts`
+### Files to modify
+- `src/pages/Checkout.tsx` — compute per-seller times, pass to edge function
+- `supabase/functions/send-self-pickup-notification/index.ts` — use per-seller times in email template
 
