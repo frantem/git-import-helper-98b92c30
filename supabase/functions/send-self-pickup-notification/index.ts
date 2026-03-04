@@ -115,13 +115,14 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // Get unique farmer IDs from order items
+    // Get order items with product info
     const { data: orderItems } = await supabaseAdmin
       .from("order_items")
-      .select("farmer_id")
+      .select("farmer_id, quantity, product:products(title, unit)")
       .eq("order_id", order_id);
 
-    const farmerIds = [...new Set((orderItems || []).map((i: any) => i.farmer_id))];
+    const items = (orderItems || []) as unknown as { farmer_id: string; quantity: number; product: { title: string; unit: string } | null }[];
+    const farmerIds = [...new Set(items.map((i) => i.farmer_id))];
 
     // Fetch farmer addresses
     const { data: farmers } = await supabaseAdmin
@@ -129,7 +130,7 @@ serve(async (req: Request): Promise<Response> => {
       .select("id, name, city, street, house, entrance, apartment")
       .in("id", farmerIds);
 
-    // Build address blocks
+    // Build per-farmer blocks with products
     const farmerAddressBlocks = (farmers || []).map((f: any) => {
       const parts: string[] = [];
       if (f.city) parts.push(f.city);
@@ -138,7 +139,13 @@ serve(async (req: Request): Promise<Response> => {
       if (f.entrance) parts.push(`подъезд ${f.entrance}`);
       if (f.apartment) parts.push(`кв. ${f.apartment}`);
       const address = parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
-      return `<p><strong>${f.name}:</strong> ${address}</p>`;
+
+      const farmerItems = items.filter((i) => i.farmer_id === f.id);
+      const itemsList = farmerItems
+        .map((i) => `<li>${i.product?.title || "Товар"} — ${i.quantity} ${i.product?.unit || "шт."}</li>`)
+        .join("");
+
+      return `<div style="margin-bottom: 16px;"><p><strong>${f.name}:</strong> ${address}</p><ul style="margin: 4px 0 0 16px; padding: 0;">${itemsList}</ul></div>`;
     }).join("");
 
     const pickupTime = order.estimated_delivery_time || "уточняйте у продавца";
@@ -146,7 +153,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 24px;">
-        <h1 style="color: #1a1a1a; font-size: 22px;">🏠 Самовывоз у фермера</h1>
+        <h1 style="color: #1a1a1a; font-size: 22px;">LocusFood 🏠 Самовывоз</h1>
         <p>Здравствуйте, ${buyerName}!</p>
         <p>Ваш заказ оформлен. Заберите его в указанное время:</p>
         <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 16px 0;">
@@ -155,12 +162,12 @@ serve(async (req: Request): Promise<Response> => {
         <h3 style="color: #1a1a1a; font-size: 16px;">📍 Адрес для самовывоза:</h3>
         ${farmerAddressBlocks}
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-        <p style="color: #888; font-size: 13px;">Если у вас есть вопросы, свяжитесь с продавцом через наш сайт.</p>
+        <p style="color: #888; font-size: 13px;">Если у вас есть вопросы, свяжитесь с менеджером +375297399485 (Артём).</p>
         <p style="color: #888; font-size: 13px;">— Locus</p>
       </div>
     `;
 
-    await sendEmail([buyerEmail], "🏠 Адрес для самовывоза — Locus", emailHtml);
+    await sendEmail([buyerEmail], "LocusFood 🏠 Самовывоз", emailHtml);
     console.log(`Self-pickup notification sent to ${buyerEmail}`);
 
     return new Response(JSON.stringify({ success: true }), {
