@@ -20,7 +20,7 @@ export default function SellerSettings() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [settingsForm, setSettingsForm] = useState({
-    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "",
+    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "",
   });
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
@@ -51,6 +51,9 @@ export default function SellerSettings() {
         photo_url: farmer.photo_url || "",
         city: (farmer as any).city || "",
         street: (farmer as any).street || "",
+        house: (farmer as any).house || "",
+        entrance: (farmer as any).entrance || "",
+        apartment: (farmer as any).apartment || "",
       });
 
       const { data: profile } = await supabase
@@ -96,7 +99,10 @@ export default function SellerSettings() {
         photo_url: settingsForm.photo_url || null,
         city: settingsForm.city || null,
         street: settingsForm.street || null,
-      })
+        house: settingsForm.house || null,
+        entrance: settingsForm.entrance || null,
+        apartment: settingsForm.apartment || null,
+      } as any)
       .eq("id", farmerId);
 
     if (error) { toast.error("Ошибка при сохранении"); return; }
@@ -204,8 +210,22 @@ export default function SellerSettings() {
               <div className="space-y-2">
                 <Label>Улица</Label>
                 <Input value={settingsForm.street} onChange={(e) => setSettingsForm({ ...settingsForm, street: e.target.value })} placeholder="ул. Целинная" />
-                <p className="text-xs text-muted-foreground">Дом и квартира будут показаны только при самовывозе</p>
               </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2">
+                  <Label>Дом</Label>
+                  <Input value={settingsForm.house} onChange={(e) => setSettingsForm({ ...settingsForm, house: e.target.value })} placeholder="12А" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Подъезд</Label>
+                  <Input value={settingsForm.entrance} onChange={(e) => setSettingsForm({ ...settingsForm, entrance: e.target.value })} placeholder="2" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Квартира</Label>
+                  <Input value={settingsForm.apartment} onChange={(e) => setSettingsForm({ ...settingsForm, apartment: e.target.value })} placeholder="15" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
             </div>
           </div>
 

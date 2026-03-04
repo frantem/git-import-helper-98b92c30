@@ -1,0 +1,1 @@
+ALTER TABLE public.farmers ADD COLUMN house text, ADD COLUMN entrance text, ADD COLUMN apartment text;
