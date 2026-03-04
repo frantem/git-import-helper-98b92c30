@@ -1,30 +1,21 @@
 
 
-## Problem
+## Plan
 
-When admin clicks "Прибыл в ПВЗ", the edge function `send-delivery-notification` fails and the email is not sent. The toast shows "Статус обновлён, но email не отправлен".
+### 1. Fix category deletion — force-unlink products before deleting
 
-## Root Cause Analysis
+In `handleDeleteCategory` (lines 210-237), instead of blocking deletion when products exist, change the flow to:
+- Show a confirmation dialog: "В этой категории есть N товаров. Открепить их и удалить категорию?"
+- If confirmed: clear `product_categories` rows and set `products.category_id = null` for that category, then delete the category.
 
-The edge function uses the user's auth token (anon key + Authorization header) to query the database. This means all queries go through RLS policies. The `orders` RLS policy for admin checks `user_roles` via a subquery, while `user_roles` itself has RLS -- this creates a nested RLS check that can fail or cause issues in the edge function context.
+This matches the pattern already documented in the memory for category management.
 
-I redeployed the function, which might fix it if it was a stale deployment issue. But to make it robust, the fix is:
+### 2. Remove product editing from the "Товары" tab
 
-## Fix
+Remove the edit functionality (Pencil button + Dialog + `handleEditProduct` / `handleSaveProduct`) from the Products tab (lines 957-1010). Keep only the read-only product list with the delete button. Also remove the unused product edit state and handlers (`editingProduct`, `productForm`, `handleEditProduct`, `handleSaveProduct`).
 
-**File: `supabase/functions/send-delivery-notification/index.ts`**
+The "Товары" tab will become a read-only reference list showing product info and ID (useful for copying IDs into blocks), with only a delete option.
 
-Use a two-client approach in the edge function:
-1. **Auth client** (anon key + user token) -- only for `getUser()` to verify identity
-2. **Service role client** (service role key) -- for all data queries (orders, profiles, user_roles), bypassing RLS entirely
-
-This eliminates any RLS-related failures while still verifying the caller is an authenticated admin.
-
-Changes:
-- Create a second supabase client using `SUPABASE_SERVICE_ROLE_KEY`
-- Use it for the admin role check, order fetch, and profile fetch
-- Keep auth validation with the user-token client
-- Add better error logging with specific failure points
-
-This is a single-file change to the edge function. It will be automatically redeployed.
+### Files to modify
+- `src/pages/admin/AdminBlocks.tsx` — both changes in a single file
 
