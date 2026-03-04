@@ -345,7 +345,7 @@ export default function Checkout() {
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
         const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
-        const sellerTimesMap: Record<string, string> = {};
+        // reuse outer sellerTimesMap
         const timeTexts: string[] = [];
         for (const fid of farmerIds) {
           const s = sellerPickupSettings.get(fid);
