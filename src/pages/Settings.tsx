@@ -114,6 +114,7 @@ export default function Settings() {
         phone: profile.phone || null,
         avatar_url: profile.avatar_url || null,
         delivery_address: profile.delivery_address || null,
+        email: email || null,
       } as any)
       .eq("user_id", user.id);
 

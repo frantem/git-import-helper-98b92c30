@@ -154,15 +154,21 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("user_id", order.buyer_id)
       .single();
 
-    if (profileError || !profile?.email) {
-      console.error("Profile fetch failed:", profileError?.message, "buyer_id:", order.buyer_id);
-      return new Response(JSON.stringify({ error: "Buyer email not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    let buyerEmail = profile?.email || null;
 
-    const buyerEmail = profile.email;
+    // Fallback: fetch email from auth.users if profiles.email is empty
+    if (!buyerEmail) {
+      console.log("Profile email is null, falling back to auth.users for buyer_id:", order.buyer_id);
+      const { data: authUser, error: authError } = await serviceClient.auth.admin.getUserById(order.buyer_id);
+      if (authError || !authUser?.user?.email) {
+        console.error("Auth user fetch failed:", authError?.message, "buyer_id:", order.buyer_id);
+        return new Response(JSON.stringify({ error: "Buyer email not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      buyerEmail = authUser.user.email;
+    }
     // Handle pickup_point which can be an object or array from the join
     const pickupPoint = Array.isArray(order.pickup_point) ? order.pickup_point[0] : order.pickup_point;
     const pickupPointName = pickupPoint?.name || "Пункт выдачи";
