@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Camera, Loader2 } from "lucide-react";
+import { compressImage } from "@/lib/imageUtils";
 
 interface Profile {
   full_name: string | null;
@@ -80,12 +81,13 @@ export default function Settings() {
 
     setUploadingAvatar(true);
     
-    const fileExt = file.name.split('.').pop();
+    const compressed = await compressImage(file, 400, 400);
+    const fileExt = compressed.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(fileName, file);
+      .upload(fileName, compressed);
 
     if (uploadError) {
       toast.error("Ошибка загрузки фото");

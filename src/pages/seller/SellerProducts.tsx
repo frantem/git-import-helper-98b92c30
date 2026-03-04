@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/priceUtils";
+import { compressImage } from "@/lib/imageUtils";
 import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -115,9 +116,10 @@ export default function SellerProducts() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setUploadingImage(true);
-    const fileExt = file.name.split('.').pop();
+    const compressed = await compressImage(file, 1200, 1200);
+    const fileExt = compressed.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    const { error } = await supabase.storage.from('product-images').upload(fileName, file);
+    const { error } = await supabase.storage.from('product-images').upload(fileName, compressed);
     if (error) { toast.error("Ошибка загрузки изображения"); setUploadingImage(false); return; }
     const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
     if (!productForm.image_url) setProductForm({ ...productForm, image_url: publicUrl });

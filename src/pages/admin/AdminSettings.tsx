@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageUtils";
 import { Loader2, Clock, Save, Truck, Image, Share2, Upload } from "lucide-react";
 
 export default function AdminSettings() {
@@ -130,12 +131,13 @@ export default function AdminSettings() {
   };
 
   const uploadSiteAsset = async (file: File, prefix: string): Promise<string | null> => {
-    const fileExt = file.name.split(".").pop();
+    const compressed = await compressImage(file, 1200, 1200);
+    const fileExt = compressed.name.split(".").pop();
     const fileName = `${prefix}-${Date.now()}.${fileExt}`;
 
     const { error } = await supabase.storage
       .from("site-assets")
-      .upload(fileName, file);
+      .upload(fileName, compressed);
 
     if (error) {
       toast.error("Ошибка загрузки файла");

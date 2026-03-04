@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Camera } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 
 export default function SellerSettings() {
@@ -77,9 +78,10 @@ export default function SellerSettings() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setUploadingAvatar(true);
-    const fileExt = file.name.split('.').pop();
+    const compressed = await compressImage(file, 400, 400);
+    const fileExt = compressed.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    const { error } = await supabase.storage.from('farmer-avatars').upload(fileName, file);
+    const { error } = await supabase.storage.from('farmer-avatars').upload(fileName, compressed);
     if (error) { toast.error("Ошибка загрузки фото"); setUploadingAvatar(false); return; }
     const { data: { publicUrl } } = supabase.storage.from('farmer-avatars').getPublicUrl(fileName);
     setSettingsForm({ ...settingsForm, photo_url: publicUrl });
