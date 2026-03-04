@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageUtils";
 import { ArrowLeft, Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Upload, X } from "lucide-react";
 
 interface Banner {
@@ -182,12 +183,13 @@ export default function AdminBanners() {
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split(".").pop();
+    const compressed = await compressImage(file, 1920, 1080);
+    const fileExt = compressed.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
     const { error } = await supabase.storage
       .from("banners")
-      .upload(fileName, file);
+      .upload(fileName, compressed);
 
     if (error) {
       console.error("Upload error:", error);
