@@ -2,35 +2,29 @@
 
 ## Plan
 
-### 1. Add address fields to farmers table (Migration)
-Add three new nullable text columns to `farmers`: `house`, `entrance`, `apartment`.
+Update `supabase/functions/send-self-pickup-notification/index.ts` with these changes:
 
-### 2. Update SellerSettings page
-- Add `house`, `entrance`, `apartment` to the form state and save logic
-- Add three Input fields under the existing "Улица" field in the "Адрес для самовывоза" section
-- Load and save these fields from/to the `farmers` table
+### 1. Include product names in order items query
+Change the `order_items` select from `"farmer_id"` to `"farmer_id, quantity, product:products(title, unit)"` so we can list what the buyer needs to pick up from each seller.
 
-### 3. Create new Edge Function: `send-self-pickup-notification`
-A new function that:
-- Accepts `order_id`, fetches the order (validates `delivery_type = 'self'`)
-- Gets buyer email (profiles → auth.users fallback)
-- Gets all unique farmer IDs from order items
-- Fetches farmer address details (city, street, house, entrance, apartment, name)
-- Gets `estimated_delivery_time` from the order
-- Sends an email to the buyer with: pickup time window and full farmer addresses
-- No admin auth required — called by the buyer at checkout
+### 2. Group items by farmer and build per-farmer blocks
+For each farmer, show:
+- Farmer name + full address (city, street, house, entrance, apartment — already fetched, already rendered correctly in the code but the user says it's missing house/entrance/apartment — this is likely because the seller hadn't filled them in yet, but the code at lines 137-139 already handles them. No code change needed for address logic.)
+- List of products to pick up from that farmer (name × quantity)
 
-### 4. Update Checkout page
-After successful order creation, if `deliveryType === "self"`, invoke `send-self-pickup-notification` with the order ID (non-blocking, same pattern as `send-new-order-notification`).
+### 3. Update email template text
+- Title: `"🏠 Самовывоз у фермера"` → `"LocusFood 🏠 Самовывоз"`
+- Footer: replace "свяжитесь с продавцом через наш сайт" → "свяжитесь с менеджером +375297399485 (Артём)"
+- Email subject: `"🏠 Адрес для самовывоза — Locus"` → `"LocusFood 🏠 Самовывоз"`
 
-### 5. Update FarmerInfo interface in Checkout
-Add `house`, `entrance`, `apartment` to the `FarmerInfo` interface and the farmer select query so the address display in checkout also shows the full address.
+### 4. Build per-farmer blocks with products
+Each farmer block will show:
+```
+Анна: Витебск, ул. Зеньковой, д. 5, подъезд 2, кв. 10
+  • Мёд — 2 шт.
+  • Творог — 1 кг
+```
 
-### Files to modify
-- `supabase/migrations/` — new migration for `house`, `entrance`, `apartment` columns
-- `src/pages/seller/SellerSettings.tsx` — form fields + save
-- `supabase/functions/send-self-pickup-notification/index.ts` — new edge function
-- `supabase/config.toml` — register new function with `verify_jwt = false`
-- `src/pages/Checkout.tsx` — invoke notification + update FarmerInfo interface
-- `src/integrations/supabase/types.ts` — auto-updated by migration
+### File to modify
+- `supabase/functions/send-self-pickup-notification/index.ts`
 
