@@ -74,14 +74,6 @@ export default function AdminBlocks() {
     emoji: "",
   });
 
-  // Product edit
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productForm, setProductForm] = useState({
-    title: "",
-    priceRubles: "",
-    priceKopecks: "",
-    unit: "",
-  });
 
   // Block form
   const [showBlockForm, setShowBlockForm] = useState(false);
@@ -216,12 +208,19 @@ export default function AdminBlocks() {
     
     const totalProducts = (productsCheck.count || 0) + (productCategoriesCheck.count || 0);
     
-    if (totalProducts > 0) {
-      toast.error(`Нельзя удалить категорию с ${totalProducts} товарами. Сначала переместите товары в другую категорию.`);
-      return;
-    }
+    const confirmMsg = totalProducts > 0
+      ? `В этой категории ${totalProducts} товар(ов). Открепить товары и удалить категорию?`
+      : "Удалить категорию?";
     
-    if (!confirm("Удалить категорию?")) return;
+    if (!confirm(confirmMsg)) return;
+
+    // Unlink products first
+    if (totalProducts > 0) {
+      await Promise.all([
+        supabase.from("product_categories").delete().eq("category_id", categoryId),
+        supabase.from("products").update({ category_id: null }).eq("category_id", categoryId),
+      ]);
+    }
 
     const { error } = await supabase
       .from("categories")
@@ -277,42 +276,6 @@ export default function AdminBlocks() {
   };
 
   // Product handlers
-  const handleEditProduct = (product: Product) => {
-    const priceRubles = Math.floor(product.price / 100);
-    const priceKopecks = product.price % 100;
-    
-    setEditingProduct(product);
-    setProductForm({
-      title: product.title,
-      priceRubles: priceRubles.toString(),
-      priceKopecks: priceKopecks.toString(),
-      unit: product.unit,
-    });
-  };
-
-  const handleSaveProduct = async () => {
-    if (!editingProduct) return;
-
-    const priceInKopecks = (parseInt(productForm.priceRubles) || 0) * 100 + (parseInt(productForm.priceKopecks) || 0);
-
-    const { error } = await supabase
-      .from("products")
-      .update({
-        title: productForm.title,
-        price: priceInKopecks,
-        unit: productForm.unit,
-      })
-      .eq("id", editingProduct.id);
-
-    if (error) {
-      toast.error("Ошибка при обновлении товара");
-    } else {
-      toast.success("Товар обновлён");
-      fetchData();
-    }
-
-    setEditingProduct(null);
-  };
 
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm("Удалить товар?")) return;
@@ -955,59 +918,6 @@ export default function AdminBlocks() {
                         </p>
                       </div>
                       <div className="flex gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => handleEditProduct(product)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          {editingProduct?.id === product.id && (
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Редактировать товар</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label>Название</Label>
-                                  <Input
-                                    value={productForm.title}
-                                    onChange={(e) => setProductForm({ ...productForm, title: e.target.value })}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Стоимость</Label>
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      type="number"
-                                      value={productForm.priceRubles}
-                                      onChange={(e) => setProductForm({ ...productForm, priceRubles: e.target.value })}
-                                      className="w-24"
-                                    />
-                                    <span className="text-sm text-muted-foreground">руб.</span>
-                                    <Input
-                                      type="number"
-                                      value={productForm.priceKopecks}
-                                      onChange={(e) => setProductForm({ ...productForm, priceKopecks: e.target.value })}
-                                      className="w-20"
-                                      max={99}
-                                    />
-                                    <span className="text-sm text-muted-foreground">коп.</span>
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Единица измерения</Label>
-                                  <Input
-                                    value={productForm.unit}
-                                    onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })}
-                                  />
-                                </div>
-                                <Button onClick={handleSaveProduct} className="w-full">
-                                  Сохранить
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          )}
-                        </Dialog>
                         <Button variant="ghost" size="icon" onClick={() => handleDeleteProduct(product.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
