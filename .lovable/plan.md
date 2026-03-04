@@ -1,27 +1,36 @@
 
 
-## Problem
+## Plan
 
-`supabase.auth.updateUser({ email })` shows a success toast, but the confirmation email never arrives. This happens because the project uses Supabase's **default email provider** (built-in), which has a rate limit of ~3 emails per hour and limited deliverability. The project has Resend configured for transactional notifications but **not** for auth emails (no `auth-email-hook` edge function exists).
+### 1. Add address fields to farmers table (Migration)
+Add three new nullable text columns to `farmers`: `house`, `entrance`, `apartment`.
 
-## Fix
+### 2. Update SellerSettings page
+- Add `house`, `entrance`, `apartment` to the form state and save logic
+- Add three Input fields under the existing "Улица" field in the "Адрес для самовывоза" section
+- Load and save these fields from/to the `farmers` table
 
-### 1. Improve the Settings page UX (`src/pages/Settings.tsx`)
+### 3. Create new Edge Function: `send-self-pickup-notification`
+A new function that:
+- Accepts `order_id`, fetches the order (validates `delivery_type = 'self'`)
+- Gets buyer email (profiles → auth.users fallback)
+- Gets all unique farmer IDs from order items
+- Fetches farmer address details (city, street, house, entrance, apartment, name)
+- Gets `estimated_delivery_time` from the order
+- Sends an email to the buyer with: pickup time window and full farmer addresses
+- No admin auth required — called by the buyer at checkout
 
-- Add a check: if the entered email is the same as the current one, show a toast "Этот email уже используется" and skip the API call
-- After a successful `updateUser` call, show a more detailed message: "Письмо для подтверждения отправлено на {email}. Проверьте папку «Спам»."
+### 4. Update Checkout page
+After successful order creation, if `deliveryType === "self"`, invoke `send-self-pickup-notification` with the order ID (non-blocking, same pattern as `send-new-order-notification`).
 
-### 2. Set up Lovable Auth Email Templates for reliable delivery
-
-Since the project already has Resend (`RESEND_API_KEY`) and a verified domain (`locusfood.by`), I'll scaffold and deploy the `auth-email-hook` edge function. This will route **all** auth emails (email change confirmation, password reset, magic links, etc.) through Resend via `locusfood.by`, ensuring reliable delivery.
-
-Steps:
-1. Call `scaffold_auth_email_templates` to create templates
-2. Brand them to match the app's style (colors, language — all in Russian)
-3. Deploy `auth-email-hook` edge function
+### 5. Update FarmerInfo interface in Checkout
+Add `house`, `entrance`, `apartment` to the `FarmerInfo` interface and the farmer select query so the address display in checkout also shows the full address.
 
 ### Files to modify
-- `src/pages/Settings.tsx` — same-email validation + better toast message
-- `supabase/functions/auth-email-hook/` — new (scaffolded + branded)
-- `supabase/functions/_shared/email-templates/` — new (scaffolded + branded)
+- `supabase/migrations/` — new migration for `house`, `entrance`, `apartment` columns
+- `src/pages/seller/SellerSettings.tsx` — form fields + save
+- `supabase/functions/send-self-pickup-notification/index.ts` — new edge function
+- `supabase/config.toml` — register new function with `verify_jwt = false`
+- `src/pages/Checkout.tsx` — invoke notification + update FarmerInfo interface
+- `src/integrations/supabase/types.ts` — auto-updated by migration
 
