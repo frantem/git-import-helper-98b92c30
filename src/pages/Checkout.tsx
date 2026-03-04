@@ -332,6 +332,7 @@ export default function Checkout() {
     try {
       // Build estimated_delivery_time string
       let estimatedDeliveryTime: string | null = null;
+      let sellerTimesMap: Record<string, string> = {};
       if (deliveryType === "courier") {
         if (courierDeliveryMode === "scheduled" && selectedDate && selectedTime) {
           const dateStr = format(selectedDate, "d MMMM", { locale: ru });
@@ -342,20 +343,28 @@ export default function Checkout() {
       } else if (deliveryType === "pickup") {
         estimatedDeliveryTime = fastDeliveryResult.text;
       } else if (deliveryType === "self") {
-        const firstFarmerId = items[0]?.product.farmer_id;
-        if (firstFarmerId) {
-          const s = sellerPickupSettings.get(firstFarmerId);
+        // Compute per-seller pickup times
+        const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
+        const sellerTimesMap: Record<string, string> = {};
+        const timeTexts: string[] = [];
+        for (const fid of farmerIds) {
+          const s = sellerPickupSettings.get(fid);
+          const farmerItems = items.filter((i) => i.product.farmer_id === fid);
+          const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
           const result = calculatePickupTime(
-            (items[0].product as any).prep_time_minutes || 90,
+            maxPrep,
             s?.pickup_slots as PickupSlots | null ?? null,
             s?.max_orders_per_day ?? 5,
             s?.busy_dates ?? null,
             s?.vacation_dates ?? null,
             orderCountsMap,
-            firstFarmerId
+            fid
           );
-          estimatedDeliveryTime = result.text;
+          sellerTimesMap[fid] = result.text;
+          timeTexts.push(result.text);
         }
+        // Store combined text for order-level display
+        estimatedDeliveryTime = [...new Set(timeTexts)].join(" / ");
       }
 
       const {
@@ -417,7 +426,8 @@ export default function Checkout() {
       if (deliveryType === "self") {
         supabase.functions.invoke("send-self-pickup-notification", {
           body: {
-            order_id: order.id
+            order_id: order.id,
+            seller_times: sellerTimesMap
           }
         }).catch((err) => console.error("Failed to send self-pickup notification:", err));
       }

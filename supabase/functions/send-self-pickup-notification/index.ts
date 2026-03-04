@@ -5,7 +5,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 async function sendEmail(to: string[], subject: string, html: string) {
@@ -58,13 +58,16 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    const { order_id } = await req.json();
+    const { order_id, seller_times } = await req.json();
     if (!order_id) {
       return new Response(JSON.stringify({ error: "order_id required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // seller_times: Record<farmerId, timeText> e.g. { "uuid1": "Сегодня 18:30–20:00" }
+    const sellerTimes: Record<string, string> = seller_times || {};
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -130,7 +133,7 @@ serve(async (req: Request): Promise<Response> => {
       .select("id, name, city, street, house, entrance, apartment")
       .in("id", farmerIds);
 
-    // Build per-farmer blocks with products
+    // Build per-farmer blocks with products and individual times
     const farmerAddressBlocks = (farmers || []).map((f: any) => {
       const parts: string[] = [];
       if (f.city) parts.push(f.city);
@@ -140,25 +143,28 @@ serve(async (req: Request): Promise<Response> => {
       if (f.apartment) parts.push(`кв. ${f.apartment}`);
       const address = parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
 
+      // Per-seller time from checkout, fallback to order-level
+      const timeText = sellerTimes[f.id] || order.estimated_delivery_time || "уточняйте у продавца";
+
       const farmerItems = items.filter((i) => i.farmer_id === f.id);
       const itemsList = farmerItems
         .map((i) => `<li>${i.product?.title || "Товар"} — ${i.quantity} ${i.product?.unit || "шт."}</li>`)
         .join("");
 
-      return `<div style="margin-bottom: 16px;"><p><strong>${f.name}:</strong> ${address}</p><ul style="margin: 4px 0 0 16px; padding: 0;">${itemsList}</ul></div>`;
+      return `<div style="margin-bottom: 16px;">
+        <p><strong>${f.name}:</strong> ${address}</p>
+        <p style="margin: 4px 0;">⏰ ${timeText}</p>
+        <ul style="margin: 4px 0 0 16px; padding: 0;">${itemsList}</ul>
+      </div>`;
     }).join("");
 
-    const pickupTime = order.estimated_delivery_time || "уточняйте у продавца";
     const buyerName = buyerProfile?.full_name || "Покупатель";
 
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 24px;">
         <h1 style="color: #1a1a1a; font-size: 22px;">LocusFood 🏠 Самовывоз</h1>
         <p>Здравствуйте, ${buyerName}!</p>
-        <p>Ваш заказ оформлен. Заберите его в указанное время:</p>
-        <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 16px 0;">
-          <p style="margin: 0 0 8px 0; font-size: 16px;"><strong>⏰ Время:</strong> ${pickupTime}</p>
-        </div>
+        <p>Ваш заказ оформлен. Заберите товары по адресам:</p>
         <h3 style="color: #1a1a1a; font-size: 16px;">📍 Адрес для самовывоза:</h3>
         ${farmerAddressBlocks}
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
