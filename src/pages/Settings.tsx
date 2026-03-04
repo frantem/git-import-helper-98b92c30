@@ -138,12 +138,17 @@ export default function Settings() {
       return;
     }
 
+    if (email.trim().toLowerCase() === user?.email?.toLowerCase()) {
+      toast.info("Этот email уже используется");
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ email });
 
     if (error) {
       toast.error("Ошибка изменения email");
     } else {
-      toast.success("На новый email отправлено письмо для подтверждения");
+      toast.success(`Письмо для подтверждения отправлено на ${email}. Проверьте папку «Спам».`);
     }
   };
 
