@@ -211,7 +211,7 @@ export default function SellerSettings() {
               </div>
               <div className="space-y-2">
                 <Label>Улица</Label>
-                <Input value={settingsForm.street} onChange={(e) => setSettingsForm({ ...settingsForm, street: e.target.value })} placeholder="ул. Целинная" />
+                <Input value={settingsForm.street} onChange={(e) => setSettingsForm({ ...settingsForm, street: e.target.value })} placeholder="Центральная" />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-2">
