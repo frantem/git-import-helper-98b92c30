@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Truck, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2 } from "lucide-react";
 
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -583,12 +583,6 @@ export default function Product() {
 
             {/* Description */}
             <p className="mb-2 text-muted-foreground"><span className="font-medium text-foreground">Описание: </span>{product.description}</p>
-
-            {/* Delivery - simple */}
-            <div className="mb-4 flex items-center gap-1.5 text-sm">
-              <Truck className="h-4 w-4 text-primary" />
-              <span className="text-foreground">Доставка сегодня бесплатно.</span>
-            </div>
 
             {/* Seller - compact */}
             <Link to={`/seller/${product.farmer_id}`} className="block mb-2">
