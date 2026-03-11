@@ -584,12 +584,6 @@ export default function Product() {
             {/* Description */}
             <p className="mb-2 text-muted-foreground"><span className="font-medium text-foreground">Описание: </span>{product.description}</p>
 
-            {/* Delivery - simple */}
-            <div className="mb-4 flex items-center gap-1.5 text-sm">
-              <Truck className="h-4 w-4 text-primary" />
-              <span className="text-foreground">Доставка сегодня бесплатно.</span>
-            </div>
-
             {/* Seller - compact */}
             <Link to={`/seller/${product.farmer_id}`} className="block mb-2">
               <div className="rounded-md bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
