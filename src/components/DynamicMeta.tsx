@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 export function DynamicMeta() {
   useEffect(() => {
     const loadMeta = async () => {
-      const [faviconRes, ogImageRes] = await Promise.all([
+      const [faviconRes, ogImageRes, verificationRes] = await Promise.all([
         supabase.from("app_settings").select("value").eq("key", "favicon_url").maybeSingle(),
         supabase.from("app_settings").select("value").eq("key", "og_image_url").maybeSingle(),
+        supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
       ]);
 
       // Update favicon
@@ -29,6 +30,19 @@ export function DynamicMeta() {
         
         const twitterMeta = document.querySelector("meta[name='twitter:image']") as HTMLMetaElement;
         if (twitterMeta) twitterMeta.content = ogImageRes.data.value;
+      }
+
+      // Google verification
+      if (verificationRes.data?.value) {
+        let verMeta = document.querySelector("meta[name='google-site-verification']") as HTMLMetaElement;
+        if (verMeta) {
+          verMeta.content = verificationRes.data.value;
+        } else {
+          verMeta = document.createElement("meta") as HTMLMetaElement;
+          verMeta.name = "google-site-verification";
+          verMeta.content = verificationRes.data.value;
+          document.head.appendChild(verMeta);
+        }
       }
     };
 

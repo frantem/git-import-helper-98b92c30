@@ -12,6 +12,7 @@ import { useProducts, useProductRatings, transformProduct } from "@/hooks/usePro
 import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
+import { SEO } from "@/components/SEO";
 
 export default function Catalog() {
   useScrollRestoration();
@@ -81,6 +82,10 @@ export default function Catalog() {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <SEO
+        title={pageTitle !== "Каталог" ? `${pageTitle} — Locus` : "Каталог продуктов — Locus"}
+        description={`${pageTitle}. Свежие фермерские продукты с доставкой в Витебске.`}
+      />
       <Header />
 
       <main className="container mx-auto px-4 py-4 md:py-6">

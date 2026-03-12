@@ -10,7 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
-import { Loader2, Clock, Save, Truck, Image, Share2, Upload } from "lucide-react";
+import { Loader2, Clock, Save, Truck, Image, Share2, Upload, Search } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AdminSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -30,6 +31,11 @@ export default function AdminSettings() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
 
+  // SEO states
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [googleVerification, setGoogleVerification] = useState("");
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -47,37 +53,16 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     
-    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes] = await Promise.all([
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "cutoff_time_minutes")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "avg_delivery_time_minutes")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "delivery_start_hour")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "delivery_end_hour")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "favicon_url")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "og_image_url")
-        .maybeSingle(),
+    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes] = await Promise.all([
+      supabase.from("app_settings").select("value").eq("key", "cutoff_time_minutes").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "avg_delivery_time_minutes").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "delivery_start_hour").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "delivery_end_hour").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "favicon_url").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "og_image_url").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "seo_default_title").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "seo_default_description").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
     ]);
 
     if (cutoffRes.data) {
@@ -110,6 +95,9 @@ export default function AdminSettings() {
     if (ogImageRes.data?.value) {
       setOgImageUrl(ogImageRes.data.value);
     }
+    if (seoTitleRes.data?.value) setSeoTitle(seoTitleRes.data.value);
+    if (seoDescRes.data?.value) setSeoDescription(seoDescRes.data.value);
+    if (googleVerRes.data?.value) setGoogleVerification(googleVerRes.data.value);
     
     setIsLoading(false);
   };
@@ -199,6 +187,15 @@ export default function AdminSettings() {
         .from("app_settings")
         .update({ value: newOgImageUrl, updated_at: new Date().toISOString() })
         .eq("key", "og_image_url"),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "seo_default_title", value: seoTitle, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "seo_default_description", value: seoDescription, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "google_verification", value: googleVerification, updated_at: new Date().toISOString() }, { onConflict: "key" }),
     ];
 
     const results = await Promise.all(updates);
@@ -408,6 +405,55 @@ export default function AdminSettings() {
                   onChange={handleOgImageSelect} 
                 />
               </label>
+            </div>
+          </div>
+
+          {/* SEO Settings */}
+          <div className="rounded-xl bg-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Search className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Global SEO</h3>
+                <p className="text-sm text-muted-foreground">
+                  Мета-теги по умолчанию для поисковых систем
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo-title">Default Meta Title</Label>
+              <Input
+                id="seo-title"
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                placeholder="Locus — Маркетплейс натуральных продуктов"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo-description">Default Meta Description</Label>
+              <Textarea
+                id="seo-description"
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                placeholder="Свежие фермерские продукты с доставкой..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="google-verification">Google Search Console Verification Code</Label>
+              <Input
+                id="google-verification"
+                value={googleVerification}
+                onChange={(e) => setGoogleVerification(e.target.value)}
+                placeholder="Вставьте content из мета-тега верификации"
+              />
+              <p className="text-xs text-muted-foreground">
+                Значение атрибута content из тега &lt;meta name="google-site-verification"&gt;
+              </p>
             </div>
           </div>
 

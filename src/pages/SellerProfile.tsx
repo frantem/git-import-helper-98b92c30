@@ -7,6 +7,7 @@ import { Star, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { SEO } from "@/components/SEO";
 
 interface Farmer {
   id: string;
@@ -169,6 +170,11 @@ export default function SellerProfile() {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <SEO
+        title={`Фермерское хозяйство ${farmer.name} на Locus`}
+        description={farmer.description || `Фермерские продукты от ${farmer.name}. ${farmer.district}.`}
+        image={farmer.photo_url || undefined}
+      />
       <Header />
 
       <main className="container mx-auto px-3 py-4">

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { useProduct } from "@/hooks/useProduct";
 import { useProductCustomFields } from "@/hooks/useProductCustomFields";
+import { SEO } from "@/components/SEO";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -401,6 +402,12 @@ export default function Product() {
     }
   };
   return <div className="min-h-screen bg-background pb-32 md:pb-0">
+      <SEO
+        title={product ? `${product.name} купить в Витебске — Locus` : undefined}
+        description={product?.description || undefined}
+        image={product?.image}
+        ogType="product"
+      />
       <Header />
 
       <main className="container mx-auto px-4 py-4 md:py-6">

@@ -14,6 +14,7 @@ import { useHomepageBlocks, HomepageBlock } from "@/hooks/useHomepageBlocks";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SEO } from "@/components/SEO";
 
 let savedAllBlockLimit = 10;
 
@@ -123,6 +124,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <SEO />
       <Header />
 
       <main className="container mx-auto px-3 py-3">

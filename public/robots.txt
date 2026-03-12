@@ -12,3 +12,9 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /auth
+Disallow: /cart
+
+Sitemap: https://locusfood.by/sitemap.xml

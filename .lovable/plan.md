@@ -1,47 +1,43 @@
 
 
-## SEO-оптимизация для locusfood.by
+## Problem
+All image uploads (product images, banners, avatars, seller avatars, site assets) go to Supabase Storage raw — no compression, no resizing. A photo from a phone camera can easily be 5-10 MB. On mobile internet this kills loading speed.
 
-### 1. Новые файлы
+## Solution
+Create a shared `compressImage()` utility that resizes and compresses images client-side before uploading to Supabase Storage. Apply it in all 5 upload locations.
 
-**`src/components/SEO.tsx`** — переиспользуемый компонент, который через `document.title` и DOM-манипуляции с `<meta>` тегами устанавливает title, description, og:title, og:description, og:image, og:type, canonical, и google-site-verification. Без внешних зависимостей (react-helmet не нужен — проект SPA, достаточно useEffect). Загружает дефолтные значения из `app_settings` (seo_default_title, seo_default_description, google_verification) через Supabase и использует их как fallback.
+## Technical Details
 
-**`supabase/functions/sitemap/index.ts`** — Edge Function, которая генерирует динамический `sitemap.xml`. Запрашивает из БД все активные продукты и фермеров, формирует XML с URL-ами: главная, каталог, `/product/:id`, `/seller/:id`. Исключает /admin, /checkout, /auth, /cart.
+### 1. New utility: `src/lib/imageUtils.ts`
+A `compressImage(file: File, options?)` function that:
+- Uses `<canvas>` to resize the image to a max dimension (e.g., 1200px for products/banners, 400px for avatars)
+- Outputs JPEG at 0.8 quality (or WebP if browser supports it)
+- Returns a `File` object ready for upload
+- Handles edge cases (already small files, non-image files)
 
-### 2. База данных (миграция)
-
-Добавить 3 записи в `app_settings`:
-```sql
-INSERT INTO app_settings (key, value) VALUES
-  ('seo_default_title', 'Locus — Маркетплейс натуральных продуктов с единой доставкой в Беларуси'),
-  ('seo_default_description', 'Свежие фермерские продукты с доставкой в Витебске. Овощи, фрукты, мёд, молочные продукты напрямую от производителей.'),
-  ('google_verification', '')
-ON CONFLICT (key) DO NOTHING;
+```ts
+export async function compressImage(
+  file: File,
+  maxWidth = 1200,
+  maxHeight = 1200,
+  quality = 0.82
+): Promise<File> {
+  // Load into Image → draw on canvas at reduced size → toBlob as JPEG
+}
 ```
 
-### 3. Изменения в существующих файлах
+### 2. Apply compression in all upload handlers
 
-**`src/pages/Product.tsx`** — добавить `<SEO>` в начало return с title=`{product.name} купить в Витебске — Locus`, description=`{product.description}`, image=`{product.image}`. Название уже в `<h1>` (строка 450). Проверить alt у изображений — уже используется `product.name` (строки 420, 427).
+**5 files to update** (one line change each — wrap file in `await compressImage(file)` before `.upload()`):
 
-**`src/pages/SellerProfile.tsx`** — добавить `<SEO>` с title=`Фермерское хозяйство {farmer.name} на Locus`.
+- `src/pages/seller/SellerProducts.tsx` — product images (maxWidth=1200)
+- `src/pages/admin/AdminBanners.tsx` — banner images (maxWidth=1920)
+- `src/pages/Settings.tsx` — user avatars (maxWidth=400)
+- `src/pages/seller/SellerSettings.tsx` — farmer avatars (maxWidth=400)
+- `src/pages/admin/AdminSettings.tsx` — favicon/OG images (maxWidth=1200)
 
-**`src/pages/Index.tsx`** — добавить `<SEO>` с title=`Locus — Маркетплейс натуральных продуктов с единой доставкой в Беларуси`.
-
-**`src/pages/Catalog.tsx`** — добавить `<SEO>` с title, включающим название текущей категории если есть фильтр.
-
-**`src/components/DynamicMeta.tsx`** — расширить: загружать также `google_verification` и вставлять мета-тег верификации.
-
-**`public/robots.txt`** — обновить: Disallow /admin, /checkout, /auth, /cart. Добавить ссылку на Sitemap.
-
-**`src/pages/admin/AdminSettings.tsx`** — добавить секцию «Global SEO» с 3 полями: Default Meta Title, Default Meta Description, Google Verification Code. Сохранение через те же `app_settings`.
-
-### 4. Semantic HTML
-
-- Product.tsx: `<h1>` уже на месте (строка 450), alt у изображений уже корректный
-- Catalog.tsx: проверить заголовки категорий — при необходимости обернуть в `<h2>`
-
-### Итого файлов
-- Новые: `src/components/SEO.tsx`, `supabase/functions/sitemap/index.ts`
-- Изменённые: `Product.tsx`, `SellerProfile.tsx`, `Index.tsx`, `Catalog.tsx`, `DynamicMeta.tsx`, `AdminSettings.tsx`, `public/robots.txt`
-- Миграция: 1 SQL (3 записи в app_settings)
+### Result
+- 10 MB photo → ~100-200 KB compressed JPEG
+- No external dependencies needed (native Canvas API)
+- Existing images won't be affected (only new uploads)
 

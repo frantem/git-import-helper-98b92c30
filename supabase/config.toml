@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.send-self-pickup-notification]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false
