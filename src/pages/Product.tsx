@@ -401,6 +401,12 @@ export default function Product() {
     }
   };
   return <div className="min-h-screen bg-background pb-32 md:pb-0">
+      <SEO
+        title={product ? `${product.name} купить в Витебске — Locus` : undefined}
+        description={product?.description || undefined}
+        image={product?.image}
+        ogType="product"
+      />
       <Header />
 
       <main className="container mx-auto px-4 py-4 md:py-6">
