@@ -95,6 +95,9 @@ export default function AdminSettings() {
     if (ogImageRes.data?.value) {
       setOgImageUrl(ogImageRes.data.value);
     }
+    if (seoTitleRes.data?.value) setSeoTitle(seoTitleRes.data.value);
+    if (seoDescRes.data?.value) setSeoDescription(seoDescRes.data.value);
+    if (googleVerRes.data?.value) setGoogleVerification(googleVerRes.data.value);
     
     setIsLoading(false);
   };
