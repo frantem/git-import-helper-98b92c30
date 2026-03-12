@@ -14,6 +14,7 @@ import { useHomepageBlocks, HomepageBlock } from "@/hooks/useHomepageBlocks";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SEO } from "@/components/SEO";
 
 let savedAllBlockLimit = 10;
 
