@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 export function DynamicMeta() {
   useEffect(() => {
     const loadMeta = async () => {
-      const [faviconRes, ogImageRes] = await Promise.all([
+      const [faviconRes, ogImageRes, verificationRes] = await Promise.all([
         supabase.from("app_settings").select("value").eq("key", "favicon_url").maybeSingle(),
         supabase.from("app_settings").select("value").eq("key", "og_image_url").maybeSingle(),
+        supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
       ]);
 
       // Update favicon
