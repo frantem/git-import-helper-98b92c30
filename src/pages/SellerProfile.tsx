@@ -7,6 +7,7 @@ import { Star, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { SEO } from "@/components/SEO";
 
 interface Farmer {
   id: string;
