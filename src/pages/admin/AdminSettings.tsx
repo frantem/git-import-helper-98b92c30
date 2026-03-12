@@ -187,6 +187,15 @@ export default function AdminSettings() {
         .from("app_settings")
         .update({ value: newOgImageUrl, updated_at: new Date().toISOString() })
         .eq("key", "og_image_url"),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "seo_default_title", value: seoTitle, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "seo_default_description", value: seoDescription, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "google_verification", value: googleVerification, updated_at: new Date().toISOString() }, { onConflict: "key" }),
     ];
 
     const results = await Promise.all(updates);
