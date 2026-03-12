@@ -12,6 +12,7 @@ import { useProducts, useProductRatings, transformProduct } from "@/hooks/usePro
 import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
+import { SEO } from "@/components/SEO";
 
 export default function Catalog() {
   useScrollRestoration();
