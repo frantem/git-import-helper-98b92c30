@@ -53,37 +53,16 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     
-    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes] = await Promise.all([
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "cutoff_time_minutes")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "avg_delivery_time_minutes")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "delivery_start_hour")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "delivery_end_hour")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "favicon_url")
-        .maybeSingle(),
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "og_image_url")
-        .maybeSingle(),
+    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes] = await Promise.all([
+      supabase.from("app_settings").select("value").eq("key", "cutoff_time_minutes").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "avg_delivery_time_minutes").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "delivery_start_hour").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "delivery_end_hour").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "favicon_url").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "og_image_url").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "seo_default_title").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "seo_default_description").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
     ]);
 
     if (cutoffRes.data) {
