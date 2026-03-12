@@ -408,6 +408,55 @@ export default function AdminSettings() {
             </div>
           </div>
 
+          {/* SEO Settings */}
+          <div className="rounded-xl bg-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Search className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Global SEO</h3>
+                <p className="text-sm text-muted-foreground">
+                  Мета-теги по умолчанию для поисковых систем
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo-title">Default Meta Title</Label>
+              <Input
+                id="seo-title"
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                placeholder="Locus — Маркетплейс натуральных продуктов"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seo-description">Default Meta Description</Label>
+              <Textarea
+                id="seo-description"
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                placeholder="Свежие фермерские продукты с доставкой..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="google-verification">Google Search Console Verification Code</Label>
+              <Input
+                id="google-verification"
+                value={googleVerification}
+                onChange={(e) => setGoogleVerification(e.target.value)}
+                placeholder="Вставьте content из мета-тега верификации"
+              />
+              <p className="text-xs text-muted-foreground">
+                Значение атрибута content из тега &lt;meta name="google-site-verification"&gt;
+              </p>
+            </div>
+          </div>
+
           <Button onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

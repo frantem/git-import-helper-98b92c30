@@ -31,6 +31,19 @@ export function DynamicMeta() {
         const twitterMeta = document.querySelector("meta[name='twitter:image']") as HTMLMetaElement;
         if (twitterMeta) twitterMeta.content = ogImageRes.data.value;
       }
+
+      // Google verification
+      if (verificationRes.data?.value) {
+        let verMeta = document.querySelector("meta[name='google-site-verification']") as HTMLMetaElement;
+        if (verMeta) {
+          verMeta.content = verificationRes.data.value;
+        } else {
+          verMeta = document.createElement("meta") as HTMLMetaElement;
+          verMeta.name = "google-site-verification";
+          verMeta.content = verificationRes.data.value;
+          document.head.appendChild(verMeta);
+        }
+      }
     };
 
     loadMeta();
