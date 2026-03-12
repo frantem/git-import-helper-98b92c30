@@ -31,6 +31,11 @@ export default function AdminSettings() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
 
+  // SEO states
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [googleVerification, setGoogleVerification] = useState("");
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
