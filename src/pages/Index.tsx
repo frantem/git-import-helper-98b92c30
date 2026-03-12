@@ -124,6 +124,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <SEO />
       <Header />
 
       <main className="container mx-auto px-3 py-3">

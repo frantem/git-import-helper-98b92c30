@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { useProduct } from "@/hooks/useProduct";
 import { useProductCustomFields } from "@/hooks/useProductCustomFields";
+import { SEO } from "@/components/SEO";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
