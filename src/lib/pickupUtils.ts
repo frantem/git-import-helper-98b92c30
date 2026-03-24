@@ -218,11 +218,13 @@ export function calculateDeliveryTimePerSeller(
     delivery_end_hour: number;
     cutoff_time_minutes: number;
   },
+  pickupPointEndMinutes?: number,
 ): DeliveryTimeResult {
   return calculateDeliveryTime(
     prepTimeMinutes,
     [{ pickupSlots, busyDates, vacationDates }],
     adminSettings,
+    pickupPointEndMinutes,
   );
 }
 
