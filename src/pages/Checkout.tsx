@@ -300,9 +300,6 @@ export default function Checkout() {
     const parts: string[] = [];
     if (farmer.city) parts.push(farmer.city);
     if (farmer.street) parts.push(`ул. ${farmer.street}`);
-    if ((farmer as any).house) parts.push(`д. ${(farmer as any).house}`);
-    if ((farmer as any).entrance) parts.push(`подъезд ${(farmer as any).entrance}`);
-    if ((farmer as any).apartment) parts.push(`кв. ${(farmer as any).apartment}`);
 
     return parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
   };
