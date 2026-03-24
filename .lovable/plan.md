@@ -1,43 +1,44 @@
 
 
-## Problem
-All image uploads (product images, banners, avatars, seller avatars, site assets) go to Supabase Storage raw — no compression, no resizing. A photo from a phone camera can easily be 5-10 MB. On mobile internet this kills loading speed.
+## Проблема
 
-## Solution
-Create a shared `compressImage()` utility that resizes and compresses images client-side before uploading to Supabase Storage. Apply it in all 5 upload locations.
+`calculateDeliveryTime` использует `delivery_end_hour` из admin settings (по умолчанию 24) для ограничения времени доставки. Но при доставке в пункт выдачи (ПВЗ) нужно учитывать **рабочие часы самого ПВЗ** (например, до 20:00). Сейчас этого не происходит — функция показывает "Сегодня 21:40–22:40", хотя ПВЗ закрыт после 20:00.
 
-## Technical Details
+## Решение
 
-### 1. New utility: `src/lib/imageUtils.ts`
-A `compressImage(file: File, options?)` function that:
-- Uses `<canvas>` to resize the image to a max dimension (e.g., 1200px for products/banners, 400px for avatars)
-- Outputs JPEG at 0.8 quality (or WebP if browser supports it)
-- Returns a `File` object ready for upload
-- Handles edge cases (already small files, non-image files)
+Передать рабочие часы выбранного ПВЗ в расчёт и ограничить время доставки временем закрытия ПВЗ.
 
-```ts
-export async function compressImage(
-  file: File,
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.82
-): Promise<File> {
-  // Load into Image → draw on canvas at reduced size → toBlob as JPEG
-}
+### Изменения
+
+**1. `src/lib/pickupUtils.ts`** — добавить опциональный параметр `pickupPointClosingMinutes` в `calculateDeliveryTime`. Если передан, использовать `Math.min(deliveryEndMin, pickupPointClosingMinutes)` вместо просто `deliveryEndMin` при проверке "слишком поздно". Также ограничить окно `endMin` (конец интервала) этим значением.
+
+**2. `src/pages/Checkout.tsx`** — в двух местах, где вызывается `calculateDeliveryTime` / `calculateDeliveryTimePerSeller` для типа "pickup":
+
+- **`fastDeliveryResult` (строка ~102)**: если `deliveryType === "pickup"` и выбран ПВЗ, парсить `working_hours` выбранного ПВЗ (формат "10:00–20:00") и передавать closing time в `calculateDeliveryTime`.
+- **Рендер per-seller (строка ~587)**: аналогично передавать closing time ПВЗ в `calculateDeliveryTimePerSeller`.
+
+### Парсинг working_hours
+
+Формат строки: `"10:00-20:00"` или `"10:00–20:00"`. Вспомогательная функция извлекает конечное время и конвертирует в минуты от полуночи. Если не удалось распарсить — не ограничиваем (fallback к `delivery_end_hour`).
+
+### Технические детали
+
+В `calculateDeliveryTime`:
+```
+// Новый опциональный параметр:
+pickupPointEndMinutes?: number
+
+// В цикле вместо:
+if (arrivalMin >= deliveryEndMin) continue;
+// Будет:
+const effectiveEnd = pickupPointEndMinutes 
+  ? Math.min(deliveryEndMin, pickupPointEndMinutes) 
+  : deliveryEndMin;
+if (arrivalMin >= effectiveEnd) continue;
+
+// Также ограничить endMin окна:
+const endMin = Math.min(arrivalMin + 60, effectiveEnd);
 ```
 
-### 2. Apply compression in all upload handlers
-
-**5 files to update** (one line change each — wrap file in `await compressImage(file)` before `.upload()`):
-
-- `src/pages/seller/SellerProducts.tsx` — product images (maxWidth=1200)
-- `src/pages/admin/AdminBanners.tsx` — banner images (maxWidth=1920)
-- `src/pages/Settings.tsx` — user avatars (maxWidth=400)
-- `src/pages/seller/SellerSettings.tsx` — farmer avatars (maxWidth=400)
-- `src/pages/admin/AdminSettings.tsx` — favicon/OG images (maxWidth=1200)
-
-### Result
-- 10 MB photo → ~100-200 KB compressed JPEG
-- No external dependencies needed (native Canvas API)
-- Existing images won't be affected (only new uploads)
+Итого: 2 файла, ~15 строк изменений.
 
