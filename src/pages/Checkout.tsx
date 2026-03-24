@@ -587,12 +587,15 @@ export default function Checkout() {
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const settings = sellerPickupSettings.get(fid);
                 const maxPrep = Math.max(...groupItems.map((i) => (i.product as any).prep_time_minutes || 90));
+                const ppData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
+                const ppEnd = parseWorkingHoursEnd(ppData?.working_hours) ?? undefined;
                 const deliveryResult = calculateDeliveryTimePerSeller(
                   maxPrep,
                   settings?.pickup_slots as PickupSlots | null ?? null,
                   settings?.busy_dates ?? null,
                   settings?.vacation_dates ?? null,
-                  adminSettings
+                  adminSettings,
+                  ppEnd
                 );
                 return (
                   <div key={fid} className="space-y-1">
