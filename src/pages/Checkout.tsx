@@ -111,8 +111,11 @@ export default function Checkout() {
         vacationDates: s?.vacation_dates ?? null
       };
     });
-    return calculateDeliveryTime(maxPrep, sellerData, adminSettings);
-  }, [items, sellerPickupSettings, adminSettings]);
+    // For pickup delivery type, respect pickup point working hours
+    const selectedPointData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
+    const ppEndMinutes = deliveryType === "pickup" ? parseWorkingHoursEnd(selectedPointData?.working_hours) ?? undefined : undefined;
+    return calculateDeliveryTime(maxPrep, sellerData, adminSettings, ppEndMinutes);
+  }, [items, sellerPickupSettings, adminSettings, deliveryType, selectedPoint, pickupPoints]);
 
   // Collect all busy/vacation dates from sellers in cart (for calendar blocking)
   const allBlockedDates = useMemo(() => {
