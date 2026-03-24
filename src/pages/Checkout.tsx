@@ -8,7 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
-import { calculatePickupTime, PickupTimeResult, calculateDeliveryTime, calculateDeliveryTimePerSeller, DeliveryTimeResult } from "@/lib/pickupUtils";
+import { calculatePickupTime, PickupTimeResult, calculateDeliveryTime, calculateDeliveryTimePerSeller, DeliveryTimeResult, parseWorkingHoursEnd } from "@/lib/pickupUtils";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { Check, MapPin, Truck, Banknote, RefreshCw, LogIn, Settings, Home, Package, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -111,8 +111,11 @@ export default function Checkout() {
         vacationDates: s?.vacation_dates ?? null
       };
     });
-    return calculateDeliveryTime(maxPrep, sellerData, adminSettings);
-  }, [items, sellerPickupSettings, adminSettings]);
+    // For pickup delivery type, respect pickup point working hours
+    const selectedPointData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
+    const ppEndMinutes = deliveryType === "pickup" ? parseWorkingHoursEnd(selectedPointData?.working_hours) ?? undefined : undefined;
+    return calculateDeliveryTime(maxPrep, sellerData, adminSettings, ppEndMinutes);
+  }, [items, sellerPickupSettings, adminSettings, deliveryType, selectedPoint, pickupPoints]);
 
   // Collect all busy/vacation dates from sellers in cart (for calendar blocking)
   const allBlockedDates = useMemo(() => {
@@ -584,12 +587,15 @@ export default function Checkout() {
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const settings = sellerPickupSettings.get(fid);
                 const maxPrep = Math.max(...groupItems.map((i) => (i.product as any).prep_time_minutes || 90));
+                const ppData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
+                const ppEnd = parseWorkingHoursEnd(ppData?.working_hours) ?? undefined;
                 const deliveryResult = calculateDeliveryTimePerSeller(
                   maxPrep,
                   settings?.pickup_slots as PickupSlots | null ?? null,
                   settings?.busy_dates ?? null,
                   settings?.vacation_dates ?? null,
-                  adminSettings
+                  adminSettings,
+                  ppEnd
                 );
                 return (
                   <div key={fid} className="space-y-1">

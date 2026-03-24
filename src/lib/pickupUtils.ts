@@ -101,6 +101,14 @@ function getSellerReadyMinutes(
  * @param sellerSettings - Array of seller pickup configurations
  * @param adminSettings - Admin delivery configuration
  */
+/** Parse working_hours string like "10:00–20:00" and return closing time in minutes */
+export function parseWorkingHoursEnd(workingHours: string | null | undefined): number | null {
+  if (!workingHours) return null;
+  const match = workingHours.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+  if (!match) return null;
+  return parseTime(match[2]);
+}
+
 export function calculateDeliveryTime(
   maxPrepTimeMinutes: number,
   sellerSettings: Array<{
@@ -115,10 +123,14 @@ export function calculateDeliveryTime(
     delivery_start_hour: number;
     delivery_end_hour: number;
   },
+  pickupPointEndMinutes?: number,
 ): DeliveryTimeResult {
   const { cutoff_time_minutes, avg_delivery_time_minutes, delivery_start_hour, delivery_end_hour } = adminSettings;
   const deliveryStartMin = delivery_start_hour * 60;
-  const deliveryEndMin = delivery_end_hour * 60;
+  const rawDeliveryEndMin = delivery_end_hour * 60;
+  const deliveryEndMin = pickupPointEndMinutes
+    ? Math.min(rawDeliveryEndMin, pickupPointEndMinutes)
+    : rawDeliveryEndMin;
 
   // Try today and tomorrow (up to 7 days)
   for (let offset = 0; offset < 7; offset++) {
@@ -174,7 +186,7 @@ export function calculateDeliveryTime(
     // Round up to next 10 minutes for cleaner display
     arrivalMin = Math.ceil(arrivalMin / 10) * 10;
 
-    const endMin = arrivalMin + 60;
+    const endMin = Math.min(arrivalMin + 60, deliveryEndMin);
     const arrH = Math.floor(arrivalMin / 60);
     const arrM = arrivalMin % 60;
     const endH = Math.floor(endMin / 60);
@@ -206,11 +218,13 @@ export function calculateDeliveryTimePerSeller(
     delivery_end_hour: number;
     cutoff_time_minutes: number;
   },
+  pickupPointEndMinutes?: number,
 ): DeliveryTimeResult {
   return calculateDeliveryTime(
     prepTimeMinutes,
     [{ pickupSlots, busyDates, vacationDates }],
     adminSettings,
+    pickupPointEndMinutes,
   );
 }
 
