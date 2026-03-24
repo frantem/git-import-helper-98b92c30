@@ -186,7 +186,7 @@ export function calculateDeliveryTime(
     // Round up to next 10 minutes for cleaner display
     arrivalMin = Math.ceil(arrivalMin / 10) * 10;
 
-    const endMin = arrivalMin + 60;
+    const endMin = Math.min(arrivalMin + 60, deliveryEndMin);
     const arrH = Math.floor(arrivalMin / 60);
     const arrM = arrivalMin % 60;
     const endH = Math.floor(endMin / 60);
