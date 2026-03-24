@@ -8,7 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
-import { calculatePickupTime, PickupTimeResult, calculateDeliveryTime, calculateDeliveryTimePerSeller, DeliveryTimeResult } from "@/lib/pickupUtils";
+import { calculatePickupTime, PickupTimeResult, calculateDeliveryTime, calculateDeliveryTimePerSeller, DeliveryTimeResult, parseWorkingHoursEnd } from "@/lib/pickupUtils";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { Check, MapPin, Truck, Banknote, RefreshCw, LogIn, Settings, Home, Package, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
