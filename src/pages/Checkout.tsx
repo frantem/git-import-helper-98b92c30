@@ -530,17 +530,20 @@ export default function Checkout() {
           
           <RadioGroup value={deliveryType} onValueChange={(v) => setDeliveryType(v as "pickup" | "courier" | "self")} className="space-y-2">
             {/* Pickup point option */}
-            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "pickup" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => setDeliveryType("pickup")}>
-              <RadioGroupItem value="pickup" id="delivery-pickup" className="mt-1" />
-              <Label htmlFor="delivery-pickup" className="flex-1 cursor-pointer">
+            <div className="relative flex items-start gap-3 py-3 px-3 rounded-lg bg-muted/60 opacity-60 cursor-not-allowed select-none">
+              <RadioGroupItem value="pickup" id="delivery-pickup" className="mt-1" disabled />
+              <Label htmlFor="delivery-pickup" className="flex-1 cursor-not-allowed">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Пункт выдачи</span>
+                    <span className="font-medium text-muted-foreground">Пункт выдачи</span>
                   </div>
-                  <span className="text-primary font-medium">Бесплатно</span>
+                  <span className="text-muted-foreground font-medium">Бесплатно</span>
                 </div>
               </Label>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="bg-muted-foreground/80 text-background text-xs font-bold px-3 py-1 rounded-full">В разработке</span>
+              </div>
             </div>
 
             {/* Courier delivery option */}
