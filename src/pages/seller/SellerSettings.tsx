@@ -21,8 +21,9 @@ export default function SellerSettings() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [settingsForm, setSettingsForm] = useState({
-    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "",
+    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "", slug: "",
   });
+  const [slugError, setSlugError] = useState<string | null>(null);
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
@@ -55,6 +56,7 @@ export default function SellerSettings() {
         house: (farmer as any).house || "",
         entrance: (farmer as any).entrance || "",
         apartment: (farmer as any).apartment || "",
+        slug: (farmer as any).slug || "",
       });
 
       const { data: profile } = await supabase
@@ -91,6 +93,18 @@ export default function SellerSettings() {
 
   const handleSave = async () => {
     if (!farmerId) return;
+
+    // Validate slug
+    const slug = settingsForm.slug.trim();
+    if (slug) {
+      if (slug.length < 3) { setSlugError("Минимум 3 символа"); return; }
+      if (!/^[a-z0-9-]+$/.test(slug)) { setSlugError("Только латиница (строчная), цифры и дефисы"); return; }
+      // Check uniqueness
+      const { data: existing } = await supabase.from("farmers").select("id").eq("slug" as any, slug).neq("id", farmerId).maybeSingle();
+      if (existing) { setSlugError("Этот адрес уже занят"); return; }
+    }
+    setSlugError(null);
+
     const { error } = await supabase
       .from("farmers")
       .update({
@@ -104,6 +118,7 @@ export default function SellerSettings() {
         house: settingsForm.house || null,
         entrance: settingsForm.entrance || null,
         apartment: settingsForm.apartment || null,
+        slug: slug || null,
       } as any)
       .eq("id", farmerId);
 
