@@ -100,7 +100,7 @@ export default function SellerSettings() {
       if (slug.length < 3) { setSlugError("Минимум 3 символа"); return; }
       if (!/^[a-z0-9-]+$/.test(slug)) { setSlugError("Только латиница (строчная), цифры и дефисы"); return; }
       // Check uniqueness
-      const { data: existing } = await supabase.from("farmers").select("id").eq("slug" as any, slug).neq("id", farmerId).maybeSingle();
+      const { data: existing } = await (supabase.from("farmers").select("id") as any).eq("slug", slug).neq("id", farmerId).maybeSingle();
       if (existing) { setSlugError("Этот адрес уже занят"); return; }
     }
     setSlugError(null);
