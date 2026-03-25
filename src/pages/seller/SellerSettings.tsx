@@ -238,6 +238,7 @@ export default function SellerSettings() {
             </div>
           </div>
 
+          <div className="pt-4 border-t border-border">
             <h3 className="font-medium text-foreground mb-3">Адрес для самовывоза</h3>
             <div className="space-y-3">
               <div className="space-y-2">
