@@ -100,6 +100,7 @@ export default function AdminOrders() {
         estimated_delivery_time,
         created_at,
         buyer_id,
+        referrer_farmer_id,
         pickup_point:pickup_points(name, address, working_hours),
         order_items(
           id,
