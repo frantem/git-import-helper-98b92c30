@@ -153,9 +153,21 @@ export default function AdminOrders() {
         setFarmerPhones(phoneMap);
       }
 
+      // Fetch referrer farmer names
+      const referrerIds = [...new Set(data.map(o => (o as any).referrer_farmer_id).filter(Boolean))];
+      let referrerMap = new Map<string, string>();
+      if (referrerIds.length > 0) {
+        const { data: referrerFarmers } = await supabase
+          .from("farmers")
+          .select("id, name")
+          .in("id", referrerIds);
+        referrerFarmers?.forEach(f => referrerMap.set(f.id, f.name));
+      }
+
       const ordersWithBuyers = data.map(order => ({
         ...order,
-        buyer: profilesMap.get(order.buyer_id) || null
+        buyer: profilesMap.get(order.buyer_id) || null,
+        referrer_farmer_name: (order as any).referrer_farmer_id ? referrerMap.get((order as any).referrer_farmer_id) || null : null,
       }));
 
       setOrders(ordersWithBuyers as Order[]);
