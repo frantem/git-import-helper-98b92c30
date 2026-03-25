@@ -50,12 +50,23 @@ export default function SellerProfile() {
     const fetchData = async () => {
       if (!id) return;
 
-      // Fetch farmer info
-      const { data: farmerData, error: farmerError } = await supabase
-        .from("farmers")
-        .select("*")
-        .eq("id", id)
-        .single();
+      // Try to find by slug first, then by id (UUID)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      
+      let farmerData: any = null;
+      let farmerError: any = null;
+
+      if (!isUUID) {
+        const res = await supabase.from("farmers").select("*").eq("slug", id).single();
+        farmerData = res.data;
+        farmerError = res.error;
+      }
+      
+      if (!farmerData) {
+        const res = await supabase.from("farmers").select("*").eq("id", id).single();
+        farmerData = res.data;
+        farmerError = res.error;
+      }
 
       if (farmerError) {
         console.error("Error fetching farmer:", farmerError);
@@ -64,6 +75,10 @@ export default function SellerProfile() {
       }
 
       setFarmer(farmerData);
+
+      // Save referrer with 24h expiry (last click wins)
+      localStorage.setItem("referrer_farmer_id", farmerData.id);
+      localStorage.setItem("referrer_farmer_ts", Date.now().toString());
 
       // Fetch farmer's active products
       const { data: productsData } = await supabase

@@ -384,9 +384,22 @@ export default function Checkout() {
         notes: deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedTime ?
         `Доставка в указанное время: ${selectedTime}` :
         null,
-        estimated_delivery_time: estimatedDeliveryTime
+        estimated_delivery_time: estimatedDeliveryTime,
+        referrer_farmer_id: (() => {
+          const refId = localStorage.getItem("referrer_farmer_id");
+          const refTs = localStorage.getItem("referrer_farmer_ts");
+          if (refId && refTs) {
+            const age = Date.now() - parseInt(refTs, 10);
+            if (age <= 24 * 60 * 60 * 1000) return refId;
+          }
+          return null;
+        })()
       } as any).select().single();
       if (orderError) throw orderError;
+
+      // Clear referrer after successful order
+      localStorage.removeItem("referrer_farmer_id");
+      localStorage.removeItem("referrer_farmer_ts");
 
       // Create order_items for each cart item (use variant price if available)
       const orderItems = items.map((item) => {
