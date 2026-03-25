@@ -1,44 +1,55 @@
+## Задача
 
+1. Продавцы могут задать себе красивый slug (например `ivan-farm`) вместо UUID в URL профиля (`/seller/ivan-farm`)
+2. Отслеживание реферальных заходов: если покупатель зашёл на сайт через ссылку продавца и потом сделал заказ — в `/admin/orders` отображается имя этого продавца
 
-## Проблема
+## Изменения
 
-`calculateDeliveryTime` использует `delivery_end_hour` из admin settings (по умолчанию 24) для ограничения времени доставки. Но при доставке в пункт выдачи (ПВЗ) нужно учитывать **рабочие часы самого ПВЗ** (например, до 20:00). Сейчас этого не происходит — функция показывает "Сегодня 21:40–22:40", хотя ПВЗ закрыт после 20:00.
+### 1. Миграция БД
 
-## Решение
+- Добавить колонку `slug` (text, nullable, unique) в таблицу `farmers`
+- Добавить колонку `referrer_farmer_id` (uuid, nullable) в таблицу `orders`
 
-Передать рабочие часы выбранного ПВЗ в расчёт и ограничить время доставки временем закрытия ПВЗ.
-
-### Изменения
-
-**1. `src/lib/pickupUtils.ts`** — добавить опциональный параметр `pickupPointClosingMinutes` в `calculateDeliveryTime`. Если передан, использовать `Math.min(deliveryEndMin, pickupPointClosingMinutes)` вместо просто `deliveryEndMin` при проверке "слишком поздно". Также ограничить окно `endMin` (конец интервала) этим значением.
-
-**2. `src/pages/Checkout.tsx`** — в двух местах, где вызывается `calculateDeliveryTime` / `calculateDeliveryTimePerSeller` для типа "pickup":
-
-- **`fastDeliveryResult` (строка ~102)**: если `deliveryType === "pickup"` и выбран ПВЗ, парсить `working_hours` выбранного ПВЗ (формат "10:00–20:00") и передавать closing time в `calculateDeliveryTime`.
-- **Рендер per-seller (строка ~587)**: аналогично передавать closing time ПВЗ в `calculateDeliveryTimePerSeller`.
-
-### Парсинг working_hours
-
-Формат строки: `"10:00-20:00"` или `"10:00–20:00"`. Вспомогательная функция извлекает конечное время и конвертирует в минуты от полуночи. Если не удалось распарсить — не ограничиваем (fallback к `delivery_end_hour`).
-
-### Технические детали
-
-В `calculateDeliveryTime`:
-```
-// Новый опциональный параметр:
-pickupPointEndMinutes?: number
-
-// В цикле вместо:
-if (arrivalMin >= deliveryEndMin) continue;
-// Будет:
-const effectiveEnd = pickupPointEndMinutes 
-  ? Math.min(deliveryEndMin, pickupPointEndMinutes) 
-  : deliveryEndMin;
-if (arrivalMin >= effectiveEnd) continue;
-
-// Также ограничить endMin окна:
-const endMin = Math.min(arrivalMin + 60, effectiveEnd);
+```sql
+ALTER TABLE farmers ADD COLUMN slug text UNIQUE;
+ALTER TABLE orders ADD COLUMN referrer_farmer_id uuid;
 ```
 
-Итого: 2 файла, ~15 строк изменений.
+### 2. SellerProfile.tsx — поддержка slug
 
+Сейчас страница ищет фермера по `id` (UUID). Изменить логику: сначала пробовать найти по `slug`, если не найден — по `id`. Это обеспечит обратную совместимость со старыми UUID-ссылками.
+
+### 3. SellerSettings.tsx — поле для slug
+
+Добавить поле «Адрес страницы» в настройки продавца:
+
+- Input с префиксом `locusfood.by/seller/`
+- Валидация: только латиница, цифры, дефисы; минимум 3 символа
+- При сохранении — проверка уникальности через запрос к `farmers` (where slug = value AND id != currentFarmerId)
+- Показывать ошибку если slug занят
+
+### 4. Реферальная система — сохранение в localStorage
+
+В `SellerProfile.tsx`: при загрузке страницы сохранять `farmer_id` в `localStorage` как `referrer_farmer_id`. Это позволит отследить, что покупатель пришёл через ссылку продавца.  
+**Окно атрибуции (Срок жизни ссылки):** ссылка должна «действовать»,  **24 часа**. Если покупатель зашел по ссылке продавца, ушел, но вернулся и купил в течение суток — отображать реферала.  
+**Перезапись реферала:** Нужно четко прописать правило: **«Последний клик побеждает»**. Если покупатель сначала зашел по ссылке «Продавца А», а потом по ссылке «Продавца Б», то в `localStorage` значение должно перезаписаться на «Продавца Б».
+
+### 5. Checkout.tsx — передача referrer при создании заказа
+
+При создании заказа читать `localStorage.getItem("referrer_farmer_id")` и передавать в поле `referrer_farmer_id` при insert в `orders`. После успешного заказа — очистить значение из localStorage.
+
+### 6. AdminOrders.tsx — отображение реферала
+
+- В запросе `fetchOrders` добавить join на `farmers` по `referrer_farmer_id` для получения имени продавца-реферала
+- В карточке заказа: если есть `referrer_farmer_id` — показывать строку «Пришёл от: [имя продавца]» с иконкой
+
+### Файлы
+
+
+| Файл                                  | Что меняется                                          |
+| ------------------------------------- | ----------------------------------------------------- |
+| Миграция SQL                          | +slug в farmers, +referrer_farmer_id в orders         |
+| `src/pages/SellerProfile.tsx`         | Поиск по slug/id + сохранение referrer в localStorage |
+| `src/pages/seller/SellerSettings.tsx` | Поле slug с валидацией и проверкой уникальности       |
+| `src/pages/Checkout.tsx`              | Передача referrer_farmer_id при создании заказа       |
+| `src/pages/admin/AdminOrders.tsx`     | Отображение реферала в карточке заказа                |
