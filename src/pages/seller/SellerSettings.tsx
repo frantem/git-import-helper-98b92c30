@@ -21,8 +21,9 @@ export default function SellerSettings() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [settingsForm, setSettingsForm] = useState({
-    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "",
+    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "", slug: "",
   });
+  const [slugError, setSlugError] = useState<string | null>(null);
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
@@ -55,6 +56,7 @@ export default function SellerSettings() {
         house: (farmer as any).house || "",
         entrance: (farmer as any).entrance || "",
         apartment: (farmer as any).apartment || "",
+        slug: (farmer as any).slug || "",
       });
 
       const { data: profile } = await supabase
@@ -91,6 +93,18 @@ export default function SellerSettings() {
 
   const handleSave = async () => {
     if (!farmerId) return;
+
+    // Validate slug
+    const slug = settingsForm.slug.trim();
+    if (slug) {
+      if (slug.length < 3) { setSlugError("Минимум 3 символа"); return; }
+      if (!/^[a-z0-9-]+$/.test(slug)) { setSlugError("Только латиница (строчная), цифры и дефисы"); return; }
+      // Check uniqueness
+      const { data: existing } = await (supabase.from("farmers").select("id") as any).eq("slug", slug).neq("id", farmerId).maybeSingle();
+      if (existing) { setSlugError("Этот адрес уже занят"); return; }
+    }
+    setSlugError(null);
+
     const { error } = await supabase
       .from("farmers")
       .update({
@@ -104,6 +118,7 @@ export default function SellerSettings() {
         house: settingsForm.house || null,
         entrance: settingsForm.entrance || null,
         apartment: settingsForm.apartment || null,
+        slug: slug || null,
       } as any)
       .eq("id", farmerId);
 
@@ -200,6 +215,27 @@ export default function SellerSettings() {
           <div className="space-y-2">
             <Label>Населённый пункт</Label>
             <Input value={settingsForm.village} onChange={(e) => setSettingsForm({ ...settingsForm, village: e.target.value })} />
+          </div>
+
+          <div className="pt-4 border-t border-border">
+            <h3 className="font-medium text-foreground mb-3">Адрес страницы</h3>
+            <div className="space-y-2">
+              <Label>Ваша ссылка</Label>
+              <div className="flex items-center gap-0">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">locusfood.by/seller/</span>
+                <Input
+                  value={settingsForm.slug}
+                  onChange={(e) => {
+                    setSettingsForm({ ...settingsForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') });
+                    setSlugError(null);
+                  }}
+                  placeholder="my-farm"
+                  className="flex-1"
+                />
+              </div>
+              {slugError && <p className="text-sm text-destructive">{slugError}</p>}
+              <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-border">

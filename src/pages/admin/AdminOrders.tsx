@@ -43,6 +43,8 @@ interface Order {
   estimated_delivery_time: string | null;
   created_at: string;
   buyer_id: string;
+  referrer_farmer_id: string | null;
+  referrer_farmer_name: string | null;
   pickup_point: {
     name: string;
     address: string;
@@ -98,6 +100,7 @@ export default function AdminOrders() {
         estimated_delivery_time,
         created_at,
         buyer_id,
+        referrer_farmer_id,
         pickup_point:pickup_points(name, address, working_hours),
         order_items(
           id,
@@ -150,9 +153,21 @@ export default function AdminOrders() {
         setFarmerPhones(phoneMap);
       }
 
+      // Fetch referrer farmer names
+      const referrerIds = [...new Set(data.map(o => (o as any).referrer_farmer_id).filter(Boolean))];
+      let referrerMap = new Map<string, string>();
+      if (referrerIds.length > 0) {
+        const { data: referrerFarmers } = await supabase
+          .from("farmers")
+          .select("id, name")
+          .in("id", referrerIds);
+        referrerFarmers?.forEach(f => referrerMap.set(f.id, f.name));
+      }
+
       const ordersWithBuyers = data.map(order => ({
         ...order,
-        buyer: profilesMap.get(order.buyer_id) || null
+        buyer: profilesMap.get(order.buyer_id) || null,
+        referrer_farmer_name: (order as any).referrer_farmer_id ? referrerMap.get((order as any).referrer_farmer_id) || null : null,
       }));
 
       setOrders(ordersWithBuyers as Order[]);
@@ -399,6 +414,13 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                       <Clock className="h-4 w-4 shrink-0" />
                       <span>Ожидаемое время: {order.estimated_delivery_time}</span>
+                    </div>
+                  )}
+
+                  {order.referrer_farmer_name && (
+                    <div className="flex items-center gap-2 text-sm text-primary mb-3">
+                      <User className="h-4 w-4" />
+                      <span>Пришёл от: {order.referrer_farmer_name}</span>
                     </div>
                   )}
 
