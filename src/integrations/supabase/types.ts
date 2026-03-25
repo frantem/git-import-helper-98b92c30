@@ -135,6 +135,7 @@ export type Database = {
           name: string
           photo_url: string | null
           rating: number | null
+          slug: string | null
           street: string | null
           user_id: string | null
           village: string | null
@@ -152,6 +153,7 @@ export type Database = {
           name: string
           photo_url?: string | null
           rating?: number | null
+          slug?: string | null
           street?: string | null
           user_id?: string | null
           village?: string | null
@@ -169,6 +171,7 @@ export type Database = {
           name?: string
           photo_url?: string | null
           rating?: number | null
+          slug?: string | null
           street?: string | null
           user_id?: string | null
           village?: string | null
@@ -349,6 +352,7 @@ export type Database = {
           id: string
           notes: string | null
           pickup_point_id: string | null
+          referrer_farmer_id: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -364,6 +368,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pickup_point_id?: string | null
+          referrer_farmer_id?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -379,6 +384,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pickup_point_id?: string | null
+          referrer_farmer_id?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -389,6 +395,13 @@ export type Database = {
             columns: ["pickup_point_id"]
             isOneToOne: false
             referencedRelation: "pickup_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_referrer_farmer_id_fkey"
+            columns: ["referrer_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
         ]
