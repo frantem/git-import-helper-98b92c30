@@ -417,6 +417,13 @@ export default function AdminOrders() {
                     </div>
                   )}
 
+                  {order.referrer_farmer_name && (
+                    <div className="flex items-center gap-2 text-sm text-primary mb-3">
+                      <User className="h-4 w-4" />
+                      <span>Пришёл от: {order.referrer_farmer_name}</span>
+                    </div>
+                  )}
+
                   {/* Order items grouped by farmer */}
                   <div className="border-t border-border pt-3 space-y-3">
                     <p className="text-sm font-medium text-foreground">Товары:</p>
