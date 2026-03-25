@@ -218,6 +218,26 @@ export default function SellerSettings() {
           </div>
 
           <div className="pt-4 border-t border-border">
+            <h3 className="font-medium text-foreground mb-3">Адрес страницы</h3>
+            <div className="space-y-2">
+              <Label>Ваша ссылка</Label>
+              <div className="flex items-center gap-0">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">locusfood.by/seller/</span>
+                <Input
+                  value={settingsForm.slug}
+                  onChange={(e) => {
+                    setSettingsForm({ ...settingsForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') });
+                    setSlugError(null);
+                  }}
+                  placeholder="my-farm"
+                  className="flex-1"
+                />
+              </div>
+              {slugError && <p className="text-sm text-destructive">{slugError}</p>}
+              <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
+            </div>
+          </div>
+
             <h3 className="font-medium text-foreground mb-3">Адрес для самовывоза</h3>
             <div className="space-y-3">
               <div className="space-y-2">

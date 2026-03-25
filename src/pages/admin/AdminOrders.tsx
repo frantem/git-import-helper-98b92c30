@@ -43,6 +43,8 @@ interface Order {
   estimated_delivery_time: string | null;
   created_at: string;
   buyer_id: string;
+  referrer_farmer_id: string | null;
+  referrer_farmer_name: string | null;
   pickup_point: {
     name: string;
     address: string;
