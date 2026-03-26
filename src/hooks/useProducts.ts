@@ -70,6 +70,7 @@ export function useProducts() {
           product_variants(id, label, price, unit, is_default, sort_order)
         `)
         .eq("is_active", true)
+        .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
