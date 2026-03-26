@@ -663,6 +663,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          is_deleted: boolean
           is_featured: boolean | null
           is_new: boolean | null
           old_price: number | null
@@ -687,6 +688,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_deleted?: boolean
           is_featured?: boolean | null
           is_new?: boolean | null
           old_price?: number | null
@@ -711,6 +713,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_deleted?: boolean
           is_featured?: boolean | null
           is_new?: boolean | null
           old_price?: number | null

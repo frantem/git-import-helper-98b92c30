@@ -103,6 +103,7 @@ export default function SellerProducts() {
 
     const [productsRes, categoriesRes] = await Promise.all([
       supabase.from("products").select("*").eq("farmer_id", farmer.id)
+        .eq("is_deleted", false)
         .order("is_active", { ascending: false }).order("created_at", { ascending: false }),
       supabase.from("categories").select("id, name, slug").order("sort_order"),
     ]);
@@ -249,8 +250,8 @@ export default function SellerProducts() {
     const { error } = await supabase.from("products").delete().eq("id", deleteConfirmId);
 
     if (error?.code === "23503") {
-      await supabase.from("products").update({ is_active: false }).eq("id", deleteConfirmId);
-      toast.success("Товар имеет заказы и не может быть полностью удалён. Он был скрыт.");
+      await supabase.from("products").update({ is_active: false, is_deleted: true } as any).eq("id", deleteConfirmId);
+      toast.success("Товар удалён");
     } else if (error) {
       toast.error("Ошибка при удалении товара: " + error.message);
     } else {
@@ -264,7 +265,7 @@ export default function SellerProducts() {
 
   const handleToggleActive = async (productId: string, currentState: boolean) => {
     const { error } = await supabase.from("products")
-      .update({ is_active: !currentState, archived_at: currentState ? new Date().toISOString() : null } as any)
+      .update({ is_active: !currentState })
       .eq("id", productId);
     if (error) toast.error("Ошибка при изменении статуса");
     else { toast.success(currentState ? "Товар скрыт" : "Товар активирован"); fetchData(); }
