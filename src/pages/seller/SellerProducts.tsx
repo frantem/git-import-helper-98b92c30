@@ -236,11 +236,30 @@ export default function SellerProducts() {
   const handleDeleteProduct = async () => {
     if (!deleteConfirmId || isDeleting) return;
     setIsDeleting(true);
+
+    // Clean up related records first
+    await Promise.all([
+      supabase.from("product_images").delete().eq("product_id", deleteConfirmId),
+      supabase.from("product_variants").delete().eq("product_id", deleteConfirmId),
+      supabase.from("product_categories").delete().eq("product_id", deleteConfirmId),
+      supabase.from("product_addons").delete().eq("product_id", deleteConfirmId),
+      (supabase as any).from("product_custom_fields").delete().eq("product_id", deleteConfirmId),
+    ]);
+
     const { error } = await supabase.from("products").delete().eq("id", deleteConfirmId);
+
+    if (error?.code === "23503") {
+      await supabase.from("products").update({ is_active: false }).eq("id", deleteConfirmId);
+      toast.success("Товар имеет заказы и не может быть полностью удалён. Он был скрыт.");
+    } else if (error) {
+      toast.error("Ошибка при удалении товара: " + error.message);
+    } else {
+      toast.success("Товар удалён");
+    }
+
     setIsDeleting(false);
     setDeleteConfirmId(null);
-    if (error) toast.error("Ошибка при удалении товара: " + error.message);
-    else { toast.success("Товар удалён"); fetchData(); }
+    fetchData();
   };
 
   const handleToggleActive = async (productId: string, currentState: boolean) => {
