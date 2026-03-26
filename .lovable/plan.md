@@ -1,55 +1,50 @@
-## Задача
 
-1. Продавцы могут задать себе красивый slug (например `ivan-farm`) вместо UUID в URL профиля (`/seller/ivan-farm`)
-2. Отслеживание реферальных заходов: если покупатель зашёл на сайт через ссылку продавца и потом сделал заказ — в `/admin/orders` отображается имя этого продавца
 
-## Изменения
+## Problem
+Product `b3e3aa48-...` cannot be deleted because it has order_items referencing it (foreign key constraint). This is expected — you shouldn't delete products with order history.
 
-### 1. Миграция БД
+## Solution
+Instead of hard-deleting, use soft delete: set `is_active = false` when a product has orders. Only hard-delete if no orders reference it.
 
-- Добавить колонку `slug` (text, nullable, unique) в таблицу `farmers`
-- Добавить колонку `referrer_farmer_id` (uuid, nullable) в таблицу `orders`
+### Change in `src/pages/seller/SellerProducts.tsx`
 
-```sql
-ALTER TABLE farmers ADD COLUMN slug text UNIQUE;
-ALTER TABLE orders ADD COLUMN referrer_farmer_id uuid;
+Update `handleDeleteProduct` (line 236-244):
+
+1. First, try to delete the product normally
+2. If the error is a foreign key violation (`23503`), fall back to deactivating (`is_active = false`) and show a message: "Товар имеет заказы и не может быть удалён. Он был скрыт."
+3. Also delete related records (images, variants, categories, addons, custom fields) before attempting product deletion — these don't have order references
+
+```typescript
+const handleDeleteProduct = async () => {
+  if (!deleteConfirmId || isDeleting) return;
+  setIsDeleting(true);
+  
+  // Clean up related records first
+  await Promise.all([
+    supabase.from("product_images").delete().eq("product_id", deleteConfirmId),
+    supabase.from("product_variants").delete().eq("product_id", deleteConfirmId),
+    supabase.from("product_categories").delete().eq("product_id", deleteConfirmId),
+    supabase.from("product_addons").delete().eq("product_id", deleteConfirmId),
+    (supabase as any).from("product_custom_fields").delete().eq("product_id", deleteConfirmId),
+  ]);
+  
+  const { error } = await supabase.from("products").delete().eq("id", deleteConfirmId);
+  
+  if (error?.code === "23503") {
+    // FK violation — product has orders, soft-delete instead
+    await supabase.from("products").update({ is_active: false }).eq("id", deleteConfirmId);
+    toast.success("Товар имеет заказы и не может быть полностью удалён. Он был скрыт.");
+  } else if (error) {
+    toast.error("Ошибка при удалении товара: " + error.message);
+  } else {
+    toast.success("Товар удалён");
+  }
+  
+  setIsDeleting(false);
+  setDeleteConfirmId(null);
+  fetchData();
+};
 ```
 
-### 2. SellerProfile.tsx — поддержка slug
+One function change, one file.
 
-Сейчас страница ищет фермера по `id` (UUID). Изменить логику: сначала пробовать найти по `slug`, если не найден — по `id`. Это обеспечит обратную совместимость со старыми UUID-ссылками.
-
-### 3. SellerSettings.tsx — поле для slug
-
-Добавить поле «Адрес страницы» в настройки продавца:
-
-- Input с префиксом `locusfood.by/seller/`
-- Валидация: только латиница, цифры, дефисы; минимум 3 символа
-- При сохранении — проверка уникальности через запрос к `farmers` (where slug = value AND id != currentFarmerId)
-- Показывать ошибку если slug занят
-
-### 4. Реферальная система — сохранение в localStorage
-
-В `SellerProfile.tsx`: при загрузке страницы сохранять `farmer_id` в `localStorage` как `referrer_farmer_id`. Это позволит отследить, что покупатель пришёл через ссылку продавца.  
-**Окно атрибуции (Срок жизни ссылки):** ссылка должна «действовать»,  **24 часа**. Если покупатель зашел по ссылке продавца, ушел, но вернулся и купил в течение суток — отображать реферала.  
-**Перезапись реферала:** Нужно четко прописать правило: **«Последний клик побеждает»**. Если покупатель сначала зашел по ссылке «Продавца А», а потом по ссылке «Продавца Б», то в `localStorage` значение должно перезаписаться на «Продавца Б».
-
-### 5. Checkout.tsx — передача referrer при создании заказа
-
-При создании заказа читать `localStorage.getItem("referrer_farmer_id")` и передавать в поле `referrer_farmer_id` при insert в `orders`. После успешного заказа — очистить значение из localStorage.
-
-### 6. AdminOrders.tsx — отображение реферала
-
-- В запросе `fetchOrders` добавить join на `farmers` по `referrer_farmer_id` для получения имени продавца-реферала
-- В карточке заказа: если есть `referrer_farmer_id` — показывать строку «Пришёл от: [имя продавца]» с иконкой
-
-### Файлы
-
-
-| Файл                                  | Что меняется                                          |
-| ------------------------------------- | ----------------------------------------------------- |
-| Миграция SQL                          | +slug в farmers, +referrer_farmer_id в orders         |
-| `src/pages/SellerProfile.tsx`         | Поиск по slug/id + сохранение referrer в localStorage |
-| `src/pages/seller/SellerSettings.tsx` | Поле slug с валидацией и проверкой уникальности       |
-| `src/pages/Checkout.tsx`              | Передача referrer_farmer_id при создании заказа       |
-| `src/pages/admin/AdminOrders.tsx`     | Отображение реферала в карточке заказа                |
