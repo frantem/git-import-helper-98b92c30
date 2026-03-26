@@ -1,50 +1,51 @@
 
 
-## Problem
-Product `b3e3aa48-...` cannot be deleted because it has order_items referencing it (foreign key constraint). This is expected — you shouldn't delete products with order history.
+## Проблемы
 
-## Solution
-Instead of hard-deleting, use soft delete: set `is_active = false` when a product has orders. Only hard-delete if no orders reference it.
+1. **"Ошибка при изменении статуса"** — `handleToggleActive` (строка 267) пытается записать `archived_at`, которого нет в таблице `products`. Supabase отклоняет запрос.
 
-### Change in `src/pages/seller/SellerProducts.tsx`
+2. **Удалённые товары видны в списке** — после soft-delete (`is_active: false`) продукт остаётся в списке продавца, т.к. `fetchData` загружает все товары без фильтра. Пользователь хочет: нажал "удалить" → товар пропал из списка.
 
-Update `handleDeleteProduct` (line 236-244):
+## Решение
 
-1. First, try to delete the product normally
-2. If the error is a foreign key violation (`23503`), fall back to deactivating (`is_active = false`) and show a message: "Товар имеет заказы и не может быть удалён. Он был скрыт."
-3. Also delete related records (images, variants, categories, addons, custom fields) before attempting product deletion — these don't have order references
+### 1. Исправить `handleToggleActive` в `SellerProducts.tsx` (строка 266-267)
+
+Убрать `archived_at` из update — оставить только `{ is_active: !currentState }`.
+
+### 2. Скрывать удалённые товары из списка
+
+В `fetchData` (строка 104-106): после soft-delete товар имеет `is_active: false`. Но продавцу нужно видеть скрытые товары (чтобы включить обратно через Switch). Поэтому оставим загрузку всех товаров — Switch уже работает для скрытия/показа.
+
+Однако если пользователь нажал именно **"Удалить"** (а не Switch) — товар должен полностью исчезнуть. Для этого можно добавить колонку `is_deleted` или просто убирать товар из локального state после soft-delete.
+
+**Простое решение**: после soft-delete в `handleDeleteProduct` — удалить товар из локального `products` state, не дожидаясь `fetchData`. А `fetchData` продолжит загружать `is_active: false` товары (для тех, кто скрыл через Switch).
+
+Нет — лучше разделить: Switch скрывает (`is_active=false`), а "Удалить" помечает как удалённый. Но добавлять колонку сложно. 
+
+**Самое простое**: после soft-delete в `handleDeleteProduct` — просто фильтровать этот товар из state:
 
 ```typescript
-const handleDeleteProduct = async () => {
-  if (!deleteConfirmId || isDeleting) return;
-  setIsDeleting(true);
-  
-  // Clean up related records first
-  await Promise.all([
-    supabase.from("product_images").delete().eq("product_id", deleteConfirmId),
-    supabase.from("product_variants").delete().eq("product_id", deleteConfirmId),
-    supabase.from("product_categories").delete().eq("product_id", deleteConfirmId),
-    supabase.from("product_addons").delete().eq("product_id", deleteConfirmId),
-    (supabase as any).from("product_custom_fields").delete().eq("product_id", deleteConfirmId),
-  ]);
-  
-  const { error } = await supabase.from("products").delete().eq("id", deleteConfirmId);
-  
-  if (error?.code === "23503") {
-    // FK violation — product has orders, soft-delete instead
-    await supabase.from("products").update({ is_active: false }).eq("id", deleteConfirmId);
-    toast.success("Товар имеет заказы и не может быть полностью удалён. Он был скрыт.");
-  } else if (error) {
-    toast.error("Ошибка при удалении товара: " + error.message);
-  } else {
-    toast.success("Товар удалён");
-  }
-  
-  setIsDeleting(false);
-  setDeleteConfirmId(null);
-  fetchData();
-};
+setProducts(prev => prev.filter(p => p.id !== deleteConfirmId));
 ```
 
-One function change, one file.
+И убрать вызов `fetchData()` в handleDeleteProduct (потому что fetchData вернёт товар обратно). Но при перезагрузке страницы товар снова появится с `is_active: false` и пометкой "Скрыт" — это нормальное поведение для Switch-скрытых товаров.
+
+**Лучшее решение**: не показывать товары с `is_active: false` если их скрыл именно "Удалить". Нужен маркер. Самый чистый вариант — добавить булевую колонку `is_deleted` в `products`.
+
+### Итоговый план
+
+**Миграция SQL**: добавить `is_deleted boolean default false` в `products`.
+
+**`SellerProducts.tsx`**:
+- `handleToggleActive`: убрать `archived_at`, оставить только `{ is_active: !currentState }`
+- `handleDeleteProduct`: при soft-delete ставить `{ is_active: false, is_deleted: true }` вместо просто `{ is_active: false }`
+- `fetchData`: добавить `.eq("is_deleted", false)` к запросу продуктов — удалённые не загружаются
+- `useProducts.ts`: добавить `.eq("is_deleted", false)` к публичному запросу (чтобы удалённые не показывались покупателям тоже)
+
+### Файлы
+| Файл | Изменение |
+|---|---|
+| Миграция SQL | `ALTER TABLE products ADD COLUMN is_deleted boolean NOT NULL DEFAULT false` |
+| `src/pages/seller/SellerProducts.tsx` | Убрать `archived_at`, добавить `is_deleted` при soft-delete, фильтр в fetchData |
+| `src/hooks/useProducts.ts` | Добавить `.eq("is_deleted", false)` |
 
