@@ -145,7 +145,8 @@ export default function Checkout() {
         // For today: slot must be at least the earliest delivery time
         if (slotMinutes < minSlotMinutes) continue;
       }
-      slots.push(`${hour.toString().padStart(2, "0")}:00`);
+      const nextHour = hour + 1;
+      slots.push(`${hour.toString().padStart(2, "0")}:00–${nextHour.toString().padStart(2, "0")}:00`);
     }
     return slots;
   }, [selectedDate, adminSettings, fastDeliveryResult]);
