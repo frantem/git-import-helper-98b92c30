@@ -85,6 +85,7 @@ export default function SellerProducts() {
 
     protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "",
   });
+  useDraftState("seller_product_draft", productForm, setProductForm, showProductForm);
   const [customFields, setCustomFields] = useState<CustomFieldLocal[]>([]);
   const [productAddons, setProductAddons] = useState<AddonLocal[]>([]);
   const [mainPriceInput, setMainPriceInput] = useState("");
@@ -232,6 +233,7 @@ export default function SellerProducts() {
       }
     } finally {
       setIsSaving(false);
+      clearDraft("seller_product_draft");
       resetProductForm();
     }
   };
