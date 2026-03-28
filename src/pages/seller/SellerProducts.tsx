@@ -526,7 +526,7 @@ export default function SellerProducts() {
 
             {/* Prep time */}
             <div className="space-y-2">
-              <Label>Время готовки</Label>
+              <Label>Время приготовления</Label>
               <p className="text-xs text-muted-foreground">Оставьте пустым, если товар уже готов</p>
               <div className="flex items-center gap-2">
                 <Input type="number" value={productForm.prep_time_minutes}

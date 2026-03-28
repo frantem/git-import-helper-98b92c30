@@ -288,7 +288,7 @@ export default function AdminSettings() {
                 <span className="text-sm text-muted-foreground">минут</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Используется для расчёта "Доставка на дом Xч" = время готовки + это время
+                Используется для расчёта "Доставка на дом Xч" = время приготовления + это время
               </p>
             </div>
           </div>
