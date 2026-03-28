@@ -12,6 +12,7 @@ import { ArrowLeft, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
+import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -24,6 +25,9 @@ export default function SellerSettings() {
     name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "", slug: "",
   });
   const [slugError, setSlugError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  useDraftState("seller_settings_draft", settingsForm, setSettingsForm, dataLoaded);
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
@@ -72,6 +76,7 @@ export default function SellerSettings() {
         if (profile.vacation_dates) setVacationDates((profile.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00")));
       }
       setIsLoading(false);
+      setDataLoaded(true);
     };
     fetchData();
   }, [user, role, authLoading]);
@@ -136,7 +141,10 @@ export default function SellerSettings() {
       .eq("user_id", user!.id);
 
     if (profileError) toast.error("Ошибка сохранения настроек выдачи");
-    else toast.success("Настройки сохранены");
+    else {
+      clearDraft("seller_settings_draft");
+      toast.success("Настройки сохранены");
+    }
   };
 
   if (authLoading || isLoading) {

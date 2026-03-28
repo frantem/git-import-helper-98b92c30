@@ -16,6 +16,7 @@ import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/
 import { compressImage } from "@/lib/imageUtils";
 import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
 interface Product {
   id: string;
@@ -81,6 +82,7 @@ export default function SellerProducts() {
   const [productForm, setProductForm] = useState({
     title: "", description: "", category_id: "", image_url: "",
     prep_time_minutes: "" as any, composition: "", calories: "" as any,
+
     protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "",
   });
   const [customFields, setCustomFields] = useState<CustomFieldLocal[]>([]);
