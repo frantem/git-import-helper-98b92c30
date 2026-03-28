@@ -667,7 +667,7 @@ export default function SellerProducts() {
                     </button>
                   </div>
                   <Input value={field.label} onChange={(e) => { const u = [...customFields]; u[fIndex] = { ...u[fIndex], label: e.target.value }; setCustomFields(u); }}
-                    placeholder="Название (напр. Начинка)" className="h-9" />
+                    placeholder="Название (напр. Начинка, Надпись)" className="h-9" />
                   {field.field_type === "text" && (
                     <Input value={field.placeholder} onChange={(e) => { const u = [...customFields]; u[fIndex] = { ...u[fIndex], placeholder: e.target.value }; setCustomFields(u); }}
                       placeholder="Подсказка (напр. Напишите до 5 слов)" className="h-9" />
