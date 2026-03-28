@@ -654,7 +654,7 @@ export default function SellerProducts() {
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">Поля, которые покупатель должен заполнить при добавлении в корзину.</p>
+              <p className="text-xs text-muted-foreground">Поля, которые покупатель должен заполнить или выбрать, перед добавлением в корзину.</p>
 
               {customFields.map((field, fIndex) => (
                 <div key={fIndex} className="p-3 rounded-lg bg-card border border-border space-y-2">
