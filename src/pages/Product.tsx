@@ -496,7 +496,7 @@ export default function Product() {
                   {field.field_type === "text" ? <Input value={customFieldValues[field.id] || ""} onChange={e => setCustomFieldValues(prev => ({
               ...prev,
               [field.id]: e.target.value
-            }))} placeholder={field.placeholder || ""} maxLength={field.max_length || 50} className="mt-1" /> : <div className="mt-1 flex flex-wrap gap-2">
+            }))} placeholder={field.placeholder || "напр. Напишите до 5 слов"} maxLength={field.max_length || 50} className="mt-1" /> : <div className="mt-1 flex flex-wrap gap-2">
                       {field.options.map(option => <button key={option.id} onClick={() => setCustomFieldValues(prev => ({
                 ...prev,
                 [field.id]: option.label
