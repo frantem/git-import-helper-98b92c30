@@ -646,7 +646,7 @@ export default function SellerProducts() {
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Дополнительные поля</Label>
                 <div className="flex gap-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setCustomFields([...customFields, { field_type: "text", label: "", placeholder: "напр. Напишите до 5 слов", max_length: 50, options: [] }])}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setCustomFields([...customFields, { field_type: "text", label: "", placeholder: "", max_length: 50, options: [] }])}>
                     <Plus className="h-3 w-3 mr-1" />Текст
                   </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => setCustomFields([...customFields, { field_type: "select", label: "", placeholder: "", max_length: 50, options: [] }])}>
