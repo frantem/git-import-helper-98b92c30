@@ -276,6 +276,7 @@ export default function SellerProducts() {
   };
 
   const handleEditProduct = async (product: Product) => {
+    clearDraft("seller_product_draft");
     const [imagesRes, variantsRes, catRes] = await Promise.all([
       supabase.from("product_images").select("image_url").eq("product_id", product.id).order("sort_order"),
       supabase.from("product_variants").select("*").eq("product_id", product.id).order("sort_order"),
