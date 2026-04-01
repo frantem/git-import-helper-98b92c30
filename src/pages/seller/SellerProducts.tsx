@@ -85,7 +85,7 @@ export default function SellerProducts() {
 
     protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "",
   });
-  useDraftState("seller_product_draft", productForm, setProductForm, showProductForm);
+  useDraftState("seller_product_draft", productForm, setProductForm, showProductForm && !editingProduct);
   const [customFields, setCustomFields] = useState<CustomFieldLocal[]>([]);
   const [productAddons, setProductAddons] = useState<AddonLocal[]>([]);
   const [mainPriceInput, setMainPriceInput] = useState("");
@@ -276,6 +276,7 @@ export default function SellerProducts() {
   };
 
   const handleEditProduct = async (product: Product) => {
+    clearDraft("seller_product_draft");
     const [imagesRes, variantsRes, catRes] = await Promise.all([
       supabase.from("product_images").select("image_url").eq("product_id", product.id).order("sort_order"),
       supabase.from("product_variants").select("*").eq("product_id", product.id).order("sort_order"),
@@ -379,7 +380,7 @@ export default function SellerProducts() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="font-medium text-foreground">Товары ({products.length})</h2>
-            <Button size="sm" onClick={() => { resetProductForm(); setShowProductForm(true); }}>
+            <Button size="sm" onClick={() => { clearDraft("seller_product_draft"); resetProductForm(); setEditingProduct(null); setShowProductForm(true); }}>
               <Plus className="h-4 w-4 mr-1" />
               Добавить
             </Button>
