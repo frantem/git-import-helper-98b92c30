@@ -380,7 +380,7 @@ export default function SellerProducts() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="font-medium text-foreground">Товары ({products.length})</h2>
-            <Button size="sm" onClick={() => { resetProductForm(); setShowProductForm(true); }}>
+            <Button size="sm" onClick={() => { clearDraft("seller_product_draft"); resetProductForm(); setEditingProduct(null); setShowProductForm(true); }}>
               <Plus className="h-4 w-4 mr-1" />
               Добавить
             </Button>
