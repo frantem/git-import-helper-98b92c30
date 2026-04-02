@@ -20,6 +20,8 @@ export default function SellerSettings() {
   const [farmerId, setFarmerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const [settingsForm, setSettingsForm] = useState({
     name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", house: "", entrance: "", apartment: "", slug: "",
