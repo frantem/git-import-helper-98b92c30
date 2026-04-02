@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -160,8 +160,10 @@ export default function SellerProducts() {
     );
   };
 
+  const savingRef = useRef(false);
+
   const handleSaveProduct = async () => {
-    if (!farmerId || isSaving) return;
+    if (!farmerId || savingRef.current) return;
     if (!productForm.title.trim()) { toast.error("Введите название товара"); return; }
     if (selectedCategoryIds.length === 0) { toast.error("Выберите хотя бы одну категорию"); return; }
     if (!productForm.composition.trim() || !productForm.shelf_life.trim() ||
@@ -170,6 +172,7 @@ export default function SellerProducts() {
       toast.error("Заполните состав, КБЖУ и срок хранения"); return;
     }
 
+    savingRef.current = true;
     setIsSaving(true);
     try {
       const priceInKopecks = mainVariant.price;
@@ -191,7 +194,7 @@ export default function SellerProducts() {
 
       if (editingProduct) {
         const { error } = await supabase.from("products").update(productData).eq("id", editingProduct.id);
-        if (error) { toast.error("Ошибка при обновлении товара"); return; }
+        if (error) { toast.error("Ошибка при обновлении товара: " + error.message); return; }
         const pid = editingProduct.id;
         await Promise.all([
           (async () => {
@@ -216,7 +219,7 @@ export default function SellerProducts() {
         toast.success("Товар обновлён");
       } else {
         const { data: newProduct, error } = await supabase.from("products").insert(productData).select().single();
-        if (error) { toast.error("Ошибка при создании товара"); return; }
+        if (error) { toast.error("Ошибка при создании товара: " + error.message); return; }
         const pid = newProduct.id;
         await Promise.all([
           productImages.length > 0 ? supabase.from("product_images").insert(productImages.map((url, i) => ({ product_id: pid, image_url: url, sort_order: i }))) : Promise.resolve(),
@@ -231,10 +234,15 @@ export default function SellerProducts() {
         setProducts(prev => [newProduct, ...prev]);
         toast.success("Товар добавлен");
       }
-    } finally {
-      setIsSaving(false);
+
+      // Только при успехе:
       clearDraft("seller_product_draft");
       resetProductForm();
+    } catch (e: any) {
+      toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   };
 
