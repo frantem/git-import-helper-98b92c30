@@ -99,53 +99,63 @@ export default function SellerSettings() {
   };
 
   const handleSave = async () => {
-    if (!farmerId) return;
+    if (!farmerId || savingRef.current) return;
+    savingRef.current = true;
+    setIsSaving(true);
 
-    // Validate slug
-    const slug = settingsForm.slug.trim();
-    if (slug) {
-      if (slug.length < 3) { setSlugError("Минимум 3 символа"); return; }
-      if (!/^[a-z0-9-]+$/.test(slug)) { setSlugError("Только латиница (строчная), цифры и дефисы"); return; }
-      // Check uniqueness
-      const { data: existing } = await (supabase.from("farmers").select("id") as any).eq("slug", slug).neq("id", farmerId).maybeSingle();
-      if (existing) { setSlugError("Этот адрес уже занят"); return; }
-    }
-    setSlugError(null);
+    try {
+      // Validate slug
+      const slug = settingsForm.slug.trim();
+      if (slug) {
+        if (slug.length < 3) { setSlugError("Минимум 3 символа"); return; }
+        if (!/^[a-z0-9-]+$/.test(slug)) { setSlugError("Только латиница (строчная), цифры и дефисы"); return; }
+        const { data: existing } = await (supabase.from("farmers").select("id") as any).eq("slug", slug).neq("id", farmerId).maybeSingle();
+        if (existing) { setSlugError("Этот адрес уже занят"); return; }
+      }
+      setSlugError(null);
 
-    const { error } = await supabase
-      .from("farmers")
-      .update({
-        name: settingsForm.name,
-        description: settingsForm.description || null,
-        district: settingsForm.district,
-        village: settingsForm.village || null,
-        photo_url: settingsForm.photo_url || null,
-        city: settingsForm.city || null,
-        street: settingsForm.street || null,
-        house: settingsForm.house || null,
-        entrance: settingsForm.entrance || null,
-        apartment: settingsForm.apartment || null,
-        slug: slug || null,
-      } as any)
-      .eq("id", farmerId);
+      const { error } = await supabase
+        .from("farmers")
+        .update({
+          name: settingsForm.name,
+          description: settingsForm.description || null,
+          district: settingsForm.district,
+          village: settingsForm.village || null,
+          photo_url: settingsForm.photo_url || null,
+          city: settingsForm.city || null,
+          street: settingsForm.street || null,
+          house: settingsForm.house || null,
+          entrance: settingsForm.entrance || null,
+          apartment: settingsForm.apartment || null,
+          slug: slug || null,
+        } as any)
+        .eq("id", farmerId);
 
-    if (error) { toast.error("Ошибка при сохранении"); return; }
+      if (error) { toast.error("Ошибка при сохранении: " + error.message); return; }
 
-    const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        pickup_slots: pickupSlots as any,
-        max_orders_per_day: maxOrdersPerDay,
-        busy_dates: busyDates.map(formatDate),
-        vacation_dates: vacationDates.map(formatDate),
-      } as any)
-      .eq("user_id", user!.id);
+      const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const validBusy = busyDates.filter(d => !isNaN(d.getTime()));
+      const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
 
-    if (profileError) toast.error("Ошибка сохранения настроек выдачи");
-    else {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          pickup_slots: pickupSlots as any,
+          max_orders_per_day: maxOrdersPerDay,
+          busy_dates: validBusy.map(formatDate),
+          vacation_dates: validVacation.map(formatDate),
+        } as any)
+        .eq("user_id", user!.id);
+
+      if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
+
       clearDraft("seller_settings_draft");
       toast.success("Настройки сохранены");
+    } catch (e: any) {
+      toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   };
 
