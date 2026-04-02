@@ -2,62 +2,55 @@
 
 ## Проблема
 
-В `handleSaveProduct` есть критические баги:
-
-1. **Нет `catch` блока** — `try/finally` без `catch`. Если `Promise.all` (варианты, кастомные поля, доп. изображения) падает с ошибкой, продукт уже создан в БД (строка 218), но пользователь не видит сообщения об ошибке и не знает что произошло.
-
-2. **`finally` всегда сбрасывает форму** — даже при ошибке форма очищается (`resetProductForm`, `clearDraft`), пользователь не может исправить и повторить.
-
-3. **Двойное нажатие** — `isSaving` защищает от повторного нажатия, но между кликом и React-рендером с `isSaving=true` может пройти второй клик. Продукт создаётся дважды.
+В `handleSave` в `SellerSettings.tsx` нет защиты от двойного клика и нет `try/catch`. При быстром повторном нажатии отправляются параллельные запросы, которые конфликтуют. Также `busyDates` и `vacationDates` из компонента Calendar могут содержать `Invalid Date`, что вызывает ошибку при записи в БД.
 
 ## Решение
 
-**Файл: `src/pages/seller/SellerProducts.tsx`**, функция `handleSaveProduct`
+**Файл: `src/pages/seller/SellerSettings.tsx`**
 
-### 1. Добавить `catch` блок
-Перехватывать ошибки из `Promise.all` и показывать toast с описанием.
-
-### 2. Сбрасывать форму только при успехе
-Перенести `clearDraft` и `resetProductForm` из `finally` в конец успешной ветки (после toast.success).
-
-### 3. Защита от двойного клика через `useRef`
-Использовать `useRef` вместо state для мгновенной блокировки повторных вызовов (state обновляется асинхронно).
-
-### Итоговый код (строки 163-239):
-
+### 1. Добавить `useRef` для блокировки повторных нажатий
 ```tsx
 const savingRef = useRef(false);
+```
 
-const handleSaveProduct = async () => {
+### 2. Обернуть `handleSave` в try/catch с защитой
+
+```tsx
+const handleSave = async () => {
   if (!farmerId || savingRef.current) return;
-  // ... валидация ...
-
   savingRef.current = true;
-  setIsSaving(true);
+
   try {
-    // ... productData, insert/update ...
+    // ... валидация slug (без изменений) ...
 
-    if (editingProduct) {
-      // ... update logic (unchanged) ...
-      toast.success("Товар обновлён");
-    } else {
-      const { data: newProduct, error } = await supabase.from("products").insert(productData).select().single();
-      if (error) { toast.error("Ошибка при создании товара: " + error.message); return; }
-      // ... Promise.all (unchanged) ...
-      toast.success("Товар добавлен");
-    }
+    const { error } = await supabase.from("farmers").update({...}).eq("id", farmerId);
+    if (error) { toast.error("Ошибка при сохранении: " + error.message); return; }
 
-    // Только при успехе:
-    clearDraft("seller_product_draft");
-    resetProductForm();
+    // Фильтруем невалидные даты
+    const validBusy = busyDates.filter(d => !isNaN(d.getTime()));
+    const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
+
+    const { error: profileError } = await supabase.from("profiles").update({
+      pickup_slots: pickupSlots,
+      max_orders_per_day: maxOrdersPerDay,
+      busy_dates: validBusy.map(formatDate),
+      vacation_dates: validVacation.map(formatDate),
+    }).eq("user_id", user!.id);
+
+    if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
+
+    clearDraft("seller_settings_draft");
+    toast.success("Настройки сохранены");
   } catch (e: any) {
     toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
   } finally {
     savingRef.current = false;
-    setIsSaving(false);
   }
 };
 ```
 
-Один файл, ~10 строк изменений.
+### 3. Добавить `disabled` на кнопку "Сохранить"
+Добавить state `isSaving` для визуальной блокировки кнопки во время сохранения.
+
+Один файл, ~15 строк изменений.
 
