@@ -298,7 +298,9 @@ export default function SellerSettings() {
             onVacationDatesChange={setVacationDates}
           />
 
-          <Button onClick={handleSave} className="w-full">Сохранить</Button>
+          <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+            {isSaving ? "Сохранение..." : "Сохранить"}
+          </Button>
         </div>
       </main>
       <BottomNavigation />
