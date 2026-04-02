@@ -2,30 +2,62 @@
 
 ## Проблема
 
-Хук `useDraftState` на строке 88 сохраняет `productForm` в localStorage и восстанавливает его при каждом открытии формы (`showProductForm = true`). Это вызывает три бага:
+В `handleSaveProduct` есть критические баги:
 
-1. **Данные не отображаются при редактировании** — `handleEditProduct` загружает данные из БД и записывает их в state, но `useDraftState` тут же перезаписывает их старым черновиком из localStorage
-2. **Создаётся копия вместо обновления** — черновик может не содержать `editingProduct`, и при сохранении срабатывает ветка создания нового товара
-3. **Данные из прошлой карточки попадают в новую** — черновик от предыдущего редактирования восстанавливается при открытии другой карточки
+1. **Нет `catch` блока** — `try/finally` без `catch`. Если `Promise.all` (варианты, кастомные поля, доп. изображения) падает с ошибкой, продукт уже создан в БД (строка 218), но пользователь не видит сообщения об ошибке и не знает что произошло.
 
-Корень: `useDraftState` не различает "новый товар" и "редактирование существующего".
+2. **`finally` всегда сбрасывает форму** — даже при ошибке форма очищается (`resetProductForm`, `clearDraft`), пользователь не может исправить и повторить.
+
+3. **Двойное нажатие** — `isSaving` защищает от повторного нажатия, но между кликом и React-рендером с `isSaving=true` может пройти второй клик. Продукт создаётся дважды.
 
 ## Решение
 
-**Файл: `src/pages/seller/SellerProducts.tsx`**
+**Файл: `src/pages/seller/SellerProducts.tsx`**, функция `handleSaveProduct`
 
-1. **Включать `useDraftState` только при создании нового товара** (строка 88):
+### 1. Добавить `catch` блок
+Перехватывать ошибки из `Promise.all` и показывать toast с описанием.
+
+### 2. Сбрасывать форму только при успехе
+Перенести `clearDraft` и `resetProductForm` из `finally` в конец успешной ветки (после toast.success).
+
+### 3. Защита от двойного клика через `useRef`
+Использовать `useRef` вместо state для мгновенной блокировки повторных вызовов (state обновляется асинхронно).
+
+### Итоговый код (строки 163-239):
+
 ```tsx
-// Было:
-useDraftState("seller_product_draft", productForm, setProductForm, showProductForm);
+const savingRef = useRef(false);
 
-// Станет:
-useDraftState("seller_product_draft", productForm, setProductForm, showProductForm && !editingProduct);
+const handleSaveProduct = async () => {
+  if (!farmerId || savingRef.current) return;
+  // ... валидация ...
+
+  savingRef.current = true;
+  setIsSaving(true);
+  try {
+    // ... productData, insert/update ...
+
+    if (editingProduct) {
+      // ... update logic (unchanged) ...
+      toast.success("Товар обновлён");
+    } else {
+      const { data: newProduct, error } = await supabase.from("products").insert(productData).select().single();
+      if (error) { toast.error("Ошибка при создании товара: " + error.message); return; }
+      // ... Promise.all (unchanged) ...
+      toast.success("Товар добавлен");
+    }
+
+    // Только при успехе:
+    clearDraft("seller_product_draft");
+    resetProductForm();
+  } catch (e: any) {
+    toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
+  } finally {
+    savingRef.current = false;
+    setIsSaving(false);
+  }
+};
 ```
 
-2. **Очищать черновик при открытии редактирования** — в `handleEditProduct` (строка 278) добавить `clearDraft("seller_product_draft")` в начало функции, чтобы старый черновик не мог вмешаться.
-
-3. **Очищать черновик при открытии формы нового товара** — в обработчике кнопки "Добавить товар" вызывать `resetProductForm()` перед `setShowProductForm(true)`, чтобы гарантировать чистое начальное состояние.
-
-Итого: 1 файл, ~3 строки изменений.
+Один файл, ~10 строк изменений.
 
