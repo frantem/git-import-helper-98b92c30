@@ -78,7 +78,7 @@ export default function SellerProducts() {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [mainVariant, setMainVariant] = useState<ProductVariant>({ label: "шт", price: 0, discount_percent: 0 });
+  const [mainVariant, setMainVariant] = useState<ProductVariant>({ label: "", price: 0, discount_percent: 0 });
   const [productForm, setProductForm] = useState({
     title: "", description: "", category_id: "", image_url: "",
     prep_time_minutes: "" as any, composition: "", calories: "" as any,
@@ -347,7 +347,7 @@ export default function SellerProducts() {
     setProductVariants([]);
     setSelectedCategoryIds([]);
     setCustomFields([]);
-    setMainVariant({ label: "шт", price: 0, discount_percent: 0 });
+    setMainVariant({ label: "", price: 0, discount_percent: 0 });
     setProductForm({ title: "", description: "", category_id: "", image_url: "", prep_time_minutes: "" as any, composition: "", calories: "" as any, protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "" });
     setMainPriceInput("");
     setVariantPriceInputs({});
@@ -516,7 +516,7 @@ export default function SellerProducts() {
               <Label className="text-base font-medium">Стоимость <span className="text-destructive">*</span></Label>
               <p className="text-xs text-muted-foreground">Основная цена товара.</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder="1 кг" className="h-9 w-24" />
+                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder="250гр/4шт" className="h-9 w-24" />
                 <div className="flex items-center gap-1">
                   <Input type="text" inputMode="decimal" value={mainPriceInput}
                     onChange={(e) => setMainPriceInput(e.target.value.replace(/[^0-9.,]/g, ''))}
