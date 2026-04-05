@@ -157,7 +157,7 @@ const Index = () => {
                 </Link>
                 <Link
                   to={getBlockLink(block)}
-                  className="flex items-center text-xs text-primary hover:underline"
+                  className="flex items-center text-xs hover:underline text-secondary-foreground"
                 >
                   Все <ChevronRight className="h-4 w-4" />
                 </Link>
