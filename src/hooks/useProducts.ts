@@ -15,6 +15,7 @@ interface DBProduct {
   is_new: boolean | null;
   farmer_id: string;
   category_id: string;
+  prep_time_minutes: number;
   farmers?: { name: string };
   categories?: { name: string; slug: string };
   product_categories?: DBProductCategory[];
@@ -64,6 +65,7 @@ export function useProducts() {
           is_new,
           farmer_id,
           category_id,
+          prep_time_minutes,
           farmers(name),
           categories(name, slug),
           product_categories(categories(name, slug)),
@@ -141,7 +143,7 @@ export function transformProduct(
     unit: p.unit,
     isNew: p.is_new || false,
     farmer_id: p.farmer_id,
-    prep_time_minutes: undefined,
+    prep_time_minutes: p.prep_time_minutes || 0,
     defaultVariant: (() => {
       const variants = p.product_variants;
       if (!variants || variants.length === 0) return undefined;

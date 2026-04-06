@@ -7,6 +7,13 @@ import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+
+function formatPrepTime(minutes?: number): { label: string; isInStock: boolean } {
+  if (!minutes || minutes === 0) return { label: "Есть в наличии", isInStock: true };
+  if (minutes < 60) return { label: `~${minutes}мин.`, isInStock: false };
+  const hours = Math.round(minutes / 60);
+  return { label: `~${hours}ч.`, isInStock: false };
+}
 import { usePrefetchProduct } from "@/hooks/useProduct";
 
 interface ProductCardProps {
@@ -123,14 +130,24 @@ export const ProductCard = memo(function ProductCard({
         </h3>
 
         <div className="mt-auto">
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-bold text-foreground">
-              {priceFormatted.rubles}р.
-              {priceFormatted.kopecks > 0 &&
-              <span className="text-sm"> {priceFormatted.kopecks.toString().padStart(2, "0")}к.</span>
-              }
-            </span>
-            {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
+          <div className="flex items-baseline justify-between gap-1">
+            <div className="flex items-baseline gap-1">
+              <span className="text-base font-bold text-foreground">
+                {priceFormatted.rubles}р.
+                {priceFormatted.kopecks > 0 &&
+                <span className="text-sm"> {priceFormatted.kopecks.toString().padStart(2, "0")}к.</span>
+                }
+              </span>
+              {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
+            </div>
+            {(() => {
+              const prep = formatPrepTime(product.prep_time_minutes);
+              return (
+                <span className={cn("text-[10px] leading-tight whitespace-nowrap", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
+                  {prep.label}
+                </span>
+              );
+            })()}
           </div>
 
           {oldPriceFormatted &&
