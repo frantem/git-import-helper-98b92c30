@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2, LayoutGrid, Package, Blocks, X } from "lucide-react";
 
 interface Category {
