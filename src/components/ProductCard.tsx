@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { usePrefetchProduct } from "@/hooks/useProduct";
 
 function formatPrepTime(minutes?: number): { label: string; isInStock: boolean } {
   if (!minutes || minutes === 0) return { label: "Есть в наличии", isInStock: true };
@@ -14,7 +15,6 @@ function formatPrepTime(minutes?: number): { label: string; isInStock: boolean }
   const hours = Math.round(minutes / 60);
   return { label: `~${hours}ч.`, isInStock: false };
 }
-import { usePrefetchProduct } from "@/hooks/useProduct";
 
 interface ProductCardProps {
   product: Product;
