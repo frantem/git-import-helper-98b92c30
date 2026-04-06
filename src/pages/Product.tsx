@@ -455,6 +455,12 @@ export default function Product() {
 
           {/* Title - right after image */}
           <h1 className="mt-2 text-xl font-bold text-foreground md:text-2xl">{product.name}</h1>
+          <p className={cn("mt-1 text-sm", product.prep_time_minutes && product.prep_time_minutes > 0 ? "text-muted-foreground" : "text-green-600")}>
+            {!product.prep_time_minutes || product.prep_time_minutes === 0
+              ? "Есть в наличии"
+              : `Время приготовления: ${product.prep_time_minutes < 60 ? `${product.prep_time_minutes}мин.` : `${Math.round(product.prep_time_minutes / 60)}ч.`}`
+            }
+          </p>
 
           {/* Rating - compact, only show if there are reviews */}
           {displayRating !== null && displayReviewCount > 0 && <div className="mt-1 flex items-center gap-3 rounded-md p-1">
