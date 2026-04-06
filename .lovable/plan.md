@@ -1,56 +1,51 @@
 
 
-## Проблема
+## Задача
 
-В `handleSave` в `SellerSettings.tsx` нет защиты от двойного клика и нет `try/catch`. При быстром повторном нажатии отправляются параллельные запросы, которые конфликтуют. Также `busyDates` и `vacationDates` из компонента Calendar могут содержать `Invalid Date`, что вызывает ошибку при записи в БД.
+Отображать статус наличия / время приготовления товара в двух местах:
+1. **Превью-карточка** (ProductCard) — справа от цены, в правом нижнем углу
+2. **Страница товара** (Product) — под названием товара
 
-## Решение
+### Логика отображения
+- `prep_time_minutes === 0` или `undefined/null` → "Есть в наличии"
+- `prep_time_minutes > 0` → "Время приготовления: Xч." (минуты конвертируются в часы)
 
-**Файл: `src/pages/seller/SellerSettings.tsx`**
+### Изменения
 
-### 1. Добавить `useRef` для блокировки повторных нажатий
-```tsx
-const savingRef = useRef(false);
+**1. `src/hooks/useProducts.ts`** — добавить `prep_time_minutes` в запрос и трансформацию
+
+- В SQL-запросе (строка 57): добавить `prep_time_minutes` в select
+- В интерфейсе `DBProduct`: добавить `prep_time_minutes: number`
+- В `transformProduct` (строка 144): передать реальное значение вместо `undefined`
+
+**2. `src/data/products.ts`** — уже содержит `prep_time_minutes` в интерфейсе Product, ничего менять не надо
+
+**3. `src/components/ProductCard.tsx`** — добавить отображение в нижней части карточки
+
+- Создать хелпер `formatPrepTime(minutes)` для конвертации
+- Между ценой и правым краем (строки 125-142), добавить текст справа от блока цены в одну строку:
+  - `flex items-center justify-between` на обёртку
+  - Справа: маленький текст `text-[10px]` с "Есть в наличии" (зелёный) или "~Xч." (серый)
+  - Карточка НЕ увеличивается — текст компактный, в одну строку с ценой
+
+**4. `src/pages/Product.tsx`** — добавить под `<h1>` (строка 457)
+
+- Блок с текстом "Есть в наличии" или "Время приготовления: Xч."
+- Стиль: `text-sm text-muted-foreground mt-1`
+
+### Формат конвертации
+```
+function formatPrepTime(minutes: number): string {
+  if (minutes < 60) return `${minutes}мин.`;
+  const hours = Math.round(minutes / 60);
+  return `${hours}ч.`;
+}
 ```
 
-### 2. Обернуть `handleSave` в try/catch с защитой
-
-```tsx
-const handleSave = async () => {
-  if (!farmerId || savingRef.current) return;
-  savingRef.current = true;
-
-  try {
-    // ... валидация slug (без изменений) ...
-
-    const { error } = await supabase.from("farmers").update({...}).eq("id", farmerId);
-    if (error) { toast.error("Ошибка при сохранении: " + error.message); return; }
-
-    // Фильтруем невалидные даты
-    const validBusy = busyDates.filter(d => !isNaN(d.getTime()));
-    const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
-
-    const { error: profileError } = await supabase.from("profiles").update({
-      pickup_slots: pickupSlots,
-      max_orders_per_day: maxOrdersPerDay,
-      busy_dates: validBusy.map(formatDate),
-      vacation_dates: validVacation.map(formatDate),
-    }).eq("user_id", user!.id);
-
-    if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
-
-    clearDraft("seller_settings_draft");
-    toast.success("Настройки сохранены");
-  } catch (e: any) {
-    toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
-  } finally {
-    savingRef.current = false;
-  }
-};
-```
-
-### 3. Добавить `disabled` на кнопку "Сохранить"
-Добавить state `isSaving` для визуальной блокировки кнопки во время сохранения.
-
-Один файл, ~15 строк изменений.
+### Файлы
+| Файл | Изменение |
+|---|---|
+| `src/hooks/useProducts.ts` | Добавить `prep_time_minutes` в select и transformProduct |
+| `src/components/ProductCard.tsx` | Показать статус наличия/время рядом с ценой |
+| `src/pages/Product.tsx` | Показать статус под названием товара |
 
