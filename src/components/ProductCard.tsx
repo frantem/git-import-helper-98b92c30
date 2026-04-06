@@ -11,7 +11,7 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { usePrefetchProduct } from "@/hooks/useProduct";
 
 function formatPrepTime(minutes?: number): { label: string; isInStock: boolean } {
-  if (!minutes || minutes === 0) return { label: "Есть в наличии", isInStock: true };
+  if (!minutes || minutes === 0) return { label: "В наличии", isInStock: true };
   if (minutes < 60) return { label: `~${minutes}мин.`, isInStock: false };
   const hours = Math.round(minutes / 60);
   return { label: `~${hours}ч.`, isInStock: false };
