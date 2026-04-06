@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -328,7 +329,7 @@ export default function AdminOrders() {
                         {formatDate(order.created_at)}
                       </span>
                       <p className="text-lg font-bold text-foreground">
-                        {price.rubles} р. {price.kopecks > 0 && `${price.kopecks} к.`}
+                        {price.formatted}<BynSymbol />
                       </p>
                     </div>
                     <div className="text-right">
@@ -372,7 +373,7 @@ export default function AdminOrders() {
                     <Truck className="h-4 w-4" />
                     <span>
                       {order.delivery_type === "courier" 
-                        ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + "р." : "бесплатно"})` 
+                        ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + " бел.руб." : "бесплатно"})` 
                         : order.delivery_type === "pickup" 
                           ? "Пункт выдачи" 
                           : "Самовывоз"}
@@ -453,7 +454,7 @@ export default function AdminOrders() {
                                 {last4 && <span className="text-muted-foreground ml-1">••{last4}</span>}
                               </span>
                               <span className="text-foreground">
-                                {groupPrice.rubles}р.{groupPrice.kopecks > 0 ? `${groupPrice.kopecks.toString().padStart(2, '0')}к.` : ''}
+                                {groupPrice.formatted}<BynSymbol />
                               </span>
                             </div>
                             {group.items.map(item => {
@@ -470,9 +471,9 @@ export default function AdminOrders() {
                                     </span>
                                     <span className="text-muted-foreground">×{item.quantity}</span>
                                   </div>
-                                  <span className="text-muted-foreground whitespace-nowrap">
-                                    = {itemTotal.rubles}р.{itemTotal.kopecks > 0 ? `${itemTotal.kopecks.toString().padStart(2, '0')}к.` : ''}
-                                  </span>
+                                   <span className="text-muted-foreground whitespace-nowrap">
+                                    = {itemTotal.formatted}<BynSymbol />
+                                   </span>
                                 </div>
                               );
                             })}

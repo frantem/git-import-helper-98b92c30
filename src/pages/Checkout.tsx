@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { calculatePickupTime, PickupTimeResult, calculateDeliveryTime, calculateDeliveryTimePerSeller, DeliveryTimeResult, parseWorkingHoursEnd } from "@/lib/pickupUtils";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { Check, MapPin, Truck, Banknote, RefreshCw, LogIn, Settings, Home, Package, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
@@ -566,7 +567,7 @@ export default function Checkout() {
                     <Home className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium text-foreground">Доставка на дом</span>
                   </div>
-                  <span className="text-foreground font-medium">7р.</span>
+                  <span className="text-foreground font-medium">7<BynSymbol /></span>
                 </div>
               </Label>
             </div>
@@ -844,18 +845,18 @@ export default function Checkout() {
           <div className="space-y-2 text-sm mb-3">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Товары:</span>
-              <span className="text-foreground">{formatPrice(totalPrice).formatted}</span>
+              <span className="text-foreground">{formatPrice(totalPrice).formatted}<BynSymbol /></span>
             </div>
             {deliveryType === "courier" && <div className="flex justify-between">
                 <span className="text-muted-foreground">Доставка:</span>
-                <span className="text-foreground">7 р.</span>
+                <span className="text-foreground">7<BynSymbol /></span>
               </div>}
           </div>
           
           <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
             <span>К оплате:</span>
             <span className="text-primary">
-              {priceFormatted.rubles} р. {priceFormatted.kopecks > 0 && `${priceFormatted.kopecks.toString().padStart(2, '0')} к.`}
+              {priceFormatted.formatted}<BynSymbol />
             </span>
           </div>
         </div>

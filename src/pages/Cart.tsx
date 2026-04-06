@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +20,6 @@ export default function Cart() {
   const navigate = useNavigate();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
-  // Sync selected items when cart items change
   useEffect(() => {
     setSelectedItems(items.map(getItemKey));
   }, [items, getItemKey]);
@@ -107,7 +107,6 @@ export default function Cart() {
       <Header />
 
       <main className="container mx-auto px-3 py-4">
-        {/* Header */}
         <div className="mb-3 flex items-center justify-between">
           <PageHeader title="Корзина" />
           <button
@@ -123,7 +122,6 @@ export default function Cart() {
         </div>
 
         <div className="flex flex-col gap-4 lg:flex-row">
-          {/* Cart items */}
           <div className="flex-1 space-y-2">
             {items.map((item) => {
               const itemKey = getItemKey(item);
@@ -185,7 +183,7 @@ export default function Cart() {
                             const ap = formatPrice(addon.price);
                             return (
                               <p key={addon.addonId} className="text-xs text-muted-foreground">
-                                + {addon.name} <span className="text-foreground">(+{ap.rubles}р.{ap.kopecks > 0 && ` ${ap.kopecks.toString().padStart(2, '0')}к.`})</span>
+                                + {addon.name} <span className="text-foreground">(+{ap.formatted}<BynSymbol />)</span>
                               </p>
                             );
                           })}
@@ -200,7 +198,6 @@ export default function Cart() {
                     </div>
 
                     <div className="mt-auto flex items-center justify-between">
-                      {/* Quantity controls */}
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(itemKey, item.quantity - 1)}
@@ -217,9 +214,8 @@ export default function Cart() {
                         </button>
                       </div>
 
-                      {/* Price */}
                       <span className="text-sm font-bold text-foreground">
-                        {priceItem.rubles} р. {priceItem.kopecks > 0 && `${priceItem.kopecks.toString().padStart(2, '0')} к.`}
+                        {priceItem.formatted}<BynSymbol />
                       </span>
                     </div>
                   </div>
@@ -236,7 +232,7 @@ export default function Cart() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Товары ({selectedCount})</span>
                   <span className="text-foreground">
-                    {priceFormatted.rubles} р. {priceFormatted.kopecks > 0 && `${priceFormatted.kopecks.toString().padStart(2, '0')} к.`}
+                    {priceFormatted.formatted}<BynSymbol />
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -248,7 +244,7 @@ export default function Cart() {
                 <div className="flex justify-between text-lg font-bold">
                   <span>Итого</span>
                   <span>
-                    {priceFormatted.rubles} р. {priceFormatted.kopecks > 0 && `${priceFormatted.kopecks.toString().padStart(2, '0')} к.`}
+                    {priceFormatted.formatted}<BynSymbol />
                   </span>
                 </div>
               </div>
@@ -273,7 +269,7 @@ export default function Cart() {
           onClick={handleCheckout}
           disabled={selectedCount === 0}
         >
-          К оформлению • {selectedCount} шт. • {priceFormatted.rubles} р. {priceFormatted.kopecks > 0 && `${priceFormatted.kopecks.toString().padStart(2, '0')} к.`}
+          К оформлению • {selectedCount} шт. • {priceFormatted.formatted}<BynSymbol />
         </Button>
       </div>
 
