@@ -4,20 +4,21 @@
 export interface PriceDisplay {
   rubles: number;
   kopecks: number;
+  /** e.g. "7" or "16,34" — number part only, no currency symbol */
   formatted: string;
 }
 
 /**
  * Format price from kopecks to display format
- * Format: "7р. 50к." (without extra spaces)
+ * Format: "7" or "16,34" (comma-separated kopecks, no currency text)
  */
 export function formatPrice(priceInKopecks: number): PriceDisplay {
   const rubles = Math.floor(priceInKopecks / 100);
   const kopecks = priceInKopecks % 100;
   
-  let formatted = `${rubles}р.`;
+  let formatted = `${rubles}`;
   if (kopecks > 0) {
-    formatted += ` ${kopecks.toString().padStart(2, '0')}к.`;
+    formatted += `,${kopecks.toString().padStart(2, '0')}`;
   }
   
   return { rubles, kopecks, formatted };
@@ -33,7 +34,7 @@ export function calculateOldPrice(priceInKopecks: number, discountPercent: numbe
 }
 
 /**
- * Format price for display with currency symbol
+ * Format price for display with currency symbol (text fallback)
  */
 export function formatPriceString(priceInKopecks: number): string {
   return formatPrice(priceInKopecks).formatted;
