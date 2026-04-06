@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Truck, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -215,7 +216,7 @@ export default function SellerOrders() {
                     <div>
                       <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
                       <p className="text-lg font-bold text-foreground">
-                        {price.rubles} р. {price.kopecks > 0 && `${price.kopecks} к.`}
+                        {price.formatted}<BynSymbol />
                       </p>
                     </div>
                     <div className="text-right">
@@ -250,7 +251,7 @@ export default function SellerOrders() {
                     <Truck className="h-4 w-4" />
                     <span>
                       {order.delivery_type === "courier"
-                        ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + "р." : "бесплатно"})`
+                        ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + " бел.руб." : "бесплатно"})`
                         : order.delivery_type === "pickup"
                           ? "Пункт выдачи"
                           : "Самовывоз у фермера"}
@@ -315,7 +316,7 @@ export default function SellerOrders() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             <span className="text-muted-foreground whitespace-nowrap">
-                              {itemTotal.rubles}р.{itemTotal.kopecks > 0 ? `${itemTotal.kopecks.toString().padStart(2, '0')}к.` : ''}
+                              {itemTotal.formatted}<BynSymbol />
                             </span>
                             {!isCollected && (
                               <Button
@@ -350,7 +351,7 @@ export default function SellerOrders() {
                             const ap = formatPrice(a.price);
                             return (
                               <p key={i} className="text-xs text-muted-foreground">
-                                + {a.name}{a.price > 0 && ` (${ap.rubles}${ap.kopecks > 0 ? `,${ap.kopecks.toString().padStart(2, '0')}` : ''} р.)`}
+                                + {a.name}{a.price > 0 && <> ({ap.formatted}<BynSymbol />)</>}
                               </p>
                             );
                           })}

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -476,13 +477,11 @@ export default function Product() {
           {/* Price block - compact format */}
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-base font-bold text-foreground">
-              {currentPrice.rubles}р.
-              {currentPrice.kopecks > 0 && <span> {currentPrice.kopecks.toString().padStart(2, "0")}к.</span>}
+              {currentPrice.formatted}<BynSymbol />
               <span className="text-sm font-normal text-muted-foreground">/{displayUnit}</span>
             </span>
             {oldPriceFormatted && <span className="text-sm text-muted-foreground line-through">
-                {oldPriceFormatted.rubles}р.
-                {oldPriceFormatted.kopecks > 0 && ` ${oldPriceFormatted.kopecks.toString().padStart(2, "0")}к.`}
+                {oldPriceFormatted.formatted}<BynSymbol />
               </span>}
           </div>
 
@@ -536,7 +535,7 @@ export default function Product() {
                     />
                     <span className="text-sm text-foreground">{addon.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      +{addonPrice.rubles}р.{addonPrice.kopecks > 0 && ` ${addonPrice.kopecks.toString().padStart(2, "0")}к.`}
+                      +{addonPrice.formatted}<BynSymbol />
                     </span>
                   </label>
                 );
@@ -558,7 +557,7 @@ export default function Product() {
                         />
                         <span className="text-sm text-foreground">{addon.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          +{addonPrice.rubles}р.{addonPrice.kopecks > 0 && ` ${addonPrice.kopecks.toString().padStart(2, "0")}к.`}
+                          +{addonPrice.formatted}<BynSymbol />
                         </span>
                       </label>
                     );

@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
 import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -406,7 +407,7 @@ export default function SellerProducts() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-foreground truncate">{product.title}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {price.rubles} р. {price.kopecks > 0 && `${price.kopecks} к.`} / {product.unit}
+                        {price.formatted}<BynSymbol /> / {product.unit}
                         {!product.is_active && <span className="ml-2 text-destructive">• Скрыт</span>}
                       </p>
                     </div>

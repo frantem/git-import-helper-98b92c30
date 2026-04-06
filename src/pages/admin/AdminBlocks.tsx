@@ -911,7 +911,7 @@ export default function AdminBlocks() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-foreground truncate">{product.title}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {price.rubles} р. / {product.unit}
+                          {price.formatted}<BynSymbol /> / {product.unit}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {product.farmer?.name} • {product.category?.name}

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { Package, Calendar, MapPin, Truck, Store, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -155,7 +156,7 @@ export default function Orders() {
                         Заказ от {formatDate(order.created_at)}
                       </span>
                       <p className="text-lg font-bold text-foreground">
-                        {price.rubles} р. {price.kopecks > 0 && `${price.kopecks} к.`}
+                        {price.formatted}<BynSymbol />
                       </p>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${status.color}`}>
