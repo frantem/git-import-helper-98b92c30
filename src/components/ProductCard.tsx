@@ -6,6 +6,7 @@ import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
+import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { usePrefetchProduct } from "@/hooks/useProduct";
 
@@ -85,7 +86,6 @@ export const ProductCard = memo(function ProductCard({
           alt={product.name}
           className="h-full w-full transition-transform duration-300 group-hover:scale-105" />
 
-
         {product.discount &&
         <div className="absolute left-2 top-2 rounded-lg px-2 py-0.5 text-xs font-bold text-destructive-foreground bg-[#f26464]">
             -{product.discount}%
@@ -103,7 +103,6 @@ export const ProductCard = memo(function ProductCard({
           onClick={toggleFavorite}
           className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-colors hover:bg-card"
           aria-label={isFavorite ? "Удалить из избранного" : "Добавить в избранное"}>
-
             <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} />
           </button>
         }
@@ -112,7 +111,6 @@ export const ProductCard = memo(function ProductCard({
           onClick={handleAddToCart}
           className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-tl-2xl text-primary-foreground transition-colors active:scale-95 bg-[#9ddc09]"
           aria-label="Добавить в корзину">
-
           <ShoppingCart className="h-5 w-5" />
         </button>
       </div>
@@ -133,10 +131,7 @@ export const ProductCard = memo(function ProductCard({
           <div className="flex items-baseline justify-between gap-1">
             <div className="flex items-baseline gap-1">
               <span className="text-base font-bold text-foreground">
-                {priceFormatted.rubles}р.
-                {priceFormatted.kopecks > 0 &&
-                <span className="text-sm"> {priceFormatted.kopecks.toString().padStart(2, "0")}к.</span>
-                }
+                {priceFormatted.formatted}<BynSymbol />
               </span>
               {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
             </div>
@@ -152,12 +147,10 @@ export const ProductCard = memo(function ProductCard({
 
           {oldPriceFormatted &&
           <span className="text-xs text-muted-foreground line-through">
-              {oldPriceFormatted.rubles}р.
-              {oldPriceFormatted.kopecks > 0 && ` ${oldPriceFormatted.kopecks.toString().padStart(2, "0")}к.`}
+              {oldPriceFormatted.formatted}<BynSymbol />
             </span>
           }
         </div>
       </div>
     </Link>);
-
 });
