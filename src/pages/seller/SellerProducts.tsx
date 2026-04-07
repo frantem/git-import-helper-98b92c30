@@ -522,7 +522,7 @@ export default function SellerProducts() {
                   <Input type="text" inputMode="decimal" value={mainPriceInput}
                     onChange={(e) => setMainPriceInput(e.target.value.replace(/[^0-9.,]/g, ''))}
                     onBlur={() => { const k = parseRublesToKopecks(mainPriceInput); setMainVariant({ ...mainVariant, price: k }); setMainPriceInput(kopecksToRublesString(k)); }}
-                    placeholder="8.50" className="h-9 w-24 text-center" />
+                    placeholder="8.90" className="h-9 w-24 text-center" />
                   <span className="text-sm text-muted-foreground">₽</span>
                 </div>
                 <div className="flex items-center gap-1">
