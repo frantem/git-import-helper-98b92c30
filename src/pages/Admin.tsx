@@ -3,7 +3,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, Navigate } from "react-router-dom";
-import { LayoutDashboard, MapPin, Users, Loader2, ShoppingBag, Image, Settings } from "lucide-react";
+import { LayoutDashboard, MapPin, Users, Loader2, ShoppingBag, Image, Settings, Package } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 
 
@@ -55,6 +55,14 @@ export default function Admin() {
                 {adminPendingCount}
               </span>
             )}
+          </Link>
+          
+          <Link to="/admin/products" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <Package className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Товары</h3>
+              <p className="text-sm text-muted-foreground">Все товары на сайте</p>
+            </div>
           </Link>
           
           <Link to="/admin/banners" className="flex items-center gap-4 rounded-xl bg-card p-6">
