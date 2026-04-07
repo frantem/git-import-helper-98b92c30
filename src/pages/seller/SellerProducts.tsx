@@ -517,7 +517,7 @@ export default function SellerProducts() {
               <Label className="text-base font-medium">Стоимость <span className="text-destructive">*</span></Label>
               <p className="text-xs text-muted-foreground">Основная цена товара.</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder="250гр" className="h-9 w-24" />
+                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder="250 г" className="h-9 w-24" />
                 <div className="flex items-center gap-1">
                   <Input type="text" inputMode="decimal" value={mainPriceInput}
                     onChange={(e) => setMainPriceInput(e.target.value.replace(/[^0-9.,]/g, ''))}
