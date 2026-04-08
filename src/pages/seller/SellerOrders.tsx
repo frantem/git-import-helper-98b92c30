@@ -115,9 +115,7 @@ export default function SellerOrders() {
     // Fetch buyer profiles
     const buyerIds = [...new Set(Array.from(orderMap.values()).map(e => e.order.buyer_id))];
     const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, full_name, phone")
-      .in("user_id", buyerIds);
+      .rpc("get_buyer_profiles_for_seller", { _buyer_ids: buyerIds });
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
     // Build final list sorted by date desc
