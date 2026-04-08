@@ -926,12 +926,27 @@ export type Database = {
     Functions: {
       can_seller_read_order: { Args: { _order_id: string }; Returns: boolean }
       can_seller_update_order: { Args: { _order_id: string }; Returns: boolean }
+      get_buyer_profiles_for_seller: {
+        Args: { _buyer_ids: string[] }
+        Returns: {
+          full_name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       get_orders_count_by_dates: {
         Args: { p_check_dates: string[]; p_farmer_ids: string[] }
         Returns: {
           farmer_id: string
           order_count: number
           order_date: string
+        }[]
+      }
+      get_public_profile_names: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          full_name: string
+          user_id: string
         }[]
       }
       get_seller_pickup_settings: {
