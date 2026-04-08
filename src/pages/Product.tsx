@@ -153,7 +153,7 @@ export default function Product() {
       const userIds = reviewsData.map(r => r.user_id);
       const {
         data: profilesData
-      } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      } = await supabase.rpc("get_public_profile_names", { _user_ids: userIds });
       const profilesMap = new Map(profilesData?.map(p => [p.user_id, p.full_name]) || []);
       const mappedReviews = reviewsData.map(r => ({
         id: r.id,
