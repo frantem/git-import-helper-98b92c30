@@ -84,6 +84,10 @@ export default function Checkout() {
   const [isDateTimePopoverOpen, setIsDateTimePopoverOpen] = useState(false);
   const [courierDeliveryMode, setCourierDeliveryMode] = useState<"fast" | "scheduled">("fast");
 
+  // Self-pickup per-seller date/time selection
+  const [selfPickupSelections, setSelfPickupSelections] = useState<Record<string, { date: Date; time: string }>>({});
+  const [selfPickupPopoverOpen, setSelfPickupPopoverOpen] = useState<Record<string, boolean>>({});
+
   // Admin settings for future delivery logic
   const [adminSettings, setAdminSettings] = useState({
     cutoff_time_minutes: 1050,
@@ -164,6 +168,72 @@ export default function Checkout() {
     setIsDateTimePopoverOpen(false);
   };
 
+  // Helper: generate time slots for a specific seller on a specific date
+  const getSellerTimeSlots = (farmerId: string, date: Date): string[] => {
+    const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+    const settings = sellerPickupSettings.get(farmerId);
+    if (!settings?.pickup_slots) return [];
+    const slots = settings.pickup_slots as PickupSlots;
+    const dayKey = DAY_KEYS[date.getDay()];
+    const daySlot = slots[dayKey];
+    if (!daySlot || !daySlot.active) return [];
+
+    const parseT = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const slotStart = parseT(daySlot.start);
+    const slotEnd = parseT(daySlot.end);
+
+    // Get max prep time for this seller's items
+    const farmerItems = items.filter((i) => i.product.farmer_id === farmerId);
+    const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+
+    const minskNow = getMinskTime();
+    const isToday = date.toDateString() === minskNow.toDateString();
+    const nowMinutes = minskNow.getHours() * 60 + minskNow.getMinutes();
+
+    const result: string[] = [];
+    for (let hour = Math.floor(slotStart / 60); hour < Math.floor(slotEnd / 60) && hour < 24; hour++) {
+      const startMin = hour * 60;
+      const endMin = (hour + 1) * 60;
+      if (endMin > slotEnd) continue;
+
+      if (isToday) {
+        // Must allow enough time for prep
+        const cookStart = Math.max(nowMinutes, slotStart);
+        const readyTime = cookStart + maxPrep;
+        if (startMin < readyTime) continue;
+      } else {
+        // Future day: must be after slot start + prep
+        if (startMin < slotStart + maxPrep) continue;
+      }
+
+      result.push(`${hour.toString().padStart(2, "0")}:00–${(hour + 1).toString().padStart(2, "0")}:00`);
+    }
+    return result;
+  };
+
+  // Check if a date is disabled for a specific seller
+  const isDateDisabledForSeller = (date: Date, farmerId: string): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return true;
+
+    const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+    const settings = sellerPickupSettings.get(farmerId);
+    if (!settings?.pickup_slots) return true;
+    const slots = settings.pickup_slots as PickupSlots;
+    const dayKey = DAY_KEYS[date.getDay()];
+    const daySlot = slots[dayKey];
+    if (!daySlot || !daySlot.active) return true;
+
+    // Check busy/vacation dates
+    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+    if (settings.busy_dates?.includes(dateStr)) return true;
+    if (settings.vacation_dates?.includes(dateStr)) return true;
+
+    // Check if time slots available
+    return getSellerTimeSlots(farmerId, date).length === 0;
+  };
+
   // Calculate delivery cost
   const deliveryCost = deliveryType === "courier" ? 700 : 0; // 7р = 700 kopecks
   const finalTotalPrice = totalPrice + deliveryCost;
@@ -200,6 +270,12 @@ export default function Checkout() {
       setSelectedTime("");
     }
   }, [courierDeliveryMode]);
+
+  // Reset self-pickup selections when switching delivery type
+  useEffect(() => {
+    setSelfPickupSelections({});
+    setSelfPickupPopoverOpen({});
+  }, [deliveryType]);
   const fetchPickupPoints = async () => {
     setIsLoadingPoints(true);
     setLoadError(false);
@@ -347,23 +423,31 @@ export default function Checkout() {
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
         const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
-        // reuse outer sellerTimesMap
         const timeTexts: string[] = [];
         for (const fid of farmerIds) {
-          const s = sellerPickupSettings.get(fid);
-          const farmerItems = items.filter((i) => i.product.farmer_id === fid);
-          const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
-          const result = calculatePickupTime(
-            maxPrep,
-            s?.pickup_slots as PickupSlots | null ?? null,
-            s?.max_orders_per_day ?? 5,
-            s?.busy_dates ?? null,
-            s?.vacation_dates ?? null,
-            orderCountsMap,
-            fid
-          );
-          sellerTimesMap[fid] = result.text;
-          timeTexts.push(result.text);
+          // If user selected custom date/time for this seller, use it
+          const customSelection = selfPickupSelections[fid];
+          if (customSelection) {
+            const dateStr = format(customSelection.date, "d MMMM", { locale: ru });
+            const timeText = `${dateStr} ${customSelection.time}`;
+            sellerTimesMap[fid] = timeText;
+            timeTexts.push(timeText);
+          } else {
+            const s = sellerPickupSettings.get(fid);
+            const farmerItems = items.filter((i) => i.product.farmer_id === fid);
+            const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+            const result = calculatePickupTime(
+              maxPrep,
+              s?.pickup_slots as PickupSlots | null ?? null,
+              s?.max_orders_per_day ?? 5,
+              s?.busy_dates ?? null,
+              s?.vacation_dates ?? null,
+              orderCountsMap,
+              fid
+            );
+            sellerTimesMap[fid] = result.text;
+            timeTexts.push(result.text);
+          }
         }
         // Store combined text for order-level display
         estimatedDeliveryTime = [...new Set(timeTexts)].join(" / ");
@@ -815,9 +899,78 @@ export default function Checkout() {
                         </div>
                         <div className="py-1.5 px-3 bg-primary/10 rounded-lg">
                           <span className="text-sm text-primary font-medium">
-                            {pickupResult.text}
+                            {selfPickupSelections[fid]
+                              ? `${format(selfPickupSelections[fid].date, "d MMMM", { locale: ru })} ${selfPickupSelections[fid].time}`
+                              : pickupResult.text}
                           </span>
                         </div>
+                        {/* Date/time picker for this seller */}
+                        <Popover
+                          open={selfPickupPopoverOpen[fid] || false}
+                          onOpenChange={(open) => setSelfPickupPopoverOpen((prev) => ({ ...prev, [fid]: open }))}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal text-xs">
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {selfPickupSelections[fid]
+                                ? "Изменить время и дату"
+                                : "Выбрать время и дату"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selfPickupSelections[fid]?.date}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setSelfPickupSelections((prev) => {
+                                    const next = { ...prev };
+                                    if (next[fid]) {
+                                      next[fid] = { ...next[fid], date, time: "" };
+                                    } else {
+                                      next[fid] = { date, time: "" };
+                                    }
+                                    return next;
+                                  });
+                                }
+                              }}
+                              disabled={(date) => isDateDisabledForSeller(date, fid)}
+                              className="pointer-events-auto"
+                              locale={ru}
+                            />
+                            {selfPickupSelections[fid]?.date && (
+                              <div className="p-3 border-t border-border">
+                                <Label className="text-sm mb-2 block">Время:</Label>
+                                {(() => {
+                                  const slots = getSellerTimeSlots(fid, selfPickupSelections[fid].date);
+                                  return slots.length > 0 ? (
+                                    <Select
+                                      value={selfPickupSelections[fid]?.time || ""}
+                                      onValueChange={(time) => {
+                                        setSelfPickupSelections((prev) => ({
+                                          ...prev,
+                                          [fid]: { ...prev[fid], time }
+                                        }));
+                                        setSelfPickupPopoverOpen((prev) => ({ ...prev, [fid]: false }));
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Выберите время" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover">
+                                        {slots.map((slot) => (
+                                          <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Нет доступного времени</p>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
                         {/* Items list */}
                         {groupItems.map((item) =>
                     <div key={getItemKey(item)} className="py-1.5 px-3 bg-secondary/30 rounded-lg">
