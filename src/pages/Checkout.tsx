@@ -84,6 +84,10 @@ export default function Checkout() {
   const [isDateTimePopoverOpen, setIsDateTimePopoverOpen] = useState(false);
   const [courierDeliveryMode, setCourierDeliveryMode] = useState<"fast" | "scheduled">("fast");
 
+  // Self-pickup per-seller date/time selection
+  const [selfPickupSelections, setSelfPickupSelections] = useState<Record<string, { date: Date; time: string }>>({});
+  const [selfPickupPopoverOpen, setSelfPickupPopoverOpen] = useState<Record<string, boolean>>({});
+
   // Admin settings for future delivery logic
   const [adminSettings, setAdminSettings] = useState({
     cutoff_time_minutes: 1050,
