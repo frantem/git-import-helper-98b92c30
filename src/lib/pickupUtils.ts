@@ -54,6 +54,16 @@ export interface DeliveryTimeResult {
  * Calculate per-seller delivery readiness time (minutes from midnight).
  * Returns when the seller's order will be ready for pickup by courier.
  */
+// Новая структура для отслеживания остатка готовки
+interface CookingCarryover {
+  remainingMinutes: number;
+  startDate: Date;
+}
+
+/**
+ * Распределить время готовки через несколько окон если нужно
+ * Учитывает буфер 30 минут перед концом окна
+ */
 function getSellerReadyMinutesWithCarryover(
   prepTimeMinutes: number,
   pickupSlots: PickupSlots | null | undefined,
