@@ -54,7 +54,7 @@ export interface DeliveryTimeResult {
  * Calculate per-seller delivery readiness time (minutes from midnight).
  * Returns when the seller's order will be ready for pickup by courier.
  */
-function getSellerReadyMinutes(
+function getSellerReadyMinutesWithCarryover(
   prepTimeMinutes: number,
   pickupSlots: PickupSlots | null | undefined,
   busyDates: string[] | null | undefined,
@@ -62,36 +62,185 @@ function getSellerReadyMinutes(
   checkDate: Date,
   isToday: boolean,
   nowMinutes: number,
-): number | null {
+  carryover?: CookingCarryover,
+): { readyTime: number | null; carryover: CookingCarryover | null } {
   if (!pickupSlots) {
-    // No slots configured — assume seller is always available
+    // Если нет расписания - готовим сразу
     if (isToday) {
-      return Math.max(nowMinutes, 0) + prepTimeMinutes;
+      return {
+        readyTime: Math.max(nowMinutes, 0) + prepTimeMinutes,
+        carryover: null,
+      };
     }
-    return prepTimeMinutes; // from midnight
+    return { readyTime: prepTimeMinutes, carryover: null };
   }
+
+  const BUFFER_MINUTES = 30; // буфер перед концом окна
+  let remainingTime = carryover?.remainingMinutes ?? prepTimeMinutes;
 
   const dayKey = DAY_KEYS[checkDate.getDay()];
   const slot = pickupSlots[dayKey];
-  if (!slot || !slot.active) return null; // seller doesn't work this day
+  if (!slot || !slot.active) return { readyTime: null, carryover: { remainingMinutes: remainingTime, startDate: checkDate } };
 
-  // Check busy/vacation
-  const dateStr = `${checkDate.getFullYear()}-${(checkDate.getMonth() + 1).toString().padStart(2, "0")}-${checkDate.getDate().toString().padStart(2, "0")}`;
-  if (busyDates?.some((d) => dateMatches(d, checkDate))) return null;
-  if (vacationDates?.some((d) => dateMatches(d, checkDate))) return null;
+  // Проверка busy/vacation
+  if (busyDates?.some((d) => dateMatches(d, checkDate))) return { readyTime: null, carryover: { remainingMinutes: remainingTime, startDate: checkDate } };
+  if (vacationDates?.some((d) => dateMatches(d, checkDate))) return { readyTime: null, carryover: { remainingMinutes: remainingTime, startDate: checkDate } };
 
   const slotStart = parseTime(slot.start);
   const slotEnd = parseTime(slot.end);
 
   if (isToday) {
     const cookStart = Math.max(nowMinutes, slotStart);
-    const readyTime = cookStart + prepTimeMinutes;
-    if (readyTime > slotEnd) return null; // can't fit today
-    return readyTime;
+    const availableInSlot = slotEnd - BUFFER_MINUTES - cookStart;
+
+    if (availableInSlot <= 0) {
+      // Не влезает вообще в это окно
+      return {
+        readyTime: null,
+        carryover: { remainingMinutes: remainingTime, startDate: checkDate },
+      };
+    }
+
+    const timeUsedInWindow = Math.min(remainingTime, availableInSlot);
+    remainingTime -= timeUsedInWindow;
+    const readyTime = cookStart + timeUsedInWindow;
+
+    if (remainingTime > 0) {
+      // Готовка не завершена, несем остаток на следующий день
+      return {
+        readyTime: null,
+        carryover: { remainingMinutes: remainingTime, startDate: checkDate },
+      };
+    }
+
+    // Готовка завершена в этом окне
+    return { readyTime, carryover: null };
   }
 
-  // Future day: start cooking at slot opening
-  return slotStart + prepTimeMinutes;
+  // Будущий день
+  const availableInSlot = slotEnd - slotStart - BUFFER_MINUTES;
+  
+  if (availableInSlot <= 0) {
+    return {
+      readyTime: null,
+      carryover: { remainingMinutes: remainingTime, startDate: checkDate },
+    };
+  }
+
+  const timeUsedInWindow = Math.min(remainingTime, availableInSlot);
+  remainingTime -= timeUsedInWindow;
+  const readyTime = slotStart + timeUsedInWindow;
+
+  if (remainingTime > 0) {
+    return {
+      readyTime: null,
+      carryover: { remainingMinutes: remainingTime, startDate: checkDate },
+    };
+  }
+
+  return { readyTime, carryover: null };
+}
+
+/**
+ * Переработанная версия calculateDeliveryTime с распределением готовки
+ */
+export function calculateDeliveryTime(
+  maxPrepTimeMinutes: number,
+  sellerSettings: Array<{
+    farmerId?: string;
+    pickupSlots: PickupSlots | null;
+    busyDates: string[] | null;
+    vacationDates: string[] | null;
+  }>,
+  adminSettings: {
+    cutoff_time_minutes: number;
+    avg_delivery_time_minutes: number;
+    delivery_start_hour: number;
+    delivery_end_hour: number;
+  },
+  pickupPointEndMinutes?: number,
+): DeliveryTimeResult {
+  const { cutoff_time_minutes, avg_delivery_time_minutes, delivery_start_hour, delivery_end_hour } = adminSettings;
+  const deliveryStartMin = delivery_start_hour * 60;
+  const rawDeliveryEndMin = delivery_end_hour * 60;
+  const deliveryEndMin = pickupPointEndMinutes
+    ? Math.min(rawDeliveryEndMin, pickupPointEndMinutes)
+    : rawDeliveryEndMin;
+
+  // Для каждого продавца отслеживаем остаток готовки
+  const sellerCarryovers: (CookingCarryover | null)[] = sellerSettings.map(() => null);
+
+  for (let offset = 0; offset < 7; offset++) {
+    const now = getMinskTime();
+    const checkDate = new Date(now);
+    checkDate.setDate(checkDate.getDate() + offset);
+
+    const isToday = offset === 0;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Cutoff check
+    if (isToday && nowMinutes > cutoff_time_minutes) continue;
+
+    let latestReady = -1;
+    let allSellersAvailable = true;
+
+    if (sellerSettings.length === 0) {
+      latestReady = isToday
+        ? nowMinutes + maxPrepTimeMinutes
+        : maxPrepTimeMinutes;
+    } else {
+      for (let i = 0; i < sellerSettings.length; i++) {
+        const seller = sellerSettings[i];
+        const { readyTime, carryover } = getSellerReadyMinutesWithCarryover(
+          maxPrepTimeMinutes,
+          seller.pickupSlots,
+          seller.busyDates,
+          seller.vacationDates,
+          checkDate,
+          isToday,
+          nowMinutes,
+          sellerCarryovers[i],
+        );
+
+        // Обновляем carryover для этого продавца
+        sellerCarryovers[i] = carryover;
+
+        if (readyTime === null) {
+          allSellersAvailable = false;
+          break;
+        }
+        latestReady = Math.max(latestReady, readyTime);
+      }
+    }
+
+    if (!allSellersAvailable || latestReady < 0) continue;
+
+    // Добавляем время доставки
+    let arrivalMin = latestReady + avg_delivery_time_minutes;
+
+    if (arrivalMin < deliveryStartMin) {
+      arrivalMin = deliveryStartMin + avg_delivery_time_minutes;
+    }
+    if (arrivalMin >= deliveryEndMin) continue;
+
+    arrivalMin = Math.ceil(arrivalMin / 10) * 10;
+
+    const endMin = Math.min(arrivalMin + 60, deliveryEndMin);
+    const arrH = Math.floor(arrivalMin / 60);
+    const arrM = arrivalMin % 60;
+    const endH = Math.floor(endMin / 60);
+    const endM = endMin % 60;
+
+    const prefix = isToday ? "Сегодня" : offset === 1 ? "Завтра" : fmtDate(checkDate);
+
+    return {
+      text: `${prefix} ${fmtTime(arrH, arrM)}–${fmtTime(endH, endM)}`,
+      isTomorrow: offset > 0,
+      earliestMinutes: arrivalMin,
+    };
+  }
+
+  return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
 }
 
 /**
