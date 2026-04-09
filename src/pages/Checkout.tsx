@@ -270,6 +270,12 @@ export default function Checkout() {
       setSelectedTime("");
     }
   }, [courierDeliveryMode]);
+
+  // Reset self-pickup selections when switching delivery type
+  useEffect(() => {
+    setSelfPickupSelections({});
+    setSelfPickupPopoverOpen({});
+  }, [deliveryType]);
   const fetchPickupPoints = async () => {
     setIsLoadingPoints(true);
     setLoadError(false);
