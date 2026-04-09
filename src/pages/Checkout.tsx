@@ -168,6 +168,72 @@ export default function Checkout() {
     setIsDateTimePopoverOpen(false);
   };
 
+  // Helper: generate time slots for a specific seller on a specific date
+  const getSellerTimeSlots = (farmerId: string, date: Date): string[] => {
+    const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+    const settings = sellerPickupSettings.get(farmerId);
+    if (!settings?.pickup_slots) return [];
+    const slots = settings.pickup_slots as PickupSlots;
+    const dayKey = DAY_KEYS[date.getDay()];
+    const daySlot = slots[dayKey];
+    if (!daySlot || !daySlot.active) return [];
+
+    const parseT = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const slotStart = parseT(daySlot.start);
+    const slotEnd = parseT(daySlot.end);
+
+    // Get max prep time for this seller's items
+    const farmerItems = items.filter((i) => i.product.farmer_id === farmerId);
+    const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+
+    const minskNow = getMinskTime();
+    const isToday = date.toDateString() === minskNow.toDateString();
+    const nowMinutes = minskNow.getHours() * 60 + minskNow.getMinutes();
+
+    const result: string[] = [];
+    for (let hour = Math.floor(slotStart / 60); hour < Math.floor(slotEnd / 60) && hour < 24; hour++) {
+      const startMin = hour * 60;
+      const endMin = (hour + 1) * 60;
+      if (endMin > slotEnd) continue;
+
+      if (isToday) {
+        // Must allow enough time for prep
+        const cookStart = Math.max(nowMinutes, slotStart);
+        const readyTime = cookStart + maxPrep;
+        if (startMin < readyTime) continue;
+      } else {
+        // Future day: must be after slot start + prep
+        if (startMin < slotStart + maxPrep) continue;
+      }
+
+      result.push(`${hour.toString().padStart(2, "0")}:00–${(hour + 1).toString().padStart(2, "0")}:00`);
+    }
+    return result;
+  };
+
+  // Check if a date is disabled for a specific seller
+  const isDateDisabledForSeller = (date: Date, farmerId: string): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return true;
+
+    const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+    const settings = sellerPickupSettings.get(farmerId);
+    if (!settings?.pickup_slots) return true;
+    const slots = settings.pickup_slots as PickupSlots;
+    const dayKey = DAY_KEYS[date.getDay()];
+    const daySlot = slots[dayKey];
+    if (!daySlot || !daySlot.active) return true;
+
+    // Check busy/vacation dates
+    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+    if (settings.busy_dates?.includes(dateStr)) return true;
+    if (settings.vacation_dates?.includes(dateStr)) return true;
+
+    // Check if time slots available
+    return getSellerTimeSlots(farmerId, date).length === 0;
+  };
+
   // Calculate delivery cost
   const deliveryCost = deliveryType === "courier" ? 700 : 0; // 7р = 700 kopecks
   const finalTotalPrice = totalPrice + deliveryCost;
