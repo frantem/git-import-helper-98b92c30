@@ -899,9 +899,78 @@ export default function Checkout() {
                         </div>
                         <div className="py-1.5 px-3 bg-primary/10 rounded-lg">
                           <span className="text-sm text-primary font-medium">
-                            {pickupResult.text}
+                            {selfPickupSelections[fid]
+                              ? `${format(selfPickupSelections[fid].date, "d MMMM", { locale: ru })} ${selfPickupSelections[fid].time}`
+                              : pickupResult.text}
                           </span>
                         </div>
+                        {/* Date/time picker for this seller */}
+                        <Popover
+                          open={selfPickupPopoverOpen[fid] || false}
+                          onOpenChange={(open) => setSelfPickupPopoverOpen((prev) => ({ ...prev, [fid]: open }))}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal text-xs">
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {selfPickupSelections[fid]
+                                ? "Изменить время и дату"
+                                : "Выбрать время и дату"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selfPickupSelections[fid]?.date}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setSelfPickupSelections((prev) => {
+                                    const next = { ...prev };
+                                    if (next[fid]) {
+                                      next[fid] = { ...next[fid], date, time: "" };
+                                    } else {
+                                      next[fid] = { date, time: "" };
+                                    }
+                                    return next;
+                                  });
+                                }
+                              }}
+                              disabled={(date) => isDateDisabledForSeller(date, fid)}
+                              className="pointer-events-auto"
+                              locale={ru}
+                            />
+                            {selfPickupSelections[fid]?.date && (
+                              <div className="p-3 border-t border-border">
+                                <Label className="text-sm mb-2 block">Время:</Label>
+                                {(() => {
+                                  const slots = getSellerTimeSlots(fid, selfPickupSelections[fid].date);
+                                  return slots.length > 0 ? (
+                                    <Select
+                                      value={selfPickupSelections[fid]?.time || ""}
+                                      onValueChange={(time) => {
+                                        setSelfPickupSelections((prev) => ({
+                                          ...prev,
+                                          [fid]: { ...prev[fid], time }
+                                        }));
+                                        setSelfPickupPopoverOpen((prev) => ({ ...prev, [fid]: false }));
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Выберите время" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover">
+                                        {slots.map((slot) => (
+                                          <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Нет доступного времени</p>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
                         {/* Items list */}
                         {groupItems.map((item) =>
                     <div key={getItemKey(item)} className="py-1.5 px-3 bg-secondary/30 rounded-lg">
