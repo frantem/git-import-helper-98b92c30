@@ -93,10 +93,12 @@ export default function SellerProfile() {
           is_new,
           farmer_id,
           category_id,
+          prep_time_minutes,
           categories(name, slug)
         `)
-        .eq("farmer_id", id)
+        .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
+        .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (productsData) {
