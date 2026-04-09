@@ -35,6 +35,7 @@ interface Product {
   unit: string;
   isNew?: boolean;
   farmer_id?: string;
+  prep_time_minutes?: number;
 }
 
 export default function SellerProfile() {
@@ -146,6 +147,7 @@ export default function SellerProfile() {
             unit: p.unit,
             isNew: p.is_new || false,
             farmer_id: p.farmer_id,
+            prep_time_minutes: p.prep_time_minutes || 0,
           };
         });
 
