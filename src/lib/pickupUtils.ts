@@ -47,13 +47,9 @@ export interface PickupTimeResult {
 export interface DeliveryTimeResult {
   text: string;           // "Сегодня 18:30–19:30"
   isTomorrow: boolean;
-  earliestMinutes: number; // минуты от полуночи — для фильтрации слотов
+  earliestMinutes: number; // м��нуты от полуночи — для фильтрации слотов
 }
 
-/**
- * Calculate per-seller delivery readiness time (minutes from midnight).
- * Returns when the seller's order will be ready for pickup by courier.
- */
 // Новая структура для отслеживания остатка готовки
 interface CookingCarryover {
   remainingMinutes: number;
@@ -152,7 +148,11 @@ function getSellerReadyMinutesWithCarryover(
 }
 
 /**
- * Переработанная версия calculateDeliveryTime с распределением готовки
+ * Calculate delivery time for "Nearest Delivery" and "Pickup Point".
+ *
+ * @param maxPrepTimeMinutes - Max prep time among cart items
+ * @param sellerSettings - Array of seller pickup configurations
+ * @param adminSettings - Admin delivery configuration
  */
 export function calculateDeliveryTime(
   maxPrepTimeMinutes: number,
@@ -253,114 +253,12 @@ export function calculateDeliveryTime(
   return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
 }
 
-/**
- * Calculate delivery time for "Nearest Delivery" and "Pickup Point".
- *
- * @param maxPrepTimeMinutes - Max prep time among cart items
- * @param sellerSettings - Array of seller pickup configurations
- * @param adminSettings - Admin delivery configuration
- */
 /** Parse working_hours string like "10:00–20:00" and return closing time in minutes */
 export function parseWorkingHoursEnd(workingHours: string | null | undefined): number | null {
   if (!workingHours) return null;
   const match = workingHours.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
   if (!match) return null;
   return parseTime(match[2]);
-}
-
-export function calculateDeliveryTime(
-  maxPrepTimeMinutes: number,
-  sellerSettings: Array<{
-    farmerId?: string;
-    pickupSlots: PickupSlots | null;
-    busyDates: string[] | null;
-    vacationDates: string[] | null;
-  }>,
-  adminSettings: {
-    cutoff_time_minutes: number;
-    avg_delivery_time_minutes: number;
-    delivery_start_hour: number;
-    delivery_end_hour: number;
-  },
-  pickupPointEndMinutes?: number,
-): DeliveryTimeResult {
-  const { cutoff_time_minutes, avg_delivery_time_minutes, delivery_start_hour, delivery_end_hour } = adminSettings;
-  const deliveryStartMin = delivery_start_hour * 60;
-  const rawDeliveryEndMin = delivery_end_hour * 60;
-  const deliveryEndMin = pickupPointEndMinutes
-    ? Math.min(rawDeliveryEndMin, pickupPointEndMinutes)
-    : rawDeliveryEndMin;
-
-  // Try today and tomorrow (up to 7 days)
-  for (let offset = 0; offset < 7; offset++) {
-    const now = getMinskTime();
-    const checkDate = new Date(now);
-    checkDate.setDate(checkDate.getDate() + offset);
-
-    const isToday = offset === 0;
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-    // Cutoff check: if today and past cutoff, skip to tomorrow
-    if (isToday && nowMinutes > cutoff_time_minutes) continue;
-
-    // Find the latest readiness time among all sellers
-    let latestReady = -1;
-    let allSellersAvailable = true;
-
-    if (sellerSettings.length === 0) {
-      // Fallback: no seller data
-      latestReady = isToday
-        ? nowMinutes + maxPrepTimeMinutes
-        : maxPrepTimeMinutes;
-    } else {
-      for (const seller of sellerSettings) {
-        const ready = getSellerReadyMinutes(
-          maxPrepTimeMinutes,
-          seller.pickupSlots,
-          seller.busyDates,
-          seller.vacationDates,
-          checkDate,
-          isToday,
-          nowMinutes,
-        );
-        if (ready === null) {
-          allSellersAvailable = false;
-          break;
-        }
-        latestReady = Math.max(latestReady, ready);
-      }
-    }
-
-    if (!allSellersAvailable || latestReady < 0) continue;
-
-    // Add courier delivery time
-    let arrivalMin = latestReady + avg_delivery_time_minutes;
-
-    // Adjust for delivery working hours
-    if (arrivalMin < deliveryStartMin) {
-      arrivalMin = deliveryStartMin + avg_delivery_time_minutes;
-    }
-    if (arrivalMin >= deliveryEndMin) continue; // too late, try next day
-
-    // Round up to next 10 minutes for cleaner display
-    arrivalMin = Math.ceil(arrivalMin / 10) * 10;
-
-    const endMin = Math.min(arrivalMin + 60, deliveryEndMin);
-    const arrH = Math.floor(arrivalMin / 60);
-    const arrM = arrivalMin % 60;
-    const endH = Math.floor(endMin / 60);
-    const endM = endMin % 60;
-
-    const prefix = isToday ? "Сегодня" : offset === 1 ? "Завтра" : fmtDate(checkDate);
-
-    return {
-      text: `${prefix} ${fmtTime(arrH, arrM)}–${fmtTime(endH, endM)}`,
-      isTomorrow: offset > 0,
-      earliestMinutes: arrivalMin,
-    };
-  }
-
-  return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
 }
 
 /**
@@ -462,7 +360,7 @@ export function calculatePickupTime(
     const startM = slotStart % 60;
     const endH = Math.floor(slotEnd / 60);
     const endM = slotEnd % 60;
-    const timeRange = `${fmtTime(startH, startM)}–${fmtTime(endH, endM)}`;
+    const timeRange = `${fmtTime(startH, startM)}��${fmtTime(endH, endM)}`;
 
     if (offset === 1) {
       return { text: `Завтра ${timeRange}`, isFallback: false };
