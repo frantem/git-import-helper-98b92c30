@@ -35,6 +35,7 @@ interface Product {
   unit: string;
   isNew?: boolean;
   farmer_id?: string;
+  prep_time_minutes?: number;
 }
 
 export default function SellerProfile() {
@@ -93,10 +94,12 @@ export default function SellerProfile() {
           is_new,
           farmer_id,
           category_id,
+          prep_time_minutes,
           categories(name, slug)
         `)
-        .eq("farmer_id", id)
+        .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
+        .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
       if (productsData) {
@@ -144,6 +147,7 @@ export default function SellerProfile() {
             unit: p.unit,
             isNew: p.is_new || false,
             farmer_id: p.farmer_id,
+            prep_time_minutes: p.prep_time_minutes || 0,
           };
         });
 
