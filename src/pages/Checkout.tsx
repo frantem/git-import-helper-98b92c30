@@ -423,23 +423,31 @@ export default function Checkout() {
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
         const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
-        // reuse outer sellerTimesMap
         const timeTexts: string[] = [];
         for (const fid of farmerIds) {
-          const s = sellerPickupSettings.get(fid);
-          const farmerItems = items.filter((i) => i.product.farmer_id === fid);
-          const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
-          const result = calculatePickupTime(
-            maxPrep,
-            s?.pickup_slots as PickupSlots | null ?? null,
-            s?.max_orders_per_day ?? 5,
-            s?.busy_dates ?? null,
-            s?.vacation_dates ?? null,
-            orderCountsMap,
-            fid
-          );
-          sellerTimesMap[fid] = result.text;
-          timeTexts.push(result.text);
+          // If user selected custom date/time for this seller, use it
+          const customSelection = selfPickupSelections[fid];
+          if (customSelection) {
+            const dateStr = format(customSelection.date, "d MMMM", { locale: ru });
+            const timeText = `${dateStr} ${customSelection.time}`;
+            sellerTimesMap[fid] = timeText;
+            timeTexts.push(timeText);
+          } else {
+            const s = sellerPickupSettings.get(fid);
+            const farmerItems = items.filter((i) => i.product.farmer_id === fid);
+            const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+            const result = calculatePickupTime(
+              maxPrep,
+              s?.pickup_slots as PickupSlots | null ?? null,
+              s?.max_orders_per_day ?? 5,
+              s?.busy_dates ?? null,
+              s?.vacation_dates ?? null,
+              orderCountsMap,
+              fid
+            );
+            sellerTimesMap[fid] = result.text;
+            timeTexts.push(result.text);
+          }
         }
         // Store combined text for order-level display
         estimatedDeliveryTime = [...new Set(timeTexts)].join(" / ");
