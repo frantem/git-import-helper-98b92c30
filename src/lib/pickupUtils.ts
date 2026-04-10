@@ -81,7 +81,7 @@ function getSellerReadyMinutesWithCarryover(
     return { readyTime: prepTimeMinutes, carryover: null };
   }
 
-  const BUFFER_MINUTES = 30; // буфер перед концом окна
+  // No buffer — full window is available for cooking
   let remainingTime = carryover?.remainingMinutes ?? prepTimeMinutes;
 
   const dayKey = DAY_KEYS[checkDate.getDay()];
@@ -97,7 +97,7 @@ function getSellerReadyMinutesWithCarryover(
 
   if (isToday) {
     const cookStart = Math.max(nowMinutes, slotStart);
-    const availableInSlot = slotEnd - BUFFER_MINUTES - cookStart;
+    const availableInSlot = slotEnd - cookStart;
 
     if (availableInSlot <= 0) {
       // Не влезает вообще в это окно
@@ -124,7 +124,7 @@ function getSellerReadyMinutesWithCarryover(
   }
 
   // Будущий день
-  const availableInSlot = slotEnd - slotStart - BUFFER_MINUTES;
+  const availableInSlot = slotEnd - slotStart;
   
   if (availableInSlot <= 0) {
     return {
