@@ -883,9 +883,8 @@ export default function Checkout() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="start">
                       <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  if (date < today) return true;
+                  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                  if (dateOnly < earliestDeliveryDate) return true;
                   // Block busy/vacation dates of all sellers
                   return allBlockedDates.some((bd) =>
                   bd.getFullYear() === date.getFullYear() &&
