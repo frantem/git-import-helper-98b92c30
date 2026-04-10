@@ -47,7 +47,7 @@ export interface PickupTimeResult {
 export interface DeliveryTimeResult {
   text: string;           // "Сегодня 18:30–19:30"
   isTomorrow: boolean;
-  earliestMinutes: number; // м��нуты от полуночи — для фильтрации слотов
+  earliestMinutes: number; // минуты от полуночи — для фильтрации слотов
 }
 
 // Новая структура для отслеживания остатка готовки
@@ -68,7 +68,7 @@ function getSellerReadyMinutesWithCarryover(
   checkDate: Date,
   isToday: boolean,
   nowMinutes: number,
-  carryover?: CookingCarryover,
+  carryover?: CookingCarryover | null,
 ): { readyTime: number | null; carryover: CookingCarryover | null } {
   if (!pickupSlots) {
     // Если нет расписания - готовим сразу
@@ -244,7 +244,7 @@ export function calculateDeliveryTime(
     const prefix = isToday ? "Сегодня" : offset === 1 ? "Завтра" : fmtDate(checkDate);
 
     return {
-      text: `${prefix} ${fmtTime(arrH, arrM)}–${fmtTime(endH, endM)}`,
+      text: `${prefix} ${fmtTime(arrH, arrM)}\u2013${fmtTime(endH, endM)}`,
       isTomorrow: offset > 0,
       earliestMinutes: arrivalMin,
     };
@@ -256,7 +256,7 @@ export function calculateDeliveryTime(
 /** Parse working_hours string like "10:00–20:00" and return closing time in minutes */
 export function parseWorkingHoursEnd(workingHours: string | null | undefined): number | null {
   if (!workingHours) return null;
-  const match = workingHours.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+  const match = workingHours.match(/(\d{1,2}:\d{2})\s*[-\u2013]\s*(\d{1,2}:\d{2})/);
   if (!match) return null;
   return parseTime(match[2]);
 }
@@ -308,66 +308,120 @@ export function calculatePickupTime(
   }
 
   const now = getMinskTime();
+  let carryover: CookingCarryover | null = null;
 
-  // Try today + up to 14 days ahead
+  // Try today + up to 14 days ahead with carryover
   for (let offset = 0; offset < 14; offset++) {
     const checkDate = new Date(now);
     checkDate.setDate(checkDate.getDate() + offset);
 
+    const isToday = offset === 0;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Skip busy/vacation/inactive days but DON'T reset carryover — just skip
     const dayKey = DAY_KEYS[checkDate.getDay()];
     const slot = pickupSlots[dayKey];
-
-    // Skip if day not active
     if (!slot || !slot.active) continue;
-
-    // Skip busy/vacation dates
-    const dateStr = `${checkDate.getFullYear()}-${(checkDate.getMonth() + 1).toString().padStart(2, "0")}-${checkDate.getDate().toString().padStart(2, "0")}`;
 
     if (busyDates?.some((d) => dateMatches(d, checkDate))) continue;
     if (vacationDates?.some((d) => dateMatches(d, checkDate))) continue;
 
     // Check max orders per day
+    const dateStr = `${checkDate.getFullYear()}-${(checkDate.getMonth() + 1).toString().padStart(2, "0")}-${checkDate.getDate().toString().padStart(2, "0")}`;
     const countKey = `${farmerId}:${dateStr}`;
     const currentCount = orderCounts[countKey] || 0;
     if (currentCount >= maxOrdersPerDay) continue;
 
-    const slotStart = parseTime(slot.start);
+    const result = getSellerReadyMinutesWithCarryover(
+      prepTimeMinutes,
+      pickupSlots,
+      busyDates,
+      vacationDates,
+      checkDate,
+      isToday,
+      nowMinutes,
+      carryover,
+    );
+
+    carryover = result.carryover;
+
+    if (result.readyTime === null) continue;
+
+    // Ready! Show readyTime\u2013slotEnd
     const slotEnd = parseTime(slot.end);
-
-    if (offset === 0) {
-      // Today: check if we can fit
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const cookStart = Math.max(currentMinutes, slotStart);
-      const readyTime = cookStart + prepTimeMinutes;
-
-      // Need at least 10 min before slot end
-      if (readyTime <= slotEnd - 10 && cookStart < slotEnd) {
-        const readyH = Math.floor(readyTime / 60);
-        const readyM = readyTime % 60;
-        const endH = Math.floor(slotEnd / 60);
-        const endM = slotEnd % 60;
-        return {
-          text: `Сегодня ${fmtTime(readyH, readyM)}–${fmtTime(endH, endM)}`,
-          isFallback: false,
-        };
-      }
-      // Can't fit today, continue to next day
-      continue;
-    }
-
-    // Future day: show full slot window
-    const startH = Math.floor(slotStart / 60);
-    const startM = slotStart % 60;
+    const readyH = Math.floor(result.readyTime / 60);
+    const readyM = result.readyTime % 60;
     const endH = Math.floor(slotEnd / 60);
     const endM = slotEnd % 60;
-    const timeRange = `${fmtTime(startH, startM)}��${fmtTime(endH, endM)}`;
+    const timeRange = `${fmtTime(readyH, readyM)}\u2013${fmtTime(endH, endM)}`;
 
+    if (isToday) {
+      return { text: `Сегодня ${timeRange}`, isFallback: false };
+    }
     if (offset === 1) {
       return { text: `Завтра ${timeRange}`, isFallback: false };
     }
-
     return { text: `${fmtDate(checkDate)} ${timeRange}`, isFallback: false };
   }
 
   return { text: "Нет доступных дат", isFallback: false };
+}
+
+/**
+ * Calculate the earliest date+readyTime when a seller's items will be ready for pickup.
+ * Used by Checkout to determine which calendar dates to enable and which time slots to show.
+ */
+export interface PickupReadyDateResult {
+  readyDate: Date;
+  readyTimeMinutes: number; // minutes since midnight on readyDate
+  dayOffset: number;
+}
+
+export function calculatePickupReadyDate(
+  prepTimeMinutes: number,
+  pickupSlots: PickupSlots | null | undefined,
+  busyDates: string[] | null | undefined,
+  vacationDates: string[] | null | undefined,
+): PickupReadyDateResult | null {
+  if (!pickupSlots) return null;
+
+  const now = getMinskTime();
+  let carryover: CookingCarryover | null = null;
+
+  for (let offset = 0; offset < 14; offset++) {
+    const checkDate = new Date(now);
+    checkDate.setDate(checkDate.getDate() + offset);
+
+    const isToday = offset === 0;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const dayKey = DAY_KEYS[checkDate.getDay()];
+    const slot = pickupSlots[dayKey];
+    if (!slot || !slot.active) continue;
+    if (busyDates?.some((d) => dateMatches(d, checkDate))) continue;
+    if (vacationDates?.some((d) => dateMatches(d, checkDate))) continue;
+
+    const result = getSellerReadyMinutesWithCarryover(
+      prepTimeMinutes,
+      pickupSlots,
+      busyDates,
+      vacationDates,
+      checkDate,
+      isToday,
+      nowMinutes,
+      carryover,
+    );
+
+    carryover = result.carryover;
+
+    if (result.readyTime !== null) {
+      return {
+        readyDate: checkDate,
+        readyTimeMinutes: result.readyTime,
+        dayOffset: offset,
+      };
+    }
+  }
+
+  return null;
 }
