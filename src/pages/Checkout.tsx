@@ -103,29 +103,48 @@ export default function Checkout() {
     return new Date(utcTime + 3 * 60 * 60000);
   };
 
-  // Calculate fast delivery time
+  // Calculate fast delivery time — bottleneck is the seller whose items are ready LATEST for the customer
   const fastDeliveryResult = useMemo<DeliveryTimeResult>(() => {
-    // Find the item with the longest prep time — it's the bottleneck
-    let slowestItem = items[0];
-    let maxPrep = ((slowestItem?.product as any)?.prep_time_minutes || 90);
-    for (const item of items) {
-      const prep = (item.product as any).prep_time_minutes || 90;
-      if (prep > maxPrep) {
-        maxPrep = prep;
-        slowestItem = item;
+    // Group items by farmer_id and find the real bottleneck by actual ready datetime
+    const farmerIds = [...new Set(items.map(i => i.product.farmer_id).filter(Boolean))] as string[];
+
+    let bottleneckFarmerId: string | null = null;
+    let bottleneckMaxPrep = 90;
+    let latestReadyTimestamp = -1;
+
+    for (const fid of farmerIds) {
+      const farmerItems = items.filter(i => i.product.farmer_id === fid);
+      const maxPrep = Math.max(...farmerItems.map(i => (i.product as any).prep_time_minutes || 90));
+      const s = sellerPickupSettings.get(fid);
+      const slots = (s?.pickup_slots as PickupSlots | null) ?? null;
+      const busy = s?.busy_dates ?? null;
+      const vacation = s?.vacation_dates ?? null;
+
+      const ready = calculatePickupReadyDate(maxPrep, slots, busy, vacation);
+      const readyTs = ready
+        ? ready.readyDate.getTime() - (ready.readyDate.getTime() % 86400000) + ready.readyTimeMinutes * 60000
+        : 0;
+
+      if (readyTs > latestReadyTimestamp) {
+        latestReadyTimestamp = readyTs;
+        bottleneckFarmerId = fid;
+        bottleneckMaxPrep = maxPrep;
       }
     }
-    // Use only the slowest seller's schedule
-    const slowestFarmerId = slowestItem?.product.farmer_id;
-    const sellerData = slowestFarmerId ? (() => {
-      const s = sellerPickupSettings.get(slowestFarmerId);
+
+    // Build sellerData for only the bottleneck seller
+    const sellerData = bottleneckFarmerId ? (() => {
+      const s = sellerPickupSettings.get(bottleneckFarmerId);
       return [{
-        farmerId: slowestFarmerId,
-        pickupSlots: s?.pickup_slots as PickupSlots | null ?? null,
+        farmerId: bottleneckFarmerId,
+        pickupSlots: (s?.pickup_slots as PickupSlots | null) ?? null,
         busyDates: s?.busy_dates ?? null,
         vacationDates: s?.vacation_dates ?? null
       }];
     })() : [];
+
+    const maxPrep = bottleneckFarmerId ? bottleneckMaxPrep : Math.max(...items.map(i => (i.product as any).prep_time_minutes || 90), 90);
+
     // For pickup delivery type, respect pickup point working hours
     const selectedPointData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
     const ppEndMinutes = deliveryType === "pickup" ? parseWorkingHoursEnd(selectedPointData?.working_hours) ?? undefined : undefined;
