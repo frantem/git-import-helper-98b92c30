@@ -1111,7 +1111,7 @@ export default function Checkout() {
       {/* Checkout button */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card p-3 shadow-lg md:hidden">
         <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || deliveryType === "pickup" && (!selectedPoint || pickupPoints.length === 0)}>
-          {isLoading ? "Оформление..." : "Оплатить"}
+          {isLoading ? "Оформление..." : "Заказать"}
         </Button>
       </div>
 
