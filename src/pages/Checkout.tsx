@@ -133,28 +133,51 @@ export default function Checkout() {
     return blocked;
   }, [sellerPickupSettings]);
 
+  // Compute earliest delivery date from fastDeliveryResult
+  const earliestDeliveryDate = useMemo<Date>(() => {
+    const now = getMinskTime();
+    const text = fastDeliveryResult.text;
+    if (text.startsWith("Сегодня")) return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (text.startsWith("Завтра")) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + 1);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    // Parse "DD.MM HH:MM–HH:MM"
+    const match = text.match(/^(\d{2})\.(\d{2})/);
+    if (match) {
+      const day = parseInt(match[1]);
+      const month = parseInt(match[2]) - 1;
+      let year = now.getFullYear();
+      const candidate = new Date(year, month, day);
+      if (candidate < now) candidate.setFullYear(year + 1);
+      return candidate;
+    }
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, [fastDeliveryResult]);
+
   // Generate available time slots for selected date (using Minsk time)
   const availableTimeSlots = useMemo(() => {
     if (!selectedDate) return [];
     const slots: string[] = [];
-    const minskNow = getMinskTime();
-    const isToday = selectedDate.toDateString() === minskNow.toDateString();
     const { delivery_start_hour: startHour, delivery_end_hour: endHour } = adminSettings;
 
-    // Minimum slot time based on fast delivery earliest
-    const minSlotMinutes = fastDeliveryResult.earliestMinutes;
+    // Check if selected date is the earliest delivery date
+    const isEarliestDate =
+      selectedDate.getFullYear() === earliestDeliveryDate.getFullYear() &&
+      selectedDate.getMonth() === earliestDeliveryDate.getMonth() &&
+      selectedDate.getDate() === earliestDeliveryDate.getDate();
+
+    const minSlotMinutes = isEarliestDate ? fastDeliveryResult.earliestMinutes : startHour * 60;
 
     for (let hour = startHour; hour < endHour && hour < 24; hour++) {
       const slotMinutes = hour * 60;
-      if (isToday) {
-        // For today: slot must be at least the earliest delivery time
-        if (slotMinutes < minSlotMinutes) continue;
-      }
+      if (slotMinutes < minSlotMinutes) continue;
       const nextHour = hour + 1;
       slots.push(`${hour.toString().padStart(2, "0")}:00–${nextHour.toString().padStart(2, "0")}:00`);
     }
     return slots;
-  }, [selectedDate, adminSettings, fastDeliveryResult]);
+  }, [selectedDate, adminSettings, fastDeliveryResult, earliestDeliveryDate]);
 
   // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
