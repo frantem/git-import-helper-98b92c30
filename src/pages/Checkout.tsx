@@ -105,17 +105,27 @@ export default function Checkout() {
 
   // Calculate fast delivery time
   const fastDeliveryResult = useMemo<DeliveryTimeResult>(() => {
-    const maxPrep = Math.max(...items.map((i) => (i.product as any).prep_time_minutes || 90), 0);
-    const sellers = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
-    const sellerData = sellers.map((fid) => {
-      const s = sellerPickupSettings.get(fid);
-      return {
-        farmerId: fid,
+    // Find the item with the longest prep time — it's the bottleneck
+    let slowestItem = items[0];
+    let maxPrep = ((slowestItem?.product as any)?.prep_time_minutes || 90);
+    for (const item of items) {
+      const prep = (item.product as any).prep_time_minutes || 90;
+      if (prep > maxPrep) {
+        maxPrep = prep;
+        slowestItem = item;
+      }
+    }
+    // Use only the slowest seller's schedule
+    const slowestFarmerId = slowestItem?.product.farmer_id;
+    const sellerData = slowestFarmerId ? (() => {
+      const s = sellerPickupSettings.get(slowestFarmerId);
+      return [{
+        farmerId: slowestFarmerId,
         pickupSlots: s?.pickup_slots as PickupSlots | null ?? null,
         busyDates: s?.busy_dates ?? null,
         vacationDates: s?.vacation_dates ?? null
-      };
-    });
+      }];
+    })() : [];
     // For pickup delivery type, respect pickup point working hours
     const selectedPointData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
     const ppEndMinutes = deliveryType === "pickup" ? parseWorkingHoursEnd(selectedPointData?.working_hours) ?? undefined : undefined;
