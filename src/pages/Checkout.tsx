@@ -168,7 +168,7 @@ export default function Checkout() {
     setIsDateTimePopoverOpen(false);
   };
 
-  // Helper: generate time slots for a specific seller on a specific date
+  // Helper: generate time slots for a specific seller on a specific date (with carryover)
   const getSellerTimeSlots = (farmerId: string, date: Date): string[] => {
     const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
     const settings = sellerPickupSettings.get(farmerId);
@@ -182,36 +182,52 @@ export default function Checkout() {
     const slotStart = parseT(daySlot.start);
     const slotEnd = parseT(daySlot.end);
 
+    // Check busy/vacation
+    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+    if (settings.busy_dates?.includes(dateStr)) return [];
+    if (settings.vacation_dates?.includes(dateStr)) return [];
+
     // Get max prep time for this seller's items
     const farmerItems = items.filter((i) => i.product.farmer_id === farmerId);
     const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
 
-    const minskNow = getMinskTime();
-    const isToday = date.toDateString() === minskNow.toDateString();
-    const nowMinutes = minskNow.getHours() * 60 + minskNow.getMinutes();
+    // Calculate when the item is actually ready using carryover logic
+    const readyResult = calculatePickupReadyDate(
+      maxPrep,
+      slots,
+      settings.busy_dates,
+      settings.vacation_dates,
+    );
+
+    if (!readyResult) return [];
+
+    // Compare selected date with ready date
+    const readyDateStr = `${readyResult.readyDate.getFullYear()}-${(readyResult.readyDate.getMonth() + 1).toString().padStart(2, "0")}-${readyResult.readyDate.getDate().toString().padStart(2, "0")}`;
+
+    let earliestSlotMinutes = slotStart;
+
+    if (dateStr === readyDateStr) {
+      // On the ready date, slots start from readyTime
+      earliestSlotMinutes = Math.max(slotStart, readyResult.readyTimeMinutes);
+    } else if (date < readyResult.readyDate) {
+      // Before ready date — no slots available
+      return [];
+    }
+    // After ready date — full slot window available (earliestSlotMinutes = slotStart)
 
     const result: string[] = [];
-    for (let hour = Math.floor(slotStart / 60); hour < Math.floor(slotEnd / 60) && hour < 24; hour++) {
+    for (let hour = Math.floor(earliestSlotMinutes / 60); hour < Math.floor(slotEnd / 60) && hour < 24; hour++) {
       const startMin = hour * 60;
       const endMin = (hour + 1) * 60;
+      if (startMin < earliestSlotMinutes) continue;
       if (endMin > slotEnd) continue;
 
-      if (isToday) {
-        // Must allow enough time for prep
-        const cookStart = Math.max(nowMinutes, slotStart);
-        const readyTime = cookStart + maxPrep;
-        if (startMin < readyTime) continue;
-      } else {
-        // Future day: must be after slot start + prep
-        if (startMin < slotStart + maxPrep) continue;
-      }
-
-      result.push(`${hour.toString().padStart(2, "0")}:00–${(hour + 1).toString().padStart(2, "0")}:00`);
+      result.push(`${hour.toString().padStart(2, "0")}:00\u2013${(hour + 1).toString().padStart(2, "0")}:00`);
     }
     return result;
   };
 
-  // Check if a date is disabled for a specific seller
+  // Check if a date is disabled for a specific seller (with carryover)
   const isDateDisabledForSeller = (date: Date, farmerId: string): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -230,8 +246,34 @@ export default function Checkout() {
     if (settings.busy_dates?.includes(dateStr)) return true;
     if (settings.vacation_dates?.includes(dateStr)) return true;
 
-    // Check if time slots available
-    return getSellerTimeSlots(farmerId, date).length === 0;
+    // Get max prep time for this seller's items
+    const farmerItems = items.filter((i) => i.product.farmer_id === farmerId);
+    const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+
+    // Calculate when the item is actually ready using carryover logic
+    const readyResult = calculatePickupReadyDate(
+      maxPrep,
+      slots,
+      settings.busy_dates,
+      settings.vacation_dates,
+    );
+
+    if (!readyResult) return true;
+
+    // Date is available if it's on or after the ready date
+    const readyDateOnly = new Date(readyResult.readyDate);
+    readyDateOnly.setHours(0, 0, 0, 0);
+    const checkDateOnly = new Date(date);
+    checkDateOnly.setHours(0, 0, 0, 0);
+
+    if (checkDateOnly < readyDateOnly) return true;
+
+    // On the ready date, check if there are actually slots available
+    if (checkDateOnly.getTime() === readyDateOnly.getTime()) {
+      return getSellerTimeSlots(farmerId, date).length === 0;
+    }
+
+    return false;
   };
 
   // Calculate delivery cost
