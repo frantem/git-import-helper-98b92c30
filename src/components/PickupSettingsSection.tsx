@@ -74,11 +74,10 @@ export default function PickupSettingsSection({
 
   return (
     <div className="pt-4 border-t border-border space-y-6">
-      <h3 className="font-medium text-foreground">Настройки выдачи заказов</h3>
+      <h3 className="font-medium text-foreground">График работы и выдачи заказов</h3>
 
       {/* Schedule */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium">График работы</Label>
         <div className="space-y-2">
           {DAY_ORDER.map((day) => {
             const slot = pickupSlots[day] || DEFAULT_PICKUP_SLOTS[day];
