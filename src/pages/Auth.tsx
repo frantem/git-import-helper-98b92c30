@@ -327,11 +327,6 @@ export default function Auth() {
                 </>
               )}
 
-              {mode === "register" && initialRole !== "seller" && (
-                <p className="text-sm text-muted-foreground">
-                  После регистрации вы сможете подать заявку на продавца в профиле.
-                </p>
-              )}
 
               {mode === "register" && initialRole === "seller" && (
                 <div className="rounded-lg bg-muted p-3">
