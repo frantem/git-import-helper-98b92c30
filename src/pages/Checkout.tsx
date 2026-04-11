@@ -33,9 +33,7 @@ interface FarmerInfo {
   id: string;
   city: string | null;
   street: string | null;
-  house: string | null;
-  entrance: string | null;
-  apartment: string | null;
+  address_details: string | null;
   district: string;
   name: string;
 }
@@ -400,7 +398,7 @@ export default function Checkout() {
     if (farmerIds.length === 0) return;
     const {
       data
-    } = await supabase.from("farmers").select("id, name, city, street, house, entrance, apartment, district").in("id", farmerIds);
+    } = await supabase.from("farmers").select("id, name, city, street, address_details, district").in("id", farmerIds);
     if (data) {
       const map = new Map<string, FarmerInfo>();
       data.forEach((farmer) => map.set(farmer.id, farmer));
@@ -472,6 +470,7 @@ export default function Checkout() {
     const parts: string[] = [];
     if (farmer.city) parts.push(farmer.city);
     if (farmer.street) parts.push(`ул. ${farmer.street}`);
+    if (farmer.address_details) parts.push(farmer.address_details);
 
     return parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
   };

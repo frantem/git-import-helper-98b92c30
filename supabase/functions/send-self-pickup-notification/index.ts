@@ -130,7 +130,7 @@ serve(async (req: Request): Promise<Response> => {
     // Fetch farmer addresses
     const { data: farmers } = await supabaseAdmin
       .from("farmers")
-      .select("id, name, city, street, house, entrance, apartment")
+      .select("id, name, city, street, address_details")
       .in("id", farmerIds);
 
     // Build per-farmer blocks with products and individual times
@@ -138,9 +138,7 @@ serve(async (req: Request): Promise<Response> => {
       const parts: string[] = [];
       if (f.city) parts.push(f.city);
       if (f.street) parts.push(`ул. ${f.street}`);
-      if (f.house) parts.push(`д. ${f.house}`);
-      if (f.entrance) parts.push(`подъезд ${f.entrance}`);
-      if (f.apartment) parts.push(`кв. ${f.apartment}`);
+      if (f.address_details) parts.push(f.address_details);
       const address = parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
 
       // Per-seller time from checkout, fallback to order-level
