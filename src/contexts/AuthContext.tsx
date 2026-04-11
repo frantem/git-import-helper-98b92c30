@@ -107,10 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
-        // Add user role
+        // Always assign buyer role on sign-up (other roles are granted by admin)
         await supabase.from("user_roles").insert({
           user_id: data.user.id,
-          role: userRole,
+          role: "buyer",
         });
 
         // Update profile with full name if provided
