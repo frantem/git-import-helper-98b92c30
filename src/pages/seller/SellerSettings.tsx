@@ -267,7 +267,7 @@ export default function SellerSettings() {
               </div>
               <div className="space-y-2">
                 <Label>Дом, подъезд, квартира</Label>
-                <Input value={settingsForm.address_details} onChange={(e) => setSettingsForm({ ...settingsForm, address_details: e.target.value })} placeholder="д.37 под.2 кв.61" />
+                <Input value={settingsForm.address_details} onChange={(e) => setSettingsForm({ ...settingsForm, address_details: e.target.value })} placeholder="д.37, подъезд 2, этаж 2, кв.61" />
               </div>
               <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
             </div>
