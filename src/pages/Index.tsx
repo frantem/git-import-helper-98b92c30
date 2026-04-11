@@ -191,10 +191,13 @@ const Index = () => {
       </main>
 
       <footer className="border-t border-border py-4 pb-20 md:pb-4">
-        <div className="container mx-auto px-3 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
-          <span>© 2026 Locus</span>
-          <span>·</span>
-          <Link to="/privacy-policy" className="hover:underline">Политика конфиденциальности</Link>
+        <div className="container mx-auto px-3 flex flex-col items-center gap-1 text-[11px] text-muted-foreground">
+          <span>ООО «ЛОКУСФУД»</span>
+          <div className="flex items-center gap-1">
+            <span>© 2026 Locus</span>
+            <span>·</span>
+            <Link to="/privacy-policy" className="hover:underline">Политика конфиденциальности</Link>
+          </div>
         </div>
       </footer>
 
