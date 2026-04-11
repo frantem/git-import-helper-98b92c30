@@ -123,13 +123,11 @@ export type Database = {
       }
       farmers: {
         Row: {
-          apartment: string | null
+          address_details: string | null
           city: string | null
           created_at: string
           description: string | null
           district: string
-          entrance: string | null
-          house: string | null
           id: string
           is_blocked: boolean | null
           name: string
@@ -141,13 +139,11 @@ export type Database = {
           village: string | null
         }
         Insert: {
-          apartment?: string | null
+          address_details?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
           district?: string
-          entrance?: string | null
-          house?: string | null
           id?: string
           is_blocked?: boolean | null
           name: string
@@ -159,13 +155,11 @@ export type Database = {
           village?: string | null
         }
         Update: {
-          apartment?: string | null
+          address_details?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
           district?: string
-          entrance?: string | null
-          house?: string | null
           id?: string
           is_blocked?: boolean | null
           name?: string
