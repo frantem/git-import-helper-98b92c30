@@ -940,7 +940,7 @@ export default function Checkout() {
 
               {/* Freshness text */}
               <p className="text-xs text-muted-foreground text-center">
-                Товары готовятся под указанное время, поэтому они всегда свежие и вкусные
+                Все товары готовятся под указанное время, поэтому они всегда свежие и вкусные.
               </p>
               
               {/* Delivery address */}
