@@ -534,6 +534,42 @@ export default function SellerProducts() {
               </div>
             </div>
 
+            {/* Additional Variants */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Дополнительные варианты</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addVariant}>
+                  <Plus className="h-3 w-3 mr-1" />Добавить
+                </Button>
+              </div>
+              {productVariants.length > 0 && (
+                <div className="space-y-2">
+                  {productVariants.map((variant, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                      <Input value={variant.label} onChange={(e) => updateVariant(index, 'label', e.target.value)} placeholder="0,5 л" className="h-9 flex-1" />
+                      <div className="flex items-center gap-1">
+                        <Input type="text" inputMode="decimal"
+                          value={variantPriceInputs[index] ?? kopecksToRublesString(variant.price)}
+                          onChange={(e) => setVariantPriceInputs(prev => ({ ...prev, [index]: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                          onBlur={() => { const k = parseRublesToKopecks(variantPriceInputs[index] ?? ""); updateVariant(index, 'price', k); setVariantPriceInputs(prev => ({ ...prev, [index]: kopecksToRublesString(k) })); }}
+                          placeholder="4.50" className="h-9 w-24 text-center" />
+                        <span className="text-sm text-muted-foreground">₽</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Input type="number" value={variant.discount_percent || ""}
+                          onChange={(e) => updateVariant(index, 'discount_percent', Math.min(99, Math.max(0, parseInt(e.target.value) || 0)))}
+                          placeholder="0" className="h-9 w-14 text-center" max={99} />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                      <button type="button" onClick={() => removeVariant(index)} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive rounded">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Prep time */}
             <div className="space-y-2">
               <Label>Время приготовления</Label>
@@ -579,42 +615,6 @@ export default function SellerProducts() {
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
                 </label>
               </div>
-            </div>
-
-            {/* Additional Variants */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Дополнительные варианты</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-                  <Plus className="h-3 w-3 mr-1" />Добавить
-                </Button>
-              </div>
-              {productVariants.length > 0 && (
-                <div className="space-y-2">
-                  {productVariants.map((variant, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 rounded-lg border border-border">
-                      <Input value={variant.label} onChange={(e) => updateVariant(index, 'label', e.target.value)} placeholder="0,5 л" className="h-9 flex-1" />
-                      <div className="flex items-center gap-1">
-                        <Input type="text" inputMode="decimal"
-                          value={variantPriceInputs[index] ?? kopecksToRublesString(variant.price)}
-                          onChange={(e) => setVariantPriceInputs(prev => ({ ...prev, [index]: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                          onBlur={() => { const k = parseRublesToKopecks(variantPriceInputs[index] ?? ""); updateVariant(index, 'price', k); setVariantPriceInputs(prev => ({ ...prev, [index]: kopecksToRublesString(k) })); }}
-                          placeholder="4.50" className="h-9 w-24 text-center" />
-                        <span className="text-sm text-muted-foreground">₽</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Input type="number" value={variant.discount_percent || ""}
-                          onChange={(e) => updateVariant(index, 'discount_percent', Math.min(99, Math.max(0, parseInt(e.target.value) || 0)))}
-                          placeholder="0" className="h-9 w-14 text-center" max={99} />
-                        <span className="text-sm text-muted-foreground">%</span>
-                      </div>
-                      <button type="button" onClick={() => removeVariant(index)} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive rounded">
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Add-ons */}
