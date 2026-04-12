@@ -21,6 +21,8 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { useProduct } from "@/hooks/useProduct";
 import { useProductCustomFields } from "@/hooks/useProductCustomFields";
 import { SEO } from "@/components/SEO";
+import { useSeoTemplates } from "@/hooks/useSeoTemplates";
+import { formatPrice } from "@/lib/priceUtils";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -80,6 +82,7 @@ export default function Product() {
   const {
     data: customFields = []
   } = useProductCustomFields(id);
+  const { data: seoTemplates } = useSeoTemplates();
 
 
   // Build farmer location string
@@ -402,12 +405,37 @@ export default function Product() {
       toast.error("Не удалось скопировать ссылку");
     }
   };
+  const productSeoTitle = product
+    ? (seoTemplates?.product_title_template || "{name} купить в Витебске — Locus").replace("{name}", product.name)
+    : undefined;
+
+  const productJsonLd = product ? {
+    "@type": "Product",
+    name: product.name,
+    description: product.description || undefined,
+    image: product.image !== "/placeholder.svg" ? product.image : undefined,
+    offers: {
+      "@type": "Offer",
+      price: (displayPrice / 100).toFixed(2),
+      priceCurrency: "BYN",
+      availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+    ...(displayRating && displayReviewCount > 0 ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: displayRating.toFixed(1),
+        reviewCount: displayReviewCount,
+      },
+    } : {}),
+  } : undefined;
+
   return <div className="min-h-screen bg-background pb-32 md:pb-0">
       <SEO
-        title={product ? `${product.name} купить в Витебске — Locus` : undefined}
+        title={productSeoTitle}
         description={product?.description || undefined}
         image={product?.image}
         ogType="product"
+        jsonLd={productJsonLd}
       />
       <Header />
 
