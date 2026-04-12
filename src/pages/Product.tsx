@@ -155,17 +155,30 @@ export default function Product() {
     }
     if (reviewsData && reviewsData.length > 0) {
       const userIds = reviewsData.map(r => r.user_id);
-      const {
-        data: profilesData
-      } = await supabase.rpc("get_public_profile_names", { _user_ids: userIds });
-      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p.full_name]) || []);
+      const reviewIds = reviewsData.map(r => r.id);
+
+      // Fetch profiles and images in parallel
+      const [profilesRes, imagesRes] = await Promise.all([
+        supabase.rpc("get_public_profile_names", { _user_ids: userIds }),
+        supabase.from("review_images").select("review_id, image_url, sort_order").in("review_id", reviewIds).order("sort_order"),
+      ]);
+
+      const profilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p.full_name]) || []);
+      const imagesMap = new Map<string, string[]>();
+      imagesRes.data?.forEach(img => {
+        const arr = imagesMap.get(img.review_id) || [];
+        arr.push(img.image_url);
+        imagesMap.set(img.review_id, arr);
+      });
+
       const mappedReviews = reviewsData.map(r => ({
         id: r.id,
         userId: r.user_id,
         userName: profilesMap.get(r.user_id) || "Пользователь",
         rating: r.rating,
         text: r.text || "",
-        createdAt: r.created_at
+        createdAt: r.created_at,
+        images: imagesMap.get(r.id) || [],
       }));
       setReviews(mappedReviews);
       const avg = mappedReviews.reduce((sum, r) => sum + r.rating, 0) / mappedReviews.length;
