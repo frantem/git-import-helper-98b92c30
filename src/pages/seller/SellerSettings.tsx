@@ -14,6 +14,8 @@ import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
+const [slugCopied, setSlugCopied] = useState(false);
+
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
