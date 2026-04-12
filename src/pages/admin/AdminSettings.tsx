@@ -205,6 +205,12 @@ export default function AdminSettings() {
       supabase
         .from("app_settings")
         .upsert({ key: "google_verification", value: googleVerification, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "product_title_template", value: productTitleTemplate, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "category_title_template", value: categoryTitleTemplate, updated_at: new Date().toISOString() }, { onConflict: "key" }),
     ];
 
     const results = await Promise.all(updates);
