@@ -116,39 +116,39 @@ export const ProductCard = memo(function ProductCard({
       </div>
 
       <div className="flex flex-1 flex-col p-2.5">
-        {showRating &&
-        <div className="mb-1 flex items-center gap-1">
-            <Star className="h-3.5 w-3.5 fill-accent text-accent" />
-            <span className="text-xs font-medium text-foreground">{product.rating.toFixed(1)}</span>
-          </div>
-        }
-
         <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
           {product.name}
         </h3>
 
         <div className="mt-auto">
-          <div className="flex items-baseline justify-between gap-1">
-            <div className="flex items-baseline gap-1">
-              <span className="text-base font-bold text-foreground">
-                {priceFormatted.formatted}<BynSymbol />
-              </span>
-              {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
-            </div>
-            {(() => {
-              const prep = formatPrepTime(product.prep_time_minutes);
-              return (
-                <span className={cn("text-[10px] leading-tight whitespace-nowrap", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
-                  {prep.label}
-                </span>
-              );
-            })()}
+          <div className="flex items-baseline gap-1">
+            <span className="text-base font-bold text-foreground">
+              {priceFormatted.formatted}<BynSymbol />
+            </span>
+            {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
           </div>
 
           {oldPriceFormatted &&
-          <span className="text-xs text-muted-foreground line-through">
+            <span className="mt-0.5 block text-xs text-muted-foreground line-through">
               {oldPriceFormatted.formatted}<BynSymbol />
             </span>
+          }
+
+          {(() => {
+            const prep = formatPrepTime(product.prep_time_minutes);
+            return (
+              <span className={cn("mt-0.5 block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
+                {prep.label}
+              </span>
+            );
+          })()}
+
+          {showRating &&
+            <div className="mt-1 flex items-center gap-1">
+              <Star className="h-3 w-3 fill-accent text-accent" />
+              <span className="text-[11px] font-medium text-foreground">{product.rating.toFixed(1)}</span>
+              <span className="text-[10px] text-muted-foreground">({product.reviews})</span>
+            </div>
           }
         </div>
       </div>
