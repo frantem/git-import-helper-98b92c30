@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { compressImage } from "@/lib/imageUtils";
 import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2 } from "lucide-react";
 
 import { Header } from "@/components/Header";
