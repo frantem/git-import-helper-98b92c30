@@ -220,7 +220,7 @@ export default function Product() {
 
   // Build all images array for carousel
   const allImages = dbProduct ? [dbProduct.image_url || "/placeholder.svg", ...productImages.map(img => img.image_url)] : [];
-  const handleAddReview = async (rating: number, text: string) => {
+  const handleAddReview = async (rating: number, text: string, files: File[]) => {
     if (!user || !id) {
       toast.error("Войдите, чтобы оставить отзыв");
       return;
@@ -230,20 +230,50 @@ export default function Product() {
       return;
     }
     const {
+      data: reviewData,
       error
     } = await supabase.from("reviews").insert({
       user_id: user.id,
       product_id: id,
       rating,
       text: text || null
-    });
-    if (error) {
+    }).select("id").single();
+    if (error || !reviewData) {
       console.error("Error adding review:", error);
       toast.error("Ошибка при добавлении отзыва");
-    } else {
-      toast.success("Отзыв добавлен!");
-      fetchReviews();
+      return;
     }
+
+    // Upload images if any
+    if (files.length > 0) {
+      const imageRows: { review_id: string; image_url: string; sort_order: number }[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const compressed = await compressImage(files[i]);
+        const ext = compressed.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${reviewData.id}/${i}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("review-images")
+          .upload(path, compressed, { upsert: true });
+        if (uploadErr) {
+          console.error("Upload error:", uploadErr);
+          continue;
+        }
+        const { data: urlData } = supabase.storage
+          .from("review-images")
+          .getPublicUrl(path);
+        imageRows.push({
+          review_id: reviewData.id,
+          image_url: urlData.publicUrl,
+          sort_order: i,
+        });
+      }
+      if (imageRows.length > 0) {
+        await supabase.from("review_images").insert(imageRows);
+      }
+    }
+
+    toast.success("Отзыв добавлен!");
+    fetchReviews();
   };
   // Check if all custom fields are filled
   const allCustomFieldsFilled = useMemo(() => {
