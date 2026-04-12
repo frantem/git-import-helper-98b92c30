@@ -1,38 +1,37 @@
 
-## План: Оптимизация сайта — удаление неиспользуемого кода
 
-### Что удаляется
+## План: Исправление верстки карточки товара
 
-**Неиспользуемые UI-компоненты (17 файлов):**
-Эти компоненты не импортируются нигде в проекте (кроме друг друга):
-- `accordion.tsx`, `aspect-ratio.tsx`, `breadcrumb.tsx`, `chart.tsx`
-- `collapsible.tsx`, `command.tsx`, `context-menu.tsx`, `drawer.tsx`
-- `hover-card.tsx`, `input-otp.tsx`, `menubar.tsx`, `navigation-menu.tsx`
-- `pagination.tsx`, `resizable.tsx`, `slider.tsx`
-- `toggle.tsx`, `toggle-group.tsx`
-- `sidebar.tsx` (используется только внутри себя, в проекте не применяется)
-- `form.tsx`, `table.tsx`, `scroll-area.tsx`, `progress.tsx`, `sheet.tsx` — используются **только** внутри `sidebar.tsx`, который сам не используется. Но `sheet.tsx` используется в sidebar — нужно проверить точнее.
+### Проблемы
 
-Уточнение: `sheet.tsx` и другие зависимости `sidebar.tsx` — sidebar не используется нигде в проекте, но `sheet`, `table`, `form`, `scroll-area`, `progress` нужно проверить отдельно.
+1. **Длинная единица измерения (например "/классическая")** — когда unit длинный, текст "В наличии" не помещается в одну строку с ценой и unit, ломая layout. Решение: вынести статус наличия ("В наличии" / время) на отдельную строку под ценой.
 
-**Дополнительная проверка показала:**
-- `form.tsx`, `table.tsx`, `scroll-area.tsx`, `progress.tsx`, `sheet.tsx` — используются только в `sidebar.tsx`, который сам не используется → можно удалить все вместе с sidebar
+2. **Старая цена слишком далеко от текущей** — сейчас `oldPrice` выводится на отдельной строке под всем блоком цены. Нужно уменьшить отступ.
 
-**Неиспользуемая страница:**
-- `src/pages/admin/AdminCategories.tsx` — перенаправляет на главную, категории управляются через `/admin/blocks`
-- Удалить маршрут `/admin/categories` и импорт из `App.tsx`
-
-### Что остаётся без изменений
-- Все используемые компоненты (button, input, dialog, select, checkbox, switch, tabs, alert-dialog, carousel, calendar, popover, radio-group, badge, card, separator, skeleton, sonner, toast, toaster, textarea, tooltip, avatar, label, dropdown-menu, byn-symbol, optimized-image)
-- `src/data/products.ts` — используется как тип в CartContext, ProductCard, Favorites
-- `DynamicMeta.tsx` — загружает favicon/OG из Supabase
+3. **Рейтинг находится сверху карточки** — нужно перенести его вниз, после цены, и добавить количество отзывов рядом.
 
 ### Изменения
 
-| Действие | Файлы |
-|----------|-------|
-| Удалить 22 неиспользуемых UI-компонента | `accordion`, `aspect-ratio`, `breadcrumb`, `chart`, `collapsible`, `command`, `context-menu`, `drawer`, `hover-card`, `input-otp`, `menubar`, `navigation-menu`, `pagination`, `resizable`, `slider`, `toggle`, `toggle-group`, `sidebar`, `form`, `table`, `scroll-area`, `progress`, `sheet` |
-| Удалить страницу | `src/pages/admin/AdminCategories.tsx` |
-| Обновить App.tsx | Убрать импорт и маршрут AdminCategories |
+**Файл:** `src/components/ProductCard.tsx`
 
-~23 файла удалено, 1 файл отредактирован. Функциональность сайта не затрагивается.
+Переструктурировать нижнюю часть карточки (`div.flex.flex-1.flex-col.p-2.5`):
+
+```
+Название товара (line-clamp-2)
+─────────────────
+mt-auto:
+  Цена + unit (одна строка, flex-wrap)
+  Старая цена (если есть, mt-0.5)
+  Статус наличия (отдельная строка, mt-0.5)
+  Рейтинг ★ 4.8 (12) (в самом низу, mt-1)
+```
+
+Конкретные правки:
+1. **Удалить рейтинг сверху** (строки 119-124)
+2. **Цена + unit** — оставить в одной строке, убрать "В наличии" из этой строки
+3. **Старая цена** — добавить `mt-0.5` вместо отдельного блока, уменьшив расстояние
+4. **Статус наличия** — вынести в отдельную строку `<div className="mt-0.5">` под ценой
+5. **Рейтинг** — добавить в самый низ блока mt-auto с количеством отзывов: `★ 4.8 (12)`
+
+Один файл, ~15 строк изменено.
+
