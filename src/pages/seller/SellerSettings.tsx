@@ -14,6 +14,23 @@ import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
+function CopyLinkButton({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const fullUrl = `https://locusfood.by/seller/${slug}`;
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <Button variant="outline" size="sm" className="gap-2 w-full" onClick={handleCopy}>
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      {copied ? "Скопировано!" : fullUrl}
+    </Button>
+  );
+}
+
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
