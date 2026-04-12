@@ -33,6 +33,7 @@ interface Review {
   rating: number;
   text: string;
   createdAt: string;
+  images?: string[];
 }
 
 
