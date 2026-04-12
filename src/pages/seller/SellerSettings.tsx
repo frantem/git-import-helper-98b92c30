@@ -8,28 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Camera, Copy, Check } from "lucide-react";
+import { ArrowLeft, Camera, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
-
-function CopyLinkButton({ slug }: { slug: string }) {
-  const [copied, setCopied] = useState(false);
-  const fullUrl = `https://locusfood.by/seller/${slug}`;
-  const handleCopy = () => {
-    navigator.clipboard.writeText(fullUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-  return (
-    <Button variant="outline" size="sm" className="gap-2 w-full" onClick={handleCopy}>
-      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      {copied ? "Скопировано!" : fullUrl}
-    </Button>
-  );
-}
 
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -253,7 +236,23 @@ export default function SellerSettings() {
           <div className="pt-4 border-t border-border">
             <h3 className="font-medium text-foreground mb-3">Адрес страницы</h3>
             <div className="space-y-2">
-              <Label>Ваша ссылка</Label>
+              <div className="flex items-center justify-between">
+                <Label>Ваша ссылка</Label>
+                {settingsForm.slug && settingsForm.slug.length >= 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 gap-1 text-xs text-muted-foreground"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://locusfood.by/seller/${settingsForm.slug}`);
+                      toast.success("Ссылка скопирована");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Скопировать
+                  </Button>
+                )}
+              </div>
               <div className="flex items-center gap-0">
                 <span className="text-sm text-muted-foreground whitespace-nowrap">locusfood.by/seller/</span>
                 <Input
@@ -266,10 +265,6 @@ export default function SellerSettings() {
                   className="flex-1"
                 />
               </div>
-              {settingsForm.slug && settingsForm.slug.length >= 3 && (
-                <CopyLinkButton slug={settingsForm.slug} />
-              )}
-              {slugError && <p className="text-sm text-destructive">{slugError}</p>}
               <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
             </div>
           </div>
