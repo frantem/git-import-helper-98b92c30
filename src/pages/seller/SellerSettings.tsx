@@ -253,7 +253,18 @@ export default function SellerSettings() {
                   </Button>
                 )}
               </div>
-              {slugError && <p className="text-sm text-destructive">{slugError}</p>}
+              <div className="flex items-center gap-0">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">locusfood.by/seller/</span>
+                <Input
+                  value={settingsForm.slug}
+                  onChange={(e) => {
+                    setSettingsForm({ ...settingsForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') });
+                    setSlugError(null);
+                  }}
+                  placeholder="my-farm"
+                  className="flex-1"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
             </div>
           </div>
