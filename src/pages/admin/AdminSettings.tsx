@@ -513,6 +513,7 @@ export default function AdminSettings() {
             </div>
           </div>
 
+          <Button onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
