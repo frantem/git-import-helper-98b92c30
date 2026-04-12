@@ -14,8 +14,6 @@ import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
-const [slugCopied, setSlugCopied] = useState(false);
-
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -238,22 +236,23 @@ export default function SellerSettings() {
           <div className="pt-4 border-t border-border">
             <h3 className="font-medium text-foreground mb-3">Адрес страницы</h3>
             <div className="space-y-2">
-              <Label>Ваша ссылка</Label>
-              <div className="flex items-center gap-0">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">locusfood.by/seller/</span>
-                <Input
-                  value={settingsForm.slug}
-                  onChange={(e) => {
-                    setSettingsForm({ ...settingsForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') });
-                    setSlugError(null);
-                  }}
-                  placeholder="my-farm"
-                  className="flex-1"
-                />
+              <div className="flex items-center justify-between">
+                <Label>Ваша ссылка</Label>
+                {settingsForm.slug && settingsForm.slug.length >= 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 gap-1 text-xs text-muted-foreground"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://locusfood.by/seller/${settingsForm.slug}`);
+                      toast.success("Ссылка скопирована");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Скопировать
+                  </Button>
+                )}
               </div>
-              {settingsForm.slug && settingsForm.slug.length >= 3 && (
-                <CopyLinkButton slug={settingsForm.slug} />
-              )}
               {slugError && <p className="text-sm text-destructive">{slugError}</p>}
               <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
             </div>
