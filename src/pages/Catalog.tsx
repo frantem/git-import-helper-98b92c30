@@ -57,7 +57,7 @@ export default function Catalog() {
       filtered = products.filter((p) => p.discount);
       title = "🏷️ Скидки";
     } else if (newFilter) {
-      filtered = products.filter((p) => p.isNew);
+      filtered = [...products];
       title = "✨ Новинки";
     }
 
