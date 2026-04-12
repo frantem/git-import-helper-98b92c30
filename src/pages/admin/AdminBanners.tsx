@@ -39,14 +39,6 @@ interface Product {
   title: string;
 }
 
-const GRADIENT_PRESETS = [
-  { value: "from-black/60 to-black/30", label: "Тёмный (рекомендуется)" },
-  { value: "from-black/80 to-transparent", label: "Сильно тёмный слева" },
-  { value: "from-black/40 to-black/20", label: "Лёгкое затемнение" },
-  { value: "from-primary/70 to-primary/30", label: "Цветной (основной цвет)" },
-  { value: "from-transparent to-transparent", label: "Без затемнения" },
-];
-
 export default function AdminBanners() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
@@ -62,13 +54,10 @@ export default function AdminBanners() {
   const [isUploading, setIsUploading] = useState(false);
   const [form, setForm] = useState({
     title: "",
-    subtitle: "",
-    discount_text: "",
     image_url: "",
     link_url: "",
     link_category: "",
     link_product_id: "",
-    color_gradient: "from-black/60 to-black/30",
     sort_order: "0",
     is_active: true,
   });
@@ -82,35 +71,26 @@ export default function AdminBanners() {
   }, [user, role]);
 
   const fetchData = async () => {
-    // Fetch banners
     const { data: bannersData } = await supabase
       .from("banners")
       .select("*")
       .order("sort_order");
 
-    if (bannersData) {
-      setBanners(bannersData);
-    }
+    if (bannersData) setBanners(bannersData);
 
-    // Fetch categories
     const { data: categoriesData } = await supabase
       .from("categories")
       .select("id, name, slug")
       .order("name");
 
-    if (categoriesData) {
-      setCategories(categoriesData);
-    }
+    if (categoriesData) setCategories(categoriesData);
 
-    // Fetch products
     const { data: productsData } = await supabase
       .from("products")
       .select("id, title")
       .order("title");
 
-    if (productsData) {
-      setProducts(productsData);
-    }
+    if (productsData) setProducts(productsData);
 
     setIsLoading(false);
   };
@@ -123,13 +103,10 @@ export default function AdminBanners() {
     setImagePreview(null);
     setForm({
       title: "",
-      subtitle: "",
-      discount_text: "",
       image_url: "",
       link_url: "",
       link_category: "",
       link_product_id: "",
-      color_gradient: "from-black/60 to-black/30",
       sort_order: "0",
       is_active: true,
     });
@@ -138,7 +115,6 @@ export default function AdminBanners() {
   const handleEdit = (banner: Banner) => {
     setEditingBanner(banner);
     
-    // Determine link type
     let type: "none" | "category" | "product" | "url" = "none";
     if (banner.link_product_id) type = "product";
     else if (banner.link_category) type = "category";
@@ -150,13 +126,10 @@ export default function AdminBanners() {
     
     setForm({
       title: banner.title,
-      subtitle: banner.subtitle || "",
-      discount_text: banner.discount_text || "",
       image_url: banner.image_url,
       link_url: banner.link_url || "",
       link_category: banner.link_category || "",
       link_product_id: banner.link_product_id || "",
-      color_gradient: banner.color_gradient,
       sort_order: banner.sort_order.toString(),
       is_active: banner.is_active,
     });
@@ -205,11 +178,6 @@ export default function AdminBanners() {
   };
 
   const handleSave = async () => {
-    if (!form.title) {
-      toast.error("Заполните название");
-      return;
-    }
-
     if (!imageFile && !form.image_url) {
       toast.error("Загрузите изображение");
       return;
@@ -219,7 +187,6 @@ export default function AdminBanners() {
 
     let imageUrl = form.image_url;
 
-    // Upload new image if selected
     if (imageFile) {
       const uploadedUrl = await uploadImage(imageFile);
       if (!uploadedUrl) {
@@ -230,14 +197,14 @@ export default function AdminBanners() {
     }
 
     const bannerData = {
-      title: form.title,
-      subtitle: form.subtitle || null,
-      discount_text: form.discount_text || null,
+      title: form.title || "Баннер",
+      subtitle: null,
+      discount_text: null,
       image_url: imageUrl,
       link_url: linkType === "url" ? form.link_url : null,
       link_category: linkType === "category" ? form.link_category : null,
       link_product_id: linkType === "product" ? form.link_product_id : null,
-      color_gradient: form.color_gradient,
+      color_gradient: "from-transparent to-transparent",
       sort_order: parseInt(form.sort_order) || 0,
       is_active: form.is_active,
     };
@@ -347,27 +314,11 @@ export default function AdminBanners() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Заголовок *</Label>
+                  <Label>Название (для себя)</Label>
                   <Input
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Свежий мёд"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Подзаголовок</Label>
-                  <Input
-                    value={form.subtitle}
-                    onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-                    placeholder="Натуральный продукт"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Дополнительный текст</Label>
-                  <Input
-                    value={form.discount_text}
-                    onChange={(e) => setForm({ ...form, discount_text: e.target.value })}
-                    placeholder="Скидки до -20%"
+                    placeholder="Например: Акция мёд"
                   />
                 </div>
 
@@ -426,7 +377,6 @@ export default function AdminBanners() {
                   </Select>
                 </div>
 
-                {/* Category selector */}
                 {linkType === "category" && (
                   <div className="space-y-2">
                     <Label>Категория</Label>
@@ -448,7 +398,6 @@ export default function AdminBanners() {
                   </div>
                 )}
 
-                {/* Product selector */}
                 {linkType === "product" && (
                   <div className="space-y-2">
                     <Label>Товар</Label>
@@ -470,7 +419,6 @@ export default function AdminBanners() {
                   </div>
                 )}
 
-                {/* Custom URL */}
                 {linkType === "url" && (
                   <div className="space-y-2">
                     <Label>URL</Label>
@@ -481,45 +429,6 @@ export default function AdminBanners() {
                     />
                   </div>
                 )}
-
-                {/* Gradient selector with explanation */}
-                <div className="space-y-2">
-                  <Label>Затемнение</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Градиент накладывается поверх изображения для лучшей читаемости текста.
-                  </p>
-                  <Select 
-                    value={form.color_gradient} 
-                    onValueChange={(v) => setForm({ ...form, color_gradient: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите затемнение" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRADIENT_PRESETS.map((preset) => (
-                        <SelectItem key={preset.value} value={preset.value}>
-                          {preset.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {/* Preview gradient on selected image */}
-                  {imagePreview && (
-                    <div className="relative mt-2 rounded-lg overflow-hidden">
-                      <img
-                        src={imagePreview}
-                        alt="Gradient preview"
-                        className="w-full h-24 object-cover"
-                      />
-                      <div className={`absolute inset-0 bg-gradient-to-r ${form.color_gradient}`} />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm drop-shadow-lg">
-                          Превью текста
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -571,9 +480,6 @@ export default function AdminBanners() {
                     </span>
                   )}
                 </div>
-                {banner.subtitle && (
-                  <p className="text-xs text-muted-foreground truncate">{banner.subtitle}</p>
-                )}
                 <p className="text-xs text-muted-foreground">
                   {banner.link_product_id ? "→ Товар" : 
                    banner.link_category ? `→ ${banner.link_category}` : 

@@ -8,9 +8,6 @@ export interface Banner {
   id: string;
   image: string;
   title: string;
-  subtitle: string;
-  discountText?: string;
-  colorGradient: string;
   linkUrl?: string;
   linkProductId?: string;
   linkCategory?: string;
@@ -105,24 +102,6 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
               className="h-full w-full"
               loading={index === 0 ? "eager" : "lazy"}
             />
-            <div
-              className={cn(
-                "absolute inset-0 flex flex-col justify-center bg-gradient-to-r p-6 md:p-10",
-                banner.colorGradient
-              )}
-            >
-              <span className="mb-1 text-sm font-semibold text-primary-foreground/90 md:text-base">
-                {banner.subtitle}
-              </span>
-              <h2 className="mb-2 text-2xl font-bold text-primary-foreground md:text-4xl">
-                {banner.title}
-              </h2>
-              {banner.discountText && (
-                <p className="text-lg font-bold text-primary-foreground md:text-2xl">
-                  {banner.discountText}
-                </p>
-              )}
-            </div>
           </Link>
         ))}
       </div>
