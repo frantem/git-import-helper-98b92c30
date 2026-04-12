@@ -6,6 +6,8 @@ interface SEOProps {
   image?: string;
   canonical?: string;
   ogType?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  keywords?: string;
 }
 
 const DOMAIN = "https://locusfood.by";
@@ -43,12 +45,35 @@ function setCanonical(url: string) {
   }
 }
 
+const JSON_LD_SCRIPT_ID = "seo-json-ld";
+
+function setJsonLd(data: Record<string, unknown> | Record<string, unknown>[] | undefined) {
+  let script = document.getElementById(JSON_LD_SCRIPT_ID) as HTMLScriptElement | null;
+  if (!data) {
+    if (script) script.remove();
+    return;
+  }
+  const payload = Array.isArray(data) ? data : { "@context": "https://schema.org", ...data };
+  const json = JSON.stringify(payload);
+  if (script) {
+    script.textContent = json;
+  } else {
+    script = document.createElement("script");
+    script.id = JSON_LD_SCRIPT_ID;
+    script.type = "application/ld+json";
+    script.textContent = json;
+    document.head.appendChild(script);
+  }
+}
+
 export function SEO({
   title,
   description,
   image,
   canonical,
   ogType = "website",
+  jsonLd,
+  keywords,
 }: SEOProps) {
   useEffect(() => {
     const pageTitle = title || DEFAULT_TITLE;
@@ -65,21 +90,26 @@ export function SEO({
     setMeta("twitter:title", pageTitle, true);
     setMeta("twitter:description", pageDescription, true);
 
+    if (keywords) {
+      setMeta("keywords", keywords, true);
+    }
+
     if (image) {
       setMeta("og:image", image);
       setMeta("twitter:image", image, true);
     }
 
     setCanonical(pageCanonical);
+    setJsonLd(jsonLd);
 
     return () => {
-      // Reset to defaults on unmount
       document.title = DEFAULT_TITLE;
       setMeta("description", DEFAULT_DESCRIPTION, true);
       setMeta("og:title", DEFAULT_TITLE);
       setMeta("og:description", DEFAULT_DESCRIPTION);
+      setJsonLd(undefined);
     };
-  }, [title, description, image, canonical, ogType]);
+  }, [title, description, image, canonical, ogType, jsonLd, keywords]);
 
   return null;
 }

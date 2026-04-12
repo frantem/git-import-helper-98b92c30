@@ -25,34 +25,31 @@ export default function Catalog() {
   const newFilter = searchParams.get("new") === "true";
   const searchQuery = searchParams.get("search");
 
-  // Cached data with React Query
   const { data: rawProducts = [], isLoading: isLoadingProducts } = useProducts();
   const { data: categories = [], isLoading: isLoadingCategories } = useCategories();
   const productIds = useMemo(() => rawProducts.map((p) => p.id), [rawProducts]);
   const { data: ratings = {} } = useProductRatings(productIds);
 
-  // Transform products with ratings
   const products = useMemo(
     () => rawProducts.map((p) => transformProduct(p, ratings)),
     [rawProducts, ratings]
   );
 
-  // Memoized filtered products
-  const { filteredProducts, pageTitle } = useMemo(() => {
+  const { filteredProducts, pageTitle, category } = useMemo(() => {
     let filtered = products;
     let title = "Каталог";
+    let cat = categories.find((c) => c.slug === categoryFilter) || null;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = products.filter((p) => 
+      filtered = products.filter((p) =>
         p.name.toLowerCase().includes(query) ||
         p.seller.toLowerCase().includes(query)
       );
       title = `🔍 Поиск: ${searchQuery}`;
     } else if (categoryFilter) {
       filtered = products.filter((p) => p.categories?.includes(categoryFilter) || p.category === categoryFilter);
-      const category = categories.find((c) => c.slug === categoryFilter);
-      title = category ? `${category.emoji || ""} ${category.name}` : "Каталог";
+      title = cat ? `${cat.emoji || ""} ${cat.name}` : "Каталог";
     } else if (discountFilter) {
       filtered = products.filter((p) => p.discount);
       title = "🏷️ Скидки";
@@ -61,8 +58,38 @@ export default function Catalog() {
       title = "✨ Новинки";
     }
 
-    return { filteredProducts: filtered, pageTitle: title };
+    return { filteredProducts: filtered, pageTitle: title, category: cat };
   }, [products, categories, categoryFilter, discountFilter, newFilter, searchQuery]);
+
+  // Build SEO props
+  const seoData = useMemo(() => {
+    if (categoryFilter && category) {
+      const seoTitle = category.seo_title || `${category.name} — натуральные продукты с доставкой в Витебске`;
+      const seoDesc = category.seo_description || `${category.name}. Свежие фермерские продукты с доставкой в Витебске.`;
+      const jsonLd: Record<string, unknown> = {
+        "@type": "ItemList",
+        name: category.name,
+        numberOfItems: filteredProducts.length,
+        itemListElement: filteredProducts.slice(0, 30).map((p, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `https://locusfood.by/product/${p.id}`,
+          name: p.name,
+        })),
+      };
+      return { title: seoTitle, description: seoDesc, keywords: category.seo_keywords || undefined, jsonLd };
+    }
+    if (discountFilter) {
+      return { title: "Скидки на натуральные продукты — Locus", description: "Товары со скидкой. Свежие фермерские продукты с доставкой в Витебске." };
+    }
+    if (newFilter) {
+      return { title: "Новинки — Locus", description: "Новые товары от фермеров. Свежие натуральные продукты с доставкой в Витебске." };
+    }
+    if (searchQuery) {
+      return { title: `Поиск: ${searchQuery} — Locus`, description: `Результаты поиска «${searchQuery}». Фермерские продукты с доставкой в Витебске.` };
+    }
+    return { title: "Каталог продуктов — Locus", description: "Каталог натуральных фермерских продуктов с доставкой в Витебске." };
+  }, [categoryFilter, category, discountFilter, newFilter, searchQuery, filteredProducts]);
 
   const showCategories = !categoryFilter && !discountFilter && !newFilter && !searchQuery;
   const isLoading = isLoadingProducts || isLoadingCategories;
@@ -83,8 +110,10 @@ export default function Catalog() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <SEO
-        title={pageTitle !== "Каталог" ? `${pageTitle} — Locus` : "Каталог продуктов — Locus"}
-        description={`${pageTitle}. Свежие фермерские продукты с доставкой в Витебске.`}
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        jsonLd={seoData.jsonLd}
       />
       <Header />
 
@@ -132,14 +161,14 @@ export default function Catalog() {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
               {categories
                 .filter((c) => c.slug !== "sets")
-                .map((category) => (
+                .map((cat) => (
                   <Link
-                    key={category.id}
-                    to={`/catalog?category=${category.slug}`}
+                    key={cat.id}
+                    to={`/catalog?category=${cat.slug}`}
                     className="flex items-center gap-3 rounded-xl bg-card p-4 hover:bg-secondary transition-colors"
                   >
-                    <span className="text-2xl">{category.emoji || "📁"}</span>
-                    <span className="font-medium text-foreground">{category.name}</span>
+                    <span className="text-2xl">{cat.emoji || "📁"}</span>
+                    <span className="font-medium text-foreground">{cat.name}</span>
                     <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
                   </Link>
                 ))}

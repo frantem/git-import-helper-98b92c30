@@ -88,6 +88,9 @@ export type Database = {
           image_url: string | null
           name: string
           parent_id: string | null
+          seo_description: string | null
+          seo_keywords: string | null
+          seo_title: string | null
           slug: string
           sort_order: number | null
         }
@@ -98,6 +101,9 @@ export type Database = {
           image_url?: string | null
           name: string
           parent_id?: string | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          seo_title?: string | null
           slug: string
           sort_order?: number | null
         }
@@ -108,6 +114,9 @@ export type Database = {
           image_url?: string | null
           name?: string
           parent_id?: string | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          seo_title?: string | null
           slug?: string
           sort_order?: number | null
         }

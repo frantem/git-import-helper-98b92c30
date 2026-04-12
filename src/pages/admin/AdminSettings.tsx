@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import { Loader2, Clock, Save, Truck, Image, Share2, Upload, Search } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { FileText } from "lucide-react";
 
 export default function AdminSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -35,6 +36,10 @@ export default function AdminSettings() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [googleVerification, setGoogleVerification] = useState("");
+  
+  // SEO templates
+  const [productTitleTemplate, setProductTitleTemplate] = useState("");
+  const [categoryTitleTemplate, setCategoryTitleTemplate] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,7 +58,7 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     
-    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes] = await Promise.all([
+    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes, prodTplRes, catTplRes] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", "cutoff_time_minutes").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "avg_delivery_time_minutes").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "delivery_start_hour").maybeSingle(),
@@ -63,6 +68,8 @@ export default function AdminSettings() {
       supabase.from("app_settings").select("value").eq("key", "seo_default_title").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "seo_default_description").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "product_title_template").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "category_title_template").maybeSingle(),
     ]);
 
     if (cutoffRes.data) {
@@ -98,6 +105,8 @@ export default function AdminSettings() {
     if (seoTitleRes.data?.value) setSeoTitle(seoTitleRes.data.value);
     if (seoDescRes.data?.value) setSeoDescription(seoDescRes.data.value);
     if (googleVerRes.data?.value) setGoogleVerification(googleVerRes.data.value);
+    if (prodTplRes.data?.value) setProductTitleTemplate(prodTplRes.data.value);
+    if (catTplRes.data?.value) setCategoryTitleTemplate(catTplRes.data.value);
     
     setIsLoading(false);
   };
@@ -196,6 +205,12 @@ export default function AdminSettings() {
       supabase
         .from("app_settings")
         .upsert({ key: "google_verification", value: googleVerification, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "product_title_template", value: productTitleTemplate, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "category_title_template", value: categoryTitleTemplate, updated_at: new Date().toISOString() }, { onConflict: "key" }),
     ];
 
     const results = await Promise.all(updates);
@@ -453,6 +468,47 @@ export default function AdminSettings() {
               />
               <p className="text-xs text-muted-foreground">
                 Значение атрибута content из тега &lt;meta name="google-site-verification"&gt;
+              </p>
+            </div>
+          </div>
+
+          {/* SEO Templates */}
+          <div className="rounded-xl bg-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">SEO-шаблоны</h3>
+                <p className="text-sm text-muted-foreground">
+                  Шаблоны заголовков для товаров и категорий. Используйте {"{name}"} как плейсхолдер.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product-title-tpl">Шаблон заголовка товара</Label>
+              <Input
+                id="product-title-tpl"
+                value={productTitleTemplate}
+                onChange={(e) => setProductTitleTemplate(e.target.value)}
+                placeholder="{name} купить в Витебске — Locus"
+              />
+              <p className="text-xs text-muted-foreground">
+                Пример: «Мёд липовый купить в Витебске — Locus»
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category-title-tpl">Шаблон заголовка категории</Label>
+              <Input
+                id="category-title-tpl"
+                value={categoryTitleTemplate}
+                onChange={(e) => setCategoryTitleTemplate(e.target.value)}
+                placeholder="{name} — натуральные продукты с доставкой в Витебске"
+              />
+              <p className="text-xs text-muted-foreground">
+                Используется если у категории не задан свой SEO Title
               </p>
             </div>
           </div>
