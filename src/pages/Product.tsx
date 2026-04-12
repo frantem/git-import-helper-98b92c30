@@ -22,7 +22,6 @@ import { useProduct } from "@/hooks/useProduct";
 import { useProductCustomFields } from "@/hooks/useProductCustomFields";
 import { SEO } from "@/components/SEO";
 import { useSeoTemplates } from "@/hooks/useSeoTemplates";
-import { formatPrice } from "@/lib/priceUtils";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
