@@ -270,7 +270,6 @@ export default function AdminCategories() {
                   </div>
                 </div>
                 <Button onClick={handleSave} className="w-full">{editingCategory ? "Сохранить" : "Создать"}</Button>
-                </Button>
               </div>
             </DialogContent>
           </Dialog>
