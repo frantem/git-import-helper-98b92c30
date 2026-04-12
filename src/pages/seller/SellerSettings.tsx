@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Camera } from "lucide-react";
+import { ArrowLeft, Camera, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
