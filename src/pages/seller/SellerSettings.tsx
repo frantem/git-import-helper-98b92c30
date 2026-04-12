@@ -249,6 +249,9 @@ export default function SellerSettings() {
                   className="flex-1"
                 />
               </div>
+              {settingsForm.slug && settingsForm.slug.length >= 3 && (
+                <CopyLinkButton slug={settingsForm.slug} />
+              )}
               {slugError && <p className="text-sm text-destructive">{slugError}</p>}
               <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
             </div>
