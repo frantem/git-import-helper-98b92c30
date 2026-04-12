@@ -472,7 +472,47 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          <Button onClick={handleSave} disabled={isSaving} className="w-full">
+          {/* SEO Templates */}
+          <div className="rounded-xl bg-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">SEO-шаблоны</h3>
+                <p className="text-sm text-muted-foreground">
+                  Шаблоны заголовков для товаров и категорий. Используйте {"{name}"} как плейсхолдер.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product-title-tpl">Шаблон заголовка товара</Label>
+              <Input
+                id="product-title-tpl"
+                value={productTitleTemplate}
+                onChange={(e) => setProductTitleTemplate(e.target.value)}
+                placeholder="{name} купить в Витебске — Locus"
+              />
+              <p className="text-xs text-muted-foreground">
+                Пример: «Мёд липовый купить в Витебске — Locus»
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category-title-tpl">Шаблон заголовка категории</Label>
+              <Input
+                id="category-title-tpl"
+                value={categoryTitleTemplate}
+                onChange={(e) => setCategoryTitleTemplate(e.target.value)}
+                placeholder="{name} — натуральные продукты с доставкой в Витебске"
+              />
+              <p className="text-xs text-muted-foreground">
+                Используется если у категории не задан свой SEO Title
+              </p>
+            </div>
+          </div>
+
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
