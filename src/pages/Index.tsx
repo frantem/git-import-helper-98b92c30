@@ -18,12 +18,32 @@ import { SEO } from "@/components/SEO";
 
 let savedAllBlockLimit = 10;
 
+const homepageJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Locus",
+    url: "https://locusfood.by",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://locusfood.by/catalog?search={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "ООО «ЛОКУСФУД»",
+    url: "https://locusfood.by",
+    logo: "https://locusfood.by/favicon.ico",
+  },
+];
+
 const Index = () => {
   useScrollRestoration();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const { data: productsWithRequiredFields = new Set<string>() } = useProductsRequiredFields();
 
-  // Cached data with React Query
   const { data: rawProducts = [], isLoading: isLoadingProducts } = useProducts();
   const productIds = useMemo(() => rawProducts.map((p) => p.id), [rawProducts]);
   const { data: ratings = {} } = useProductRatings(productIds);
@@ -33,7 +53,6 @@ const Index = () => {
   const blocks = blocksData?.blocks || [];
   const blockProducts = blocksData?.blockProducts || {};
 
-  // Transform products with ratings - memoized
   const products = useMemo(
     () => rawProducts.map((p) => transformProduct(p, ratings)),
     [rawProducts, ratings]
@@ -46,21 +65,15 @@ const Index = () => {
     savedAllBlockLimit = allBlockLimit;
   }, [allBlockLimit]);
 
-  // Helper to get products for a block - memoized
-  // Supports hybrid approach: pinned products first, then auto-fill with block type filter
   const getBlockProducts = useMemo(() => {
     return (block: HomepageBlock): Product[] => {
-
-      // 1. Get pinned (manually added) products first
       const pinnedProductIds = blockProducts[block.id] || [];
       const pinnedProducts = products.filter((p) => pinnedProductIds.includes(p.id));
 
-      // 2. For "custom" type - only show pinned products
       if (block.block_type === "custom") {
         return pinnedProducts.slice(0, block.max_items || 4);
       }
 
-      // 3. For other types - fill remaining slots with auto-selected products
       const pinnedIds = new Set(pinnedProductIds);
       let autoProducts: Product[] = [];
 
@@ -80,14 +93,12 @@ const Index = () => {
           break;
       }
 
-      // 4. Combine: pinned first, then auto-fill
       const combined = [...pinnedProducts, ...autoProducts];
       const limit = block.block_type === "all" ? allBlockLimit : (block.max_items || 4);
       return combined.slice(0, limit);
     };
   }, [products, blockProducts, allBlockLimit]);
 
-  // Get link for block
   const getBlockLink = (block: HomepageBlock): string => {
     switch (block.block_type) {
       case "discount":
@@ -102,7 +113,6 @@ const Index = () => {
   };
 
   const isLoading = isLoadingProducts || isLoadingBanners || isLoadingBlocks;
-
 
   if (isLoading) {
     return (
@@ -124,21 +134,18 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
-      <SEO />
+      <SEO jsonLd={homepageJsonLd} />
       <Header />
 
       <main className="container mx-auto px-3 py-3">
-        {/* Banner carousel */}
         <section className="mb-4">
           <BannerCarousel banners={banners} />
         </section>
 
-        {/* Dynamic homepage blocks */}
         {blocks.map((block) => {
           const blockProductsList = getBlockProducts(block);
           if (blockProductsList.length === 0) return null;
 
-          // Check if "all" block has more products
           const isAllBlock = block.block_type === "all";
           const allProductsCount = isAllBlock
             ? products.filter((p) => !(blockProducts[block.id] || []).includes(p.id)).length + (blockProducts[block.id] || []).length
@@ -181,7 +188,6 @@ const Index = () => {
           );
         })}
 
-        {/* Empty state */}
         {products.length === 0 && blocks.length === 0 && (
           <div className="py-12 text-center">
             <p className="text-muted-foreground mb-2">Товаров пока нет</p>

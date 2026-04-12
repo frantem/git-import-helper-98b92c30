@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const [productsRes, farmersRes] = await Promise.all([
+  const [productsRes, farmersRes, categoriesRes] = await Promise.all([
     supabase
       .from("products")
       .select("id, updated_at")
@@ -28,10 +28,15 @@ Deno.serve(async (req) => {
       .from("farmers")
       .select("id, created_at")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("categories")
+      .select("slug, created_at")
+      .order("sort_order"),
   ]);
 
   const products = productsRes.data || [];
   const farmers = farmersRes.data || [];
+  const categories = categoriesRes.data || [];
   const now = new Date().toISOString().split("T")[0];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -48,6 +53,16 @@ Deno.serve(async (req) => {
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>`;
+
+  for (const c of categories) {
+    xml += `
+  <url>
+    <loc>${DOMAIN}/catalog?category=${c.slug}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+  }
 
   for (const p of products) {
     const lastmod = p.updated_at ? p.updated_at.split("T")[0] : now;

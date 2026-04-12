@@ -6,6 +6,9 @@ export interface Category {
   name: string;
   slug: string;
   emoji: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  seo_keywords: string | null;
 }
 
 export function useCategories() {
@@ -14,12 +17,12 @@ export function useCategories() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("id, name, slug, emoji")
+        .select("id, name, slug, emoji, seo_title, seo_description, seo_keywords")
         .order("sort_order");
 
       if (error) throw error;
       return (data as Category[]) || [];
     },
-    staleTime: 30 * 60 * 1000, // 30 minutes - categories change rarely
+    staleTime: 30 * 60 * 1000,
   });
 }
