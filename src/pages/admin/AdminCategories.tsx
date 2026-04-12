@@ -18,6 +18,9 @@ interface Category {
   emoji: string | null;
   image_url: string | null;
   sort_order: number | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  seo_keywords: string | null;
 }
 
 export default function AdminCategories() {
@@ -33,6 +36,8 @@ export default function AdminCategories() {
     emoji: "",
     image_url: "",
     sort_order: "0",
+    seo_title: "",
+    seo_description: "",
   });
 
   useEffect(() => {
@@ -64,6 +69,8 @@ export default function AdminCategories() {
       emoji: "",
       image_url: "",
       sort_order: "0",
+      seo_title: "",
+      seo_description: "",
     });
   };
 
@@ -75,6 +82,8 @@ export default function AdminCategories() {
       emoji: category.emoji || "",
       image_url: category.image_url || "",
       sort_order: category.sort_order?.toString() || "0",
+      seo_title: category.seo_title || "",
+      seo_description: category.seo_description || "",
     });
     setShowForm(true);
   };
@@ -91,6 +100,8 @@ export default function AdminCategories() {
       emoji: form.emoji || null,
       image_url: form.image_url || null,
       sort_order: parseInt(form.sort_order) || 0,
+      seo_title: form.seo_title || null,
+      seo_description: form.seo_description || null,
     };
 
     if (editingCategory) {
@@ -239,8 +250,26 @@ export default function AdminCategories() {
                     placeholder="https://..."
                   />
                 </div>
-                <Button onClick={handleSave} className="w-full">
-                  {editingCategory ? "Сохранить" : "Создать"}
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">SEO (необязательно)</p>
+                  <div className="space-y-2">
+                    <Label>SEO Title</Label>
+                    <Input
+                      value={form.seo_title}
+                      onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
+                      placeholder="Авто: {Название} — натуральные продукты..."
+                    />
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    <Label>SEO Description</Label>
+                    <Input
+                      value={form.seo_description}
+                      onChange={(e) => setForm({ ...form, seo_description: e.target.value })}
+                      placeholder="Авто: описание для поисковых систем"
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleSave} className="w-full">{editingCategory ? "Сохранить" : "Создать"}</Button>
                 </Button>
               </div>
             </DialogContent>
