@@ -73,6 +73,8 @@ export default function AdminBlocks() {
     name: "",
     slug: "",
     emoji: "",
+    seo_title: "",
+    seo_description: "",
   });
 
 
@@ -169,6 +171,8 @@ export default function AdminBlocks() {
       name: categoryForm.name,
       slug: categoryForm.slug,
       emoji: categoryForm.emoji || null,
+      seo_title: categoryForm.seo_title || null,
+      seo_description: categoryForm.seo_description || null,
     };
 
     if (editingCategory) {
@@ -242,6 +246,8 @@ export default function AdminBlocks() {
       name: category.name,
       slug: category.slug,
       emoji: category.emoji || "",
+      seo_title: (category as any).seo_title || "",
+      seo_description: (category as any).seo_description || "",
     });
     setShowCategoryForm(true);
   };
@@ -249,7 +255,7 @@ export default function AdminBlocks() {
   const resetCategoryForm = () => {
     setShowCategoryForm(false);
     setEditingCategory(null);
-    setCategoryForm({ name: "", slug: "", emoji: "" });
+    setCategoryForm({ name: "", slug: "", emoji: "", seo_title: "", seo_description: "" });
   };
 
   const handleMoveCategoryUp = async (index: number) => {
@@ -834,6 +840,25 @@ export default function AdminBlocks() {
                         onChange={(e) => setCategoryForm({ ...categoryForm, emoji: e.target.value })}
                         placeholder="🥕"
                       />
+                    </div>
+                    <div className="border-t pt-4 mt-2">
+                      <p className="text-sm font-medium text-muted-foreground mb-3">SEO (необязательно)</p>
+                      <div className="space-y-2">
+                        <Label>SEO Title</Label>
+                        <Input
+                          value={categoryForm.seo_title}
+                          onChange={(e) => setCategoryForm({ ...categoryForm, seo_title: e.target.value })}
+                          placeholder="Заголовок для поисковиков"
+                        />
+                      </div>
+                      <div className="space-y-2 mt-2">
+                        <Label>SEO Description</Label>
+                        <Input
+                          value={categoryForm.seo_description}
+                          onChange={(e) => setCategoryForm({ ...categoryForm, seo_description: e.target.value })}
+                          placeholder="Описание для поисковиков"
+                        />
+                      </div>
                     </div>
                     <Button onClick={handleSaveCategory} className="w-full">
                       {editingCategory ? "Сохранить" : "Создать"}
