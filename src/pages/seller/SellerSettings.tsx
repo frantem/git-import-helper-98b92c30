@@ -8,11 +8,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Camera } from "lucide-react";
+import { ArrowLeft, Camera, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
+
+function CopyLinkButton({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const fullUrl = `https://locusfood.by/seller/${slug}`;
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <Button variant="outline" size="sm" className="gap-2 w-full" onClick={handleCopy}>
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      {copied ? "Скопировано!" : fullUrl}
+    </Button>
+  );
+}
 
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -249,6 +266,9 @@ export default function SellerSettings() {
                   className="flex-1"
                 />
               </div>
+              {settingsForm.slug && settingsForm.slug.length >= 3 && (
+                <CopyLinkButton slug={settingsForm.slug} />
+              )}
               {slugError && <p className="text-sm text-destructive">{slugError}</p>}
               <p className="text-xs text-muted-foreground">Латиница, цифры и дефисы. Минимум 3 символа.</p>
             </div>
