@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { compressImage } from "@/lib/imageUtils";
 import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2 } from "lucide-react";
 
 import { Header } from "@/components/Header";
@@ -32,6 +33,7 @@ interface Review {
   rating: number;
   text: string;
   createdAt: string;
+  images?: string[];
 }
 
 
@@ -153,17 +155,30 @@ export default function Product() {
     }
     if (reviewsData && reviewsData.length > 0) {
       const userIds = reviewsData.map(r => r.user_id);
-      const {
-        data: profilesData
-      } = await supabase.rpc("get_public_profile_names", { _user_ids: userIds });
-      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p.full_name]) || []);
+      const reviewIds = reviewsData.map(r => r.id);
+
+      // Fetch profiles and images in parallel
+      const [profilesRes, imagesRes] = await Promise.all([
+        supabase.rpc("get_public_profile_names", { _user_ids: userIds }),
+        supabase.from("review_images").select("review_id, image_url, sort_order").in("review_id", reviewIds).order("sort_order"),
+      ]);
+
+      const profilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p.full_name]) || []);
+      const imagesMap = new Map<string, string[]>();
+      imagesRes.data?.forEach(img => {
+        const arr = imagesMap.get(img.review_id) || [];
+        arr.push(img.image_url);
+        imagesMap.set(img.review_id, arr);
+      });
+
       const mappedReviews = reviewsData.map(r => ({
         id: r.id,
         userId: r.user_id,
         userName: profilesMap.get(r.user_id) || "Пользователь",
         rating: r.rating,
         text: r.text || "",
-        createdAt: r.created_at
+        createdAt: r.created_at,
+        images: imagesMap.get(r.id) || [],
       }));
       setReviews(mappedReviews);
       const avg = mappedReviews.reduce((sum, r) => sum + r.rating, 0) / mappedReviews.length;
@@ -205,7 +220,7 @@ export default function Product() {
 
   // Build all images array for carousel
   const allImages = dbProduct ? [dbProduct.image_url || "/placeholder.svg", ...productImages.map(img => img.image_url)] : [];
-  const handleAddReview = async (rating: number, text: string) => {
+  const handleAddReview = async (rating: number, text: string, files: File[]) => {
     if (!user || !id) {
       toast.error("Войдите, чтобы оставить отзыв");
       return;
@@ -215,20 +230,50 @@ export default function Product() {
       return;
     }
     const {
+      data: reviewData,
       error
     } = await supabase.from("reviews").insert({
       user_id: user.id,
       product_id: id,
       rating,
       text: text || null
-    });
-    if (error) {
+    }).select("id").single();
+    if (error || !reviewData) {
       console.error("Error adding review:", error);
       toast.error("Ошибка при добавлении отзыва");
-    } else {
-      toast.success("Отзыв добавлен!");
-      fetchReviews();
+      return;
     }
+
+    // Upload images if any
+    if (files.length > 0) {
+      const imageRows: { review_id: string; image_url: string; sort_order: number }[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const compressed = await compressImage(files[i]);
+        const ext = compressed.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${reviewData.id}/${i}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("review-images")
+          .upload(path, compressed, { upsert: true });
+        if (uploadErr) {
+          console.error("Upload error:", uploadErr);
+          continue;
+        }
+        const { data: urlData } = supabase.storage
+          .from("review-images")
+          .getPublicUrl(path);
+        imageRows.push({
+          review_id: reviewData.id,
+          image_url: urlData.publicUrl,
+          sort_order: i,
+        });
+      }
+      if (imageRows.length > 0) {
+        await supabase.from("review_images").insert(imageRows);
+      }
+    }
+
+    toast.success("Отзыв добавлен!");
+    fetchReviews();
   };
   // Check if all custom fields are filled
   const allCustomFieldsFilled = useMemo(() => {

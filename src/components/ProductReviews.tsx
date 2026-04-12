@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Star } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
+import { Star, Camera, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ interface Review {
   rating: number;
   text: string;
   createdAt: string;
+  images?: string[];
 }
 
 interface ProductReviewsProps {
@@ -20,7 +22,7 @@ interface ProductReviewsProps {
   reviews: Review[];
   averageRating: number;
   totalReviews: number;
-  onAddReview?: (rating: number, text: string) => void;
+  onAddReview?: (rating: number, text: string, files: File[]) => void;
 }
 
 export function ProductReviews({
@@ -36,12 +38,19 @@ export function ProductReviews({
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
   const [hoverRating, setHoverRating] = useState(0);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
     if (rating > 0 && onAddReview) {
-      onAddReview(rating, text);
+      onAddReview(rating, text, selectedFiles);
       setText("");
       setRating(5);
+      setSelectedFiles([]);
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+      setPreviewUrls([]);
       setShowForm(false);
     }
   };
@@ -52,6 +61,26 @@ export function ProductReviews({
       return;
     }
     setShowForm(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const remaining = 3 - selectedFiles.length;
+    const newFiles = files.slice(0, remaining);
+    if (newFiles.length === 0) return;
+
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+    const newUrls = newFiles.map(f => URL.createObjectURL(f));
+    setPreviewUrls(prev => [...prev, ...newUrls]);
+
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    URL.revokeObjectURL(previewUrls[index]);
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const formatDate = (dateString: string) => {
@@ -115,9 +144,52 @@ export function ProductReviews({
             className="mb-3"
             rows={3}
           />
+
+          {/* Photo previews */}
+          {previewUrls.length > 0 && (
+            <div className="mb-3 flex gap-2">
+              {previewUrls.map((url, i) => (
+                <div key={i} className="relative h-20 w-20 rounded-lg overflow-hidden bg-secondary">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => removeFile(i)}
+                    className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button onClick={handleSubmit}>Отправить</Button>
-            <Button variant="outline" onClick={() => setShowForm(false)}>
+            {selectedFiles.length < 3 && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => {
+              setShowForm(false);
+              setSelectedFiles([]);
+              previewUrls.forEach(url => URL.revokeObjectURL(url));
+              setPreviewUrls([]);
+            }}>
               Отмена
             </Button>
           </div>
@@ -156,6 +228,20 @@ export function ProductReviews({
               {review.text && (
                 <p className="text-sm text-muted-foreground">{review.text}</p>
               )}
+              {/* Review images */}
+              {review.images && review.images.length > 0 && (
+                <div className="mt-2 flex gap-2">
+                  {review.images.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setLightboxImage(img)}
+                      className="h-16 w-16 rounded-lg overflow-hidden bg-secondary"
+                    >
+                      <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -164,6 +250,15 @@ export function ProductReviews({
           Пока нет отзывов. Будьте первым!
         </p>
       )}
+
+      {/* Lightbox dialog */}
+      <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-2">
+          {lightboxImage && (
+            <img src={lightboxImage} alt="" className="w-full h-auto max-h-[80vh] object-contain rounded" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
