@@ -13,8 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { formatPrice } from "@/lib/priceUtils";
-import { BynSymbol } from "@/components/ui/byn-symbol";
 import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2, LayoutGrid, Package, Blocks, X } from "lucide-react";
 
 interface Category {
@@ -282,23 +280,6 @@ export default function AdminBlocks() {
     fetchData();
   };
 
-  // Product handlers
-
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm("Удалить товар?")) return;
-
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", productId);
-
-    if (error) {
-      toast.error("Ошибка при удалении товара");
-    } else {
-      toast.success("Товар удалён");
-      fetchData();
-    }
-  };
 
   // Block handlers
   const handleSaveBlock = async () => {
@@ -544,7 +525,7 @@ export default function AdminBlocks() {
         <PageHeader title="Блоки главной" backPath="/admin" />
 
         <Tabs defaultValue="blocks" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="blocks" className="flex items-center gap-1">
               <Blocks className="h-4 w-4" />
               Блоки
@@ -552,10 +533,6 @@ export default function AdminBlocks() {
             <TabsTrigger value="categories" className="flex items-center gap-1">
               <LayoutGrid className="h-4 w-4" />
               Категории
-            </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-1">
-              <Package className="h-4 w-4" />
-              Товары
             </TabsTrigger>
           </TabsList>
 
@@ -915,45 +892,6 @@ export default function AdminBlocks() {
             )}
           </TabsContent>
 
-          {/* Products Tab */}
-          <TabsContent value="products" className="space-y-4">
-            <h2 className="font-medium text-foreground">Все товары ({products.length})</h2>
-
-            {products.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Нет товаров
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {products.map((product) => {
-                  const price = formatPrice(product.price);
-                  return (
-                    <div key={product.id} className="flex items-center gap-3 rounded-xl bg-card p-3">
-                      <img
-                        src={product.image_url || "https://placehold.co/60x60"}
-                        alt={product.title}
-                        className="h-14 w-14 rounded-lg object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-foreground truncate">{product.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {price.formatted}<BynSymbol /> / {product.unit}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {product.farmer?.name} • {product.category?.name}
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteProduct(product.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
       </main>
 
