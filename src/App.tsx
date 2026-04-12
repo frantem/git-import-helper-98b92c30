@@ -25,7 +25,7 @@ import Admin from "./pages/Admin";
 import AdminSellers from "./pages/admin/AdminSellers";
 import AdminSellerApplications from "./pages/admin/AdminSellerApplications";
 import AdminOrders from "./pages/admin/AdminOrders";
-import AdminCategories from "./pages/admin/AdminCategories";
+
 import AdminBanners from "./pages/admin/AdminBanners";
 import AdminPickupPoints from "./pages/admin/AdminPickupPoints";
 import AdminBlocks from "./pages/admin/AdminBlocks";
@@ -72,7 +72,7 @@ const App = () => (
               <Route path="/admin/sellers" element={<AdminSellers />} />
               <Route path="/admin/applications" element={<AdminSellerApplications />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
-              <Route path="/admin/categories" element={<AdminCategories />} />
+              
               <Route path="/admin/banners" element={<AdminBanners />} />
               <Route path="/admin/pickup-points" element={<AdminPickupPoints />} />
               <Route path="/admin/blocks" element={<AdminBlocks />} />
