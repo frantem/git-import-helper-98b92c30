@@ -50,6 +50,33 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeleting(true);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Не удалось получить сессию");
+      setIsDeleting(false);
+      return;
+    }
+
+    const res = await supabase.functions.invoke("delete-account", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (res.error || res.data?.error) {
+      toast.error("Ошибка удаления аккаунта");
+      setIsDeleting(false);
+      return;
+    }
+
+    await supabase.auth.signOut();
+    toast.success("Аккаунт удалён");
+    navigate("/");
+  };
 
   useEffect(() => {
     if (!user) {
