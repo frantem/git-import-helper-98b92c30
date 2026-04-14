@@ -275,6 +275,27 @@ export default function Product() {
     toast.success("Отзыв добавлен!");
     fetchReviews();
   };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    // Delete images from storage first
+    const review = reviews.find(r => r.id === reviewId);
+    if (review?.images?.length) {
+      await supabase.from("review_images").delete().eq("review_id", reviewId);
+      // Delete files from storage
+      const folder = `${user!.id}/${reviewId}/`;
+      const { data: files } = await supabase.storage.from("review-images").list(folder.replace(/\/$/, ""));
+      if (files?.length) {
+        await supabase.storage.from("review-images").remove(files.map(f => `${user!.id}/${reviewId}/${f.name}`));
+      }
+    }
+    const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+    if (error) {
+      toast.error("Ошибка при удалении отзыва");
+      return;
+    }
+    toast.success("Отзыв удалён");
+    fetchReviews();
+  };
   // Check if all custom fields are filled
   const allCustomFieldsFilled = useMemo(() => {
     if (customFields.length === 0) return true;
@@ -752,7 +773,7 @@ export default function Product() {
 
         {/* Reviews section */}
         {isUUID && <section className="mt-8">
-            <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} />
+            <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} onDeleteReview={handleDeleteReview} />
           </section>}
       </main>
 

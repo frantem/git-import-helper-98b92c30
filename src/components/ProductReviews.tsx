@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Star, Camera, X } from "lucide-react";
+import { Star, Camera, X, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,7 @@ interface ProductReviewsProps {
   averageRating: number;
   totalReviews: number;
   onAddReview?: (rating: number, text: string, files: File[]) => void;
+  onDeleteReview?: (reviewId: string) => void;
 }
 
 export function ProductReviews({
@@ -31,6 +32,7 @@ export function ProductReviews({
   averageRating,
   totalReviews,
   onAddReview,
+  onDeleteReview,
 }: ProductReviewsProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -226,6 +228,20 @@ export function ProductReviews({
               </div>
               {review.text && (
                 <p className="text-sm text-muted-foreground">{review.text}</p>
+              )}
+              {/* Delete button for own reviews */}
+              {onDeleteReview && user && review.userId === user.id && (
+                <button
+                  onClick={() => {
+                    if (window.confirm("Удалить отзыв?")) {
+                      onDeleteReview(review.id);
+                    }
+                  }}
+                  className="mt-2 flex items-center gap-1 text-xs text-destructive hover:underline"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Удалить
+                </button>
               )}
               {/* Review images */}
               {review.images && review.images.length > 0 && (
