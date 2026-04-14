@@ -171,7 +171,6 @@ export function ProductReviews({
                   type="file"
                   accept="image/*"
                   multiple
-                  capture="environment"
                   className="hidden"
                   onChange={handleFileChange}
                 />
