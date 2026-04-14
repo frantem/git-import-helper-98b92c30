@@ -229,6 +229,20 @@ export function ProductReviews({
               {review.text && (
                 <p className="text-sm text-muted-foreground">{review.text}</p>
               )}
+              {/* Delete button for own reviews */}
+              {onDeleteReview && user && review.userId === user.id && (
+                <button
+                  onClick={() => {
+                    if (window.confirm("Удалить отзыв?")) {
+                      onDeleteReview(review.id);
+                    }
+                  }}
+                  className="mt-2 flex items-center gap-1 text-xs text-destructive hover:underline"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Удалить
+                </button>
+              )}
               {/* Review images */}
               {review.images && review.images.length > 0 && (
                 <div className="mt-2 flex gap-2">
