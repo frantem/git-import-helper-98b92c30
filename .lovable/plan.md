@@ -1,33 +1,44 @@
 
 
-## План: Улучшить сообщение об ошибке при смене email
+## План: Кнопка «Удалить аккаунт» в /settings
 
-### Проблема
-Supabase Auth возвращает 422 "A user with this email address has already been registered", но код показывает только общее "Ошибка изменения email" без пояснения причины.
+### Подход
 
-### Решение
-**Файл:** `src/pages/Settings.tsx` — в `handleUpdateEmail` показывать конкретное сообщение об ошибке:
+Удаление пользователя из `auth.users` требует `service_role` ключ — это нельзя делать на клиенте. Нужна Edge Function.
 
-```tsx
-const handleUpdateEmail = async () => {
-  if (!email) { toast.error("Введите email"); return; }
-  if (email.trim().toLowerCase() === user?.email?.toLowerCase()) {
-    toast.info("Этот email уже используется"); return;
-  }
+### Изменения
 
-  const { error } = await supabase.auth.updateUser({ email });
+**1. Edge Function `supabase/functions/delete-account/index.ts`**
 
-  if (error) {
-    if (error.message?.includes("already been registered")) {
-      toast.error("Этот email уже зарегистрирован в системе");
-    } else {
-      toast.error("Ошибка изменения email");
-    }
-  } else {
-    toast.success(`Письмо для подтверждения отправлено на ${email}. Проверьте папку «Спам».`);
-  }
-};
+- Принимает запрос с JWT токеном пользователя
+- Верифицирует пользователя через `supabase.auth.getUser(token)`
+- Через service_role клиент вызывает `auth.admin.deleteUser(userId)` — это каскадно удалит профиль и связанные данные (ON DELETE CASCADE)
+- CORS для `locusfood.by`
+
+**2. `src/pages/Settings.tsx`**
+
+- Внизу страницы добавить красную секцию «Удалить аккаунт»
+- Диалог подтверждения (AlertDialog): «Вы уверены? Все данные будут удалены безвозвратно.»
+- При подтверждении: вызов Edge Function, затем очистка сессии и редирект на `/`
+
+### Детали
+
+Edge Function:
+```ts
+// Извлекает user из JWT, удаляет через admin API
+const { data: { user } } = await supabase.auth.getUser(token);
+await adminClient.auth.admin.deleteUser(user.id);
 ```
 
-1 файл, ~3 строки изменено.
+UI — красная кнопка с AlertDialog внизу Settings:
+```tsx
+<AlertDialog>
+  <AlertDialogTrigger asChild>
+    <Button variant="destructive" className="w-full">Удалить аккаунт</Button>
+  </AlertDialogTrigger>
+  {/* Подтверждение с предупреждением */}
+</AlertDialog>
+```
+
+3 файла: 1 Edge Function + Settings.tsx (UI) + Settings.tsx (логика).
 
