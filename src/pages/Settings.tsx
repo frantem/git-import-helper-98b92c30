@@ -148,7 +148,11 @@ export default function Settings() {
     const { error } = await supabase.auth.updateUser({ email });
 
     if (error) {
-      toast.error("Ошибка изменения email");
+      if (error.message?.includes("already been registered")) {
+        toast.error("Этот email уже зарегистрирован в системе");
+      } else {
+        toast.error("Ошибка изменения email");
+      }
     } else {
       toast.success(`Письмо для подтверждения отправлено на ${email}. Проверьте папку «Спам».`);
     }
