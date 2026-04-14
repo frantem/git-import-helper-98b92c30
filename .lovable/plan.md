@@ -1,44 +1,24 @@
 
 
-## План: Кнопка «Удалить аккаунт» в /settings
+## План: Сохранение данных формы авторизации при свайпе
 
-### Подход
+### Проблема
+На мобильном при переключении между приложениями браузер может перезагрузить страницу, и введённые данные (имя, телефон, email) теряются.
 
-Удаление пользователя из `auth.users` требует `service_role` ключ — это нельзя делать на клиенте. Нужна Edge Function.
+### Решение
+Использовать уже существующий хук `useDraftState` для сохранения полей формы в localStorage.
 
-### Изменения
+### Изменение
 
-**1. Edge Function `supabase/functions/delete-account/index.ts`**
+**Файл:** `src/pages/Auth.tsx`
 
-- Принимает запрос с JWT токеном пользователя
-- Верифицирует пользователя через `supabase.auth.getUser(token)`
-- Через service_role клиент вызывает `auth.admin.deleteUser(userId)` — это каскадно удалит профиль и связанные данные (ON DELETE CASCADE)
-- CORS для `locusfood.by`
+- Импортировать `useDraftState` и `clearDraft`
+- Заменить отдельные `useState` для `email`, `fullName`, `phone` на единый объект состояния
+- Подключить `useDraftState("auth-form-draft", formState, setFormState)` — он автоматически сохраняет данные при `visibilitychange` и `pagehide`
+- После успешного входа/регистрации вызывать `clearDraft("auth-form-draft")`
+- Пароль НЕ сохраняется в черновик (безопасность)
 
-**2. `src/pages/Settings.tsx`**
+Результат: при возврате в браузер имя, телефон и email остаются заполненными. После успешной авторизации черновик очищается.
 
-- Внизу страницы добавить красную секцию «Удалить аккаунт»
-- Диалог подтверждения (AlertDialog): «Вы уверены? Все данные будут удалены безвозвратно.»
-- При подтверждении: вызов Edge Function, затем очистка сессии и редирект на `/`
-
-### Детали
-
-Edge Function:
-```ts
-// Извлекает user из JWT, удаляет через admin API
-const { data: { user } } = await supabase.auth.getUser(token);
-await adminClient.auth.admin.deleteUser(user.id);
-```
-
-UI — красная кнопка с AlertDialog внизу Settings:
-```tsx
-<AlertDialog>
-  <AlertDialogTrigger asChild>
-    <Button variant="destructive" className="w-full">Удалить аккаунт</Button>
-  </AlertDialogTrigger>
-  {/* Подтверждение с предупреждением */}
-</AlertDialog>
-```
-
-3 файла: 1 Edge Function + Settings.tsx (UI) + Settings.tsx (логика).
+1 файл изменён.
 
