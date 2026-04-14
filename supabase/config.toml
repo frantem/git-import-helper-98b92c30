@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.sitemap]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

@@ -9,8 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import { compressImage } from "@/lib/imageUtils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Profile {
   full_name: string | null;
@@ -39,6 +50,33 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeleting(true);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Не удалось получить сессию");
+      setIsDeleting(false);
+      return;
+    }
+
+    const res = await supabase.functions.invoke("delete-account", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (res.error || res.data?.error) {
+      toast.error("Ошибка удаления аккаунта");
+      setIsDeleting(false);
+      return;
+    }
+
+    await supabase.auth.signOut();
+    toast.success("Аккаунт удалён");
+    navigate("/");
+  };
 
   useEffect(() => {
     if (!user) {
@@ -321,6 +359,39 @@ export default function Settings() {
             <Button onClick={handleUpdatePassword} variant="outline" className="w-full">
               Изменить пароль
             </Button>
+          </div>
+
+          {/* Delete account */}
+          <div className="rounded-xl bg-card p-4 space-y-4 border border-destructive/30">
+            <h3 className="font-medium text-destructive">Удалить аккаунт</h3>
+            <p className="text-sm text-muted-foreground">
+              Все ваши данные, заказы и отзывы будут удалены безвозвратно.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full" disabled={isDeleting}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {isDeleting ? "Удаление..." : "Удалить аккаунт"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить аккаунт?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Вы уверены? Все данные будут удалены безвозвратно. Это действие нельзя отменить.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Да, удалить
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </main>
