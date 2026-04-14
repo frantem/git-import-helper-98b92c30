@@ -360,6 +360,39 @@ export default function Settings() {
               Изменить пароль
             </Button>
           </div>
+
+          {/* Delete account */}
+          <div className="rounded-xl bg-card p-4 space-y-4 border border-destructive/30">
+            <h3 className="font-medium text-destructive">Удалить аккаунт</h3>
+            <p className="text-sm text-muted-foreground">
+              Все ваши данные, заказы и отзывы будут удалены безвозвратно.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full" disabled={isDeleting}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {isDeleting ? "Удаление..." : "Удалить аккаунт"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить аккаунт?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Вы уверены? Все данные будут удалены безвозвратно. Это действие нельзя отменить.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Да, удалить
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </main>
 
