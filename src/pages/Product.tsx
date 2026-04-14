@@ -773,7 +773,7 @@ export default function Product() {
 
         {/* Reviews section */}
         {isUUID && <section className="mt-8">
-            <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} />
+            <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} onDeleteReview={handleDeleteReview} />
           </section>}
       </main>
 
