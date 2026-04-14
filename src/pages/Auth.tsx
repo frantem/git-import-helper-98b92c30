@@ -155,6 +155,7 @@ export default function Auth() {
           }
         } else {
           toast.success("Регистрация успешна!");
+          clearDraft("auth-form-draft");
           const returnTo = localStorage.getItem('locus-return-to');
           localStorage.removeItem('locus-return-to');
           navigate(returnTo || "/profile");
