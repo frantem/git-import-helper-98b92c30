@@ -3,11 +3,15 @@ import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
-import { Star, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Star, Loader2, Trash2 } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { SEO } from "@/components/SEO";
+import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Farmer {
   id: string;
@@ -38,20 +42,118 @@ interface Product {
   prep_time_minutes?: number;
 }
 
+interface SellerReview {
+  id: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+  images?: string[];
+  productTitle: string;
+  productId: string;
+}
+
 export default function SellerProfile() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [totalReviewCount, setTotalReviewCount] = useState(0);
+  const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
   useScrollRestoration();
+
+  const fetchSellerReviews = useCallback(async (farmerId: string) => {
+    // Get ALL products for this farmer (including deleted ones)
+    const { data: allProducts } = await supabase
+      .from("products")
+      .select("id, title")
+      .eq("farmer_id", farmerId);
+
+    if (!allProducts?.length) {
+      setSellerReviews([]);
+      setTotalReviewCount(0);
+      return;
+    }
+
+    const productIds = allProducts.map(p => p.id);
+    const productTitleMap = new Map(allProducts.map(p => [p.id, p.title]));
+
+    const { data: reviewsData } = await supabase
+      .from("reviews")
+      .select("*")
+      .in("product_id", productIds)
+      .order("created_at", { ascending: false });
+
+    if (!reviewsData?.length) {
+      setSellerReviews([]);
+      setTotalReviewCount(0);
+      setAverageRating(null);
+      return;
+    }
+
+    const userIds = reviewsData.map(r => r.user_id);
+    const reviewIds = reviewsData.map(r => r.id);
+
+    const [profilesRes, imagesRes] = await Promise.all([
+      supabase.rpc("get_public_profile_names", { _user_ids: userIds }),
+      supabase.from("review_images").select("review_id, image_url, sort_order").in("review_id", reviewIds).order("sort_order"),
+    ]);
+
+    const profilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p.full_name]) || []);
+    const imagesMap = new Map<string, string[]>();
+    imagesRes.data?.forEach(img => {
+      const arr = imagesMap.get(img.review_id) || [];
+      arr.push(img.image_url);
+      imagesMap.set(img.review_id, arr);
+    });
+
+    const mapped: SellerReview[] = reviewsData.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      userName: profilesMap.get(r.user_id) || "Пользователь",
+      rating: r.rating,
+      text: r.text || "",
+      createdAt: r.created_at,
+      images: imagesMap.get(r.id) || [],
+      productTitle: productTitleMap.get(r.product_id) || "Товар",
+      productId: r.product_id,
+    }));
+
+    setSellerReviews(mapped);
+    setTotalReviewCount(mapped.length);
+    const avg = mapped.reduce((sum, r) => sum + r.rating, 0) / mapped.length;
+    setAverageRating(avg);
+  }, []);
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!user) return;
+    const review = sellerReviews.find(r => r.id === reviewId);
+    if (review?.images?.length) {
+      await supabase.from("review_images").delete().eq("review_id", reviewId);
+      const folder = `${user.id}/${reviewId}`;
+      const { data: files } = await supabase.storage.from("review-images").list(folder);
+      if (files?.length) {
+        await supabase.storage.from("review-images").remove(files.map(f => `${user.id}/${reviewId}/${f.name}`));
+      }
+    }
+    const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+    if (error) {
+      toast.error("Ошибка при удалении отзыва");
+      return;
+    }
+    toast.success("Отзыв удалён");
+    if (farmer) fetchSellerReviews(farmer.id);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
 
-      // Try to find by slug first, then by id (UUID)
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       
       let farmerData: any = null;
@@ -77,25 +179,15 @@ export default function SellerProfile() {
 
       setFarmer(farmerData);
 
-      // Save referrer with 24h expiry (last click wins)
       localStorage.setItem("referrer_farmer_id", farmerData.id);
       localStorage.setItem("referrer_farmer_ts", Date.now().toString());
 
-      // Fetch farmer's active products
+      // Fetch active products
       const { data: productsData } = await supabase
         .from("products")
         .select(`
-          id,
-          title,
-          price,
-          old_price,
-          image_url,
-          unit,
-          is_new,
-          farmer_id,
-          category_id,
-          prep_time_minutes,
-          categories(name, slug)
+          id, title, price, old_price, image_url, unit, is_new, farmer_id,
+          category_id, prep_time_minutes, categories(name, slug)
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
@@ -103,16 +195,12 @@ export default function SellerProfile() {
         .order("created_at", { ascending: false });
 
       if (productsData) {
-        // Get product IDs to fetch reviews
         const productIds = productsData.map(p => p.id);
-        
-        // Fetch reviews for all products
         const { data: reviewsData } = await supabase
           .from("reviews")
           .select("product_id, rating")
           .in("product_id", productIds);
 
-        // Calculate ratings per product
         const productRatings: Record<string, { sum: number; count: number }> = {};
         reviewsData?.forEach(r => {
           if (!productRatings[r.product_id]) {
@@ -121,12 +209,6 @@ export default function SellerProfile() {
           productRatings[r.product_id].sum += r.rating;
           productRatings[r.product_id].count += 1;
         });
-
-        // Calculate overall farmer rating
-        if (reviewsData && reviewsData.length > 0) {
-          const totalRating = reviewsData.reduce((sum, r) => sum + r.rating, 0);
-          setAverageRating(totalRating / reviewsData.length);
-        }
 
         const mappedProducts: Product[] = productsData.map(p => {
           const ratings = productRatings[p.id];
@@ -154,11 +236,27 @@ export default function SellerProfile() {
         setProducts(mappedProducts);
       }
 
+      // Fetch all seller reviews
+      await fetchSellerReviews(farmerData.id);
+
       setIsLoading(false);
     };
 
     fetchData();
-  }, [id]);
+  }, [id, fetchSellerReviews]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ru-RU", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const scrollToReviews = () => {
+    document.getElementById("seller-reviews")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   if (isLoading) {
     return (
@@ -202,7 +300,6 @@ export default function SellerProfile() {
         {/* Seller profile header */}
         <div className="mb-6 rounded-2xl bg-card p-4">
           <div className="flex items-start gap-4">
-            {/* Avatar */}
             <div className="flex-shrink-0">
               {farmer.photo_url ? (
                 <img
@@ -217,26 +314,28 @@ export default function SellerProfile() {
               )}
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-foreground mb-1">{farmer.name}</h1>
               
-              {/* Rating */}
               {averageRating !== null && (
                 <div className="flex items-center gap-1 mb-2">
                   <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                   <span className="font-medium text-foreground">{averageRating.toFixed(1)}</span>
+                  <button
+                    onClick={scrollToReviews}
+                    className="text-sm text-primary hover:underline ml-1"
+                  >
+                    ({totalReviewCount} отзывов)
+                  </button>
                 </div>
               )}
               
-              {/* Location */}
               <p className="text-sm text-muted-foreground">
                 📍 {farmer.district}{farmer.village ? `, ${farmer.village}` : ""}
               </p>
             </div>
           </div>
 
-          {/* Description */}
           {farmer.description && (
             <p className="mt-4 text-sm text-muted-foreground">{farmer.description}</p>
           )}
@@ -260,7 +359,100 @@ export default function SellerProfile() {
             </div>
           )}
         </div>
+
+        {/* Seller Reviews */}
+        <div id="seller-reviews" className="mb-4">
+          <h2 className="text-lg font-bold text-foreground mb-3">
+            Отзывы ({totalReviewCount})
+          </h2>
+
+          {sellerReviews.length > 0 ? (
+            <div className="space-y-4">
+              {sellerReviews.map((review) => (
+                <div key={review.id} className="rounded-lg bg-card p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium">
+                        {review.userName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-foreground">{review.userName}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(review.createdAt)}
+                    </span>
+                  </div>
+
+                  <div className="mb-1 flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={cn(
+                          "h-4 w-4",
+                          review.rating >= star
+                            ? "fill-amber-400 text-amber-400"
+                            : "text-muted-foreground"
+                        )}
+                      />
+                    ))}
+                  </div>
+
+                  <Link
+                    to={`/product/${review.productId}`}
+                    className="text-xs text-primary hover:underline mb-1 inline-block"
+                  >
+                    {review.productTitle}
+                  </Link>
+
+                  {review.text && (
+                    <p className="text-sm text-muted-foreground">{review.text}</p>
+                  )}
+
+                  {review.images && review.images.length > 0 && (
+                    <div className="mt-2 flex gap-2">
+                      {review.images.map((img, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setLightboxImage(img)}
+                          className="h-16 w-16 rounded-lg overflow-hidden bg-secondary"
+                        >
+                          <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {user && review.userId === user.id && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Удалить отзыв?")) {
+                          handleDeleteReview(review.id);
+                        }
+                      }}
+                      className="mt-2 flex items-center gap-1 text-xs text-destructive hover:underline"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Удалить
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg bg-card p-4 text-center text-sm text-muted-foreground">
+              Пока нет отзывов
+            </div>
+          )}
+        </div>
       </main>
+
+      {/* Lightbox */}
+      <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-2">
+          {lightboxImage && (
+            <img src={lightboxImage} alt="" className="w-full h-auto max-h-[80vh] object-contain rounded" />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <BottomNavigation />
     </div>
