@@ -458,11 +458,33 @@ export default function Product() {
     name: product.name,
     description: product.description || undefined,
     image: product.image !== "/placeholder.svg" ? product.image : undefined,
+    brand: {
+      "@type": "Brand",
+      name: product.seller,
+    },
     offers: {
       "@type": "Offer",
       price: (displayPrice / 100).toFixed(2),
       priceCurrency: "BYN",
       availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `https://locusfood.by/product/${product.id}`,
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "BY",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "d" },
+          transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "d" },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "BY",
+        returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+      },
     },
     ...(displayRating && displayReviewCount > 0 ? {
       aggregateRating: {
@@ -470,6 +492,19 @@ export default function Product() {
         ratingValue: displayRating.toFixed(1),
         reviewCount: displayReviewCount,
       },
+    } : {}),
+    ...(reviews.length > 0 ? {
+      review: reviews.slice(0, 5).map(r => ({
+        "@type": "Review",
+        author: { "@type": "Person", name: r.userName },
+        datePublished: r.createdAt?.split("T")[0],
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: r.rating,
+          bestRating: 5,
+        },
+        ...(r.text ? { reviewBody: r.text } : {}),
+      })),
     } : {}),
   } : undefined;
 
