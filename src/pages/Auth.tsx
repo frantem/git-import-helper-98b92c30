@@ -9,6 +9,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
+import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
@@ -18,11 +19,17 @@ export default function Auth() {
   const initialMode = searchParams.get("mode") as AuthMode | null;
 
   const [mode, setMode] = useState<AuthMode>(initialMode === "reset" ? "reset" : "login");
-  const [email, setEmail] = useState("");
+  const [formState, setFormState] = useState({ email: "", fullName: "", phone: "+375" });
+  useDraftState("auth-form-draft", formState, setFormState);
+  const email = formState.email;
+  const fullName = formState.fullName;
+  const phone = formState.phone;
+  const setEmail = (v: string) => setFormState(s => ({ ...s, email: v }));
+  const setFullName = (v: string) => setFormState(s => ({ ...s, fullName: v }));
+  const setPhone = (v: string) => setFormState(s => ({ ...s, phone: v }));
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("+375");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecoveryReady, setIsRecoveryReady] = useState(false);
   const [isCheckingRecovery, setIsCheckingRecovery] = useState(initialMode === "reset");
@@ -120,6 +127,7 @@ export default function Auth() {
           }
         } else {
           toast.success("Вы успешно вошли!");
+          clearDraft("auth-form-draft");
           const returnTo = localStorage.getItem('locus-return-to');
           localStorage.removeItem('locus-return-to');
           navigate(returnTo || "/profile");
@@ -147,6 +155,7 @@ export default function Auth() {
           }
         } else {
           toast.success("Регистрация успешна!");
+          clearDraft("auth-form-draft");
           const returnTo = localStorage.getItem('locus-return-to');
           localStorage.removeItem('locus-return-to');
           navigate(returnTo || "/profile");
