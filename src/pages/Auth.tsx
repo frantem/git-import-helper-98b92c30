@@ -9,6 +9,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
+import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
