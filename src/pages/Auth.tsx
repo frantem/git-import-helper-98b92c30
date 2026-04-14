@@ -127,6 +127,7 @@ export default function Auth() {
           }
         } else {
           toast.success("Вы успешно вошли!");
+          clearDraft("auth-form-draft");
           const returnTo = localStorage.getItem('locus-return-to');
           localStorage.removeItem('locus-return-to');
           navigate(returnTo || "/profile");
