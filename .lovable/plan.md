@@ -1,86 +1,49 @@
 
 
-## План: Исправление проблем Google Search Console для JSON-LD Product
+## План: Отзывы на странице продавца + удаление отзывов
 
-### Проблемы и решения
+### Что будет сделано
 
-Google требует дополнительные поля в структурированных данных Product:
-
-1. **brand** — добавить название продавца/фермера как бренд
-2. **shippingDetails** — добавить в offers информацию о доставке
-3. **hasMerchantReturnPolicy** — добавить политику возврата в offers
-4. **review** — добавить до 5 последних отзывов в JSON-LD
-5. **aggregateRating** — уже реализовано, но показывается только при наличии отзывов (это ок)
+1. **Количество отзывов рядом с рейтингом** — в шапке профиля продавца добавить `(N отзывов)` как кликабельную ссылку, при нажатии — скролл к блоку отзывов
+2. **Блок отзывов продавца** — после товаров показать все отзывы со всех товаров этого фермера (включая удалённые товары), с фото, рейтингом, именем товара
+3. **Удаление своих отзывов** — кнопка удаления в `ProductReviews` + новый компонент для страницы продавца, миграция для RLS DELETE
 
 ### Изменения
 
-**Файл:** `src/pages/Product.tsx` (только блок `productJsonLd`, строки 456-474)
+**1. Миграция — RLS политики для удаления отзывов и фото**
 
-Расширить JSON-LD объект:
+```sql
+CREATE POLICY "Users can delete own reviews" ON public.reviews
+  FOR DELETE USING (auth.uid() = user_id);
 
-```js
-const productJsonLd = product ? {
-  "@type": "Product",
-  name: product.name,
-  description: product.description || undefined,
-  image: product.image !== "/placeholder.svg" ? product.image : undefined,
-  brand: {
-    "@type": "Brand",
-    name: product.seller,
-  },
-  offers: {
-    "@type": "Offer",
-    price: (displayPrice / 100).toFixed(2),
-    priceCurrency: "BYN",
-    availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-    url: `https://locusfood.by/product/${product.id}`,
-    shippingDetails: {
-      "@type": "OfferShippingDetails",
-      shippingDestination: {
-        "@type": "DefinedRegion",
-        addressCountry: "BY",
-      },
-      deliveryTime: {
-        "@type": "ShippingDeliveryTime",
-        handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "d" },
-        transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "d" },
-      },
-    },
-    hasMerchantReturnPolicy: {
-      "@type": "MerchantReturnPolicy",
-      applicableCountry: "BY",
-      returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-    },
-  },
-  ...(displayRating && displayReviewCount > 0 ? {
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: displayRating.toFixed(1),
-      reviewCount: displayReviewCount,
-    },
-  } : {}),
-  ...(reviews.length > 0 ? {
-    review: reviews.slice(0, 5).map(r => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: r.userName },
-      datePublished: r.createdAt?.split("T")[0],
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: r.rating,
-        bestRating: 5,
-      },
-      ...(r.text ? { reviewBody: r.text } : {}),
-    })),
-  } : {}),
-} : undefined;
+CREATE POLICY "Users can delete own review_images" ON public.review_images
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM reviews WHERE reviews.id = review_images.review_id AND reviews.user_id = auth.uid())
+  );
 ```
 
-### Результат
-- `brand` — имя фермера/продавца
-- `shippingDetails` — доставка по Беларуси, 1-3 дня
-- `hasMerchantReturnPolicy` — возврат не предусмотрен (натуральные продукты)
-- `review` — до 5 последних отзывов
-- `aggregateRating` — уже есть, без изменений
+**2. `src/pages/SellerProfile.tsx`**
 
-1 файл, ~30 строк изменено.
+- Добавить состояние `sellerReviews` и `totalReviewCount`
+- Fetch ALL отзывы со всех товаров фермера (включая `is_deleted=true`): запрос products по `farmer_id` (без фильтра `is_deleted`), затем reviews по этим product_id + review_images + product title через join
+- В шапке: `(N отзывов)` — кликабельный `<button onClick={() => document.getElementById('seller-reviews')?.scrollIntoView(...)}>` 
+- После блока товаров: секция `<div id="seller-reviews">` со списком отзывов (переиспользуем стили из ProductReviews), с названием товара у каждого отзыва
+- Кнопка "Удалить" у своих отзывов
+
+**3. `src/components/ProductReviews.tsx`**
+
+- Добавить prop `onDeleteReview?: (reviewId: string) => void`
+- У каждого отзыва, если `review.userId === user?.id`, показать кнопку 🗑 "Удалить" с подтверждением
+
+**4. `src/pages/Product.tsx`**
+
+- Добавить `handleDeleteReview`: удалить `review_images`, затем `reviews` по id, обновить список
+
+### Результат
+- Рейтинг в шапке продавца: `★ 4.8 (12 отзывов)` — клик скроллит к отзывам
+- Все отзывы продавца внизу страницы с названием товара
+- Отзывы сохраняются даже при удалении товара/пользователя
+- Пользователи могут удалять свои отзывы
+
+4 файла: 1 миграция + 3 tsx.
 
