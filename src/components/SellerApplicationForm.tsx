@@ -172,7 +172,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         return;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("seller_applications")
         .insert({
           user_id: userId,
@@ -181,7 +181,9 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           district: draft.district,
           village: draft.village.trim() || null,
           description: draft.description.trim() || null,
-        });
+        })
+        .select("id")
+        .single();
 
       if (error) {
         if (error.message.includes("duplicate")) {
@@ -190,6 +192,13 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           toast.error("Ошибка при отправке заявки: " + error.message);
         }
         return;
+      }
+
+      // Send email notification to admin (non-blocking)
+      if (inserted?.id) {
+        supabase.functions.invoke("send-seller-application-notification", {
+          body: { application_id: inserted.id },
+        }).catch((e) => console.error("Email notification error:", e));
       }
 
       clearDraft(DRAFT_KEY);
