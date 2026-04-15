@@ -1,24 +1,49 @@
 
 
-## План: Сохранение данных формы авторизации при свайпе
+## План: Обработка ошибки "Load failed" при входе
 
 ### Проблема
-На мобильном при переключении между приложениями браузер может перезагрузить страницу, и введённые данные (имя, телефон, email) теряются.
+На мобильном Safari запрос `signInWithPassword` к Supabase иногда обрывается с ошибкой "Load failed" (сетевая ошибка fetch). Это не ошибка аутентификации — данные верные, но запрос не дошёл.
 
 ### Решение
-Использовать уже существующий хук `useDraftState` для сохранения полей формы в localStorage.
-
-### Изменение
 
 **Файл:** `src/pages/Auth.tsx`
 
-- Импортировать `useDraftState` и `clearDraft`
-- Заменить отдельные `useState` для `email`, `fullName`, `phone` на единый объект состояния
-- Подключить `useDraftState("auth-form-draft", formState, setFormState)` — он автоматически сохраняет данные при `visibilitychange` и `pagehide`
-- После успешного входа/регистрации вызывать `clearDraft("auth-form-draft")`
-- Пароль НЕ сохраняется в черновик (безопасность)
+В `handleSubmit` для режима `login`:
+1. Обернуть `signIn` в retry-логику: при ошибке "Load failed" или "Failed to fetch" — автоматически повторить запрос 1 раз с задержкой 1.5 секунды
+2. Если повтор тоже не удался — показать понятное сообщение: "Ошибка сети. Проверьте подключение к интернету и попробуйте ещё раз."
+3. Аналогично для регистрации
 
-Результат: при возврате в браузер имя, телефон и email остаются заполненными. После успешной авторизации черновик очищается.
+```tsx
+// В handleSubmit, режим login:
+const isNetworkError = (msg: string) =>
+  msg.includes("Load failed") || msg.includes("Failed to fetch") || msg.includes("NetworkError");
 
-1 файл изменён.
+if (mode === "login") {
+  let { error } = await signIn(email, password);
+  
+  // Auto-retry once on network errors
+  if (error && isNetworkError(error.message)) {
+    await new Promise(r => setTimeout(r, 1500));
+    const retry = await signIn(email, password);
+    error = retry.error;
+  }
+  
+  if (error) {
+    if (isNetworkError(error.message)) {
+      toast.error("Ошибка сети. Проверьте интернет и попробуйте ещё раз.");
+    } else if (error.message.includes("Invalid login credentials")) {
+      toast.error("Неверный email или пароль");
+    } else {
+      toast.error("Ошибка входа: " + error.message);
+    }
+  } else {
+    // success...
+  }
+}
+```
+
+Аналогичная обработка для `register`.
+
+1 файл, ~15 строк изменено.
 
