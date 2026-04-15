@@ -28,8 +28,8 @@ interface Profile {
 export default function Profile() {
   const { user, role, signOut, isSigningOut } = useAuth();
   const navigate = useNavigate();
-  const [showApplicationDialog, setShowApplicationDialog] = useState(false);
   const [application, setApplication] = useState<SellerApplication | null>(null);
+  const [isLoadingApplication, setIsLoadingApplication] = useState(false);
   const [isLoadingApplication, setIsLoadingApplication] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const { adminPendingCount, sellerPendingCount } = usePendingOrdersCount();
@@ -78,23 +78,6 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await signOut();
-  };
-
-  const handleApplicationSuccess = () => {
-    setShowApplicationDialog(false);
-    // Refresh application status
-    if (user) {
-      supabase.
-      from("seller_applications").
-      select("id, status, created_at").
-      eq("user_id", user.id).
-      order("created_at", { ascending: false }).
-      limit(1).
-      single().
-      then(({ data }) => {
-        if (data) setApplication(data);
-      });
-    }
   };
 
   const renderApplicationStatus = () => {
@@ -238,40 +221,18 @@ export default function Profile() {
           </Link>
         }
 
-        {/* Application status */}
-        {user && role !== "seller" && role !== "admin" && renderApplicationStatus()}
-
-        {/* Become seller - for buyers or users without seller role */}
+        {/* Become seller - for buyers */}
         {user && role !== "seller" && role !== "admin" && !isLoadingApplication &&
         <div className="mb-4 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 p-4">
             <h2 className="mb-1 font-bold text-foreground">Стать продавцом</h2>
             <p className="mb-3 text-xs text-muted-foreground">
               Продавайте свои продукты на Locus
             </p>
-            <div className="flex gap-2">
-              {canApply &&
-            <Dialog open={showApplicationDialog} onOpenChange={setShowApplicationDialog}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="default">
-                      Подать заявку
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Заявка на продавца</DialogTitle>
-                    </DialogHeader>
-                    <SellerApplicationForm onSuccess={handleApplicationSuccess} />
-                  </DialogContent>
-                </Dialog>
+            {canApply &&
+              <Button size="sm" variant="default" onClick={() => navigate("/seller-application")}>
+                Подать заявку
+              </Button>
             }
-              
-              <Link to="/auth?role=seller">
-                <Button size="sm" variant="outline">
-                  <Store className="h-4 w-4 mr-1" />
-                  Войти как продавец
-                </Button>
-              </Link>
-            </div>
           </div>
         }
 
@@ -282,19 +243,9 @@ export default function Profile() {
             <p className="mb-3 text-xs text-muted-foreground">
               Продавайте свои продукты на Locus 
             </p>
-            <Dialog open={showApplicationDialog} onOpenChange={setShowApplicationDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="default">
-                  Подать заявку
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Заявка на продавца</DialogTitle>
-                </DialogHeader>
-                <SellerApplicationForm onSuccess={handleApplicationSuccess} />
-              </DialogContent>
-            </Dialog>
+            <Button size="sm" variant="default" onClick={() => navigate("/seller-application")}>
+              Подать заявку
+            </Button>
           </div>
         }
 
