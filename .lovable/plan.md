@@ -1,30 +1,34 @@
 
 
-## План: Заявка на продавца — отдельная страница вместо диалога
+## План: Email-уведомление админу о новой заявке на продавца
+
+### Подход
+Создать Edge Function `send-seller-application-notification`, которая отправляет email админу через Resend (по аналогии с `send-new-order-notification`). Вызывать её из `SellerApplicationForm` после успешной вставки заявки.
 
 ### Изменения
 
-**1. Удалить кнопку "Войти как продавец"** из `/profile` — она не нужна, роль определяется автоматически.
+**1. Новая Edge Function: `supabase/functions/send-seller-application-notification/index.ts`**
+- Принимает `application_id` в теле запроса
+- Загружает данные заявки из `seller_applications` через service role
+- Формирует HTML-письмо со всей информацией: имя, телефон, район, населённый пункт, описание, дата подачи
+- Отправляет на `ADMIN_EMAIL` через Resend
+- CORS headers для `locusfood.by`
 
-**2. Создать страницу `/seller-application`** (`src/pages/SellerApplication.tsx`)
-- Полноценная страница с Header и формой заявки
-- Использовать `useDraftState` для сохранения всех полей (имя, телефон, район, населённый пункт, описание) — данные не теряются при свайпе
-- После успешной отправки — `clearDraft` и редирект на `/profile`
+**2. Обновить `src/components/SellerApplicationForm.tsx`**
+- После успешного `insert` в `seller_applications` — вызвать `supabase.functions.invoke('send-seller-application-notification', { body: { application_id } })`
+- Не блокировать основной flow — если email не отправился, заявка всё равно сохранена
 
-**3. Обновить `src/pages/Profile.tsx`**
-- Убрать `Dialog` + `SellerApplicationForm` — вместо них кнопка "Подать заявку" ведёт на `/seller-application` через `navigate`
-- Убрать кнопку "Войти как продавец" (для авторизованных и неавторизованных)
+### Содержание письма
+```
+📝 Новая заявка на продавца!
 
-**4. Обновить `src/components/SellerApplicationForm.tsx`**
-- Добавить поддержку `useDraftState` для всех полей формы
-- После успешной отправки вызывать `clearDraft`
+Имя: {name}
+Телефон: {phone}
+Район: {district}
+Населённый пункт: {village}
+Описание: {description}
+Дата: {created_at}
+```
 
-**5. Добавить маршрут** в `src/App.tsx`: `/seller-application` → `SellerApplication`
-
-### Результат
-- Форма заявки на отдельной странице — не глючит при свайпе
-- Данные сохраняются в localStorage и восстанавливаются при возврате
-- Кнопка "Войти как продавец" удалена
-
-5 файлов: 1 новый + 4 изменённых.
+2 файла: 1 новый Edge Function + 1 изменённый.
 
