@@ -13,6 +13,9 @@ import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
+const isNetworkError = (msg: string) =>
+  msg.includes("Load failed") || msg.includes("Failed to fetch") || msg.includes("NetworkError");
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialRole = searchParams.get("role") === "seller" ? "seller" : "buyer";
