@@ -156,9 +156,16 @@ export default function Auth() {
         }
 
         // Always register as buyer - they can apply to become seller later
-        const { error } = await signUp(email, password, "buyer", fullName);
+        let { error } = await signUp(email, password, "buyer", fullName);
+        if (error && isNetworkError(error.message)) {
+          await new Promise(r => setTimeout(r, 1500));
+          const retry = await signUp(email, password, "buyer", fullName);
+          error = retry.error;
+        }
         if (error) {
-          if (error.message.includes("User already registered")) {
+          if (isNetworkError(error.message)) {
+            toast.error("Ошибка сети. Проверьте интернет и попробуйте ещё раз.");
+          } else if (error.message.includes("User already registered")) {
             toast.error("Этот email уже зарегистрирован. Войдите или восстановите пароль.");
           } else {
             toast.error("Ошибка регистрации: " + error.message);
