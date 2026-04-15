@@ -1,49 +1,30 @@
 
 
-## План: Обработка ошибки "Load failed" при входе
+## План: Заявка на продавца — отдельная страница вместо диалога
 
-### Проблема
-На мобильном Safari запрос `signInWithPassword` к Supabase иногда обрывается с ошибкой "Load failed" (сетевая ошибка fetch). Это не ошибка аутентификации — данные верные, но запрос не дошёл.
+### Изменения
 
-### Решение
+**1. Удалить кнопку "Войти как продавец"** из `/profile` — она не нужна, роль определяется автоматически.
 
-**Файл:** `src/pages/Auth.tsx`
+**2. Создать страницу `/seller-application`** (`src/pages/SellerApplication.tsx`)
+- Полноценная страница с Header и формой заявки
+- Использовать `useDraftState` для сохранения всех полей (имя, телефон, район, населённый пункт, описание) — данные не теряются при свайпе
+- После успешной отправки — `clearDraft` и редирект на `/profile`
 
-В `handleSubmit` для режима `login`:
-1. Обернуть `signIn` в retry-логику: при ошибке "Load failed" или "Failed to fetch" — автоматически повторить запрос 1 раз с задержкой 1.5 секунды
-2. Если повтор тоже не удался — показать понятное сообщение: "Ошибка сети. Проверьте подключение к интернету и попробуйте ещё раз."
-3. Аналогично для регистрации
+**3. Обновить `src/pages/Profile.tsx`**
+- Убрать `Dialog` + `SellerApplicationForm` — вместо них кнопка "Подать заявку" ведёт на `/seller-application` через `navigate`
+- Убрать кнопку "Войти как продавец" (для авторизованных и неавторизованных)
 
-```tsx
-// В handleSubmit, режим login:
-const isNetworkError = (msg: string) =>
-  msg.includes("Load failed") || msg.includes("Failed to fetch") || msg.includes("NetworkError");
+**4. Обновить `src/components/SellerApplicationForm.tsx`**
+- Добавить поддержку `useDraftState` для всех полей формы
+- После успешной отправки вызывать `clearDraft`
 
-if (mode === "login") {
-  let { error } = await signIn(email, password);
-  
-  // Auto-retry once on network errors
-  if (error && isNetworkError(error.message)) {
-    await new Promise(r => setTimeout(r, 1500));
-    const retry = await signIn(email, password);
-    error = retry.error;
-  }
-  
-  if (error) {
-    if (isNetworkError(error.message)) {
-      toast.error("Ошибка сети. Проверьте интернет и попробуйте ещё раз.");
-    } else if (error.message.includes("Invalid login credentials")) {
-      toast.error("Неверный email или пароль");
-    } else {
-      toast.error("Ошибка входа: " + error.message);
-    }
-  } else {
-    // success...
-  }
-}
-```
+**5. Добавить маршрут** в `src/App.tsx`: `/seller-application` → `SellerApplication`
 
-Аналогичная обработка для `register`.
+### Результат
+- Форма заявки на отдельной странице — не глючит при свайпе
+- Данные сохраняются в localStorage и восстанавливаются при возврате
+- Кнопка "Войти как продавец" удалена
 
-1 файл, ~15 строк изменено.
+5 файлов: 1 новый + 4 изменённых.
 
