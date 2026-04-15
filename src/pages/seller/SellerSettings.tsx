@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -12,7 +12,17 @@ import { ArrowLeft, Camera, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
-import { useDraftState, clearDraft } from "@/hooks/useDraftState";
+
+interface SellerDraft {
+  settingsForm: {
+    name: string; description: string; district: string; village: string;
+    photo_url: string; city: string; street: string; address_details: string; slug: string;
+  };
+  pickupSlots: PickupSlots;
+  maxOrdersPerDay: number;
+  busyDates: string[];
+  vacationDates: string[];
+}
 
 export default function SellerSettings() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -29,12 +39,39 @@ export default function SellerSettings() {
   const [slugError, setSlugError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  useDraftState("seller_settings_draft", settingsForm, setSettingsForm, dataLoaded);
-
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
   const [busyDates, setBusyDates] = useState<Date[]>([]);
   const [vacationDates, setVacationDates] = useState<Date[]>([]);
+
+  const draftKey = user ? `seller_settings_draft_${user.id}` : null;
+
+  // Save full snapshot to localStorage
+  const saveDraft = useCallback(() => {
+    if (!draftKey || !dataLoaded) return;
+    const snapshot: SellerDraft = {
+      settingsForm,
+      pickupSlots,
+      maxOrdersPerDay,
+      busyDates: busyDates.filter(d => !isNaN(d.getTime())).map(d => d.toISOString()),
+      vacationDates: vacationDates.filter(d => !isNaN(d.getTime())).map(d => d.toISOString()),
+    };
+    localStorage.setItem(draftKey, JSON.stringify(snapshot));
+  }, [draftKey, dataLoaded, settingsForm, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
+
+  // Persist on change + pagehide/visibilitychange
+  useEffect(() => {
+    if (!dataLoaded || !draftKey) return;
+    const onHide = () => saveDraft();
+    const onVis = () => { if (document.visibilityState === "hidden") saveDraft(); };
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onVis);
+    saveDraft();
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [saveDraft, dataLoaded, draftKey]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -51,17 +88,23 @@ export default function SellerSettings() {
       if (!farmer) { setIsLoading(false); return; }
 
       setFarmerId(farmer.id);
-      setSettingsForm({
+
+      let form = {
         name: farmer.name,
         description: farmer.description || "",
         district: farmer.district,
         village: farmer.village || "",
         photo_url: farmer.photo_url || "",
-        city: (farmer as any).city || "",
-        street: (farmer as any).street || "",
-        address_details: (farmer as any).address_details || "",
-        slug: (farmer as any).slug || "",
-      });
+        city: farmer.city || "",
+        street: farmer.street || "",
+        address_details: farmer.address_details || "",
+        slug: farmer.slug || "",
+      };
+
+      let slots = DEFAULT_PICKUP_SLOTS;
+      let maxOrders = 5;
+      let busy: Date[] = [];
+      let vacation: Date[] = [];
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -70,11 +113,32 @@ export default function SellerSettings() {
         .maybeSingle();
 
       if (profile) {
-        if (profile.pickup_slots) setPickupSlots(profile.pickup_slots as unknown as PickupSlots);
-        if (profile.max_orders_per_day != null) setMaxOrdersPerDay(profile.max_orders_per_day as number);
-        if (profile.busy_dates) setBusyDates((profile.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00")));
-        if (profile.vacation_dates) setVacationDates((profile.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00")));
+        if (profile.pickup_slots) slots = profile.pickup_slots as unknown as PickupSlots;
+        if (profile.max_orders_per_day != null) maxOrders = profile.max_orders_per_day as number;
+        if (profile.busy_dates) busy = (profile.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
+        if (profile.vacation_dates) vacation = (profile.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
       }
+
+      // Restore draft on top of DB data if exists
+      const key = `seller_settings_draft_${user.id}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const draft: SellerDraft = JSON.parse(saved);
+          if (draft.settingsForm) form = { ...form, ...draft.settingsForm };
+          if (draft.pickupSlots) slots = draft.pickupSlots;
+          if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
+          if (draft.busyDates) busy = draft.busyDates.map(s => new Date(s));
+          if (draft.vacationDates) vacation = draft.vacationDates.map(s => new Date(s));
+        } catch {}
+      }
+
+      setSettingsForm(form);
+      setPickupSlots(slots);
+      setMaxOrdersPerDay(maxOrders);
+      setBusyDates(busy);
+      setVacationDates(vacation);
+
       setIsLoading(false);
       setDataLoaded(true);
     };
@@ -102,7 +166,6 @@ export default function SellerSettings() {
     setIsSaving(true);
 
     try {
-      // Validate slug
       const slug = settingsForm.slug.trim();
       if (slug) {
         if (slug.length < 3) { setSlugError("Минимум 3 символа"); return; }
@@ -145,7 +208,8 @@ export default function SellerSettings() {
 
       if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
 
-      clearDraft("seller_settings_draft");
+      // Clear draft after successful save
+      if (draftKey) localStorage.removeItem(draftKey);
       toast.success("Настройки сохранены");
     } catch (e: any) {
       toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
