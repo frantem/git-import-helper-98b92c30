@@ -39,18 +39,31 @@ interface SellerApplicationFormProps {
   onSuccess?: () => void;
 }
 
+const DRAFT_KEY = "seller-application-draft";
+
+interface DraftState {
+  name: string;
+  phone: string;
+  district: string;
+  village: string;
+  description: string;
+  email: string;
+}
+
 export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps) {
   const { user, signUp } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("+375");
-  const [district, setDistrict] = useState("");
-  const [village, setVillage] = useState("");
-  const [description, setDescription] = useState("");
+  const [draft, setDraft] = useState<DraftState>({
+    name: "",
+    phone: "+375",
+    district: "",
+    village: "",
+    description: "",
+    email: "",
+  });
+  useDraftState(DRAFT_KEY, draft, setDraft);
   
-  // Fields for registration (when user is not logged in)
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   // Load profile data
