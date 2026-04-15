@@ -1,4 +1,4 @@
-import { User, Package, Heart, Settings, ChevronRight, Store, LogOut, Clock, Check, X, Shield } from "lucide-react";
+import { User, Package, Heart, Settings, ChevronRight, LogOut, Clock, X, Shield, Store } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
