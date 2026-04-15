@@ -4,10 +4,8 @@ import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SellerApplicationForm } from "@/components/SellerApplicationForm";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 
 const menuItems = [

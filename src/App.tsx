@@ -21,6 +21,7 @@ import SellerProducts from "./pages/seller/SellerProducts";
 import SellerOrders from "./pages/seller/SellerOrders";
 import SellerSettings from "./pages/seller/SellerSettings";
 import SellerProfile from "./pages/SellerProfile";
+import SellerApplication from "./pages/SellerApplication";
 import Admin from "./pages/Admin";
 import AdminSellers from "./pages/admin/AdminSellers";
 import AdminSellerApplications from "./pages/admin/AdminSellerApplications";
