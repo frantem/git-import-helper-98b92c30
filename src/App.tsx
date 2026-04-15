@@ -21,6 +21,7 @@ import SellerProducts from "./pages/seller/SellerProducts";
 import SellerOrders from "./pages/seller/SellerOrders";
 import SellerSettings from "./pages/seller/SellerSettings";
 import SellerProfile from "./pages/SellerProfile";
+import SellerApplication from "./pages/SellerApplication";
 import Admin from "./pages/Admin";
 import AdminSellers from "./pages/admin/AdminSellers";
 import AdminSellerApplications from "./pages/admin/AdminSellerApplications";
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="/seller/orders" element={<SellerOrders />} />
               <Route path="/seller/settings" element={<SellerSettings />} />
               <Route path="/seller/:id" element={<SellerProfile />} />
+              <Route path="/seller-application" element={<SellerApplication />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/sellers" element={<AdminSellers />} />
