@@ -13,6 +13,9 @@ import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
+const isNetworkError = (msg: string) =>
+  msg.includes("Load failed") || msg.includes("Failed to fetch") || msg.includes("NetworkError");
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialRole = searchParams.get("role") === "seller" ? "seller" : "buyer";
@@ -118,9 +121,16 @@ export default function Auth() {
 
     try {
       if (mode === "login") {
-        const { error } = await signIn(email, password);
+        let { error } = await signIn(email, password);
+        if (error && isNetworkError(error.message)) {
+          await new Promise(r => setTimeout(r, 1500));
+          const retry = await signIn(email, password);
+          error = retry.error;
+        }
         if (error) {
-          if (error.message.includes("Invalid login credentials")) {
+          if (isNetworkError(error.message)) {
+            toast.error("Ошибка сети. Проверьте интернет и попробуйте ещё раз.");
+          } else if (error.message.includes("Invalid login credentials")) {
             toast.error("Неверный email или пароль");
           } else {
             toast.error("Ошибка входа: " + error.message);
@@ -146,9 +156,16 @@ export default function Auth() {
         }
 
         // Always register as buyer - they can apply to become seller later
-        const { error } = await signUp(email, password, "buyer", fullName);
+        let { error } = await signUp(email, password, "buyer", fullName);
+        if (error && isNetworkError(error.message)) {
+          await new Promise(r => setTimeout(r, 1500));
+          const retry = await signUp(email, password, "buyer", fullName);
+          error = retry.error;
+        }
         if (error) {
-          if (error.message.includes("User already registered")) {
+          if (isNetworkError(error.message)) {
+            toast.error("Ошибка сети. Проверьте интернет и попробуйте ещё раз.");
+          } else if (error.message.includes("User already registered")) {
             toast.error("Этот email уже зарегистрирован. Войдите или восстановите пароль.");
           } else {
             toast.error("Ошибка регистрации: " + error.message);
