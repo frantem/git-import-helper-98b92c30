@@ -66,7 +66,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   
   const [password, setPassword] = useState("");
 
-  // Load profile data
+  // Load profile data (only if draft doesn't have them)
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
@@ -78,8 +78,11 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         .single();
       
       if (data) {
-        if (data.full_name) setName(data.full_name);
-        if (data.phone) setPhone(data.phone);
+        setDraft(s => ({
+          ...s,
+          name: s.name || data.full_name || "",
+          phone: s.phone === "+375" ? (data.phone || "+375") : s.phone,
+        }));
       }
     };
     
@@ -99,10 +102,10 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.length < 4) {
-      setPhone("+375");
+      setDraft(s => ({ ...s, phone: "+375" }));
       return;
     }
-    setPhone(formatPhoneNumber(value));
+    setDraft(s => ({ ...s, phone: formatPhoneNumber(value) }));
   };
 
   const validatePhone = (phoneNumber: string) => {
@@ -113,9 +116,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation for non-authenticated users
     if (!user) {
-      if (!email.trim()) {
+      if (!draft.email.trim()) {
         toast.error("Введите email");
         return;
       }
@@ -125,17 +127,17 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       }
     }
 
-    if (!name.trim()) {
+    if (!draft.name.trim()) {
       toast.error("Введите имя");
       return;
     }
 
-    if (!validatePhone(phone)) {
+    if (!validatePhone(draft.phone)) {
       toast.error("Введите корректный номер телефона");
       return;
     }
 
-    if (!district) {
+    if (!draft.district) {
       toast.error("Выберите район");
       return;
     }
@@ -145,9 +147,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     try {
       let userId = user?.id;
 
-      // If not authenticated, register first
       if (!user) {
-        const { error: signUpError } = await signUp(email, password, "buyer", name.trim());
+        const { error: signUpError } = await signUp(draft.email, password, "buyer", draft.name.trim());
         
         if (signUpError) {
           if (signUpError.message.includes("already registered")) {
@@ -158,7 +159,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           return;
         }
 
-        // Get the new user after registration
         const { data: { user: newUser } } = await supabase.auth.getUser();
         if (!newUser) {
           toast.error("Ошибка получения данных пользователя");
@@ -176,11 +176,11 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         .from("seller_applications")
         .insert({
           user_id: userId,
-          name: name.trim(),
-          phone,
-          district,
-          village: village.trim() || null,
-          description: description.trim() || null,
+          name: draft.name.trim(),
+          phone: draft.phone,
+          district: draft.district,
+          village: draft.village.trim() || null,
+          description: draft.description.trim() || null,
         });
 
       if (error) {
@@ -192,8 +192,9 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         return;
       }
 
+      clearDraft(DRAFT_KEY);
+
       if (!user) {
-        // User just registered — needs to confirm email first
         toast.success("Мы отправили письмо на ваш email. Подтвердите email, затем войдите и ваша заявка будет отправлена.");
       } else {
         toast.success("Ваши данные получены, ожидайте звонка менеджера");
@@ -206,9 +207,12 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
   };
 
+  const updateField = (field: keyof DraftState, value: string) => {
+    setDraft(s => ({ ...s, [field]: value }));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Registration fields for non-authenticated users */}
       {!user && (
         <>
           <div className="space-y-2">
@@ -216,8 +220,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
             <Input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={draft.email}
+              onChange={(e) => updateField("email", e.target.value)}
               placeholder="email@example.com"
               required
             />
@@ -243,8 +247,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         <Input
           id="name"
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={draft.name}
+          onChange={(e) => updateField("name", e.target.value)}
           placeholder="Введите ваше имя"
           required
         />
@@ -255,7 +259,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         <Input
           id="phone"
           type="tel"
-          value={phone}
+          value={draft.phone}
           onChange={handlePhoneChange}
           placeholder="+375 (XX) XXX-XX-XX"
           required
@@ -264,7 +268,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
 
       <div className="space-y-2">
         <Label htmlFor="district">Район *</Label>
-        <Select value={district} onValueChange={setDistrict} required>
+        <Select value={draft.district} onValueChange={(v) => updateField("district", v)} required>
           <SelectTrigger>
             <SelectValue placeholder="Выберите район" />
           </SelectTrigger>
@@ -283,8 +287,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         <Input
           id="village"
           type="text"
-          value={village}
-          onChange={(e) => setVillage(e.target.value)}
+          value={draft.village}
+          onChange={(e) => updateField("village", e.target.value)}
           placeholder="Название населённого пункта"
         />
       </div>
@@ -293,8 +297,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         <Label htmlFor="description">Описание деятельности</Label>
         <Textarea
           id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={draft.description}
+          onChange={(e) => updateField("description", e.target.value)}
           placeholder="Расскажите, что вы производите или продаёте"
           rows={3}
         />
