@@ -121,9 +121,16 @@ export default function Auth() {
 
     try {
       if (mode === "login") {
-        const { error } = await signIn(email, password);
+        let { error } = await signIn(email, password);
+        if (error && isNetworkError(error.message)) {
+          await new Promise(r => setTimeout(r, 1500));
+          const retry = await signIn(email, password);
+          error = retry.error;
+        }
         if (error) {
-          if (error.message.includes("Invalid login credentials")) {
+          if (isNetworkError(error.message)) {
+            toast.error("Ошибка сети. Проверьте интернет и попробуйте ещё раз.");
+          } else if (error.message.includes("Invalid login credentials")) {
             toast.error("Неверный email или пароль");
           } else {
             toast.error("Ошибка входа: " + error.message);
