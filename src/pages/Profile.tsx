@@ -30,7 +30,6 @@ export default function Profile() {
   const navigate = useNavigate();
   const [application, setApplication] = useState<SellerApplication | null>(null);
   const [isLoadingApplication, setIsLoadingApplication] = useState(false);
-  const [isLoadingApplication, setIsLoadingApplication] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const { adminPendingCount, sellerPendingCount } = usePendingOrdersCount();
 
