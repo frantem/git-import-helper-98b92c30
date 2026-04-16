@@ -15,6 +15,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/SEO";
+import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 
 let savedAllBlockLimit = 10;
 

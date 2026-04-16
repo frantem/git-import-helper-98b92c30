@@ -13,6 +13,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { SEO } from "@/components/SEO";
+import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 
 export default function Catalog() {
   useScrollRestoration();
