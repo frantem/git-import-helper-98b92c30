@@ -96,7 +96,7 @@ export const ProductCard = memo(function ProductCard({
         {isUUID && onToggleFavorite &&
         <button
           onClick={toggleFavorite}
-          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-colors bg-foreground"
+          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-colors bg-transparent"
           aria-label={isFavorite ? "Удалить из избранного" : "Добавить в избранное"}>
             <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-background")} />
           </button>
