@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@/data/products";
+import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 
 interface DBProduct {
   id: string;
@@ -143,9 +144,12 @@ export default function Favorites() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {favorites.map((product) => (
-              <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} />
-            ))}
+            {(() => {
+              const lpIds = computeLowestPriceIds(favorites);
+              return favorites.map((product) => (
+                <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} isLowestPrice={lpIds.has(product.id)} />
+              ));
+            })()}
           </div>
         )}
       </main>

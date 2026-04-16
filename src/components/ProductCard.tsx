@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { ShoppingCart, Star, Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
@@ -23,6 +22,7 @@ interface ProductCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (productId: string) => void;
   hasRequiredFields?: boolean;
+  isLowestPrice?: boolean;
 }
 
 export const ProductCard = memo(function ProductCard({
@@ -31,6 +31,7 @@ export const ProductCard = memo(function ProductCard({
   isFavorite = false,
   onToggleFavorite,
   hasRequiredFields = false,
+  isLowestPrice = false,
 }: ProductCardProps) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -86,12 +87,6 @@ export const ProductCard = memo(function ProductCard({
           alt={product.name}
           className="h-full w-full transition-transform duration-300 group-hover:scale-105" />
 
-        {product.discount &&
-        <div className="absolute left-2 top-2 rounded-lg px-2 py-0.5 text-xs font-bold text-destructive-foreground bg-[#f26464]">
-            -{product.discount}%
-          </div>
-        }
-
         {product.isNew && !product.discount &&
         <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
             NEW
@@ -101,10 +96,16 @@ export const ProductCard = memo(function ProductCard({
         {isUUID && onToggleFavorite &&
         <button
           onClick={toggleFavorite}
-          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-card/80 backdrop-blur-sm transition-colors hover:bg-card"
+          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-foreground/60 backdrop-blur-sm transition-colors hover:bg-foreground/80"
           aria-label={isFavorite ? "Удалить из избранного" : "Добавить в избранное"}>
-            <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} />
+            <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-primary" : "text-background")} />
           </button>
+        }
+
+        {product.discount &&
+        <div className="absolute left-2 bottom-2 rounded-lg px-2 py-0.5 text-xs font-bold text-destructive-foreground bg-[#f26464]">
+            -{product.discount}%
+          </div>
         }
 
         <button
@@ -116,13 +117,9 @@ export const ProductCard = memo(function ProductCard({
       </div>
 
       <div className="flex flex-1 flex-col p-2.5">
-        <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
-          {product.name}
-        </h3>
-
-        <div className="mt-auto">
+        <div className="mb-1">
           <div className="flex items-baseline gap-1">
-            <span className="text-base font-bold text-foreground">
+            <span className={cn("text-base font-bold", isLowestPrice ? "text-[#f26464]" : "text-foreground")}>
               {priceFormatted.formatted}<BynSymbol />
             </span>
             {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
@@ -133,11 +130,17 @@ export const ProductCard = memo(function ProductCard({
               {oldPriceFormatted.formatted}<BynSymbol />
             </span>
           }
+        </div>
 
+        <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
+          {product.name}
+        </h3>
+
+        <div className="mt-auto">
           {(() => {
             const prep = formatPrepTime(product.prep_time_minutes);
             return (
-              <span className={cn("mt-0.5 block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
+              <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
                 {prep.label}
               </span>
             );

@@ -13,6 +13,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { SEO } from "@/components/SEO";
+import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 
 export default function Catalog() {
   useScrollRestoration();
@@ -34,6 +35,8 @@ export default function Catalog() {
     () => rawProducts.map((p) => transformProduct(p, ratings)),
     [rawProducts, ratings]
   );
+
+  const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
 
   const { filteredProducts, pageTitle, category } = useMemo(() => {
     let filtered = products;
@@ -186,7 +189,7 @@ export default function Catalog() {
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} />
+                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} />
                 ))}
               </div>
             ) : (
