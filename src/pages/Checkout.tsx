@@ -791,10 +791,31 @@ export default function Checkout() {
                 );
                 return (
                   <div key={fid} className="space-y-1">
-                        {groupItems.map((item) =>
-                    <div key={getItemKey(item)} className="flex justify-between items-center py-2 px-3 bg-secondary/30 rounded-lg">
-                            <span className="text-sm text-foreground">{item.product.name} × {item.quantity}</span>
-                            <span className="text-xs text-primary font-medium">{deliveryResult.text}</span>
+                    {groupItems.map((item) =>
+                    <div key={getItemKey(item)} className="py-2 px-3 bg-secondary/30 rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-foreground">
+                                {item.product.name}
+                                {item.variant && <span className="text-muted-foreground"> ({item.variant.label})</span>}
+                                {" "}× {item.quantity}
+                              </span>
+                              <span className="text-xs text-primary font-medium">{deliveryResult.text}</span>
+                            </div>
+                            {item.customFields && item.customFields.length > 0 && (
+                              <div className="mt-0.5 space-y-0.5">
+                                {item.customFields.map((cf, i) => (
+                                  <p key={i} className="text-xs text-muted-foreground">{cf.label}: <span className="font-medium">«{cf.value}»</span></p>
+                                ))}
+                              </div>
+                            )}
+                            {item.addons && item.addons.length > 0 && (
+                              <div className="mt-0.5 space-y-0.5">
+                                {item.addons.map((a, i) => {
+                                  const ap = formatPrice(a.price);
+                                  return <p key={i} className="text-xs text-muted-foreground">+ {a.name}{a.price > 0 && <> ({ap.formatted}<BynSymbol />)</>}</p>;
+                                })}
+                              </div>
+                            )}
                           </div>
                     )}
                       </div>);
@@ -1066,7 +1087,26 @@ export default function Checkout() {
                         {/* Items list */}
                         {groupItems.map((item) =>
                     <div key={getItemKey(item)} className="py-1.5 px-3 bg-secondary/30 rounded-lg">
-                            <p className="text-sm text-foreground">{item.product.name} × {item.quantity}</p>
+                            <p className="text-sm text-foreground">
+                              {item.product.name}
+                              {item.variant && <span className="text-muted-foreground"> ({item.variant.label})</span>}
+                              {" "}× {item.quantity}
+                            </p>
+                            {item.customFields && item.customFields.length > 0 && (
+                              <div className="mt-0.5 space-y-0.5">
+                                {item.customFields.map((cf, i) => (
+                                  <p key={i} className="text-xs text-muted-foreground">{cf.label}: <span className="font-medium">«{cf.value}»</span></p>
+                                ))}
+                              </div>
+                            )}
+                            {item.addons && item.addons.length > 0 && (
+                              <div className="mt-0.5 space-y-0.5">
+                                {item.addons.map((a, i) => {
+                                  const ap = formatPrice(a.price);
+                                  return <p key={i} className="text-xs text-muted-foreground">+ {a.name}{a.price > 0 && <> ({ap.formatted}<BynSymbol />)</>}</p>;
+                                })}
+                              </div>
+                            )}
                           </div>
                     )}
                       </div>);
