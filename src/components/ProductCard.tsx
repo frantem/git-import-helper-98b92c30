@@ -81,36 +81,38 @@ export const ProductCard = memo(function ProductCard({
         className
       )}>
 
-      <div className="relative aspect-square overflow-hidden bg-secondary">
-        <OptimizedImage
-          src={product.image}
-          alt={product.name}
-          className="h-full w-full transition-transform duration-300 group-hover:scale-105" />
+      <div className="relative">
+        <div className="aspect-square overflow-hidden bg-secondary rounded-t-2xl">
+          <OptimizedImage
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full transition-transform duration-300 group-hover:scale-105" />
 
-        {product.isNew && !product.discount &&
-        <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
-            NEW
-          </div>
-        }
+          {product.isNew && !product.discount &&
+          <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
+              NEW
+            </div>
+          }
 
-        {isUUID && onToggleFavorite &&
-        <button
-          onClick={toggleFavorite}
-          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-colors bg-transparent"
-          aria-label={isFavorite ? "Удалить из избранного" : "Добавить в избранное"}>
-            <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-[#9ddc09]" : "text-background")} />
-          </button>
-        }
+          {isUUID && onToggleFavorite &&
+          <button
+            onClick={toggleFavorite}
+            className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-colors bg-transparent"
+            aria-label={isFavorite ? "Удалить из избранного" : "Добавить в избранное"}>
+              <Heart className={cn("h-4 w-4", isFavorite ? "fill-primary text-[#9ddc09]" : "text-background")} />
+            </button>
+          }
 
-        {product.discount &&
-        <div className="absolute left-0 bottom-0 rounded-tr-lg px-1.5 py-0.5 text-[10px] font-bold text-[#ff0044] bg-[#fff0f0]">
-            -{product.discount}%
-          </div>
-        }
+          {product.discount &&
+          <div className="absolute left-0 bottom-0 rounded-tr-lg px-1.5 py-0.5 text-[10px] font-bold text-[#ff0044] bg-[#fff0f0]">
+              -{product.discount}%
+            </div>
+          }
+        </div>
 
         <button
           onClick={handleAddToCart}
-          className="absolute -bottom-2 right-3 flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground transition-colors active:scale-95 bg-[#9ddc09] z-10 shadow-md"
+          className="absolute -bottom-2 right-2 z-50 flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground transition-colors active:scale-95 bg-[#9ddc09] shadow-md"
           aria-label="Добавить в корзину">
           <ShoppingCart className="h-5 w-5" />
         </button>
