@@ -134,7 +134,7 @@ export const ProductCard = memo(function ProductCard({
               {oldPriceFormatted.formatted}<BynSymbol />
             </span>
           }
-
+        </div>
         <div className="mt-auto">
           {(() => {
             const prep = formatPrepTime(product.prep_time_minutes);
