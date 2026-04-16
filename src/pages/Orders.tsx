@@ -82,7 +82,7 @@ export default function Orders() {
         estimated_delivery_time,
         created_at,
         pickup_point:pickup_points(name, address),
-        items:order_items(id, quantity, unit_price, variant_label, product:products(title))
+        items:order_items(id, quantity, unit_price, variant_label, custom_fields, product:products(title))
       `).
     eq("buyer_id", user?.id).
     order("created_at", { ascending: false });
