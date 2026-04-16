@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock } from "lucide-react";
+import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,6 +28,10 @@ interface OrderItem {
   unit_price: number;
   status: string;
   variant_label: string | null;
+  custom_fields: {
+    fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
+    addons?: Array<{ addonId: string; name: string; price: number }>;
+  } | null;
   farmer_id: string;
   product: { title: string } | null;
   farmer: { name: string; user_id: string | null } | null;
@@ -109,6 +114,7 @@ export default function AdminOrders() {
           unit_price,
           status,
           variant_label,
+          custom_fields,
           farmer_id,
           product:products(title),
           farmer:farmers(name, user_id)
@@ -460,20 +466,23 @@ export default function AdminOrders() {
                             {group.items.map(item => {
                               const itemTotal = formatPrice(item.unit_price * item.quantity);
                               return (
-                                <div key={item.id} className="flex items-center justify-between text-sm pl-2">
-                                  <div className="flex items-center gap-1">
-                                    <span className={item.status === "collected" ? "text-success" : "text-muted-foreground"}>
-                                      {item.status === "collected" ? "✓" : "○"}
-                                    </span>
-                                    <span className="text-foreground">
-                                      {item.product?.title}
-                                      {item.variant_label && <span className="text-muted-foreground">({item.variant_label})</span>}
-                                    </span>
-                                    <span className="text-muted-foreground">×{item.quantity}</span>
+                                <div key={item.id}>
+                                  <div className="flex items-center justify-between text-sm pl-2">
+                                    <div className="flex items-center gap-1">
+                                      <span className={item.status === "collected" ? "text-success" : "text-muted-foreground"}>
+                                        {item.status === "collected" ? "✓" : "○"}
+                                      </span>
+                                      <span className="text-foreground">
+                                        {item.product?.title}
+                                        {item.variant_label && <span className="text-muted-foreground">({item.variant_label})</span>}
+                                      </span>
+                                      <span className="text-muted-foreground">×{item.quantity}</span>
+                                    </div>
+                                     <span className="text-muted-foreground whitespace-nowrap">
+                                      = {itemTotal.formatted}<BynSymbol />
+                                     </span>
                                   </div>
-                                   <span className="text-muted-foreground whitespace-nowrap">
-                                    = {itemTotal.formatted}<BynSymbol />
-                                   </span>
+                                  <OrderItemCustomFields customFields={item.custom_fields} className="pl-7 space-y-0.5" />
                                 </div>
                               );
                             })}

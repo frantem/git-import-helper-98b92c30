@@ -37,6 +37,10 @@ interface OrderItemRaw {
   quantity: number;
   unit_price: number;
   farmer_id: string;
+  custom_fields: {
+    fields?: Array<{ label: string; value: string }>;
+    addons?: Array<{ name: string; price: number }>;
+  } | null;
   product: {
     title: string;
     unit: string;
@@ -136,6 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
         quantity,
         unit_price,
         farmer_id,
+        custom_fields,
         product:products(title, unit)
       `,
       )
@@ -148,12 +153,18 @@ const handler = async (req: Request): Promise<Response> => {
     const totalKopecks = order.total_amount % 100;
     const formattedTotal = `${totalRubles} р. ${totalKopecks > 0 ? totalKopecks.toString().padStart(2, "0") + " к." : ""}`;
 
-    const itemsList = items
-      .map((item) => {
-        const priceRub = Math.floor(item.unit_price / 100);
-        return `• ${item.product?.title || "Товар"} — ${item.quantity} ${item.product?.unit || "шт."} × ${priceRub} р.`;
-      })
-      .join("\n");
+    const formatItemDetails = (item: OrderItemRaw) => {
+      let line = `• ${item.product?.title || "Товар"} — ${item.quantity} ${item.product?.unit || "шт."} × ${Math.floor(item.unit_price / 100)} р.`;
+      if (item.custom_fields?.fields?.length) {
+        line += "\n" + item.custom_fields.fields.map(f => `  ${f.label}: ${f.value}`).join("\n");
+      }
+      if (item.custom_fields?.addons?.length) {
+        line += "\n" + item.custom_fields.addons.map(a => `  + ${a.name}${a.price > 0 ? ` (${Math.floor(a.price / 100)} р.)` : ""}`).join("\n");
+      }
+      return line;
+    };
+
+    const itemsList = items.map(formatItemDetails).join("\n");
 
     const buyerName = buyerProfile?.full_name || "Покупатель";
     const buyerPhone = buyerProfile?.phone || "не указан";
@@ -218,12 +229,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (farmerProfile?.email) {
           // Filter items for this farmer
           const farmerItems = items.filter((item) => item.farmer_id === farmer.id);
-          const farmerItemsList = farmerItems
-            .map((item) => {
-              const priceRub = Math.floor(item.unit_price / 100);
-              return `• ${item.product?.title || "Товар"} — ${item.quantity} ${item.product?.unit || "шт."} × ${priceRub} р.`;
-            })
-            .join("\n");
+          const farmerItemsList = farmerItems.map(formatItemDetails).join("\n");
 
           const farmerEmailHtml = `
             <h1>🛒 Новый заказ для вас!</h1>

@@ -9,12 +9,17 @@ import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { Package, Calendar, MapPin, Truck, Store, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
 
 interface OrderItem {
   id: string;
   quantity: number;
   unit_price: number;
   variant_label: string | null;
+  custom_fields: {
+    fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
+    addons?: Array<{ addonId: string; name: string; price: number }>;
+  } | null;
   product: {title: string;} | null;
 }
 
@@ -77,7 +82,7 @@ export default function Orders() {
         estimated_delivery_time,
         created_at,
         pickup_point:pickup_points(name, address),
-        items:order_items(id, quantity, unit_price, variant_label, product:products(title))
+        items:order_items(id, quantity, unit_price, variant_label, custom_fields, product:products(title))
       `).
     eq("buyer_id", user?.id).
     order("created_at", { ascending: false });
@@ -210,14 +215,14 @@ export default function Orders() {
                     const label = item.variant_label ? `${title} (${item.variant_label})` : title;
 
                     return (
-                      <div key={item.id} className="flex justify-between text-sm">
-                            <span className="text-foreground">
-                              {label} × {item.quantity}
-                            </span>
-                            
-
-                        
-                          </div>);
+                      <div key={item.id}>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-foreground">
+                            {label} × {item.quantity}
+                          </span>
+                        </div>
+                        <OrderItemCustomFields customFields={item.custom_fields} />
+                      </div>);
 
                   })}
                     </div>
