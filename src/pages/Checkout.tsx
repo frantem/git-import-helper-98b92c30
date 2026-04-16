@@ -599,7 +599,7 @@ export default function Checkout() {
           unit_price: (item.variant?.price ?? item.product.price) + addonsPrice,
           variant_label: item.variant?.label || null,
           status: "pending",
-          custom_fields: hasData ? JSON.stringify(customFieldsData) : null
+          custom_fields: hasData ? customFieldsData : null
         } as any;
       });
       const {
