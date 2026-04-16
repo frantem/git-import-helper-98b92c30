@@ -35,7 +35,7 @@ export const BottomNavigation = forwardRef<HTMLElement, object>((_props, ref) =>
               <div className="relative">
                 <Icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                 {showBadge && (
-                  <span className="absolute -right-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                  <span className="absolute -right-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-primary-foreground bg-[#9ddc09]">
                     {totalItems > 99 ? "99+" : totalItems}
                   </span>
                 )}
