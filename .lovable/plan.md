@@ -1,33 +1,28 @@
 
 
-## План: Показывать кастомные поля и добавки везде, где отображаются позиции заказа
+## Проблема
 
-### Проблема
-Покупатель выбирает начинку, добавки и другие кастомные поля при заказе. Эти данные сохраняются в `order_items.custom_fields` как JSON, но отображаются только в `/seller/orders`. В остальных местах — не видны.
+`custom_fields` сохраняется в БД через `JSON.stringify()` (Checkout.tsx, строка 602), что превращает объект в строку. Хотя колонка `jsonb`, Supabase возвращает значение как есть — строку JSON внутри JSON. В итоге `OrderItemCustomFields` получает строку `"{\"fields\":[...]}"` вместо объекта, и `.fields` возвращает `undefined`.
 
-### Где нужно добавить отображение
-
-**1. `src/pages/Orders.tsx`** (Мои заказы — покупатель)
-- Добавить `custom_fields` в интерфейс `OrderItem` и в SQL-запрос
-- После названия товара показывать поля и добавки (как в SellerOrders)
-
-**2. `src/pages/admin/AdminOrders.tsx`** (Админ-панель)
-- Добавить `custom_fields` в интерфейс `OrderItem` и в SQL-запрос
-- После строки с товаром показать поля и добавки
-
-**3. `src/pages/Checkout.tsx`** (Оформление заказа — 2 места)
-- В блоках отображения товаров (строки ~796 и ~1069) после `{item.product.name} × {item.quantity}` показать variant, customFields и addons из корзины
-
-**4. `supabase/functions/send-new-order-notification/index.ts`** (Email)
-- Добавить `custom_fields` в запрос order_items
-- В HTML письма после названия товара вывести поля и добавки
-
-### Формат отображения (единый)
+Видно из сетевого ответа:
 ```
-Название товара (вариант) × 2
-  Начинка: Клубника
-  + Глазурь (+1,50 р.)
+"custom_fields": "{\"fields\":[{\"fieldId\":\"70ea21b5-...\",\"label\":\"Тесто\",\"value\":\"Изюм\",\"fieldType\":\"select\"}]}"
 ```
 
-4 файла изменены.
+## Решение
+
+Исправить в одном месте — в компоненте `OrderItemCustomFields.tsx` — добавить автоматический парсинг строки:
+
+**Файл: `src/components/OrderItemCustomFields.tsx`**
+
+В начале компонента перед проверкой `hasFields`/`hasAddons` добавить:
+```typescript
+const parsed: CustomFieldsData | null = typeof customFields === 'string' 
+  ? JSON.parse(customFields) 
+  : customFields ?? null;
+```
+
+И использовать `parsed` вместо `customFields` далее. Это починит отображение во всех местах (AdminOrders, Orders, SellerOrders) одним изменением.
+
+1 файл изменён.
 
