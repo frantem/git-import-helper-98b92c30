@@ -59,6 +59,8 @@ const Index = () => {
     [rawProducts, ratings]
   );
 
+  const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
+
   const ALL_BLOCK_STEP = 10;
   const [allBlockLimit, setAllBlockLimit] = useState(savedAllBlockLimit);
 
@@ -172,7 +174,7 @@ const Index = () => {
               </div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 {blockProductsList.map((product) => (
-                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} />
+                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} />
                 ))}
               </div>
               {hasMoreInAllBlock && (
