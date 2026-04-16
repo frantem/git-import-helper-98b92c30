@@ -112,7 +112,7 @@ export const ProductCard = memo(function ProductCard({
 
         <button
           onClick={handleAddToCart}
-          className="absolute -bottom-2 right-2 z-50 flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground transition-colors active:scale-95 bg-[#9ddc09] shadow-md"
+          className="absolute -bottom-2 right-2 z-50 flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground transition-colors active:scale-95 shadow-md bg-[#bdf31b]"
           aria-label="Добавить в корзину">
           <ShoppingCart className="h-5 w-5" />
         </button>
