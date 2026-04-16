@@ -103,7 +103,7 @@ export const ProductCard = memo(function ProductCard({
         }
 
         {product.discount &&
-        <div className="absolute left-0 bottom-0 rounded-tr-lg px-1.5 py-0.5 text-[10px] font-bold text-[#ea3939] bg-[#fce9e9]">
+        <div className="absolute left-0 bottom-0 rounded-tr-lg px-1.5 py-0.5 text-[10px] font-bold text-[#ff0044] bg-[#fce9e9]">
             -{product.discount}%
           </div>
         }
@@ -119,7 +119,7 @@ export const ProductCard = memo(function ProductCard({
       <div className="flex flex-1 flex-col p-2.5">
         <div className="mb-1">
           <div className="flex items-baseline gap-1">
-            <span className={cn("text-base font-bold", isLowestPrice ? "text-[#f26464]" : "text-foreground")}>
+            <span className={cn("text-base font-bold", isLowestPrice ? "text-[#ff0044]" : "text-foreground")}>
               {priceFormatted.formatted}<BynSymbol />
             </span>
             {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}
