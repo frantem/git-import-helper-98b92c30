@@ -117,7 +117,11 @@ export const ProductCard = memo(function ProductCard({
       </div>
 
       <div className="flex flex-1 flex-col p-2.5">
-        <div className="mb-1">
+        <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
+          {product.name}
+        </h3>
+
+        <div>
           <div className="flex items-baseline gap-1">
             <span className={cn("text-base font-bold", isLowestPrice ? "text-[#ff0044]" : "text-foreground")}>
               {priceFormatted.formatted}<BynSymbol />
@@ -130,11 +134,6 @@ export const ProductCard = memo(function ProductCard({
               {oldPriceFormatted.formatted}<BynSymbol />
             </span>
           }
-        </div>
-
-        <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
-          {product.name}
-        </h3>
 
         <div className="mt-auto">
           {(() => {
