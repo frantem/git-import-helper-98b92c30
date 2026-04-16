@@ -22,12 +22,12 @@ export function OrderItemCustomFields({ customFields, className = "pl-5 space-y-
 
   return (
     <div className={className}>
-      {customFields?.fields?.map((f, i) => (
+      {parsed?.fields?.map((f, i) => (
         <p key={i} className="text-xs text-muted-foreground">
           {f.label}: <span className="font-medium">«{f.value}»</span>
         </p>
       ))}
-      {customFields?.addons?.map((a, i) => {
+      {parsed?.addons?.map((a, i) => {
         const ap = formatPrice(a.price);
         return (
           <p key={i} className="text-xs text-muted-foreground">
