@@ -308,7 +308,7 @@ export default function SellerSettings() {
                     size="sm"
                     className="h-7 px-2 gap-1 text-xs text-muted-foreground"
                     onClick={() => {
-                      navigator.clipboard.writeText(`https://locusfood.by/seller/${settingsForm.slug}`);
+                      navigator.clipboard.writeText(`https://locusfood.by/seller/${settingsForm.slug}?ref=1`);
                       toast.success("Ссылка скопирована");
                     }}
                   >

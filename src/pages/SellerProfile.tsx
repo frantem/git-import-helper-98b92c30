@@ -179,8 +179,11 @@ export default function SellerProfile() {
 
       setFarmer(farmerData);
 
-      localStorage.setItem("referrer_farmer_id", farmerData.id);
-      localStorage.setItem("referrer_farmer_ts", Date.now().toString());
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get("ref")) {
+        localStorage.setItem("referrer_farmer_id", farmerData.id);
+        localStorage.setItem("referrer_farmer_ts", Date.now().toString());
+      }
 
       // Fetch active products
       const { data: productsData } = await supabase
