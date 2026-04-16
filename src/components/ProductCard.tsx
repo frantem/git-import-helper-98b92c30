@@ -103,7 +103,7 @@ export const ProductCard = memo(function ProductCard({
         }
 
         {product.discount &&
-        <div className="absolute left-1.5 bottom-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground bg-[#f26464]">
+        <div className="absolute left-1.5 bottom-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-[#ea3939] bg-[#fce9e9]">
             -{product.discount}%
           </div>
         }
