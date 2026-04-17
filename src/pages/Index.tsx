@@ -167,7 +167,7 @@ const Index = () => {
               <div className="flex items-center justify-between mb-3">
                 <Link
                   to={getBlockLink(block)}
-                  className="text-base font-bold text-foreground hover:text-primary"
+                  className="text-base text-foreground hover:text-primary font-serif font-bold"
                 >
                   {block.emoji && `${block.emoji} `}
                   {block.title}
