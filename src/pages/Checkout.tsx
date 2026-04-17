@@ -704,7 +704,7 @@ export default function Checkout() {
         <BottomNavigation />
       </div>;
   }
-  return <div className="min-h-screen bg-background pb-32 md:pb-0">
+  return <div className="min-h-screen pb-32 md:pb-0 bg-[#faf5ea]">
       <Header />
       
       <main className="container mx-auto px-3 py-4">
