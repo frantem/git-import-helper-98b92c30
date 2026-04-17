@@ -13,13 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2, LayoutGrid, Package, Blocks, X } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2, LayoutGrid, Package, Blocks, X, Upload } from "lucide-react";
+import { compressImage } from "@/lib/imageUtils";
 
 interface Category {
   id: string;
   name: string;
   slug: string;
   emoji: string | null;
+  image_url: string | null;
   sort_order: number | null;
 }
 
@@ -71,9 +73,11 @@ export default function AdminBlocks() {
     name: "",
     slug: "",
     emoji: "",
+    image_url: "",
     seo_title: "",
     seo_description: "",
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
 
   // Block form
@@ -169,6 +173,7 @@ export default function AdminBlocks() {
       name: categoryForm.name,
       slug: categoryForm.slug,
       emoji: categoryForm.emoji || null,
+      image_url: categoryForm.image_url || null,
       seo_title: categoryForm.seo_title || null,
       seo_description: categoryForm.seo_description || null,
     };
@@ -244,6 +249,7 @@ export default function AdminBlocks() {
       name: category.name,
       slug: category.slug,
       emoji: category.emoji || "",
+      image_url: (category as any).image_url || "",
       seo_title: (category as any).seo_title || "",
       seo_description: (category as any).seo_description || "",
     });
@@ -253,7 +259,31 @@ export default function AdminBlocks() {
   const resetCategoryForm = () => {
     setShowCategoryForm(false);
     setEditingCategory(null);
-    setCategoryForm({ name: "", slug: "", emoji: "", seo_title: "", seo_description: "" });
+    setCategoryForm({ name: "", slug: "", emoji: "", image_url: "", seo_title: "", seo_description: "" });
+  };
+
+  const handleUploadCategoryImage = async (file: File) => {
+    setIsUploadingImage(true);
+    try {
+      const compressed = await compressImage(file, 400, 400, 0.85);
+      const ext = compressed.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage
+        .from("category-images")
+        .upload(fileName, compressed, { cacheControl: "3600", upsert: false });
+
+      if (error) {
+        toast.error("Ошибка загрузки: " + error.message);
+        return;
+      }
+      const { data } = supabase.storage.from("category-images").getPublicUrl(fileName);
+      setCategoryForm((prev) => ({ ...prev, image_url: data.publicUrl }));
+      toast.success("Изображение загружено");
+    } catch (e) {
+      toast.error("Не удалось загрузить изображение");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleMoveCategoryUp = async (index: number) => {
@@ -811,12 +841,55 @@ export default function AdminBlocks() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Эмодзи</Label>
+                      <Label>Эмодзи (запасной вариант)</Label>
                       <Input
                         value={categoryForm.emoji}
                         onChange={(e) => setCategoryForm({ ...categoryForm, emoji: e.target.value })}
                         placeholder="🥕"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Круглое изображение категории</Label>
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                          {categoryForm.image_url ? (
+                            <img src={categoryForm.image_url} alt="preview" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-2xl">
+                              {categoryForm.emoji || "📁"}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingImage}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadCategoryImage(file);
+                            }}
+                          />
+                          {categoryForm.image_url && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCategoryForm({ ...categoryForm, image_url: "" })}
+                            >
+                              <X className="h-3 w-3 mr-1" /> Удалить
+                            </Button>
+                          )}
+                          {isUploadingImage && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Загрузка...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Квадратное фото (1:1), будет автоматически обрезано в круг
+                      </p>
                     </div>
                     <div className="border-t pt-4 mt-2">
                       <p className="text-sm font-medium text-muted-foreground mb-3">SEO (необязательно)</p>
@@ -873,7 +946,15 @@ export default function AdminBlocks() {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </div>
-                    <span className="text-2xl">{category.emoji || "📁"}</span>
+                    <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                      {category.image_url ? (
+                        <img src={category.image_url} alt={category.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xl">
+                          {category.emoji || "📁"}
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-foreground">{category.name}</h3>
                       <p className="text-xs text-muted-foreground">{category.slug}</p>

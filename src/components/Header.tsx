@@ -3,8 +3,13 @@ import { useState, forwardRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/contexts/CartContext";
+import { cn } from "@/lib/utils";
 
-export const Header = forwardRef<HTMLElement, object>(function Header(_props, ref) {
+interface HeaderProps {
+  variant?: "default" | "overlay";
+}
+
+export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ variant = "default" }, ref) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { totalItems } = useCart();
@@ -20,23 +25,44 @@ export const Header = forwardRef<HTMLElement, object>(function Header(_props, re
     setSearchQuery("");
   };
 
+  const isOverlay = variant === "overlay";
+
   return (
-    <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+    <header
+      ref={ref}
+      className={cn(
+        "z-50",
+        isOverlay
+          ? "absolute top-0 left-0 right-0 bg-transparent"
+          : "sticky top-0 bg-card border-b border-border shadow-sm"
+      )}
+    >
       <div className="container mx-auto px-3 py-2 flex items-center gap-3">
         <form onSubmit={handleSearch} className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className={cn(
+            "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
+            isOverlay ? "text-foreground/70" : "text-muted-foreground"
+          )} />
           <Input
             type="search"
-            placeholder="Поиск продуктов..."
+            placeholder="Поиск фермерских продуктов..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full rounded-xl pl-10 pr-10 text-sm placeholder:text-muted-foreground focus-visible:ring-primary bg-primary-foreground"
+            className={cn(
+              "h-10 w-full rounded-full pl-10 pr-10 text-sm focus-visible:ring-primary",
+              isOverlay
+                ? "bg-background/70 backdrop-blur-md border-border/40 placeholder:text-foreground/60 shadow-sm"
+                : "bg-primary-foreground placeholder:text-muted-foreground"
+            )}
           />
           {searchQuery && (
             <button
               type="button"
               onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className={cn(
+                "absolute right-3 top-1/2 -translate-y-1/2",
+                isOverlay ? "text-foreground/70 hover:text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
             >
               <X className="h-4 w-4" />
             </button>
@@ -46,7 +72,12 @@ export const Header = forwardRef<HTMLElement, object>(function Header(_props, re
         {/* Cart - desktop only */}
         <Link
           to="/cart"
-          className="relative hidden flex-shrink-0 rounded-full p-2 text-muted-foreground hover:bg-secondary hover:text-foreground md:flex"
+          className={cn(
+            "relative hidden flex-shrink-0 rounded-full p-2 md:flex",
+            isOverlay
+              ? "bg-background/70 backdrop-blur-md text-foreground hover:bg-background/90"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+          )}
         >
           <ShoppingCart className="h-6 w-6" />
           {totalItems > 0 && (

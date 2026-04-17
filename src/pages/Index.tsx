@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { BannerCarousel } from "@/components/BannerCarousel";
+import { CategoryCircles } from "@/components/CategoryCircles";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { Link } from "react-router-dom";
@@ -10,6 +11,7 @@ import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useEffect, useMemo, useState } from "react";
 import { useProducts, useProductRatings, transformProduct, Product } from "@/hooks/useProducts";
 import { useBanners } from "@/hooks/useBanners";
+import { useCategories } from "@/hooks/useCategories";
 import { useHomepageBlocks, HomepageBlock } from "@/hooks/useHomepageBlocks";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
@@ -49,6 +51,7 @@ const Index = () => {
   const productIds = useMemo(() => rawProducts.map((p) => p.id), [rawProducts]);
   const { data: ratings = {} } = useProductRatings(productIds);
   const { data: banners = [], isLoading: isLoadingBanners } = useBanners();
+  const { data: categories = [] } = useCategories();
   const { data: blocksData, isLoading: isLoadingBlocks } = useHomepageBlocks();
 
   const blocks = blocksData?.blocks || [];
@@ -138,11 +141,17 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO jsonLd={homepageJsonLd} />
-      <Header />
 
-      <main className="container mx-auto px-3 py-3 bg-[#faf5ea]">
-        <section className="mb-4">
-          <BannerCarousel banners={banners} />
+      <main className="container mx-auto px-3 pb-3 bg-[#faf5ea]">
+        <section className="relative mb-4 -mx-3 overflow-hidden [&>div>div:nth-child(2)]:rounded-none">
+          <Header variant="overlay" />
+          <div className="[&>div]:!rounded-none">
+            <BannerCarousel banners={banners} />
+          </div>
+        </section>
+
+        <section className="mb-5">
+          <CategoryCircles categories={categories.filter((c) => c.slug !== "sets")} />
         </section>
 
         {blocks.map((block) => {

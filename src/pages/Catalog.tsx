@@ -2,8 +2,9 @@ import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ProductCard } from "@/components/ProductCard";
 import { PageHeader } from "@/components/PageHeader";
+import { CategoryCircles } from "@/components/CategoryCircles";
 import { Link, useSearchParams } from "react-router-dom";
-import { ChevronRight, Heart, Tag, Sparkles } from "lucide-react";
+import { Heart, Tag, Sparkles } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
@@ -161,21 +162,7 @@ export default function Catalog() {
             </div>
 
             <h2 className="text-lg font-bold mb-3">Категории</h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {categories
-                .filter((c) => c.slug !== "sets")
-                .map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={`/catalog?category=${cat.slug}`}
-                    className="flex items-center gap-3 rounded-xl bg-card p-4 hover:bg-secondary transition-colors"
-                  >
-                    <span className="text-2xl">{cat.emoji || "📁"}</span>
-                    <span className="font-medium text-foreground">{cat.name}</span>
-                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
-                  </Link>
-                ))}
-            </div>
+            <CategoryCircles categories={categories.filter((c) => c.slug !== "sets")} />
           </>
         ) : (
           <>
