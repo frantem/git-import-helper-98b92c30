@@ -154,7 +154,7 @@ export default function Catalog() {
               </Link>
               <Link
                 to="/catalog?category=sets"
-                className="flex items-center gap-3 rounded-xl bg-secondary p-4 hover:bg-secondary/80 transition-colors"
+                className="flex items-center gap-3 rounded-xl p-4 transition-colors bg-primary-foreground"
               >
                 <span className="text-2xl">🧺</span>
                 <span className="font-medium text-foreground">Наборы</span>
