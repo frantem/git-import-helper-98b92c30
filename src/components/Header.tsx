@@ -45,7 +45,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
           )} />
           <Input
             type="text"
-            placeholder="Поиск фермерских продуктов..."
+            placeholder="Поиск продуктов..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(
