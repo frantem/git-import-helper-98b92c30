@@ -20,7 +20,8 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
             to={`/catalog?category=${cat.slug}`}
             className="flex flex-shrink-0 flex-col items-center gap-1.5 w-[72px]"
           >
-            <div className="relative h-[72px] w-[72px] overflow-hidden rounded-full border border-border bg-muted shadow-sm">
+            <div className="relative h-[72px] w-[72px] rounded-full p-[2.5px] shadow-sm" style={{ backgroundColor: "#234835" }}>
+              <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-background bg-muted">
               {cat.image_url ? (
                 <OptimizedImage
                   src={cat.image_url}
@@ -32,6 +33,7 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
                   <ImageIcon className="h-6 w-6 text-muted-foreground" />
                 </div>
               )}
+              </div>
             </div>
             <span className="text-center text-[11px] leading-tight text-foreground line-clamp-2">
               {cat.name}
