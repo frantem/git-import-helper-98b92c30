@@ -40,16 +40,16 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
       <div className="container flex items-center py-[4px] px-[4px] mx-0 gap-[4px]">
         <form onSubmit={handleSearch} className="relative flex-1">
           <Search className={cn(
-            "absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2",
-            isOverlay ? "text-white/90" : "text-muted-foreground"
+            "pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2",
+            isOverlay ? "text-white" : "text-muted-foreground"
           )} />
           <Input
-            type="search"
+            type="text"
             placeholder="Поиск фермерских продуктов..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(
-              "h-11 w-full rounded-2xl pl-11 pr-10 text-sm focus-visible:ring-primary",
+              "h-8 w-full rounded-2xl pl-9 pr-9 text-sm focus-visible:ring-primary",
               isOverlay
                 ? "bg-black/45 backdrop-blur-md border-white/10 text-white placeholder:text-white/80 shadow-md"
                 : "bg-primary-foreground placeholder:text-muted-foreground"
