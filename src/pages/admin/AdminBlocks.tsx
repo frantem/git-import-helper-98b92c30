@@ -13,13 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2, LayoutGrid, Package, Blocks, X } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Loader2, LayoutGrid, Package, Blocks, X, Upload } from "lucide-react";
+import { compressImage } from "@/lib/imageUtils";
 
 interface Category {
   id: string;
   name: string;
   slug: string;
   emoji: string | null;
+  image_url: string | null;
   sort_order: number | null;
 }
 
@@ -71,9 +73,11 @@ export default function AdminBlocks() {
     name: "",
     slug: "",
     emoji: "",
+    image_url: "",
     seo_title: "",
     seo_description: "",
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
 
   // Block form
@@ -169,6 +173,7 @@ export default function AdminBlocks() {
       name: categoryForm.name,
       slug: categoryForm.slug,
       emoji: categoryForm.emoji || null,
+      image_url: categoryForm.image_url || null,
       seo_title: categoryForm.seo_title || null,
       seo_description: categoryForm.seo_description || null,
     };
@@ -244,6 +249,7 @@ export default function AdminBlocks() {
       name: category.name,
       slug: category.slug,
       emoji: category.emoji || "",
+      image_url: (category as any).image_url || "",
       seo_title: (category as any).seo_title || "",
       seo_description: (category as any).seo_description || "",
     });
@@ -253,7 +259,31 @@ export default function AdminBlocks() {
   const resetCategoryForm = () => {
     setShowCategoryForm(false);
     setEditingCategory(null);
-    setCategoryForm({ name: "", slug: "", emoji: "", seo_title: "", seo_description: "" });
+    setCategoryForm({ name: "", slug: "", emoji: "", image_url: "", seo_title: "", seo_description: "" });
+  };
+
+  const handleUploadCategoryImage = async (file: File) => {
+    setIsUploadingImage(true);
+    try {
+      const compressed = await compressImage(file, 400, 400, 0.85);
+      const ext = compressed.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage
+        .from("category-images")
+        .upload(fileName, compressed, { cacheControl: "3600", upsert: false });
+
+      if (error) {
+        toast.error("Ошибка загрузки: " + error.message);
+        return;
+      }
+      const { data } = supabase.storage.from("category-images").getPublicUrl(fileName);
+      setCategoryForm((prev) => ({ ...prev, image_url: data.publicUrl }));
+      toast.success("Изображение загружено");
+    } catch (e) {
+      toast.error("Не удалось загрузить изображение");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleMoveCategoryUp = async (index: number) => {
