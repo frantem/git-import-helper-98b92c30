@@ -140,7 +140,7 @@ const Index = () => {
       <SEO jsonLd={homepageJsonLd} />
       <Header />
 
-      <main className="container mx-auto px-3 py-3">
+      <main className="container mx-auto px-3 py-3 bg-[#faf5ea]">
         <section className="mb-4">
           <BannerCarousel banners={banners} />
         </section>
