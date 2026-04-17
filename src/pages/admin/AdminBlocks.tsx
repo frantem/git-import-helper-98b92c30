@@ -841,12 +841,55 @@ export default function AdminBlocks() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Эмодзи</Label>
+                      <Label>Эмодзи (запасной вариант)</Label>
                       <Input
                         value={categoryForm.emoji}
                         onChange={(e) => setCategoryForm({ ...categoryForm, emoji: e.target.value })}
                         placeholder="🥕"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Круглое изображение категории</Label>
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                          {categoryForm.image_url ? (
+                            <img src={categoryForm.image_url} alt="preview" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-2xl">
+                              {categoryForm.emoji || "📁"}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingImage}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadCategoryImage(file);
+                            }}
+                          />
+                          {categoryForm.image_url && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCategoryForm({ ...categoryForm, image_url: "" })}
+                            >
+                              <X className="h-3 w-3 mr-1" /> Удалить
+                            </Button>
+                          )}
+                          {isUploadingImage && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Загрузка...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Квадратное фото (1:1), будет автоматически обрезано в круг
+                      </p>
                     </div>
                     <div className="border-t pt-4 mt-2">
                       <p className="text-sm font-medium text-muted-foreground mb-3">SEO (необязательно)</p>
@@ -903,7 +946,15 @@ export default function AdminBlocks() {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </div>
-                    <span className="text-2xl">{category.emoji || "📁"}</span>
+                    <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                      {category.image_url ? (
+                        <img src={category.image_url} alt={category.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xl">
+                          {category.emoji || "📁"}
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-foreground">{category.name}</h3>
                       <p className="text-xs text-muted-foreground">{category.slug}</p>
