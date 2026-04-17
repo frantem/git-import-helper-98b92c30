@@ -94,7 +94,7 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
           <Link
             key={banner.id}
             to={getBannerLink(banner)}
-            className="relative min-w-full aspect-[16/7] md:aspect-[21/8] cursor-pointer"
+            className="relative min-w-full aspect-[16/8.75] md:aspect-[21/10] cursor-pointer"
           >
             <OptimizedImage
               src={banner.image}
