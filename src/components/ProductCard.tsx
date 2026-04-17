@@ -148,7 +148,7 @@ export const ProductCard = memo(function ProductCard({
           })()}
 
           {showRating &&
-            <div className="mt-1 flex items-center gap-1">
+            <div className="mt-1 flex items-center my-0 mx-0 py-0 px-0 gap-[4px]">
               <Star className="h-3 w-3 fill-accent text-accent" />
               <span className="text-[11px] font-medium text-foreground">{product.rating.toFixed(1)}</span>
               <span className="text-[10px] text-muted-foreground">({product.reviews})</span>
