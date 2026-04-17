@@ -37,11 +37,11 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
           : "sticky top-0 bg-card border-b border-border shadow-sm"
       )}
     >
-      <div className="container mx-auto px-3 py-2 flex items-center gap-3">
+      <div className="container mx-auto px-5 py-3 flex items-center gap-3">
         <form onSubmit={handleSearch} className="relative flex-1">
           <Search className={cn(
-            "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
-            isOverlay ? "text-foreground/70" : "text-muted-foreground"
+            "absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2",
+            isOverlay ? "text-white/90" : "text-muted-foreground"
           )} />
           <Input
             type="search"
@@ -49,9 +49,9 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(
-              "h-10 w-full rounded-full pl-10 pr-10 text-sm focus-visible:ring-primary",
+              "h-11 w-full rounded-2xl pl-11 pr-10 text-sm focus-visible:ring-primary",
               isOverlay
-                ? "bg-background/70 backdrop-blur-md border-border/40 placeholder:text-foreground/60 shadow-sm"
+                ? "bg-black/45 backdrop-blur-md border-white/10 text-white placeholder:text-white/80 shadow-md"
                 : "bg-primary-foreground placeholder:text-muted-foreground"
             )}
           />
@@ -61,7 +61,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
               onClick={clearSearch}
               className={cn(
                 "absolute right-3 top-1/2 -translate-y-1/2",
-                isOverlay ? "text-foreground/70 hover:text-foreground" : "text-muted-foreground hover:text-foreground"
+                isOverlay ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <X className="h-4 w-4" />
