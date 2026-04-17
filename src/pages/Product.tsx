@@ -633,7 +633,7 @@ export default function Product() {
                       {field.options.map(option => <button key={option.id} onClick={() => setCustomFieldValues(prev => ({
                 ...prev,
                 [field.id]: option.label
-              }))} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", customFieldValues[field.id] === option.label ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-foreground border-border hover:bg-secondary/80 hover:border-primary/50")}>
+              }))} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", customFieldValues[field.id] === option.label ? "bg-primary text-primary-foreground border-primary" : "text-foreground border-border hover:border-primary/50 bg-primary-foreground")}>
                           {option.label}
                         </button>)}
                     </div>}
