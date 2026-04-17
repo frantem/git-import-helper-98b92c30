@@ -167,7 +167,7 @@ export default function Catalog() {
                 <Link
                   key={cat.id}
                   to={`/catalog?category=${cat.slug}`}
-                  className="flex items-center gap-3 rounded-xl bg-secondary/50 p-3 hover:bg-secondary transition-colors"
+                  className="flex items-center gap-3 rounded-xl p-3 transition-colors bg-primary-foreground"
                 >
                   <div
                     className="relative h-14 w-14 flex-shrink-0 rounded-full p-[2px]"
