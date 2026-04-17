@@ -539,7 +539,7 @@ export default function Product() {
       />
       <Header />
 
-      <main className="container mx-auto px-4 py-4 md:py-6">
+      <main className="container mx-auto px-4 py-4 md:py-6 bg-[#faf5ea]">
         {/* Mobile back button */}
         <button onClick={handleGoBack} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary md:hidden">
           <ArrowLeft className="h-4 w-4" />
