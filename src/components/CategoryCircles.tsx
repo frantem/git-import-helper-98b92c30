@@ -21,7 +21,7 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
             className="flex flex-shrink-0 flex-col items-center gap-1.5 w-[68px]"
           >
             <div
-              className="relative h-[68px] w-[68px] rounded-full p-[2.4px]"
+              className="relative h-[68px] w-[68px] rounded-full p-[2.4px] px-px py-px my-0"
               style={{ backgroundColor: "#234835" }}
             >
               <div className="relative h-full w-full overflow-hidden rounded-full border-[2.4px] border-[#faf5ea] bg-muted">
