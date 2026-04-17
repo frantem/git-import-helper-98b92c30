@@ -37,7 +37,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
           : "sticky top-0 bg-card border-b border-border shadow-sm"
       )}
     >
-      <div className="container mx-auto px-5 py-3 flex items-center gap-3">
+      <div className="container flex items-center py-[4px] px-[4px] mx-0 gap-[4px]">
         <form onSubmit={handleSearch} className="relative flex-1">
           <Search className={cn(
             "absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2",
