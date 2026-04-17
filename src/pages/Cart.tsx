@@ -264,7 +264,7 @@ export default function Cart() {
       {/* Mobile checkout bar */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card p-3 shadow-lg md:hidden">
         <Button 
-          className="w-full" 
+          className="w-full bg-[#ab5a3f] hover:bg-[#ab5a3f]/90" 
           size="lg"
           onClick={handleCheckout}
           disabled={selectedCount === 0}
