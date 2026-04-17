@@ -33,6 +33,7 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
                   <ImageIcon className="h-6 w-6 text-muted-foreground" />
                 </div>
               )}
+              </div>
             </div>
             <span className="text-center text-[11px] leading-tight text-foreground line-clamp-2">
               {cat.name}
