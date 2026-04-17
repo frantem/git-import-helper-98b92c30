@@ -162,7 +162,31 @@ export default function Catalog() {
             </div>
 
             <h2 className="text-lg font-bold mb-3">Категории</h2>
-            <CategoryCircles categories={categories.filter((c) => c.slug !== "sets")} />
+            <div className="flex flex-col gap-3">
+              {categories.filter((c) => c.slug !== "sets").map((cat) => (
+                <Link
+                  key={cat.id}
+                  to={`/catalog?category=${cat.slug}`}
+                  className="flex items-center gap-3 rounded-xl bg-secondary/50 p-3 hover:bg-secondary transition-colors"
+                >
+                  <div
+                    className="relative h-14 w-14 flex-shrink-0 rounded-full p-[2px]"
+                    style={{ backgroundColor: "#234835" }}
+                  >
+                    <div className="relative h-full w-full overflow-hidden rounded-full border-[2.5px] border-[#faf5ea] bg-muted">
+                      {cat.image_url ? (
+                        <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xl">
+                          {cat.emoji || "📦"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="font-medium text-foreground">{cat.name}</span>
+                </Link>
+              ))}
+            </div>
           </>
         ) : (
           <>
