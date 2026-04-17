@@ -38,7 +38,7 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
                 )}
               </div>
             </div>
-            <span className="text-center text-[11px] leading-tight text-foreground line-clamp-2">
+            <span className="text-center leading-tight text-foreground line-clamp-2 font-medium text-xs">
               {cat.name}
             </span>
           </Link>
