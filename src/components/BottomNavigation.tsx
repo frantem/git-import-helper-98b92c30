@@ -17,7 +17,7 @@ export const BottomNavigation = forwardRef<HTMLElement, object>((_props, ref) =>
 
   return (
     <nav ref={ref} className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card shadow-lg md:hidden">
-      <div className="flex items-center justify-around py-1.5">
+      <div className="flex items-center justify-around py-1.5 bg-[#faf5ea]">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
