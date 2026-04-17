@@ -15,7 +15,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        cart: "bg-accent text-accent-foreground hover:bg-accent/90 font-semibold rounded-lg",
+        cart: "bg-[#224931] text-accent-foreground hover:bg-[#224931]/90 font-semibold rounded-lg",
         buy: "bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg",
       },
       size: {
