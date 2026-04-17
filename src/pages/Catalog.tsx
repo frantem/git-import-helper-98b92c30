@@ -121,7 +121,7 @@ export default function Catalog() {
       />
       <Header />
 
-      <main className="container mx-auto px-4 py-4 md:py-6">
+      <main className="container mx-auto px-4 py-4 md:py-6 bg-[#faf5ea]">
         {showCategories ? (
           <>
             <div className="grid grid-cols-2 gap-3 mb-4">
