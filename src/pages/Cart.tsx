@@ -249,7 +249,7 @@ export default function Cart() {
                 </div>
               </div>
               <Button 
-                className="w-full" 
+                className="w-full bg-[#ab5a3f] hover:bg-[#ab5a3f]/90" 
                 size="lg"
                 onClick={handleCheckout}
                 disabled={selectedCount === 0}
