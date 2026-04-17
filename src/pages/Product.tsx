@@ -563,7 +563,7 @@ export default function Product() {
                 <OptimizedImage src={product.image} alt={product.name} className="h-full w-full" loading="eager" />
               </div>}
 
-            {product.discount && <span className="absolute left-4 top-4 rounded px-3 py-1 text-sm font-bold text-primary-foreground z-10 bg-[#fc4f4f]">
+            {product.discount && <span className="absolute left-4 top-4 rounded px-3 py-1 text-sm font-bold text-primary-foreground z-10 bg-[#ab5a3f]">
                 -{product.discount}%
               </span>}
 
