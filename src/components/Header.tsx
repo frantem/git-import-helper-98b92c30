@@ -30,7 +30,7 @@ export const Header = forwardRef<HTMLElement, object>(function Header(_props, re
             placeholder="Поиск продуктов..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full rounded-xl bg-secondary pl-10 pr-10 text-sm placeholder:text-muted-foreground focus-visible:ring-primary"
+            className="h-10 w-full rounded-xl bg-[#bdf31b] pl-10 pr-10 text-sm placeholder:text-muted-foreground focus-visible:ring-primary"
           />
           {searchQuery && (
             <button
