@@ -143,9 +143,11 @@ const Index = () => {
       <SEO jsonLd={homepageJsonLd} />
 
       <main className="container mx-auto px-3 pb-3 bg-[#faf5ea]">
-        <section className="relative mb-4 -mx-3">
+        <section className="relative mb-4 -mx-3 overflow-hidden [&>div>div:nth-child(2)]:rounded-none">
           <Header variant="overlay" />
-          <BannerCarousel banners={banners} />
+          <div className="[&>div]:!rounded-none">
+            <BannerCarousel banners={banners} />
+          </div>
         </section>
 
         <section className="mb-5">
