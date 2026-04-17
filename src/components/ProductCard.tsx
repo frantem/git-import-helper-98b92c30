@@ -118,7 +118,7 @@ export const ProductCard = memo(function ProductCard({
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col p-2.5">
+      <div className="flex-1 p-2.5 px-[8px] py-[8px] flex flex-col">
         <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
           {product.name}
         </h3>
