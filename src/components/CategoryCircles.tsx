@@ -24,7 +24,7 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
               className="relative h-[68px] w-[68px] rounded-full p-[2.4px]"
               style={{ backgroundColor: "#234835" }}
             >
-              <div className="relative h-full w-full overflow-hidden rounded-full border-[3.1px] border-[#faf5ea] bg-muted mx-0 my-[0.5px]">
+              <div className="relative h-full w-full overflow-hidden rounded-full border-[3.1px] border-[#faf5ea] bg-muted mx-0 my-0">
                 {cat.image_url ? (
                   <OptimizedImage
                     src={cat.image_url}
