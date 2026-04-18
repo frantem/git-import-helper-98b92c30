@@ -156,7 +156,7 @@ export default function AdminBanners() {
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
-    const compressed = await compressImage(file, 1920, 1080);
+    const compressed = await compressImage(file, "banner");
     const fileExt = compressed.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 

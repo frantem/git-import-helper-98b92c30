@@ -121,7 +121,7 @@ export default function SellerProducts() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setUploadingImage(true);
-    const compressed = await compressImage(file, 1200, 1200);
+    const compressed = await compressImage(file, "product");
     const fileExt = compressed.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
     const { error } = await supabase.storage.from('product-images').upload(fileName, compressed);

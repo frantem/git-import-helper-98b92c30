@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -84,11 +85,28 @@ export function useProducts() {
 }
 
 export function useProductRatings(productIds: string[]) {
+  // Defer the network request off the LCP critical path.
+  // Cards render immediately without ratings; stars appear shortly after.
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    if (productIds.length === 0) return;
+    const w = window as any;
+    const schedule = w.requestIdleCallback
+      ? (cb: () => void) => w.requestIdleCallback(cb, { timeout: 1500 })
+      : (cb: () => void) => setTimeout(cb, 600);
+    const handle = schedule(() => setEnabled(true));
+    return () => {
+      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
+      else clearTimeout(handle as any);
+    };
+  }, [productIds.length]);
+
   return useQuery({
     queryKey: ["product-ratings", productIds],
     queryFn: async () => {
       if (productIds.length === 0) return {};
-      
+
       const { data, error } = await supabase
         .from("reviews")
         .select("product_id, rating")
@@ -106,7 +124,7 @@ export function useProductRatings(productIds: string[]) {
       });
       return ratings;
     },
-    enabled: productIds.length > 0,
+    enabled: enabled && productIds.length > 0,
     staleTime: 5 * 60 * 1000,
   });
 }
