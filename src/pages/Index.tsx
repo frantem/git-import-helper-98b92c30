@@ -118,25 +118,8 @@ const Index = () => {
     }
   };
 
-  const isLoading = isLoadingProducts || isLoadingBanners || isLoadingBlocks;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
-        <main className="container mx-auto px-3 py-3">
-          <Skeleton className="mb-4 h-36 w-full rounded-2xl" />
-          {[1, 2, 3].map((i) => (
-            <section key={i} className="mb-5">
-              <Skeleton className="mb-3 h-5 w-40" />
-              <ProductGridSkeleton count={4} />
-            </section>
-          ))}
-        </main>
-        <BottomNavigation />
-      </div>
-    );
-  }
+  const showBannerSkeleton = isLoadingBanners && banners.length === 0;
+  const showBlocksSkeleton = (isLoadingBlocks || isLoadingProducts) && blocks.length === 0;
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
