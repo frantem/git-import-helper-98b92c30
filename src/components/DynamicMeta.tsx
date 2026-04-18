@@ -27,7 +27,7 @@ export function DynamicMeta() {
       if (ogImageRes.data?.value) {
         const ogMeta = document.querySelector("meta[property='og:image']") as HTMLMetaElement;
         if (ogMeta) ogMeta.content = ogImageRes.data.value;
-        
+
         const twitterMeta = document.querySelector("meta[name='twitter:image']") as HTMLMetaElement;
         if (twitterMeta) twitterMeta.content = ogImageRes.data.value;
       }
@@ -46,7 +46,19 @@ export function DynamicMeta() {
       }
     };
 
-    loadMeta();
+    // Defer non-critical meta loading until the browser is idle.
+    const ric: typeof window.requestIdleCallback | undefined = (window as any).requestIdleCallback;
+    const handle = ric
+      ? ric(() => loadMeta(), { timeout: 3000 })
+      : window.setTimeout(loadMeta, 1500);
+
+    return () => {
+      if (ric && (window as any).cancelIdleCallback) {
+        (window as any).cancelIdleCallback(handle);
+      } else {
+        clearTimeout(handle as number);
+      }
+    };
   }, []);
 
   return null;
