@@ -128,12 +128,27 @@ const Index = () => {
       <main className="container mx-auto px-3 pb-3 bg-[#faf5ea]">
         <section className="relative mb-4 overflow-hidden rounded-2xl">
           <Header variant="overlay" />
-          <BannerCarousel banners={banners} />
+          {showBannerSkeleton ? (
+            <Skeleton className="h-36 w-full rounded-2xl" />
+          ) : (
+            <BannerCarousel banners={banners} />
+          )}
         </section>
 
         <section className="mb-5">
           <CategoryCircles categories={categories.filter((c) => c.slug !== "sets")} />
         </section>
+
+        {showBlocksSkeleton && (
+          <>
+            {[1, 2, 3].map((i) => (
+              <section key={i} className="mb-5">
+                <Skeleton className="mb-3 h-5 w-40" />
+                <ProductGridSkeleton count={4} />
+              </section>
+            ))}
+          </>
+        )}
 
         {blocks.map((block) => {
           const blockProductsList = getBlockProducts(block);
@@ -181,7 +196,7 @@ const Index = () => {
           );
         })}
 
-        {products.length === 0 && blocks.length === 0 && (
+        {!isLoadingProducts && !isLoadingBlocks && products.length === 0 && blocks.length === 0 && (
           <div className="py-12 text-center">
             <p className="text-muted-foreground mb-2">Товаров пока нет</p>
             <p className="text-sm text-muted-foreground">Продавцы скоро добавят свои товары</p>
