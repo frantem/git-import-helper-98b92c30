@@ -208,7 +208,7 @@ const Index = () => {
 
       <footer className="border-t border-border py-4 pb-20 md:pb-4">
         <div className="container mx-auto px-3 flex flex-col items-center gap-1 text-[11px] text-muted-foreground">
-          <span>ООО «ЛОКУСФУД»</span>
+          <span className="text-center whitespace-pre-line">УНП: CE6154534{"\n"}+375297399485 Котович Артём Владимирович</span>
           <div className="flex items-center gap-1">
             <span>© 2026 Locus</span>
             <span>·</span>
