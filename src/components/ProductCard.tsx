@@ -125,7 +125,7 @@ export const ProductCard = memo(function ProductCard({
 
         <div>
           <div className="flex items-baseline gap-1">
-            <span className={cn("text-base font-bold", isLowestPrice ? "text-[#ff0044]" : "text-foreground")}>
+            <span className={cn("text-base font-bold", isLowestPrice ? "text-[#ab5a3f]" : "text-foreground")}>
               {priceFormatted.formatted}<BynSymbol />
             </span>
             {product.unit && <span className="text-xs text-muted-foreground">/{product.unit}</span>}

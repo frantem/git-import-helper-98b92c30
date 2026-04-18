@@ -15,12 +15,7 @@ export interface PriceDisplay {
 export function formatPrice(priceInKopecks: number): PriceDisplay {
   const rubles = Math.floor(priceInKopecks / 100);
   const kopecks = priceInKopecks % 100;
-  
-  let formatted = `${rubles}`;
-  if (kopecks > 0) {
-    formatted += `,${kopecks.toString().padStart(2, '0')}`;
-  }
-  
+  const formatted = `${rubles},${kopecks.toString().padStart(2, '0')}`;
   return { rubles, kopecks, formatted };
 }
 
