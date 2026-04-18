@@ -36,7 +36,7 @@ const homepageJsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Котович Артём Владимирович",
+    name: "ООО «ЛОКУСФУД»",
     url: "https://locusfood.by",
     logo: "https://locusfood.by/favicon.ico",
   },
@@ -208,9 +208,7 @@ const Index = () => {
 
       <footer className="border-t border-border py-4 pb-20 md:pb-4">
         <div className="container mx-auto px-3 flex flex-col items-center gap-1 text-[11px] text-muted-foreground">
-          <span>+375297399485</span>
-          <span>Котович Артём Владимирович</span>
-          <span>УНП: CE6154534</span>
+          <span>ООО «ЛОКУСФУД»</span>
           <div className="flex items-center gap-1">
             <span>© 2026 Locus</span>
             <span>·</span>
