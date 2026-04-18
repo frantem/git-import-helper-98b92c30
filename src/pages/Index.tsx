@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/SEO";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 
-let savedAllBlockLimit = 10;
+let savedAllBlockLimit = 6;
 
 const homepageJsonLd = [
   {
