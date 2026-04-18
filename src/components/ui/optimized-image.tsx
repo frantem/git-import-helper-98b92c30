@@ -26,7 +26,7 @@ export const OptimizedImage = memo(function OptimizedImage({
   const [hasError, setHasError] = useState(false);
   
   return (
-    <div className={cn("relative overflow-hidden bg-secondary", className)}>
+    <div className={cn("relative overflow-hidden bg-secondary rounded-[inherit]", className)}>
       {isLoading && (
         <div className="absolute inset-0 animate-pulse bg-muted" />
       )}
