@@ -491,6 +491,11 @@ export default function Product() {
       url: `https://locusfood.by/product/${product.id}`,
       shippingDetails: {
         "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: "0",
+          currency: "BYN",
+        },
         shippingDestination: {
           "@type": "DefinedRegion",
           addressCountry: "BY",
