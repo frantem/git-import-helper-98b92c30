@@ -1,82 +1,73 @@
-## Анализ текущего состояния (что замедляет главную)
+## Проблема
 
-1. **Изображения отдаются Supabase Storage в полном размере без преобразований.** Баннеры до 1920×1080 ~300–500KB, фото категорий до 400×400, а карточки товаров — оригиналы 1200×1200. На мобильном (390px) это в разы больше необходимого. Supabase поддерживает `?width=...&quality=...` через image transformations — можно сократить вес 5–10×.
-2. **Все маршруты импортируются синхронно** в `App.tsx` (Catalog, Checkout, Admin*, Seller*…). Главная грузит JS всех 25 страниц одним бандлом.
-3. **Нет code splitting** в `vite.config.ts` (vendor chunks не разделены).
-4. **Meta Pixel грузится синхронно в `<head>**` — блокирует парсинг.
-5. `**DynamicMeta` делает 3 параллельных запроса к Supabase сразу при загрузке** — favicon/og/verification (значения почти не меняются).
-6. `**useVisitorTracking` пишет в `site_visits` сразу при монтировании** (необязательно для рендера).
-7. **Skeleton показывается, пока не загрузятся ВСЕ три запроса** (`isLoadingProducts || isLoadingBanners || isLoadingBlocks`). Прогрессивный рендер ускорил бы LCP.
-8. `**OptimizedImage` имеет `useState` + двойной `setState` (load/error) на каждой картинке** — на главной это десятки ре-рендеров.
-9. **Префетчинг товара срабатывает на `onTouchStart**` — на мобильном тач = старт сетевого запроса, что мешает скроллу.
+Image Transformations (платная Pro-фича) использовать не будем. Сейчас все картинки идут через `/storage/v1/render/image/` → 400 ошибка → fallback на placeholder. Нужно:
 
-## План изменений
+1. Откатить трансформации, чтобы картинки вернулись.
+2. Найти другие **бесплатные** способы ускорить главную.
 
-### 1. Supabase Image Transformations (главный выигрыш)
+## План
 
-В `OptimizedImage` добавить опциональный пропс `transformWidth` и автоматически переписывать ссылки `*.supabase.co/storage/...` → `/storage/v1/render/image/...?width=W&quality=Q&resize=cover`. Применить:
+### 1. Откатить трансформации (картинки вернутся немедленно)
 
-- **Баннеры**: `width=800, quality=55` (сейчас можно ~300KB → ~50–80KB) — это и есть «снижение качества баннеров на 30%».
-- **Категории**: `width=160, quality=60` (отрисовка 68×68, retina ×2) — резко снижает объём, визуально не заметно.
-- **Карточки товара**: `width=400, quality=70` (мобильная сетка 2-в-ряд).
-- **Hero/первый баннер** дополнительно `fetchPriority="high"`, остальные `lazy`.
+В `src/components/ui/optimized-image.tsx` убрать `buildSupabaseTransform` и `transformWidth`/`quality` логику. Использовать `src` напрямую. Оставить пропсы `transformWidth`/`quality` опциональными (no-op) — чтобы не ломать вызовы в `BannerCarousel`, `CategoryCircles`, `ProductCard`.
 
-### 2. Lazy-loading маршрутов
+### 2. Бесплатные способы ускорения (что остаётся)
 
-В `App.tsx` обернуть `Catalog`, `Product`, `Cart`, `Checkout`, `Profile`, все `Admin*`, все `Seller*`, `Auth`, `Orders`, `Favorites`, `Settings`, `PrivacyPolicy`, `SellerApplication` через `React.lazy` + `<Suspense fallback={null}>`. Главная (`Index`) остаётся eager. Это уменьшит initial JS примерно в 3–5 раз.
+**А. Усилить клиентское сжатие на загрузке** (`src/lib/imageUtils.ts`)
+Сейчас сжатие срабатывает только для файлов > 200 KB. Снизить порог, ужесточить параметры по типу:
 
-### 3. Code-splitting вендоров в Vite
+- **Баннеры** (загружаются в `AdminBanners`): max 1200×600, quality 0.7 → ~80–120 KB вместо 300–500 KB.
+- **Категории** (`AdminBlocks`): max 200×200, quality 0.75 → ~10–20 KB.
+- **Товары** (`SellerProducts`/`AdminProducts`): max 800×800, quality 0.78 → ~80–150 KB.
+Добавить пресеты: `compressImage(file, { preset: 'banner' | 'category' | 'product' | 'avatar' })`.
+Эффект применится к **новым** загрузкам. Для существующих — отдельный пункт ниже.
 
-В `vite.config.ts` добавить `build.rollupOptions.output.manualChunks` — вынести `react`, `react-dom`, `react-router-dom`, `@supabase/supabase-js`, `@tanstack/react-query`, Radix UI в отдельные чанки для лучшего кэширования.
+**Б. Пережать существующие изображения (одноразовый скрипт)**
+В default-режиме запустить Node-скрипт через `code--exec`: скачать все картинки из бакетов `banners`, `category-images`, `product-images`, пережать через `sharp` в WebP с теми же лимитами и перезалить (с тем же путём). Это уберёт текущие тяжёлые JPG/PNG. Полностью бесплатно, делается один раз.
 
-### 4. Отложить аналитику
+**В. Preconnect к Supabase Storage** (`index.html`)
+Добавить:
 
-- **Meta Pixel**: вынести инициализацию в `setTimeout(..., 2000)` либо подгружать после `load`-события — сейчас он блокирует HTML парсинг.
-- **VisitorTracking**: обернуть `setTimeout(..., 1500)` или `requestIdleCallback`, чтобы не конкурировать с критичными запросами.
-- **DynamicMeta**: отложить через `requestIdleCallback` (favicon/og не нужны для первого рендера).
+```html
+<link rel="preconnect" href="https://jxklppwhgmndlivvtxdd.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://jxklppwhgmndlivvtxdd.supabase.co">
+```
 
-### 5. Прогрессивный рендер главной
+Экономит 100–300 мс на первое соединение.
 
-Убрать общий `isLoading` гейт. Показывать секции по мере готовности:
+**Г. Native `loading="lazy"` + `decoding="async"**`
+Уже стоит в `OptimizedImage`. Убедиться, что **первый баннер** имеет `fetchPriority="high"` и `loading="eager"`, а все остальные — `lazy`. Сейчас вроде так и есть, проверю.
 
-- Баннеры → как только есть `banners`
-- Категории → как только `categories`
-- Блоки товаров → как только `blocks` + `products`
-Это улучшит LCP и FCP.
+**Д. Отложить `useProductRatings**`
+Сейчас рейтинги грузятся вторым запросом сразу после `useProducts`. Перенести в `useEffect` с задержкой ~500 мс или `requestIdleCallback` — карточки отрисуются раньше без звёзд, потом подтянутся. Освобождает сеть на критическом пути LCP.
 
-### 6. Минорные оптимизации
+**Е. Уменьшить количество товаров на главной при первой загрузке**
+В блоке "Все товары" сейчас `allBlockLimit=10` дефолт. Это 10 запросов к Storage за картинками одновременно. Снизить дефолт до 6 — пользователь почти не заметит, LCP улучшится.
 
-- В `ProductCard` убрать `onTouchStart={handlePrefetch}` (оставить только `onMouseEnter` для desktop).
-- В `OptimizedImage` убрать внутренний state-skeleton (родитель уже даёт `bg-secondary`); это сократит ре-рендеры. Достаточно нативного `loading="lazy"` + transition.
+### 3. Что НЕ делаем
 
-### 7. Что можно удалить (предложения, без визуальных потерь)
+- Image Transformations — отказ пользователя.
+- WebP via Supabase render — то же самое, платно.
 
-- `**useVisitorTracking**` на главной — убрать (есть Meta Pixel + Google Analytics через GSC). 
-- **Анимация `group-hover:scale-105**` в `ProductCard` — на мобильном её не видно, а лишний transform-слой создаёт композитные слои. удалить.
-- `**useProductRatings` отдельным запросом** — сейчас рейтинги читаются вторым запросом после products. Можно либо вынести в materialized view/RPC, либо отложить (показывать карточки без рейтинга и подгружать после). Здесь предлагаю отложить (`enabled: products.length > 0` + `staleTime` уже есть, но запрос всё равно идёт сразу).
+## Файлы
 
-## Файлы, которые будут изменены
+- `src/components/ui/optimized-image.tsx` — откат трансформаций.
+- `src/lib/imageUtils.ts` — пресеты сжатия.
+- `src/components/AdminBanners.tsx` / `AdminBlocks.tsx` / `SellerProducts.tsx` / `AdminProducts.tsx` — передавать пресет в `compressImage`.
+- `index.html` — preconnect.
+- `src/pages/Index.tsx` — `allBlockLimit` дефолт 6.
+- `src/hooks/useProducts.ts` — отложить `useProductRatings`.
+- **Одноразовый скрипт** (через `code--exec`) — пережать существующие картинки в бакетах через `sharp` → WebP, перезалить.
 
-- `src/components/ui/optimized-image.tsx` — поддержка Supabase render API + упрощение
-- `src/components/BannerCarousel.tsx` — `transformWidth=800`, quality 55
-- `src/components/CategoryCircles.tsx` — `transformWidth=160`
-- `src/components/ProductCard.tsx` — `transformWidth=400`, убрать touch-prefetch и hover-scale
-- `src/App.tsx` — `React.lazy` + `Suspense` для всех роутов кроме Index
-- `src/pages/Index.tsx` — прогрессивный рендер (убрать общий isLoading)
-- `src/components/DynamicMeta.tsx` — `requestIdleCallback`
-- `src/hooks/useVisitorTracking.ts` — отложить через `requestIdleCallback`
-- `index.html` — Meta Pixel `defer` / отложенная инициализация
-- `vite.config.ts` — `manualChunks`
+## Ожидаемый эффект (без Pro)
 
-## Ожидаемый эффект
+- Новые загрузки: −60–80% веса (клиентское сжатие пресетами).
+- Существующие картинки после пережатия: −50–70% веса.
+- LCP: −30–50% (за счёт preconnect, отложенных рейтингов, меньшего числа товаров).
+- В сумме главная станет в **2–3× быстрее** без Pro-плана.
 
-- LCP на мобильном: 3–5× быстрее (главное — image transforms + лениво).
-- Initial JS bundle: −60–70%.
-- Total transferred bytes на главной: с ~2–3 МБ до ~400–700 КБ.
+## Уточнение
 
-## Уточнение перед реализацией
-
-Подтверди два решения по «удалить»:
-
-1. **Hover-scale** карточек убрать?
-2. `**useVisitorTracking**` оставить как есть (просто отложить) или удалить полностью?
+Запускать ли одноразовый скрипт пережатия существующих картинок (пункт Б)? Это даст самый большой эффект, но изменит файлы в Storage (бэкап делать не буду — изначальные останутся под теми же путями, перезапишутся новыми меньшими версиями).  
+  
+Да делать
