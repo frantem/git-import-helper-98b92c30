@@ -265,7 +265,7 @@ export default function AdminBlocks() {
   const handleUploadCategoryImage = async (file: File) => {
     setIsUploadingImage(true);
     try {
-      const compressed = await compressImage(file, 400, 400, 0.85);
+      const compressed = await compressImage(file, "category");
       const ext = compressed.name.split(".").pop() || "jpg";
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await supabase.storage
