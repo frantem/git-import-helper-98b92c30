@@ -75,7 +75,6 @@ export const ProductCard = memo(function ProductCard({
     <Link
       to={`/product/${product.id}`}
       onMouseEnter={handlePrefetch}
-      onTouchStart={handlePrefetch}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md",
         className
@@ -86,7 +85,9 @@ export const ProductCard = memo(function ProductCard({
           <OptimizedImage
             src={product.image}
             alt={product.name}
-            className="h-full w-full transition-transform duration-300 group-hover:scale-105" />
+            transformWidth={400}
+            quality={70}
+            className="h-full w-full" />
 
           {product.isNew && !product.discount &&
           <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
