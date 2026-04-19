@@ -1,73 +1,91 @@
-## Проблема
 
-Image Transformations (платная Pro-фича) использовать не будем. Сейчас все картинки идут через `/storage/v1/render/image/` → 400 ошибка → fallback на placeholder. Нужно:
 
-1. Откатить трансформации, чтобы картинки вернулись.
-2. Найти другие **бесплатные** способы ускорить главную.
+## Что нужно
 
-## План
+В `/admin/orders` добавить три действия в каждом заказе:
+1. **Изменить количество** товара (в строке товара).
+2. **Удалить товар** из заказа.
+3. **Добавить товар по ID** товара.
 
-### 1. Откатить трансформации (картинки вернутся немедленно)
+После любого действия — **пересчитать `orders.total_amount`** в БД (плюс сохранить `delivery_cost`), чтобы продавец и покупатель видели изменения. Без анимаций, минимум UI.
 
-В `src/components/ui/optimized-image.tsx` убрать `buildSupabaseTransform` и `transformWidth`/`quality` логику. Использовать `src` напрямую. Оставить пропсы `transformWidth`/`quality` опциональными (no-op) — чтобы не ломать вызовы в `BannerCarousel`, `CategoryCircles`, `ProductCard`.
+## Реализация
 
-### 2. Бесплатные способы ускорения (что остаётся)
+### 1. UI в `src/pages/admin/AdminOrders.tsx`
 
-**А. Усилить клиентское сжатие на загрузке** (`src/lib/imageUtils.ts`)
-Сейчас сжатие срабатывает только для файлов > 200 KB. Снизить порог, ужесточить параметры по типу:
+В каждой строке товара (внутри блока `group.items.map`) рядом с количеством добавить:
+- поле `<input type="number" min="1">` с текущим `quantity` + кнопка **Сохранить** (появляется только если значение изменилось).
+- кнопка **Удалить** (мусорка) с `AlertDialog` для подтверждения.
 
-- **Баннеры** (загружаются в `AdminBanners`): max 1200×600, quality 0.7 → ~80–120 KB вместо 300–500 KB.
-- **Категории** (`AdminBlocks`): max 200×200, quality 0.75 → ~10–20 KB.
-- **Товары** (`SellerProducts`/`AdminProducts`): max 800×800, quality 0.78 → ~80–150 KB.
-Добавить пресеты: `compressImage(file, { preset: 'banner' | 'category' | 'product' | 'avatar' })`.
-Эффект применится к **новым** загрузкам. Для существующих — отдельный пункт ниже.
+Под списком товаров заказа добавить простую форму:
+- `<input>` для **Product ID** (UUID) + `<input type="number">` для количества + кнопка **Добавить товар**.
 
-**Б. Пережать существующие изображения (одноразовый скрипт)**
-В default-режиме запустить Node-скрипт через `code--exec`: скачать все картинки из бакетов `banners`, `category-images`, `product-images`, пережать через `sharp` в WebP с теми же лимитами и перезалить (с тем же путём). Это уберёт текущие тяжёлые JPG/PNG. Полностью бесплатно, делается один раз.
+### 2. Хелпер пересчёта суммы
 
-**В. Preconnect к Supabase Storage** (`index.html`)
-Добавить:
+Функция `recalcOrderTotal(orderId)`:
+1. Загружает все `order_items` по `order_id` (`unit_price`, `quantity`).
+2. Считает `itemsSum = Σ(unit_price * quantity)`.
+3. Загружает `orders.delivery_cost`.
+4. `UPDATE orders SET total_amount = itemsSum + delivery_cost, updated_at = now() WHERE id = orderId`.
 
-```html
-<link rel="preconnect" href="https://jxklppwhgmndlivvtxdd.supabase.co" crossorigin>
-<link rel="dns-prefetch" href="https://jxklppwhgmndlivvtxdd.supabase.co">
+Вызывается после каждой операции (изменение qty / удаление / добавление).
+
+### 3. Действия
+
+**Изменение количества**
+```ts
+await supabase.from("order_items").update({ quantity: newQty }).eq("id", itemId);
+await recalcOrderTotal(orderId);
+await fetchOrders();
 ```
 
-Экономит 100–300 мс на первое соединение.
+**Удаление товара**
+```ts
+await supabase.from("order_items").delete().eq("id", itemId);
+await recalcOrderTotal(orderId);
+await fetchOrders();
+```
+Если в заказе остаётся 0 товаров — показать `toast.warning`, заказ оставляем (админ может удалить целиком существующей кнопкой).
 
-**Г. Native `loading="lazy"` + `decoding="async"**`
-Уже стоит в `OptimizedImage`. Убедиться, что **первый баннер** имеет `fetchPriority="high"` и `loading="eager"`, а все остальные — `lazy`. Сейчас вроде так и есть, проверю.
+**Добавление товара по ID**
+```ts
+// 1. Получить продукт
+const { data: product } = await supabase
+  .from("products")
+  .select("id, title, price, farmer_id")
+  .eq("id", productId)
+  .single();
+if (!product) return toast.error("Товар не найден");
 
-**Д. Отложить `useProductRatings**`
-Сейчас рейтинги грузятся вторым запросом сразу после `useProducts`. Перенести в `useEffect` с задержкой ~500 мс или `requestIdleCallback` — карточки отрисуются раньше без звёзд, потом подтянутся. Освобождает сеть на критическом пути LCP.
+// 2. Вставить order_item
+await supabase.from("order_items").insert({
+  order_id: orderId,
+  product_id: product.id,
+  farmer_id: product.farmer_id,
+  quantity: qty,
+  unit_price: product.price,
+  status: "pending",
+});
 
-**Е. Уменьшить количество товаров на главной при первой загрузке**
-В блоке "Все товары" сейчас `allBlockLimit=10` дефолт. Это 10 запросов к Storage за картинками одновременно. Снизить дефолт до 6 — пользователь почти не заметит, LCP улучшится.
+// 3. Пересчитать
+await recalcOrderTotal(orderId);
+await fetchOrders();
+```
 
-### 3. Что НЕ делаем
+### 4. Права (RLS — уже OK)
+- `orders` UPDATE: «Admin can update orders» ✓
+- `order_items`: «Admin can manage order items» (ALL) ✓
+- `products` SELECT: публично ✓
 
-- Image Transformations — отказ пользователя.
-- WebP via Supabase render — то же самое, платно.
+Дополнительные миграции **не нужны**.
 
-## Файлы
+### 5. Видимость изменений
+- **Покупатель** (`src/pages/Orders.tsx`) — читает свежие `order_items` при заходе → увидит новое количество/новые товары/удалённые.
+- **Продавец** (`src/pages/seller/SellerOrders.tsx`) — то же самое: читает по `farmer_id`. Если админ добавил товар другого фермера — он появится у того фермера; если изменил qty/удалил — обновится.
+- `orders.total_amount` пересчитан → во всех местах (Profile/Orders/SellerOrders) сумма синхронна.
 
-- `src/components/ui/optimized-image.tsx` — откат трансформаций.
-- `src/lib/imageUtils.ts` — пресеты сжатия.
-- `src/components/AdminBanners.tsx` / `AdminBlocks.tsx` / `SellerProducts.tsx` / `AdminProducts.tsx` — передавать пресет в `compressImage`.
-- `index.html` — preconnect.
-- `src/pages/Index.tsx` — `allBlockLimit` дефолт 6.
-- `src/hooks/useProducts.ts` — отложить `useProductRatings`.
-- **Одноразовый скрипт** (через `code--exec`) — пережать существующие картинки в бакетах через `sharp` → WebP, перезалить.
+### 6. Файлы
+- `src/pages/admin/AdminOrders.tsx` — UI для qty (input + save), delete-item, add-item-by-id, функция `recalcOrderTotal`, локальный state для редактируемых полей.
 
-## Ожидаемый эффект (без Pro)
+Без анимаций, без оптимистичных апдейтов: после каждой операции — `fetchOrders()` для свежих данных.
 
-- Новые загрузки: −60–80% веса (клиентское сжатие пресетами).
-- Существующие картинки после пережатия: −50–70% веса.
-- LCP: −30–50% (за счёт preconnect, отложенных рейтингов, меньшего числа товаров).
-- В сумме главная станет в **2–3× быстрее** без Pro-плана.
-
-## Уточнение
-
-Запускать ли одноразовый скрипт пережатия существующих картинок (пункт Б)? Это даст самый большой эффект, но изменит файлы в Storage (бэкап делать не буду — изначальные останутся под теми же путями, перезапишутся новыми меньшими версиями).  
-  
-Да делать
