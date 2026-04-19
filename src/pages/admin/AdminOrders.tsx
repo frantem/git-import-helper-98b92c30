@@ -5,9 +5,10 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock, Plus, Save } from "lucide-react";
 import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
 import { toast } from "sonner";
 import {
@@ -82,6 +83,8 @@ export default function AdminOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [farmerPhones, setFarmerPhones] = useState<FarmerPhoneMap>(new Map());
+  const [qtyEdits, setQtyEdits] = useState<Record<string, number>>({});
+  const [addProductInputs, setAddProductInputs] = useState<Record<string, { productId: string; qty: number }>>({});
 
   useEffect(() => {
     if (!user || role !== "admin") {
@@ -289,6 +292,124 @@ export default function AdminOrders() {
     setProcessingOrderId(null);
   };
 
+  const recalcOrderTotal = async (orderId: string) => {
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("unit_price, quantity")
+      .eq("order_id", orderId);
+    const { data: order } = await supabase
+      .from("orders")
+      .select("delivery_cost")
+      .eq("id", orderId)
+      .single();
+    const itemsSum = (items || []).reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+    const deliveryCost = order?.delivery_cost || 0;
+    const { error } = await supabase
+      .from("orders")
+      .update({ total_amount: itemsSum + deliveryCost, updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+    if (error) {
+      console.error("recalcOrderTotal error:", error);
+      throw error;
+    }
+  };
+
+  const handleUpdateQuantity = async (orderId: string, itemId: string, newQty: number) => {
+    if (newQty < 1) {
+      toast.error("Количество должно быть не меньше 1");
+      return;
+    }
+    setProcessingOrderId(orderId);
+    try {
+      const { error } = await supabase
+        .from("order_items")
+        .update({ quantity: newQty })
+        .eq("id", itemId);
+      if (error) throw error;
+      await recalcOrderTotal(orderId);
+      toast.success("Количество обновлено");
+      setQtyEdits(prev => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      await fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при обновлении количества");
+    }
+    setProcessingOrderId(null);
+  };
+
+  const handleDeleteItem = async (orderId: string, itemId: string) => {
+    setProcessingOrderId(orderId);
+    try {
+      const { error } = await supabase
+        .from("order_items")
+        .delete()
+        .eq("id", itemId);
+      if (error) throw error;
+      await recalcOrderTotal(orderId);
+      toast.success("Товар удалён из заказа");
+      await fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при удалении товара");
+    }
+    setProcessingOrderId(null);
+  };
+
+  const handleAddItem = async (orderId: string) => {
+    const input = addProductInputs[orderId];
+    if (!input || !input.productId.trim()) {
+      toast.error("Введите ID товара");
+      return;
+    }
+    const qty = input.qty || 1;
+    if (qty < 1) {
+      toast.error("Количество должно быть не меньше 1");
+      return;
+    }
+    setProcessingOrderId(orderId);
+    try {
+      const { data: product, error: prodErr } = await supabase
+        .from("products")
+        .select("id, title, price, farmer_id")
+        .eq("id", input.productId.trim())
+        .maybeSingle();
+      if (prodErr) throw prodErr;
+      if (!product) {
+        toast.error("Товар с таким ID не найден");
+        setProcessingOrderId(null);
+        return;
+      }
+      if (!product.farmer_id) {
+        toast.error("У товара не указан продавец");
+        setProcessingOrderId(null);
+        return;
+      }
+      const { error: insertErr } = await supabase
+        .from("order_items")
+        .insert({
+          order_id: orderId,
+          product_id: product.id,
+          farmer_id: product.farmer_id,
+          quantity: qty,
+          unit_price: product.price,
+          status: "pending",
+        });
+      if (insertErr) throw insertErr;
+      await recalcOrderTotal(orderId);
+      toast.success(`Товар "${product.title}" добавлен`);
+      setAddProductInputs(prev => ({ ...prev, [orderId]: { productId: "", qty: 1 } }));
+      await fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при добавлении товара");
+    }
+    setProcessingOrderId(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
@@ -465,24 +586,76 @@ export default function AdminOrders() {
                             </div>
                             {group.items.map(item => {
                               const itemTotal = formatPrice(item.unit_price * item.quantity);
+                              const editedQty = qtyEdits[item.id];
+                              const currentQty = editedQty ?? item.quantity;
+                              const hasChange = editedQty !== undefined && editedQty !== item.quantity;
                               return (
-                                <div key={item.id}>
-                                  <div className="flex items-center justify-between text-sm pl-2">
-                                    <div className="flex items-center gap-1">
+                                <div key={item.id} className="border-l-2 border-border pl-2 py-1">
+                                  <div className="flex items-center justify-between text-sm gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1 min-w-0 flex-1">
                                       <span className={item.status === "collected" ? "text-success" : "text-muted-foreground"}>
                                         {item.status === "collected" ? "✓" : "○"}
                                       </span>
-                                      <span className="text-foreground">
+                                      <span className="text-foreground truncate">
                                         {item.product?.title}
                                         {item.variant_label && <span className="text-muted-foreground">({item.variant_label})</span>}
                                       </span>
-                                      <span className="text-muted-foreground">×{item.quantity}</span>
                                     </div>
-                                     <span className="text-muted-foreground whitespace-nowrap">
+                                    <span className="text-muted-foreground whitespace-nowrap text-xs">
                                       = {itemTotal.formatted}<BynSymbol />
-                                     </span>
+                                    </span>
                                   </div>
-                                  <OrderItemCustomFields customFields={item.custom_fields} className="pl-7 space-y-0.5" />
+                                  <div className="flex items-center gap-2 mt-1 pl-5">
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      value={currentQty}
+                                      onChange={(e) => {
+                                        const v = parseInt(e.target.value, 10);
+                                        setQtyEdits(prev => ({ ...prev, [item.id]: isNaN(v) ? 1 : v }));
+                                      }}
+                                      className="h-8 w-20 text-sm"
+                                      disabled={isProcessing}
+                                    />
+                                    {hasChange && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleUpdateQuantity(order.id, item.id, currentQty)}
+                                        disabled={isProcessing}
+                                        className="h-8 px-2"
+                                      >
+                                        <Save className="h-3 w-3 mr-1" />
+                                        Сохранить
+                                      </Button>
+                                    )}
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled={isProcessing}
+                                          className="h-8 px-2 ml-auto"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Удалить товар из заказа?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            "{item.product?.title}" будет удалён из заказа. Сумма пересчитается автоматически.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteItem(order.id, item.id)}>
+                                            Удалить
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                  <OrderItemCustomFields customFields={item.custom_fields} className="pl-5 space-y-0.5 mt-1" />
                                 </div>
                               );
                             })}
@@ -490,6 +663,47 @@ export default function AdminOrders() {
                         );
                       });
                     })()}
+
+                    {/* Add product by ID */}
+                    <div className="border-t border-border pt-3 mt-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Добавить товар по ID:</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Input
+                          placeholder="UUID товара"
+                          value={addProductInputs[order.id]?.productId || ""}
+                          onChange={(e) => setAddProductInputs(prev => ({
+                            ...prev,
+                            [order.id]: { productId: e.target.value, qty: prev[order.id]?.qty || 1 }
+                          }))}
+                          className="h-9 flex-1 min-w-[200px] text-xs font-mono"
+                          disabled={isProcessing}
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          placeholder="Кол-во"
+                          value={addProductInputs[order.id]?.qty || 1}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            setAddProductInputs(prev => ({
+                              ...prev,
+                              [order.id]: { productId: prev[order.id]?.productId || "", qty: isNaN(v) ? 1 : v }
+                            }));
+                          }}
+                          className="h-9 w-20"
+                          disabled={isProcessing}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddItem(order.id)}
+                          disabled={isProcessing}
+                          className="h-9"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Добавить
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Action buttons */}
