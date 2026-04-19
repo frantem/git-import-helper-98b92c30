@@ -180,7 +180,7 @@ export function calculateDeliveryTime(
   // Для каждого продавца отслеживаем остаток готовки
   const sellerCarryovers: (CookingCarryover | null)[] = sellerSettings.map(() => null);
 
-  for (let offset = 0; offset < 7; offset++) {
+  for (let offset = 0; offset < 14; offset++) {
     const now = getMinskTime();
     const checkDate = new Date(now);
     checkDate.setDate(checkDate.getDate() + offset);
