@@ -183,9 +183,16 @@ export default function Checkout() {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }, [fastDeliveryResult]);
 
+  // Whether courier delivery has any available date at all
+  const noDeliveryAvailable = useMemo(
+    () => fastDeliveryResult.text === "Нет доступных дат",
+    [fastDeliveryResult]
+  );
+
   // Generate available time slots for selected date (using Minsk time)
   const availableTimeSlots = useMemo(() => {
     if (!selectedDate) return [];
+    if (noDeliveryAvailable) return [];
     const slots: string[] = [];
     const { delivery_start_hour: startHour, delivery_end_hour: endHour } = adminSettings;
 
@@ -195,7 +202,18 @@ export default function Checkout() {
       selectedDate.getMonth() === earliestDeliveryDate.getMonth() &&
       selectedDate.getDate() === earliestDeliveryDate.getDate();
 
-    const minSlotMinutes = isEarliestDate ? fastDeliveryResult.earliestMinutes : startHour * 60;
+    let minSlotMinutes = isEarliestDate ? fastDeliveryResult.earliestMinutes : startHour * 60;
+
+    // Independent guard: if selected date is today (Minsk time), filter out past hours
+    const nowMinsk = getMinskTime();
+    const isToday =
+      selectedDate.getFullYear() === nowMinsk.getFullYear() &&
+      selectedDate.getMonth() === nowMinsk.getMonth() &&
+      selectedDate.getDate() === nowMinsk.getDate();
+    if (isToday) {
+      const currentMinskMinutes = nowMinsk.getHours() * 60 + nowMinsk.getMinutes();
+      minSlotMinutes = Math.max(minSlotMinutes, currentMinskMinutes);
+    }
 
     for (let hour = startHour; hour < endHour && hour < 24; hour++) {
       const slotMinutes = hour * 60;
@@ -204,7 +222,7 @@ export default function Checkout() {
       slots.push(`${hour.toString().padStart(2, "0")}:00–${nextHour.toString().padStart(2, "0")}:00`);
     }
     return slots;
-  }, [selectedDate, adminSettings, fastDeliveryResult, earliestDeliveryDate]);
+  }, [selectedDate, adminSettings, fastDeliveryResult, earliestDeliveryDate, noDeliveryAvailable]);
 
   // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
@@ -921,6 +939,11 @@ export default function Checkout() {
               {/* Calendar - shown only when scheduled mode is selected */}
               {courierDeliveryMode === "scheduled" &&
           <div className="space-y-1">
+                  {noDeliveryAvailable ? (
+                    <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground text-center">
+                      Нет доступных дат для доставки. Попробуйте уменьшить количество товаров или выбрать другой способ доставки.
+                    </div>
+                  ) : (
                   <Popover open={isDateTimePopoverOpen} onOpenChange={setIsDateTimePopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal">
@@ -935,11 +958,24 @@ export default function Checkout() {
                   const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                   if (dateOnly < earliestDeliveryDate) return true;
                   // Block busy/vacation dates of all sellers
-                  return allBlockedDates.some((bd) =>
-                  bd.getFullYear() === date.getFullYear() &&
-                  bd.getMonth() === date.getMonth() &&
-                  bd.getDate() === date.getDate()
-                  );
+                  if (allBlockedDates.some((bd) =>
+                    bd.getFullYear() === date.getFullYear() &&
+                    bd.getMonth() === date.getMonth() &&
+                    bd.getDate() === date.getDate()
+                  )) return true;
+                  // Independent today-check by Minsk time: block today if no future slots remain
+                  const nowMinsk = getMinskTime();
+                  const isToday =
+                    date.getFullYear() === nowMinsk.getFullYear() &&
+                    date.getMonth() === nowMinsk.getMonth() &&
+                    date.getDate() === nowMinsk.getDate();
+                  if (isToday) {
+                    const currentMinskMinutes = nowMinsk.getHours() * 60 + nowMinsk.getMinutes();
+                    const { delivery_start_hour: sH, delivery_end_hour: eH } = adminSettings;
+                    const minStart = Math.max(sH * 60, currentMinskMinutes, fastDeliveryResult.earliestMinutes);
+                    if (minStart >= eH * 60) return true;
+                  }
+                  return false;
                 }} className="pointer-events-auto" locale={ru} />
                       {selectedDate && <div className="p-3 border-t border-border">
                           <Label className="text-sm mb-2 block">Время:</Label>
@@ -956,6 +992,7 @@ export default function Checkout() {
                         </div>}
                     </PopoverContent>
                   </Popover>
+                  )}
                 </div>
           }
 
