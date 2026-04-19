@@ -292,7 +292,125 @@ export default function AdminOrders() {
     setProcessingOrderId(null);
   };
 
-  if (isLoading) {
+  const recalcOrderTotal = async (orderId: string) => {
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("unit_price, quantity")
+      .eq("order_id", orderId);
+    const { data: order } = await supabase
+      .from("orders")
+      .select("delivery_cost")
+      .eq("id", orderId)
+      .single();
+    const itemsSum = (items || []).reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+    const deliveryCost = order?.delivery_cost || 0;
+    const { error } = await supabase
+      .from("orders")
+      .update({ total_amount: itemsSum + deliveryCost, updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+    if (error) {
+      console.error("recalcOrderTotal error:", error);
+      throw error;
+    }
+  };
+
+  const handleUpdateQuantity = async (orderId: string, itemId: string, newQty: number) => {
+    if (newQty < 1) {
+      toast.error("Количество должно быть не меньше 1");
+      return;
+    }
+    setProcessingOrderId(orderId);
+    try {
+      const { error } = await supabase
+        .from("order_items")
+        .update({ quantity: newQty })
+        .eq("id", itemId);
+      if (error) throw error;
+      await recalcOrderTotal(orderId);
+      toast.success("Количество обновлено");
+      setQtyEdits(prev => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      await fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при обновлении количества");
+    }
+    setProcessingOrderId(null);
+  };
+
+  const handleDeleteItem = async (orderId: string, itemId: string) => {
+    setProcessingOrderId(orderId);
+    try {
+      const { error } = await supabase
+        .from("order_items")
+        .delete()
+        .eq("id", itemId);
+      if (error) throw error;
+      await recalcOrderTotal(orderId);
+      toast.success("Товар удалён из заказа");
+      await fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при удалении товара");
+    }
+    setProcessingOrderId(null);
+  };
+
+  const handleAddItem = async (orderId: string) => {
+    const input = addProductInputs[orderId];
+    if (!input || !input.productId.trim()) {
+      toast.error("Введите ID товара");
+      return;
+    }
+    const qty = input.qty || 1;
+    if (qty < 1) {
+      toast.error("Количество должно быть не меньше 1");
+      return;
+    }
+    setProcessingOrderId(orderId);
+    try {
+      const { data: product, error: prodErr } = await supabase
+        .from("products")
+        .select("id, title, price, farmer_id")
+        .eq("id", input.productId.trim())
+        .maybeSingle();
+      if (prodErr) throw prodErr;
+      if (!product) {
+        toast.error("Товар с таким ID не найден");
+        setProcessingOrderId(null);
+        return;
+      }
+      if (!product.farmer_id) {
+        toast.error("У товара не указан продавец");
+        setProcessingOrderId(null);
+        return;
+      }
+      const { error: insertErr } = await supabase
+        .from("order_items")
+        .insert({
+          order_id: orderId,
+          product_id: product.id,
+          farmer_id: product.farmer_id,
+          quantity: qty,
+          unit_price: product.price,
+          status: "pending",
+        });
+      if (insertErr) throw insertErr;
+      await recalcOrderTotal(orderId);
+      toast.success(`Товар "${product.title}" добавлен`);
+      setAddProductInputs(prev => ({ ...prev, [orderId]: { productId: "", qty: 1 } }));
+      await fetchOrders();
+    } catch (err) {
+      console.error(err);
+      toast.error("Ошибка при добавлении товара");
+    }
+    setProcessingOrderId(null);
+  };
+
+
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
         <Header />
