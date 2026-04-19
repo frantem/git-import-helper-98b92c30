@@ -183,9 +183,16 @@ export default function Checkout() {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }, [fastDeliveryResult]);
 
+  // Whether courier delivery has any available date at all
+  const noDeliveryAvailable = useMemo(
+    () => fastDeliveryResult.text === "Нет доступных дат",
+    [fastDeliveryResult]
+  );
+
   // Generate available time slots for selected date (using Minsk time)
   const availableTimeSlots = useMemo(() => {
     if (!selectedDate) return [];
+    if (noDeliveryAvailable) return [];
     const slots: string[] = [];
     const { delivery_start_hour: startHour, delivery_end_hour: endHour } = adminSettings;
 
@@ -195,7 +202,18 @@ export default function Checkout() {
       selectedDate.getMonth() === earliestDeliveryDate.getMonth() &&
       selectedDate.getDate() === earliestDeliveryDate.getDate();
 
-    const minSlotMinutes = isEarliestDate ? fastDeliveryResult.earliestMinutes : startHour * 60;
+    let minSlotMinutes = isEarliestDate ? fastDeliveryResult.earliestMinutes : startHour * 60;
+
+    // Independent guard: if selected date is today (Minsk time), filter out past hours
+    const nowMinsk = getMinskTime();
+    const isToday =
+      selectedDate.getFullYear() === nowMinsk.getFullYear() &&
+      selectedDate.getMonth() === nowMinsk.getMonth() &&
+      selectedDate.getDate() === nowMinsk.getDate();
+    if (isToday) {
+      const currentMinskMinutes = nowMinsk.getHours() * 60 + nowMinsk.getMinutes();
+      minSlotMinutes = Math.max(minSlotMinutes, currentMinskMinutes);
+    }
 
     for (let hour = startHour; hour < endHour && hour < 24; hour++) {
       const slotMinutes = hour * 60;
@@ -204,7 +222,7 @@ export default function Checkout() {
       slots.push(`${hour.toString().padStart(2, "0")}:00–${nextHour.toString().padStart(2, "0")}:00`);
     }
     return slots;
-  }, [selectedDate, adminSettings, fastDeliveryResult, earliestDeliveryDate]);
+  }, [selectedDate, adminSettings, fastDeliveryResult, earliestDeliveryDate, noDeliveryAvailable]);
 
   // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
