@@ -256,6 +256,21 @@ export default function AdminOrders() {
       toast.success(label);
     }
 
+    // Send review request email for ALL delivery types
+    if (order.buyer?.email) {
+      try {
+        const reviewResp = await supabase.functions.invoke("send-review-request", {
+          body: { order_id: order.id },
+        });
+        if (reviewResp.error) {
+          console.error("Review request email error:", reviewResp.error);
+          toast.warning("Письмо с просьбой об отзыве не отправлено");
+        }
+      } catch (err) {
+        console.error("Failed to send review request:", err);
+      }
+    }
+
     fetchOrders();
     setProcessingOrderId(null);
   };
