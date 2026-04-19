@@ -586,24 +586,76 @@ export default function AdminOrders() {
                             </div>
                             {group.items.map(item => {
                               const itemTotal = formatPrice(item.unit_price * item.quantity);
+                              const editedQty = qtyEdits[item.id];
+                              const currentQty = editedQty ?? item.quantity;
+                              const hasChange = editedQty !== undefined && editedQty !== item.quantity;
                               return (
-                                <div key={item.id}>
-                                  <div className="flex items-center justify-between text-sm pl-2">
-                                    <div className="flex items-center gap-1">
+                                <div key={item.id} className="border-l-2 border-border pl-2 py-1">
+                                  <div className="flex items-center justify-between text-sm gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1 min-w-0 flex-1">
                                       <span className={item.status === "collected" ? "text-success" : "text-muted-foreground"}>
                                         {item.status === "collected" ? "✓" : "○"}
                                       </span>
-                                      <span className="text-foreground">
+                                      <span className="text-foreground truncate">
                                         {item.product?.title}
                                         {item.variant_label && <span className="text-muted-foreground">({item.variant_label})</span>}
                                       </span>
-                                      <span className="text-muted-foreground">×{item.quantity}</span>
                                     </div>
-                                     <span className="text-muted-foreground whitespace-nowrap">
+                                    <span className="text-muted-foreground whitespace-nowrap text-xs">
                                       = {itemTotal.formatted}<BynSymbol />
-                                     </span>
+                                    </span>
                                   </div>
-                                  <OrderItemCustomFields customFields={item.custom_fields} className="pl-7 space-y-0.5" />
+                                  <div className="flex items-center gap-2 mt-1 pl-5">
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      value={currentQty}
+                                      onChange={(e) => {
+                                        const v = parseInt(e.target.value, 10);
+                                        setQtyEdits(prev => ({ ...prev, [item.id]: isNaN(v) ? 1 : v }));
+                                      }}
+                                      className="h-8 w-20 text-sm"
+                                      disabled={isProcessing}
+                                    />
+                                    {hasChange && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleUpdateQuantity(order.id, item.id, currentQty)}
+                                        disabled={isProcessing}
+                                        className="h-8 px-2"
+                                      >
+                                        <Save className="h-3 w-3 mr-1" />
+                                        Сохранить
+                                      </Button>
+                                    )}
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled={isProcessing}
+                                          className="h-8 px-2 ml-auto"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Удалить товар из заказа?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            "{item.product?.title}" будет удалён из заказа. Сумма пересчитается автоматически.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteItem(order.id, item.id)}>
+                                            Удалить
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                  <OrderItemCustomFields customFields={item.custom_fields} className="pl-5 space-y-0.5 mt-1" />
                                 </div>
                               );
                             })}
@@ -611,6 +663,47 @@ export default function AdminOrders() {
                         );
                       });
                     })()}
+
+                    {/* Add product by ID */}
+                    <div className="border-t border-border pt-3 mt-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Добавить товар по ID:</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Input
+                          placeholder="UUID товара"
+                          value={addProductInputs[order.id]?.productId || ""}
+                          onChange={(e) => setAddProductInputs(prev => ({
+                            ...prev,
+                            [order.id]: { productId: e.target.value, qty: prev[order.id]?.qty || 1 }
+                          }))}
+                          className="h-9 flex-1 min-w-[200px] text-xs font-mono"
+                          disabled={isProcessing}
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          placeholder="Кол-во"
+                          value={addProductInputs[order.id]?.qty || 1}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            setAddProductInputs(prev => ({
+                              ...prev,
+                              [order.id]: { productId: prev[order.id]?.productId || "", qty: isNaN(v) ? 1 : v }
+                            }));
+                          }}
+                          className="h-9 w-20"
+                          disabled={isProcessing}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddItem(order.id)}
+                          disabled={isProcessing}
+                          className="h-9"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Добавить
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Action buttons */}
