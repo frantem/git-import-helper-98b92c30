@@ -1,91 +1,45 @@
 
+## Проблема
 
-## Что нужно
+Тестовый товар: `prep_time = 2880 мин (48ч)`, окна выдачи продавца Вт–Вс 10:00–17:00 (7ч/день), Пн выкл. Cutoff = 17:00, доставка курьером 17:00–23:00.
 
-В `/admin/orders` добавить три действия в каждом заказе:
-1. **Изменить количество** товара (в строке товара).
-2. **Удалить товар** из заказа.
-3. **Добавить товар по ID** товара.
+Сейчас 19.04.2026 (Вс) 21:35.
 
-После любого действия — **пересчитать `orders.total_amount`** в БД (плюс сохранить `delivery_cost`), чтобы продавец и покупатель видели изменения. Без анимаций, минимум UI.
+### Issue 1 — "Ближайшая доставка": «Нет доступных дат»
 
-## Реализация
+В `src/lib/pickupUtils.ts` функция `calculateDeliveryTime` крутит цикл **только 7 дней** (`offset < 7`). Готовка 48ч не помещается в 6 активных окон по 7ч (= 42ч) за неделю → carryover не завершается → возвращает «Нет доступных дат». При этом `calculatePickupReadyDate` (для самовывоза) крутит **14 дней** и поэтому корректно показывает 28.04.
 
-### 1. UI в `src/pages/admin/AdminOrders.tsx`
+**Фикс:** увеличить горизонт `calculateDeliveryTime` с 7 до 14 дней (как в самовывозе).
 
-В каждой строке товара (внутри блока `group.items.map`) рядом с количеством добавить:
-- поле `<input type="number" min="1">` с текущим `quantity` + кнопка **Сохранить** (появляется только если значение изменилось).
-- кнопка **Удалить** (мусорка) с `AlertDialog` для подтверждения.
+### Issue 2 — «Доставка в указанное время»: можно выбрать прошедшие часы
 
-Под списком товаров заказа добавить простую форму:
-- `<input>` для **Product ID** (UUID) + `<input type="number">` для количества + кнопка **Добавить товар**.
+Цепочка:
 
-### 2. Хелпер пересчёта суммы
+1. `fastDeliveryResult.text` = «Нет доступных дат» → `fastDeliveryResult.earliestMinutes` = `0`.
+2. `earliestDeliveryDate` парсит текст и при неудаче падает на **«сегодня»** → календарь разрешает выбрать сегодня.
+3. `availableTimeSlots` берёт `minSlotMinutes = fastDeliveryResult.earliestMinutes = 0` → показывает все слоты от `delivery_start_hour=17:00` начиная с 17:00 (хотя сейчас уже 21:35).
 
-Функция `recalcOrderTotal(orderId)`:
-1. Загружает все `order_items` по `order_id` (`unit_price`, `quantity`).
-2. Считает `itemsSum = Σ(unit_price * quantity)`.
-3. Загружает `orders.delivery_cost`.
-4. `UPDATE orders SET total_amount = itemsSum + delivery_cost, updated_at = now() WHERE id = orderId`.
+Даже если бы Issue 1 был исправлен, `availableTimeSlots` **не проверяет текущее время Минска** для «сегодня» — полагается только на результат расчёта. Это хрупко.
 
-Вызывается после каждой операции (изменение qty / удаление / добавление).
+**Фикс:**
+- Если `fastDeliveryResult.text === "Нет доступных дат"` → в режиме «Доставка в указанное время» блокировать все даты и показывать сообщение «Нет доступных дат для доставки».
+- В `availableTimeSlots` добавить независимую защиту: если выбранная дата = сегодня (по Минску) → отфильтровать слоты, где `hour*60 ≤ currentMinskMinutes`. Это гарантирует, что прошедшие часы не появятся ни при каких обстоятельствах.
+- В Calendar `disabled` для курьера: дополнительно блокировать «сегодня», если на сегодня нет валидных слотов (`availableTimeSlots` для сегодня пуст).
 
-### 3. Действия
+### Issue 3 — Самовывоз 28.04 16:00–17:00
 
-**Изменение количества**
-```ts
-await supabase.from("order_items").update({ quantity: newQty }).eq("id", itemId);
-await recalcOrderTotal(orderId);
-await fetchOrders();
-```
+Подтверждено пользователем как корректное. Не трогаем.
 
-**Удаление товара**
-```ts
-await supabase.from("order_items").delete().eq("id", itemId);
-await recalcOrderTotal(orderId);
-await fetchOrders();
-```
-Если в заказе остаётся 0 товаров — показать `toast.warning`, заказ оставляем (админ может удалить целиком существующей кнопкой).
+## Файлы
 
-**Добавление товара по ID**
-```ts
-// 1. Получить продукт
-const { data: product } = await supabase
-  .from("products")
-  .select("id, title, price, farmer_id")
-  .eq("id", productId)
-  .single();
-if (!product) return toast.error("Товар не найден");
+- `src/lib/pickupUtils.ts` — `calculateDeliveryTime`: цикл `offset < 14` (вместо 7).
+- `src/pages/Checkout.tsx`:
+  - `availableTimeSlots`: фильтр прошедших часов по Минску для сегодняшней даты.
+  - Calendar `disabled` курьера: учитывать «нет слотов» и «нет доступных дат».
+  - Если `fastDeliveryResult.text === "Нет доступных дат"` — показать предупреждение в блоке «Доставка в указанное время» и не давать открыть календарь (или открывать пустой с сообщением).
 
-// 2. Вставить order_item
-await supabase.from("order_items").insert({
-  order_id: orderId,
-  product_id: product.id,
-  farmer_id: product.farmer_id,
-  quantity: qty,
-  unit_price: product.price,
-  status: "pending",
-});
+## Ожидаемый результат
 
-// 3. Пересчитать
-await recalcOrderTotal(orderId);
-await fetchOrders();
-```
-
-### 4. Права (RLS — уже OK)
-- `orders` UPDATE: «Admin can update orders» ✓
-- `order_items`: «Admin can manage order items» (ALL) ✓
-- `products` SELECT: публично ✓
-
-Дополнительные миграции **не нужны**.
-
-### 5. Видимость изменений
-- **Покупатель** (`src/pages/Orders.tsx`) — читает свежие `order_items` при заходе → увидит новое количество/новые товары/удалённые.
-- **Продавец** (`src/pages/seller/SellerOrders.tsx`) — то же самое: читает по `farmer_id`. Если админ добавил товар другого фермера — он появится у того фермера; если изменил qty/удалил — обновится.
-- `orders.total_amount` пересчитан → во всех местах (Profile/Orders/SellerOrders) сумма синхронна.
-
-### 6. Файлы
-- `src/pages/admin/AdminOrders.tsx` — UI для qty (input + save), delete-item, add-item-by-id, функция `recalcOrderTotal`, локальный state для редактируемых полей.
-
-Без анимаций, без оптимистичных апдейтов: после каждой операции — `fetchOrders()` для свежих данных.
-
+- Курьер «Ближайшая доставка» для долгого prep_time (48ч+) посчитает корректную дату в пределах 14 дней (например, ~22.04 18:10–19:10 после исчерпания окон).
+- В «Доставка в указанное время» нельзя выбрать прошедший час «сегодня»; если расчёт невозможен — показывается понятное сообщение, а не битый список.
+- Самовывоз остаётся как есть.
