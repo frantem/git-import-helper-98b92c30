@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.send-seller-application-notification]
 verify_jwt = false
+
+[functions.send-review-request]
+verify_jwt = false
