@@ -1,78 +1,96 @@
 
-## Что нужно
 
-При нажатии «Доставлен» в `/admin/orders` отправлять покупателю письмо со ссылками на товары для отзыва. Сейчас есть похожая функция `send-delivery-notification` (для пункта выдачи) — сделаем по тому же паттерну отдельную функцию `send-review-request`.
+## Проблема
 
-## Анализ
+### 1. «Вариант страницы с тегом canonical» (`/catalog?category=meat`)
 
-- В `AdminOrders.tsx` уже есть обработчик смены статуса. При `status='delivered'` для `delivery_type='pickup'` уже вызывается `send-delivery-notification`. Новое письмо нужно слать **для всех типов доставки** (доставка на дом, пункт выдачи, самовывоз) при переходе в `delivered` (или `issued` — это тот же статус в БД).
-- Email берём из `profiles.email` с fallback на `auth.admin.getUserById` (как в существующей функции).
-- Имя — из `profiles.full_name`, fallback «уважаемый клиент».
-- Товары — `order_items` → `products(id, title, slug)`. Ссылка: `https://locusfood.by/product/{slug || id}`.
-- Telegram-ссылка для +375297399485: `https://t.me/+375297399485`. Viber: `viber://chat?number=%2B375297399485`. Телефон оставить как `tel:` ссылку.
+Сейчас в `SEO.tsx`:
+```ts
+const pageCanonical = canonical || `${DOMAIN}${window.location.pathname}`;
+```
+`window.location.pathname` для `/catalog?category=meat` = `/catalog` → canonical = `https://locusfood.by/catalog`.  
+Но в `sitemap.xml` мы при этом отдаём `https://locusfood.by/catalog?category=meat` как самостоятельный URL. Google заходит, видит canonical, указывающий на `/catalog`, и помечает: «страница не индексируется, есть canonical-вариант». Конфликт sitemap ↔ canonical.
+
+**Решение:** canonical для страниц категорий должен совпадать с URL в sitemap — `https://locusfood.by/catalog?category={slug}`. То же самое для `?discount=true` и `?new=true`. А для страниц поиска (`?search=`) и других query-вариантов — наоборот, явно указывать canonical на чистый `/catalog`, плюс ставить `noindex` (поиск индексировать не нужно).
+
+### 2. «Страница с переадресацией» (`http://locusfood.by/`)
+
+Это нормальное поведение HTTP→HTTPS-редиректа на сервере, и Google так и должен его обрабатывать. Эта запись в Search Console — **не ошибка**, а информационный отчёт. Решение — убедиться, что:
+- В `sitemap.xml` все URL только с `https://` ✓ (уже так).
+- В `robots.txt` ссылка на sitemap с `https://` ✓.
+- Все внутренние og/canonical ссылки тоже с `https://` ✓.
+
+Реальное действие: ничего менять не нужно, но добавим **HSTS-намёк через canonical и og:url** (всегда https) — уже есть. Дополнительно явно сообщим Google через canonical, что главная — `https://locusfood.by/` (сейчас canonical правильный — `https://locusfood.by/`, проблема в том, что Google проверяет `http://` версию и видит редирект; это ожидаемо и со временем исчезнет из отчёта).
+
+Если есть желание — можем добавить запрос **«валидировать исправление»** в Search Console после обновления canonical для категорий: Google перепроверит и снимет уведомление о редиректе для главной.
 
 ## Реализация
 
-### 1. Новая Edge Function `supabase/functions/send-review-request/index.ts`
+### Файл: `src/pages/Catalog.tsx`
 
-По паттерну `send-delivery-notification`:
-- CORS, проверка JWT админа через `user_roles`.
-- Принимает `{ order_id }`.
-- Service role: грузит `orders` → `buyer_id`, `order_items(product_id, products(title, slug, id))`.
-- Грузит email и `full_name` покупателя (profiles + fallback на auth).
-- Формирует HTML со списком товаров (нумерованный или маркированный список ссылок).
-- Отправляет через Resend: `from = SENDER_EMAIL` или `Locus <info@locusfood.by>`, тема: «Спасибо за заказ! Поделитесь впечатлениями».
-- Subject и текст — на русском, точно по тексту пользователя.
+В блоке `seoData` для каждой ветки добавить явный `canonical`:
 
-### 2. `supabase/config.toml`
-Добавить:
-```toml
-[functions.send-review-request]
-verify_jwt = false
-```
-(JWT проверяется внутри функции, как в `send-delivery-notification`.)
-
-### 3. `src/pages/admin/AdminOrders.tsx`
-В обработчике смены статуса (там, где сейчас вызывается `send-delivery-notification`):
-- При переходе на `delivered` **дополнительно** инвокать `send-review-request` с `{ order_id }` для **любого** `delivery_type`.
-- Существующий вызов `send-delivery-notification` для pickup оставить как есть.
-- Ошибки письма не должны блокировать смену статуса (try/catch + toast warning).
-
-### 4. Шаблон письма (HTML)
-
-```
-Здравствуйте, {Имя}!
-
-Большое спасибо, что выбрали натуральные продукты наших мастеров!
-Ваша обратная связь помогает мастерам становиться лучше, а другим
-жителям Витебска — выбирать самое вкусное.
-
-Будем очень благодарны, если Вы оставите отзыв о каждом товаре
-по ссылкам ниже:
-1. {Название 1} — оставить отзыв: {ссылка}
-2. {Название 2} — оставить отзыв: {ссылка}
-...
-
-Если что-то в доставке или качестве продуктов было не так —
-пожалуйста, напишите или позвоните:
-+375 29 739-94-85 (Артём, Telegram, Viber)
-
-Мы за честный сервис и всегда готовы исправить ошибки.
-
-С уважением и благодарностью,
-locusfood.by
+```ts
+if (categoryFilter && category) {
+  return {
+    title: ...,
+    description: ...,
+    keywords: ...,
+    jsonLd,
+    canonical: `https://locusfood.by/catalog?category=${category.slug}`,
+  };
+}
+if (discountFilter) {
+  return {
+    title: ...,
+    description: ...,
+    canonical: "https://locusfood.by/catalog?discount=true",
+  };
+}
+if (newFilter) {
+  return {
+    title: ...,
+    description: ...,
+    canonical: "https://locusfood.by/catalog?new=true",
+  };
+}
+if (searchQuery) {
+  return {
+    title: ...,
+    description: ...,
+    canonical: "https://locusfood.by/catalog",
+    noindex: true, // поиск не индексируем
+  };
+}
+return {
+  title: ...,
+  description: ...,
+  canonical: "https://locusfood.by/catalog",
+};
 ```
 
-В стиле существующих писем (белый фон, простая типографика, без сложной вёрстки).
+И передать `canonical` и `noindex` в `<SEO />`.
+
+### Файл: `src/components/SEO.tsx`
+
+1. Добавить новый проп `noindex?: boolean`.
+2. Если `noindex === true` — поставить `<meta name="robots" content="noindex, follow">`, иначе убрать.
+3. Логика canonical уже работает корректно — она использует переданное значение (`canonical` имеет приоритет над `pathname`). Изменений не требуется, кроме добавления `noindex`.
+
+### Что не трогаем
+
+- `supabase/functions/sitemap/index.ts` — URLs категорий с `?category=slug` остаются (теперь они согласованы с canonical).
+- `public/robots.txt` — уже корректный.
+- Никаких изменений на серверной стороне (HTTP→HTTPS редирект обрабатывается nginx и работает правильно).
+
+## После деплоя
+
+1. Открыть Google Search Console.
+2. В отчёте «Вариант страницы с тегом canonical» нажать **«Проверить исправление»** для `/catalog?category=meat` — Google перепроверит и страницы пойдут в индекс.
+3. Отчёт «Страница с переадресацией» для `http://locusfood.by/` — это информационное сообщение, не блокирует индексацию `https://locusfood.by/`. Можно тоже нажать «Проверить» — он уберёт запись после повторного сканирования.
 
 ## Файлы
 
-- **Создать**: `supabase/functions/send-review-request/index.ts`
-- **Изменить**: `supabase/config.toml` (добавить блок функции)
-- **Изменить**: `src/pages/admin/AdminOrders.tsx` (вызов после установки статуса `delivered`)
+- `src/pages/Catalog.tsx` — добавить `canonical` и (для поиска) `noindex` в `seoData`.
+- `src/components/SEO.tsx` — поддержка пропа `noindex`.
 
-## Уточнения / решения
-
-- Письмо отправляется при переходе `status → delivered` **для всех типов доставки** (доставка на дом, пункт выдачи, самовывоз/«выдан»). Если хочешь только для конкретных типов — скажи.
-- При повторном клике «Доставлен» (если статус уже delivered) письмо не отправляем повторно — обработчик и так проверяет, что новый статус ≠ старый.
-- Используем `slug` товара если есть, иначе `id` для URL.
