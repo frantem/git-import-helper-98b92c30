@@ -478,6 +478,7 @@ export default function Product() {
     "@type": "Product",
     name: product.name,
     sku: product.id,
+    mpn: product.id,
     productID: product.id,
     category: product.category || undefined,
     description: product.description || undefined,
@@ -492,6 +493,7 @@ export default function Product() {
       priceCurrency: "BYN",
       availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: `https://locusfood.by/product/${product.id}`,
+      priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       shippingDetails: {
         "@type": "OfferShippingDetails",
         shippingRate: {
@@ -502,17 +504,19 @@ export default function Product() {
         shippingDestination: {
           "@type": "DefinedRegion",
           addressCountry: "BY",
+          addressRegion: "Витебск",
         },
         deliveryTime: {
           "@type": "ShippingDeliveryTime",
-          handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "d" },
-          transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "d" },
+          handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
+          transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 2, unitCode: "DAY" },
         },
       },
       hasMerchantReturnPolicy: {
         "@type": "MerchantReturnPolicy",
         applicableCountry: "BY",
         returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+        merchantReturnLink: "https://locusfood.by/privacy-policy",
       },
     },
     ...(displayRating && displayReviewCount > 0 ? {
