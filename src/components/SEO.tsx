@@ -8,6 +8,7 @@ interface SEOProps {
   ogType?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   keywords?: string;
+  noindex?: boolean;
 }
 
 const DOMAIN = "https://locusfood.by";
@@ -66,6 +67,20 @@ function setJsonLd(data: Record<string, unknown> | Record<string, unknown>[] | u
   }
 }
 
+function setRobots(noindex: boolean) {
+  let el = document.querySelector("meta[name='robots']") as HTMLMetaElement | null;
+  if (noindex) {
+    if (!el) {
+      el = document.createElement("meta");
+      el.name = "robots";
+      document.head.appendChild(el);
+    }
+    el.content = "noindex, follow";
+  } else if (el) {
+    el.remove();
+  }
+}
+
 export function SEO({
   title,
   description,
@@ -74,6 +89,7 @@ export function SEO({
   ogType = "website",
   jsonLd,
   keywords,
+  noindex,
 }: SEOProps) {
   useEffect(() => {
     const pageTitle = title || DEFAULT_TITLE;
@@ -101,6 +117,7 @@ export function SEO({
 
     setCanonical(pageCanonical);
     setJsonLd(jsonLd);
+    setRobots(!!noindex);
 
     return () => {
       document.title = DEFAULT_TITLE;
@@ -108,8 +125,9 @@ export function SEO({
       setMeta("og:title", DEFAULT_TITLE);
       setMeta("og:description", DEFAULT_DESCRIPTION);
       setJsonLd(undefined);
+      setRobots(false);
     };
-  }, [title, description, image, canonical, ogType, jsonLd, keywords]);
+  }, [title, description, image, canonical, ogType, jsonLd, keywords, noindex]);
 
   return null;
 }
