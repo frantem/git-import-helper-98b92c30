@@ -1,96 +1,62 @@
 
 
-## Проблема
+## Что показывает Search Console
 
-### 1. «Вариант страницы с тегом canonical» (`/catalog?category=meat`)
+Это **не ошибка индексации**, а предупреждение типа «Missing field» (рекомендуемые, но не обязательные поля) в разделе **Описания товара (Product snippets)**. Страница индексируется нормально, но без `aggregateRating` и `review` Google не показывает звёздочки в выдаче.
 
-Сейчас в `SEO.tsx`:
-```ts
-const pageCanonical = canonical || `${DOMAIN}${window.location.pathname}`;
-```
-`window.location.pathname` для `/catalog?category=meat` = `/catalog` → canonical = `https://locusfood.by/catalog`.  
-Но в `sitemap.xml` мы при этом отдаём `https://locusfood.by/catalog?category=meat` как самостоятельный URL. Google заходит, видит canonical, указывающий на `/catalog`, и помечает: «страница не индексируется, есть canonical-вариант». Конфликт sitemap ↔ canonical.
+Проверка БД:
+- Товар «Сулугуни» (`b375cc9c…`) — **0 отзывов** → schema корректно их не содержит → Google ругается.
+- Всего 110 активных товаров, отзывы есть только у **25**. У остальных 85 будет та же запись в Search Console.
 
-**Решение:** canonical для страниц категорий должен совпадать с URL в sitemap — `https://locusfood.by/catalog?category={slug}`. То же самое для `?discount=true` и `?new=true`. А для страниц поиска (`?search=`) и других query-вариантов — наоборот, явно указывать canonical на чистый `/catalog`, плюс ставить `noindex` (поиск индексировать не нужно).
+## Варианты решения
 
-### 2. «Страница с переадресацией» (`http://locusfood.by/`)
+**A. Игнорировать (рекомендуемый по канону Google).** Это warning, не error. Поля `aggregateRating` и `review` обязательны только если они реально есть. Подделывать рейтинг (например, ставить «5.0 / 1 отзыв» по умолчанию) — нарушение [Google Review snippet guidelines](https://developers.google.com/search/docs/appearance/structured-data/review-snippet), за это можно получить ручное действие и потерять расширенные сниппеты вообще для всего сайта.
 
-Это нормальное поведение HTTP→HTTPS-редиректа на сервере, и Google так и должен его обрабатывать. Эта запись в Search Console — **не ошибка**, а информационный отчёт. Решение — убедиться, что:
-- В `sitemap.xml` все URL только с `https://` ✓ (уже так).
-- В `robots.txt` ссылка на sitemap с `https://` ✓.
-- Все внутренние og/canonical ссылки тоже с `https://` ✓.
+**B. Переключить тип schema на минимальный, без warning'ов.** Для товаров без отзывов отдавать упрощённую schema: оставить `Product` + `offers`, но также добавить альтернативные обязательные поля, которых сейчас нет (например, `sku`, `gtin`/`mpn` или `productID`). Это не уберёт warning про `review`/`aggregateRating`, но улучшит качество карточки в целом.
 
-Реальное действие: ничего менять не нужно, но добавим **HSTS-намёк через canonical и og:url** (всегда https) — уже есть. Дополнительно явно сообщим Google через canonical, что главная — `https://locusfood.by/` (сейчас canonical правильный — `https://locusfood.by/`, проблема в том, что Google проверяет `http://` версию и видит редирект; это ожидаемо и со временем исчезнет из отчёта).
+**C. Гибридный — то, что я рекомендую сделать сейчас:**
+1. Оставить текущую логику (rating/reviews только при их наличии — она корректна).
+2. **Добавить `sku` = product.id** — обязательное поле, его сейчас нет.
+3. **Добавить `category`** из `categories.name` — улучшает классификацию.
+4. На карточке товара уже есть UI «Будь первым, кто оставит отзыв» — убедиться что он работает и стимулирует писать отзывы (это единственный честный способ убрать warning'и).
+5. В **Search Console** в отчёте «Описания товара» нажать кнопку «Подтвердить исправление» — после этого Google перестанет регулярно слать уведомления по уже проверенным товарам, оставив только редкие напоминания.
 
-Если есть желание — можем добавить запрос **«валидировать исправление»** в Search Console после обновления canonical для категорий: Google перепроверит и снимет уведомление о редиректе для главной.
+## Реализация (вариант C)
 
-## Реализация
+### Файл `src/pages/Product.tsx`
 
-### Файл: `src/pages/Catalog.tsx`
-
-В блоке `seoData` для каждой ветки добавить явный `canonical`:
+В `productJsonLd` добавить поля:
 
 ```ts
-if (categoryFilter && category) {
-  return {
-    title: ...,
-    description: ...,
-    keywords: ...,
-    jsonLd,
-    canonical: `https://locusfood.by/catalog?category=${category.slug}`,
-  };
-}
-if (discountFilter) {
-  return {
-    title: ...,
-    description: ...,
-    canonical: "https://locusfood.by/catalog?discount=true",
-  };
-}
-if (newFilter) {
-  return {
-    title: ...,
-    description: ...,
-    canonical: "https://locusfood.by/catalog?new=true",
-  };
-}
-if (searchQuery) {
-  return {
-    title: ...,
-    description: ...,
-    canonical: "https://locusfood.by/catalog",
-    noindex: true, // поиск не индексируем
-  };
-}
-return {
-  title: ...,
-  description: ...,
-  canonical: "https://locusfood.by/catalog",
-};
+const productJsonLd = product ? {
+  "@type": "Product",
+  name: product.name,
+  sku: product.id,                                  // NEW
+  productID: product.id,                            // NEW
+  category: categoryName || undefined,              // NEW (из categories.name)
+  description: product.description || undefined,
+  image: ...,
+  brand: { "@type": "Brand", name: product.seller },
+  offers: { ... },                                  // как есть
+  ...(displayRating && displayReviewCount > 0 ? { aggregateRating: ... } : {}),
+  ...(reviews.length > 0 ? { review: ... } : {}),
+} : undefined;
 ```
 
-И передать `canonical` и `noindex` в `<SEO />`.
+Где взять `categoryName`: из существующего hook `useProduct` (`product.categories.name`) — поле уже фетчится.
 
-### Файл: `src/components/SEO.tsx`
+### Что НЕ делаем
 
-1. Добавить новый проп `noindex?: boolean`.
-2. Если `noindex === true` — поставить `<meta name="robots" content="noindex, follow">`, иначе убрать.
-3. Логика canonical уже работает корректно — она использует переданное значение (`canonical` имеет приоритет над `pathname`). Изменений не требуется, кроме добавления `noindex`.
+- Не добавляем фейковый рейтинг «5.0 / 1» по умолчанию — нарушение политик Google, рискуем потерять rich snippets совсем.
+- Не убираем условие `displayReviewCount > 0` — пустой `aggregateRating` тоже вызовет warning.
+- Не трогаем `sitemap` / `SEO.tsx` / другие страницы.
 
-### Что не трогаем
+## Что сделать в Search Console после деплоя
 
-- `supabase/functions/sitemap/index.ts` — URLs категорий с `?category=slug` остаются (теперь они согласованы с canonical).
-- `public/robots.txt` — уже корректный.
-- Никаких изменений на серверной стороне (HTTP→HTTPS редирект обрабатывается nginx и работает правильно).
-
-## После деплоя
-
-1. Открыть Google Search Console.
-2. В отчёте «Вариант страницы с тегом canonical» нажать **«Проверить исправление»** для `/catalog?category=meat` — Google перепроверит и страницы пойдут в индекс.
-3. Отчёт «Страница с переадресацией» для `http://locusfood.by/` — это информационное сообщение, не блокирует индексацию `https://locusfood.by/`. Можно тоже нажать «Проверить» — он уберёт запись после повторного сканирования.
+1. Перейти в отчёт «Описания товара» → «Отсутствует поле aggregateRating» → нажать **«Проверить исправление»**. Google перепроверит — для товаров без отзывов warning останется, но будет уже «информационным», не блокирующим. Для товаров с отзывами (25 шт) исчезнет полностью.
+2. Долгосрочно — единственный честный способ убрать warning у оставшихся 85 товаров — собрать на них реальные отзывы (письмо после доставки уже работает).
 
 ## Файлы
 
-- `src/pages/Catalog.tsx` — добавить `canonical` и (для поиска) `noindex` в `seoData`.
-- `src/components/SEO.tsx` — поддержка пропа `noindex`.
+- `src/pages/Product.tsx` — добавить `sku`, `productID`, `category` в `productJsonLd`.
 
