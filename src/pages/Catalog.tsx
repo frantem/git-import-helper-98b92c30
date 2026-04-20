@@ -139,8 +139,10 @@ export default function Catalog() {
       <SEO
         title={seoData.title}
         description={seoData.description}
-        keywords={seoData.keywords}
-        jsonLd={seoData.jsonLd}
+        keywords={(seoData as { keywords?: string }).keywords}
+        jsonLd={(seoData as { jsonLd?: Record<string, unknown> }).jsonLd}
+        canonical={seoData.canonical}
+        noindex={(seoData as { noindex?: boolean }).noindex}
       />
       <Header />
 
