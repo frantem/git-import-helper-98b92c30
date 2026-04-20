@@ -2,61 +2,103 @@
 
 ## Что показывает Search Console
 
-Это **не ошибка индексации**, а предупреждение типа «Missing field» (рекомендуемые, но не обязательные поля) в разделе **Описания товара (Product snippets)**. Страница индексируется нормально, но без `aggregateRating` и `review` Google не показывает звёздочки в выдаче.
+Это **рекомендуемые поля** для Merchant Listings (расширенные сниппеты товаров с ценами/доставкой/возвратом). Это **warnings, не errors**, страницы индексируются нормально.
 
-Проверка БД:
-- Товар «Сулугуни» (`b375cc9c…`) — **0 отзывов** → schema корректно их не содержит → Google ругается.
-- Всего 110 активных товаров, отзывы есть только у **25**. У остальных 85 будет та же запись в Search Console.
+### Текущее состояние JSON-LD (`src/pages/Product.tsx`, строки 477–538)
 
-## Варианты решения
+Поля `shippingDetails`, `shippingRate`, `hasMerchantReturnPolicy`, `brand`, `sku`, `productID` **уже присутствуют**. Скорее всего Google ругается по двум причинам:
 
-**A. Игнорировать (рекомендуемый по канону Google).** Это warning, не error. Поля `aggregateRating` и `review` обязательны только если они реально есть. Подделывать рейтинг (например, ставить «5.0 / 1 отзыв» по умолчанию) — нарушение [Google Review snippet guidelines](https://developers.google.com/search/docs/appearance/structured-data/review-snippet), за это можно получить ручное действие и потерять расширенные сниппеты вообще для всего сайта.
+1. **Старый снимок** — Search Console показывает данные с предыдущего сканирования (до того как мы добавили эти поля в прошлой итерации). Решается через **«Проверить исправление»** в GSC.
+2. **Слабые значения** — `MerchantReturnNotPermitted` и нулевая стоимость доставки без явного флага «бесплатная» Google трактует как недостаточные данные.
 
-**B. Переключить тип schema на минимальный, без warning'ов.** Для товаров без отзывов отдавать упрощённую schema: оставить `Product` + `offers`, но также добавить альтернативные обязательные поля, которых сейчас нет (например, `sku`, `gtin`/`mpn` или `productID`). Это не уберёт warning про `review`/`aggregateRating`, но улучшит качество карточки в целом.
+### Про GTIN
 
-**C. Гибридный — то, что я рекомендую сделать сейчас:**
-1. Оставить текущую логику (rating/reviews только при их наличии — она корректна).
-2. **Добавить `sku` = product.id** — обязательное поле, его сейчас нет.
-3. **Добавить `category`** из `categories.name` — улучшает классификацию.
-4. На карточке товара уже есть UI «Будь первым, кто оставит отзыв» — убедиться что он работает и стимулирует писать отзывы (это единственный честный способ убрать warning'и).
-5. В **Search Console** в отчёте «Описания товара» нажать кнопку «Подтвердить исправление» — после этого Google перестанет регулярно слать уведомления по уже проверенным товарам, оставив только редкие напоминания.
+У фермерских/ремесленных продуктов (сулугуни ручной работы, домашний мёд) **физически нет штрихкода GTIN/EAN/UPC** — это нормально. Google рекомендует в этом случае указывать `brand` + `sku/mpn`, что у нас уже сделано. Warning «Не указан GTIN или бренд» останется навсегда для таких товаров — это допустимо, не блокирует индексацию.
 
-## Реализация (вариант C)
+## Реализация — улучшаем JSON-LD
 
 ### Файл `src/pages/Product.tsx`
 
-В `productJsonLd` добавить поля:
+**1. `shippingDetails` — явно отметить бесплатную доставку и добавить регион Витебск:**
 
 ```ts
-const productJsonLd = product ? {
-  "@type": "Product",
-  name: product.name,
-  sku: product.id,                                  // NEW
-  productID: product.id,                            // NEW
-  category: categoryName || undefined,              // NEW (из categories.name)
-  description: product.description || undefined,
-  image: ...,
-  brand: { "@type": "Brand", name: product.seller },
-  offers: { ... },                                  // как есть
-  ...(displayRating && displayReviewCount > 0 ? { aggregateRating: ... } : {}),
-  ...(reviews.length > 0 ? { review: ... } : {}),
-} : undefined;
+shippingDetails: {
+  "@type": "OfferShippingDetails",
+  shippingRate: {
+    "@type": "MonetaryAmount",
+    value: "0",
+    currency: "BYN",
+  },
+  shippingDestination: {
+    "@type": "DefinedRegion",
+    addressCountry: "BY",
+    addressRegion: "Витебск",
+  },
+  deliveryTime: {
+    "@type": "ShippingDeliveryTime",
+    handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
+    transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 2, unitCode: "DAY" },
+  },
+},
+```
+(`unitCode: "DAY"` вместо `"d"` — корректное UN/CEFACT значение, которое Google валидирует строже.)
+
+**2. `hasMerchantReturnPolicy` — заменить `MerchantReturnNotPermitted` на корректную политику с явными полями (Google требует `merchantReturnDays` либо явный «не принимаем»):**
+
+Для продуктов питания по ст.28 Закона РБ «О защите прав потребителей» возврат надлежащего качества не предусмотрен. Корректный вариант:
+
+```ts
+hasMerchantReturnPolicy: {
+  "@type": "MerchantReturnPolicy",
+  applicableCountry: "BY",
+  returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+  merchantReturnLink: "https://locusfood.by/privacy-policy",
+},
 ```
 
-Где взять `categoryName`: из существующего hook `useProduct` (`product.categories.name`) — поле уже фетчится.
+Поле `merchantReturnLink` помогает Google «закрыть» требование к политике.
 
-### Что НЕ делаем
+**3. `brand` — добавить fallback на «Locus», если фермер без имени, и сохранить `@id` для уникальности:**
 
-- Не добавляем фейковый рейтинг «5.0 / 1» по умолчанию — нарушение политик Google, рискуем потерять rich snippets совсем.
-- Не убираем условие `displayReviewCount > 0` — пустой `aggregateRating` тоже вызовет warning.
-- Не трогаем `sitemap` / `SEO.tsx` / другие страницы.
+Оставляем как есть (`brand.name = product.seller`), но добавляем **дополнительный** идентификатор `mpn` = `product.id` (некоторые валидаторы Google принимают `mpn` вместо GTIN):
+
+```ts
+"@type": "Product",
+name: product.name,
+sku: product.id,
+mpn: product.id,           // NEW — Manufacturer Part Number, заменяет GTIN
+productID: product.id,
+category: product.category || undefined,
+brand: { "@type": "Brand", name: product.seller },
+```
+
+**4. `offers.priceValidUntil`** — Google рекомендует это поле, добавим (год вперёд):
+
+```ts
+offers: {
+  ...,
+  priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  ...
+}
+```
+
+### Что НЕ меняем
+
+- `SEO.tsx` — корректно оборачивает в `@context: schema.org`.
+- Sitemap, canonical — без изменений.
+- Не выдумываем фейковый GTIN — это нарушение политик Google и риск санкций.
+- Не добавляем поле `gtin` в БД сейчас (большинству фермеров его взять неоткуда). Если в будущем появятся товары с штрихкодом — добавим колонку `products.gtin` и опциональное поле в JSON-LD.
 
 ## Что сделать в Search Console после деплоя
 
-1. Перейти в отчёт «Описания товара» → «Отсутствует поле aggregateRating» → нажать **«Проверить исправление»**. Google перепроверит — для товаров без отзывов warning останется, но будет уже «информационным», не блокирующим. Для товаров с отзывами (25 шт) исчезнет полностью.
-2. Долгосрочно — единственный честный способ убрать warning у оставшихся 85 товаров — собрать на них реальные отзывы (письмо после доставки уже работает).
+1. Открыть отчёт «Данные о товарах продавца».
+2. Для каждого warning нажать **«Проверить исправление»**.
+3. Через 1–7 дней Google перепроверит:
+   - `hasMerchantReturnPolicy` ✓ исчезнет
+   - `shippingDetails` / `shippingRate` ✓ исчезнут
+   - GTIN/brand — останется как «информационный» warning для товаров без бренда производителя; это нормально для ремесленных товаров.
 
 ## Файлы
 
-- `src/pages/Product.tsx` — добавить `sku`, `productID`, `category` в `productJsonLd`.
+- `src/pages/Product.tsx` — обновить блок `productJsonLd` (строки 477–538): `mpn`, `priceValidUntil`, `addressRegion`, `unitCode: "DAY"`, `merchantReturnLink`.
 
