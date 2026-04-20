@@ -8,6 +8,7 @@ interface SEOProps {
   ogType?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   keywords?: string;
+  noindex?: boolean;
 }
 
 const DOMAIN = "https://locusfood.by";
