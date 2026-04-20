@@ -477,6 +477,9 @@ export default function Product() {
   const productJsonLd = product ? {
     "@type": "Product",
     name: product.name,
+    sku: product.id,
+    productID: product.id,
+    category: product.category || undefined,
     description: product.description || undefined,
     image: product.image !== "/placeholder.svg" ? product.image : undefined,
     brand: {
