@@ -81,18 +81,41 @@ export default function Catalog() {
           name: p.name,
         })),
       };
-      return { title: seoTitle, description: seoDesc, keywords: category.seo_keywords || undefined, jsonLd };
+      return {
+        title: seoTitle,
+        description: seoDesc,
+        keywords: category.seo_keywords || undefined,
+        jsonLd,
+        canonical: `https://locusfood.by/catalog?category=${category.slug}`,
+      };
     }
     if (discountFilter) {
-      return { title: "Скидки на натуральные продукты — Locus", description: "Товары со скидкой. Свежие фермерские продукты с доставкой в Витебске." };
+      return {
+        title: "Скидки на натуральные продукты — Locus",
+        description: "Товары со скидкой. Свежие фермерские продукты с доставкой в Витебске.",
+        canonical: "https://locusfood.by/catalog?discount=true",
+      };
     }
     if (newFilter) {
-      return { title: "Новинки — Locus", description: "Новые товары от фермеров. Свежие натуральные продукты с доставкой в Витебске." };
+      return {
+        title: "Новинки — Locus",
+        description: "Новые товары от фермеров. Свежие натуральные продукты с доставкой в Витебске.",
+        canonical: "https://locusfood.by/catalog?new=true",
+      };
     }
     if (searchQuery) {
-      return { title: `Поиск: ${searchQuery} — Locus`, description: `Результаты поиска «${searchQuery}». Фермерские продукты с доставкой в Витебске.` };
+      return {
+        title: `Поиск: ${searchQuery} — Locus`,
+        description: `Результаты поиска «${searchQuery}». Фермерские продукты с доставкой в Витебске.`,
+        canonical: "https://locusfood.by/catalog",
+        noindex: true,
+      };
     }
-    return { title: "Каталог продуктов — Locus", description: "Каталог натуральных фермерских продуктов с доставкой в Витебске." };
+    return {
+      title: "Каталог продуктов — Locus",
+      description: "Каталог натуральных фермерских продуктов с доставкой в Витебске.",
+      canonical: "https://locusfood.by/catalog",
+    };
   }, [categoryFilter, category, discountFilter, newFilter, searchQuery, filteredProducts]);
 
   const showCategories = !categoryFilter && !discountFilter && !newFilter && !searchQuery;
