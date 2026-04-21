@@ -1159,7 +1159,7 @@ export default function Checkout() {
             </div>
             {deliveryType === "courier" && <div className="flex justify-between">
                 <span className="text-muted-foreground">Доставка:</span>
-                <span className="text-foreground">7<BynSymbol /></span>
+                <span className="text-foreground">6,90<BynSymbol /></span>
               </div>}
           </div>
           
