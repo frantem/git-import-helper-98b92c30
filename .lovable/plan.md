@@ -1,104 +1,147 @@
+## План: расширенное отслеживание Meta Pixel + CAPI
+
+### Анализ текущего состояния
+
+**Что уже есть:**
+
+- `index.html` — Pixel 1214375087525107, событие `PageView` (отложено на 2с после load)
+- `src/pages/Checkout.tsx` — событие `Purchase` через fbq + CAPI с `eventID` (правильный паттерн дедупликации)
+- Edge Function `meta-conversions-api` — поддерживает любое `event_name`, хеширует email/phone, получает IP/UA
+
+**Что нужно добавить:**
+
+- 7 новых событий с дублированием на CAPI
+- Хелпер для DRY-вызовов (fbq + CAPI с одним `eventID`)
+- Исправление warning'a `PageView` (нужно слать вместе с CAPI и user data)
+
+---
+
+### 1. Новый хелпер `src/lib/metaPixel.ts`
+
+Единая функция `trackMetaEvent(eventName, params?)`:
+
+- Генерирует `eventId = crypto.randomUUID()`
+- Вызывает `window.fbq('track', eventName, params, { eventID })` (или `trackCustom` для нестандартных имён)
+- Параллельно вызывает `supabase.functions.invoke('meta-conversions-api', { body: { event_name, event_id, ..., event_source_url, user_agent, user_data } })`
+- Подтягивает email/phone текущего пользователя из `useAuth` (через отдельный модульный setter, либо параметром) → улучшает Match Quality (это и закроет warning у `PageView`)
+- Логирует `console.log('[Meta Pixel] Event sent:', eventName, eventId)` для проверки через Pixel Helper
+
+**Стандартные имена Meta** (используем их вместо кастомных, где возможно — лучше для оптимизации рекламы):
 
 
-## Что показывает Search Console
+| Запрос пользователя              | Используемое имя                                                        | Тип                               |
+| -------------------------------- | ----------------------------------------------------------------------- | --------------------------------- |
+| ViewContent                      | `ViewContent`                                                           | стандарт                          |
+| AddToCart (глобально)            | `AddToCart`                                                             | стандарт                          |
+| ToTheRegistration (К оформлению) | `InitiateCheckout`                                                      | стандарт (правильный термин Meta) |
+| logInViaGoogle                   | `Lead` + параметр `method: 'google'`                                    | стандарт                          |
+| Registration                     | `CompleteRegistration`                                                  | стандарт                          |
+| Home delivery                    | `AddPaymentInfo` + `delivery: 'courier'` (или кастомное `HomeDelivery`) | —                                 |
+| Pickup                           | `AddPaymentInfo` + `delivery: 'self'` (или кастомное `Pickup`)          | —                                 |
 
-Это **рекомендуемые поля** для Merchant Listings (расширенные сниппеты товаров с ценами/доставкой/возвратом). Это **warnings, не errors**, страницы индексируются нормально.
 
-### Текущее состояние JSON-LD (`src/pages/Product.tsx`, строки 477–538)
+**Уточнение нужно:** оставить названия как просил пользователь буквально (`logInViaGoogle`, `HomeDelivery`, `Pickup`, `ToTheRegistration` через `trackCustom`) или использовать стандартные имена Meta (`Lead`, `InitiateCheckout`, `AddPaymentInfo`)? **Решение по умолчанию** — использовать стандартные имена Meta (лучше для алгоритма оптимизации)!
 
-Поля `shippingDetails`, `shippingRate`, `hasMerchantReturnPolicy`, `brand`, `sku`, `productID` **уже присутствуют**. Скорее всего Google ругается по двум причинам:
+---
 
-1. **Старый снимок** — Search Console показывает данные с предыдущего сканирования (до того как мы добавили эти поля в прошлой итерации). Решается через **«Проверить исправление»** в GSC.
-2. **Слабые значения** — `MerchantReturnNotPermitted` и нулевая стоимость доставки без явного флага «бесплатная» Google трактует как недостаточные данные.
+### 2. Обновление компонентов
 
-### Про GTIN
+`**index.html**` — оставляем `PageView` как есть (он стреляет один раз при загрузке скрипта). Дополнительно из `App.tsx` будем вызывать `trackMetaEvent('PageView')` через CAPI с user data на каждой смене роута — это закроет warning «Рекомендуется обновление» (Match Quality).
 
-У фермерских/ремесленных продуктов (сулугуни ручной работы, домашний мёд) **физически нет штрихкода GTIN/EAN/UPC** — это нормально. Google рекомендует в этом случае указывать `brand` + `sku/mpn`, что у нас уже сделано. Warning «Не указан GTIN или бренд» останется навсегда для таких товаров — это допустимо, не блокирует индексацию.
+`**src/App.tsx**` (или новый `<MetaPageTracker />` внутри `<BrowserRouter>`):
 
-## Реализация — улучшаем JSON-LD
+- Слушает изменения `useLocation()` → отправляет `PageView` через CAPI (не через fbq, чтобы не дублировать первый pixel-вызов; eventID привязан к URL+timestamp).
 
-### Файл `src/pages/Product.tsx`
-
-**1. `shippingDetails` — явно отметить бесплатную доставку и добавить регион Витебск:**
-
-```ts
-shippingDetails: {
-  "@type": "OfferShippingDetails",
-  shippingRate: {
-    "@type": "MonetaryAmount",
-    value: "0",
-    currency: "BYN",
-  },
-  shippingDestination: {
-    "@type": "DefinedRegion",
-    addressCountry: "BY",
-    addressRegion: "Витебск",
-  },
-  deliveryTime: {
-    "@type": "ShippingDeliveryTime",
-    handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
-    transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 2, unitCode: "DAY" },
-  },
-},
-```
-(`unitCode: "DAY"` вместо `"d"` — корректное UN/CEFACT значение, которое Google валидирует строже.)
-
-**2. `hasMerchantReturnPolicy` — заменить `MerchantReturnNotPermitted` на корректную политику с явными полями (Google требует `merchantReturnDays` либо явный «не принимаем»):**
-
-Для продуктов питания по ст.28 Закона РБ «О защите прав потребителей» возврат надлежащего качества не предусмотрен. Корректный вариант:
-
-```ts
-hasMerchantReturnPolicy: {
-  "@type": "MerchantReturnPolicy",
-  applicableCountry: "BY",
-  returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-  merchantReturnLink: "https://locusfood.by/privacy-policy",
-},
-```
-
-Поле `merchantReturnLink` помогает Google «закрыть» требование к политике.
-
-**3. `brand` — добавить fallback на «Locus», если фермер без имени, и сохранить `@id` для уникальности:**
-
-Оставляем как есть (`brand.name = product.seller`), но добавляем **дополнительный** идентификатор `mpn` = `product.id` (некоторые валидаторы Google принимают `mpn` вместо GTIN):
+`**src/pages/Product.tsx**` — `useEffect` при загрузке product:
 
 ```ts
-"@type": "Product",
-name: product.name,
-sku: product.id,
-mpn: product.id,           // NEW — Manufacturer Part Number, заменяет GTIN
-productID: product.id,
-category: product.category || undefined,
-brand: { "@type": "Brand", name: product.seller },
+trackMetaEvent('ViewContent', {
+  content_ids: [product.id],
+  content_name: product.name,
+  content_type: 'product',
+  value: product.price / 100,
+  currency: 'BYN',
+});
 ```
 
-**4. `offers.priceValidUntil`** — Google рекомендует это поле, добавим (год вперёд):
+`**src/contexts/CartContext.tsx**` — внутри `addToCart`:
 
 ```ts
-offers: {
-  ...,
-  priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  ...
-}
+trackMetaEvent('AddToCart', {
+  content_ids: [product.id],
+  content_name: product.name,
+  value: (variant?.price ?? product.price) / 100,
+  currency: 'BYN',
+});
 ```
 
-### Что НЕ меняем
+Это **глобально** покрывает любые кнопки добавления (ProductCard, ProductPage, любые будущие места) без хрупкого `document.addEventListener('click', ...)`. Глобальный click-listener по тексту кнопки — антипаттерн (ломается при i18n, переименованиях, ARIA-кнопках). **Источник истины — функция `addToCart`.**
 
-- `SEO.tsx` — корректно оборачивает в `@context: schema.org`.
-- Sitemap, canonical — без изменений.
-- Не выдумываем фейковый GTIN — это нарушение политик Google и риск санкций.
-- Не добавляем поле `gtin` в БД сейчас (большинству фермеров его взять неоткуда). Если в будущем появятся товары с штрихкодом — добавим колонку `products.gtin` и опциональное поле в JSON-LD.
+`**src/pages/Cart.tsx**` — внутри `handleCheckout` перед navigate:
 
-## Что сделать в Search Console после деплоя
+```ts
+trackMetaEvent('InitiateCheckout', { value: selectedTotal/100, currency: 'BYN', num_items: selectedCount });
+```
 
-1. Открыть отчёт «Данные о товарах продавца».
-2. Для каждого warning нажать **«Проверить исправление»**.
-3. Через 1–7 дней Google перепроверит:
-   - `hasMerchantReturnPolicy` ✓ исчезнет
-   - `shippingDetails` / `shippingRate` ✓ исчезнут
-   - GTIN/brand — останется как «информационный» warning для товаров без бренда производителя; это нормально для ремесленных товаров.
+`**src/pages/Auth.tsx**`:
 
-## Файлы
+- Перед `signInWithOAuth({provider:'google'})` (обе ветки isCustomDomain):
+  ```ts
+  trackMetaEvent('Lead', { method: 'google', mode });  // mode = 'login' | 'register'
+  ```
+- В `handleSubmit` после успешной регистрации (`mode === 'register'`, нет error):
+  ```ts
+  trackMetaEvent('CompleteRegistration', { method: 'email' });
+  ```
 
-- `src/pages/Product.tsx` — обновить блок `productJsonLd` (строки 477–538): `mpn`, `priceValidUntil`, `addressRegion`, `unitCode: "DAY"`, `merchantReturnLink`.
+`**src/pages/Checkout.tsx**` — в `onClick` блоков «Доставка на дом» и «Самовывоз» (строки 757, 771):
 
+```ts
+onClick={() => { setDeliveryType("courier"); trackMetaEvent('AddPaymentInfo', { delivery_type: 'home_delivery' }); }}
+onClick={() => { setDeliveryType("self"); trackMetaEvent('AddPaymentInfo', { delivery_type: 'pickup' }); }}
+```
+
+Существующее `Purchase` рефакторим на использование общего хелпера (та же логика, меньше кода).
+
+---
+
+### 3. Edge Function `meta-conversions-api` — мелкие улучшения
+
+- Уже принимает любое `event_name` ✓
+- Добавить поддержку `custom_data` как объекта произвольной формы (сейчас принимает только `value`/`currency`) — чтобы передавать `content_ids`, `content_name`, `delivery_type` и т.п. в Events Manager.
+- Это **закроет warning «Рекомендуется обновление»** на `PageView`: причина warning — отсутствие user_data (email, phone) и слабая Match Quality. После прохода `PageView` через CAPI с хешированным email авторизованного пользователя качество вырастет до «Хорошо/Отлично».
+
+---
+
+### 4. Проверка после деплоя
+
+В консоли браузера на каждое действие будет:
+
+```
+[Meta Pixel] Event sent: ViewContent <uuid>
+[Meta Pixel] CAPI response: {events_received: 1, ...}
+```
+
+В Pixel Helper и Events Manager → Тест событий — события появляются в реальном времени, дублируются (browser + server) с одинаковым `event_id` → Meta автоматически дедуплицирует.
+
+---
+
+### Файлы
+
+- **Новый:** `src/lib/metaPixel.ts` — хелпер `trackMetaEvent()`
+- **Новый:** `src/components/MetaPageTracker.tsx` — отслеживание PageView на смене роута
+- **Изменить:** `src/App.tsx` — подключить `<MetaPageTracker />`
+- **Изменить:** `src/pages/Product.tsx` — ViewContent в useEffect
+- **Изменить:** `src/contexts/CartContext.tsx` — AddToCart внутри `addToCart`
+- **Изменить:** `src/pages/Cart.tsx` — InitiateCheckout
+- **Изменить:** `src/pages/Auth.tsx` — Lead (Google) + CompleteRegistration
+- **Изменить:** `src/pages/Checkout.tsx` — AddPaymentInfo для двух типов доставки + рефакторинг Purchase на хелпер
+- **Изменить:** `supabase/functions/meta-conversions-api/index.ts` — поддержка произвольного `custom_data` объекта
+
+### Уточнение перед началом
+
+**Вопрос:** использовать стандартные имена Meta (`Lead`, `InitiateCheckout`, `CompleteRegistration`, `AddPaymentInfo`) — рекомендуется для оптимизации рекламы; **или** буквально как в ТЗ (`logInViaGoogle`, `ToTheRegistration`, `Registration`, `HomeDelivery`, `Pickup`) через `trackCustom` — менее эффективно для алгоритма Meta, но точно как просил.
+
+По умолчанию иду по варианту со стандартными именами + параметрами-метками. Если хочешь буквально как в ТЗ — напиши «использовать кастомные имена», и я переделаю.  
+  
+Используй стандартные имена Meta! Мои не используй имена!
