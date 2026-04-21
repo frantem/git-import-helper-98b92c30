@@ -23,6 +23,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { trackMetaEvent } from "@/lib/metaPixel";
 interface PickupPoint {
   id: string;
   name: string;
@@ -642,27 +643,14 @@ export default function Checkout() {
         }).catch((err) => console.error("Failed to send self-pickup notification:", err));
       }
 
-      // Meta Pixel + Conversions API Purchase event
+      // Meta Pixel + Conversions API: Purchase (via shared helper for dedup)
       const totalRubles = Math.floor(finalTotalPrice / 100);
-      const eventId = crypto.randomUUID();
-
-      // Client-side pixel (for users without ad blockers)
-      window.fbq?.('track', 'Purchase', {
+      trackMetaEvent("Purchase", {
         value: totalRubles,
-        currency: 'BYN'
-      }, { eventID: eventId });
-
-      // Server-side CAPI (bypasses ad blockers)
-      supabase.functions.invoke("meta-conversions-api", {
-        body: {
-          event_name: "Purchase",
-          event_id: eventId,
-          value: totalRubles,
-          currency: "BYN",
-          event_source_url: window.location.href,
-          user_agent: navigator.userAgent
-        }
-      }).catch((err) => console.error("Meta CAPI error:", err));
+        currency: "BYN",
+        content_ids: items.map((it) => it.product.id),
+        num_items: items.reduce((s, it) => s + it.quantity, 0),
+      });
 
       // Auto-save delivery address to profile if new/changed
       if (deliveryType === "courier" && deliveryAddress.trim() && deliveryAddress !== profileDeliveryAddress && user) {
@@ -754,7 +742,7 @@ export default function Checkout() {
             </div>
 
             {/* Courier delivery option */}
-            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "courier" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => setDeliveryType("courier")}>
+            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "courier" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => { setDeliveryType("courier"); trackMetaEvent("AddPaymentInfo", { delivery_type: "home_delivery" }); }}>
               <RadioGroupItem value="courier" id="delivery-courier" className="mt-1" />
               <Label htmlFor="delivery-courier" className="flex-1 cursor-pointer">
                 <div className="flex justify-between items-center">
@@ -768,7 +756,7 @@ export default function Checkout() {
             </div>
 
             {/* Self-pickup option */}
-            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "self" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => setDeliveryType("self")}>
+            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "self" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => { setDeliveryType("self"); trackMetaEvent("AddPaymentInfo", { delivery_type: "pickup" }); }}>
               <RadioGroupItem value="self" id="delivery-self" className="mt-1" />
               <Label htmlFor="delivery-self" className="flex-1 cursor-pointer">
                 <div className="flex justify-between items-center">
