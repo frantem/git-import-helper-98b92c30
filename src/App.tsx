@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MetaPageTracker } from "@/components/MetaPageTracker";
 import Index from "./pages/Index";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
@@ -47,6 +48,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <MetaPageTracker />
             <Suspense fallback={null}>
               <Routes>
                 <Route path="/" element={<Index />} />

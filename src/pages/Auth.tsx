@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
@@ -172,6 +173,8 @@ export default function Auth() {
           }
         } else {
           toast.success("Регистрация успешна!");
+          // Meta Pixel: CompleteRegistration (email)
+          trackMetaEvent("CompleteRegistration", { method: "email", status: true });
           clearDraft("auth-form-draft");
           const returnTo = localStorage.getItem('locus-return-to');
           localStorage.removeItem('locus-return-to');
@@ -402,6 +405,8 @@ export default function Auth() {
                     className="w-full gap-2"
                     onClick={async () => {
                       setIsLoading(true);
+                      // Meta Pixel: Lead (Google OAuth)
+                      trackMetaEvent("Lead", { method: "google", mode });
                       const isCustomDomain =
                         !window.location.hostname.includes("lovable.app") &&
                         !window.location.hostname.includes("lovableproject.com");

@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, totalItems, clearCart, getItemKey } = useCart();
@@ -55,6 +56,16 @@ export default function Cart() {
   const [isCheckingProfile, setIsCheckingProfile] = useState(false);
 
   const handleCheckout = async () => {
+    // Meta Pixel: InitiateCheckout (К оформлению)
+    trackMetaEvent("InitiateCheckout", {
+      value: selectedTotal / 100,
+      currency: "BYN",
+      num_items: selectedCount,
+      content_ids: items
+        .filter((item) => selectedItems.includes(getItemKey(item)))
+        .map((item) => item.product.id),
+    });
+
     if (!user) {
       localStorage.setItem('locus-return-to', '/cart');
       navigate("/auth");

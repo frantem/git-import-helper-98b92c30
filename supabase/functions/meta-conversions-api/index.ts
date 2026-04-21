@@ -20,8 +20,11 @@ async function sha256(value: string): Promise<string> {
 interface RequestBody {
   event_name: string;
   event_id: string;
-  value: number;
-  currency: string;
+  // Legacy top-level fields (kept for backward-compat with older Purchase calls)
+  value?: number;
+  currency?: string;
+  // Preferred — arbitrary Meta custom_data payload (content_ids, content_name, delivery_type, num_items, etc.)
+  custom_data?: Record<string, any>;
   user_data?: {
     email?: string;
     phone?: string;
@@ -38,18 +41,28 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     if (!ACCESS_TOKEN) {
       console.warn("META_ACCESS_TOKEN is not configured, skipping");
-      return new Response(JSON.stringify({ skipped: true, message: "META_ACCESS_TOKEN not configured" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({ skipped: true, message: "META_ACCESS_TOKEN not configured" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     const body: RequestBody = await req.json();
-    const { event_name, event_id, value, currency, user_data, event_source_url, user_agent } = body;
+    const {
+      event_name,
+      event_id,
+      value,
+      currency,
+      custom_data,
+      user_data,
+      event_source_url,
+      user_agent,
+    } = body;
 
-    // Get client IP from request headers
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") || "";
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "";
 
     if (!event_name || !event_id) {
       return new Response(
@@ -64,14 +77,12 @@ const handler = async (req: Request): Promise<Response> => {
       userDataObj.em = await sha256(user_data.email);
     }
     if (user_data?.phone) {
-      userDataObj.ph = await sha256(user_data.phone);
+      // Strip all non-digits before hashing per Meta CAPI spec
+      const phoneDigits = user_data.phone.replace(/\D/g, "");
+      if (phoneDigits) userDataObj.ph = await sha256(phoneDigits);
     }
-    if (clientIp) {
-      userDataObj.client_ip_address = clientIp;
-    }
-    if (user_agent) {
-      userDataObj.client_user_agent = user_agent;
-    }
+    if (clientIp) userDataObj.client_ip_address = clientIp;
+    if (user_agent) userDataObj.client_user_agent = user_agent;
 
     const eventData: Record<string, any> = {
       event_name,
@@ -81,12 +92,16 @@ const handler = async (req: Request): Promise<Response> => {
       user_data: userDataObj,
     };
 
-    if (event_source_url) {
-      eventData.event_source_url = event_source_url;
-    }
+    if (event_source_url) eventData.event_source_url = event_source_url;
 
-    if (value !== undefined && currency) {
-      eventData.custom_data = { value, currency };
+    // Merge custom_data: prefer object form, fall back to legacy value/currency
+    const mergedCustom: Record<string, any> = {
+      ...(custom_data || {}),
+    };
+    if (value !== undefined && mergedCustom.value === undefined) mergedCustom.value = value;
+    if (currency && mergedCustom.currency === undefined) mergedCustom.currency = currency;
+    if (Object.keys(mergedCustom).length > 0) {
+      eventData.custom_data = mergedCustom;
     }
 
     const url = `https://graph.facebook.com/v21.0/${PIXEL_ID}/events`;
