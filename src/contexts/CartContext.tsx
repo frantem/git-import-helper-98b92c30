@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Product } from "@/data/products";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 export interface CartItemVariant {
   id: string;
@@ -77,6 +78,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addToCart = (product: Product, variant?: CartItemVariant, customFields?: CartItemCustomField[], addons?: CartItemAddon[]) => {
+    // Meta Pixel + CAPI: AddToCart (global — fires for any source)
+    const unitPrice = variant?.price ?? product.price;
+    const addonsPrice = addons?.reduce((s, a) => s + a.price, 0) || 0;
+    trackMetaEvent("AddToCart", {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: (unitPrice + addonsPrice) / 100,
+      currency: "BYN",
+    });
+
     setItems((prev) => {
       const tempItem = { product, quantity: 1, variant, customFields, addons } as CartItem;
       const itemKey = getItemKey(tempItem);
