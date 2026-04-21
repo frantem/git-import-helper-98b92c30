@@ -346,7 +346,7 @@ export default function Checkout() {
   };
 
   // Calculate delivery cost
-  const deliveryCost = deliveryType === "courier" ? 700 : 0; // 7р = 700 kopecks
+  const deliveryCost = deliveryType === "courier" ? 690 : 0; // 6,90р = 690 kopecks
   const finalTotalPrice = totalPrice + deliveryCost;
   useEffect(() => {
     if (!isAuthLoading && user) {
