@@ -750,7 +750,7 @@ export default function Checkout() {
                     <Home className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium text-foreground">Доставка на дом</span>
                   </div>
-                  <span className="text-foreground font-medium">7<BynSymbol /></span>
+                  <span className="text-foreground font-medium">6,90<BynSymbol /></span>
                 </div>
               </Label>
             </div>
