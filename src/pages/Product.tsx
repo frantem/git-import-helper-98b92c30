@@ -23,6 +23,7 @@ import { useProduct } from "@/hooks/useProduct";
 import { useProductCustomFields } from "@/hooks/useProductCustomFields";
 import { SEO } from "@/components/SEO";
 import { useSeoTemplates } from "@/hooks/useSeoTemplates";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -193,6 +194,19 @@ export default function Product() {
   useEffect(() => {
     fetchReviews();
   }, [fetchReviews]);
+
+  // Meta Pixel: ViewContent on product load
+  useEffect(() => {
+    if (!dbProduct) return;
+    trackMetaEvent("ViewContent", {
+      content_ids: [dbProduct.id],
+      content_name: dbProduct.title,
+      content_type: "product",
+      content_category: dbProduct.categories?.name,
+      value: dbProduct.price / 100,
+      currency: "BYN",
+    });
+  }, [dbProduct?.id]);
 
   // Build unified product object from database
   const product = dbProduct ? {
