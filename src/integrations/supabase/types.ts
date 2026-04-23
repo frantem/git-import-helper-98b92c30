@@ -354,6 +354,7 @@ export type Database = {
           estimated_delivery_time: string | null
           id: string
           notes: string | null
+          payment_method: string
           pickup_point_id: string | null
           referrer_farmer_id: string | null
           status: string
@@ -370,6 +371,7 @@ export type Database = {
           estimated_delivery_time?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string
           pickup_point_id?: string | null
           referrer_farmer_id?: string | null
           status?: string
@@ -386,6 +388,7 @@ export type Database = {
           estimated_delivery_time?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string
           pickup_point_id?: string | null
           referrer_farmer_id?: string | null
           status?: string
