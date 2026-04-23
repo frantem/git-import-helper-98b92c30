@@ -51,6 +51,7 @@ interface Order {
   created_at: string;
   buyer_id: string;
   payment_method: string | null;
+  confirmation_method: string | null;
   referrer_farmer_id: string | null;
   referrer_farmer_name: string | null;
   pickup_point: {
@@ -111,6 +112,7 @@ export default function AdminOrders() {
         created_at,
         buyer_id,
         payment_method,
+        confirmation_method,
         referrer_farmer_id,
         pickup_point:pickup_points(name, address, working_hours),
         order_items(
@@ -529,6 +531,14 @@ export default function AdminOrders() {
                     <Banknote className="h-4 w-4" />
                     <span>
                       Оплата при получении: {order.payment_method === "card" ? "Карта" : "Наличные"}
+                    </span>
+                  </div>
+
+                  {/* Confirmation method */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Phone className="h-4 w-4" />
+                    <span>
+                      Подтверждение заказа: {order.confirmation_method === "message" ? "Написать" : "Позвонить"}
                     </span>
                   </div>
 

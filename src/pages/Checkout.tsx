@@ -86,6 +86,9 @@ export default function Checkout() {
   // Payment method (on delivery)
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
 
+  // Confirmation method
+  const [confirmationMethod, setConfirmationMethod] = useState<"call" | "message">("call");
+
   // Self-pickup per-seller date/time selection
   const [selfPickupSelections, setSelfPickupSelections] = useState<Record<string, { date: Date; time: string }>>({});
   const [selfPickupPopoverOpen, setSelfPickupPopoverOpen] = useState<Record<string, boolean>>({});
@@ -595,7 +598,8 @@ export default function Checkout() {
           }
           return null;
         })(),
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        confirmation_method: confirmationMethod
       } as any).select().single();
       if (orderError) throw orderError;
 
@@ -1174,6 +1178,35 @@ export default function Checkout() {
               }`}
             >
               Карта
+            </button>
+          </div>
+        </div>
+
+        {/* Confirmation method */}
+        <div className="rounded-2xl bg-card px-4 py-2.5 shadow-sm mb-4">
+          <h2 className="font-bold text-foreground mb-2 text-sm">Как подтвердить заказ?</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmationMethod("call")}
+              className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+                confirmationMethod === "call"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground"
+              }`}
+            >
+              Позвонить
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmationMethod("message")}
+              className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+                confirmationMethod === "message"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground"
+              }`}
+            >
+              Написать
             </button>
           </div>
         </div>
