@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock, Plus, Save } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock, Plus, Save, Banknote } from "lucide-react";
 import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
 import { toast } from "sonner";
 import {
@@ -50,6 +50,7 @@ interface Order {
   estimated_delivery_time: string | null;
   created_at: string;
   buyer_id: string;
+  payment_method: string | null;
   referrer_farmer_id: string | null;
   referrer_farmer_name: string | null;
   pickup_point: {
@@ -109,6 +110,7 @@ export default function AdminOrders() {
         estimated_delivery_time,
         created_at,
         buyer_id,
+        payment_method,
         referrer_farmer_id,
         pickup_point:pickup_points(name, address, working_hours),
         order_items(
@@ -519,6 +521,14 @@ export default function AdminOrders() {
                         : order.delivery_type === "pickup" 
                           ? "Пункт выдачи" 
                           : "Самовывоз"}
+                    </span>
+                  </div>
+
+                  {/* Payment method on delivery */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Banknote className="h-4 w-4" />
+                    <span>
+                      Оплата при получении: {order.payment_method === "card" ? "Карта" : "Наличные"}
                     </span>
                   </div>
 
