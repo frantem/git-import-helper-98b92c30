@@ -83,6 +83,9 @@ export default function Checkout() {
   const [isDateTimePopoverOpen, setIsDateTimePopoverOpen] = useState(false);
   const [courierDeliveryMode, setCourierDeliveryMode] = useState<"fast" | "scheduled">("fast");
 
+  // Payment method (on delivery)
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
+
   // Self-pickup per-seller date/time selection
   const [selfPickupSelections, setSelfPickupSelections] = useState<Record<string, { date: Date; time: string }>>({});
   const [selfPickupPopoverOpen, setSelfPickupPopoverOpen] = useState<Record<string, boolean>>({});
@@ -588,10 +591,11 @@ export default function Checkout() {
           const refTs = localStorage.getItem("referrer_farmer_ts");
           if (refId && refTs) {
             const age = Date.now() - parseInt(refTs, 10);
-            if (age <= 24 * 60 * 60 * 1000) return refId;
+          if (age <= 24 * 60 * 60 * 1000) return refId;
           }
           return null;
-        })()
+        })(),
+        payment_method: paymentMethod
       } as any).select().single();
       if (orderError) throw orderError;
 
@@ -1145,8 +1149,34 @@ export default function Checkout() {
             </div>}
         </div>
 
-        {/* Payment info */}
-        
+        {/* Payment method on delivery */}
+        <div className="rounded-2xl bg-card p-4 shadow-sm mb-4">
+          <h2 className="font-bold text-foreground mb-3">Оплата при получении</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("cash")}
+              className={`rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+                paymentMethod === "cash"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground"
+              }`}
+            >
+              Наличные
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("card")}
+              className={`rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+                paymentMethod === "card"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground"
+              }`}
+            >
+              Карта
+            </button>
+          </div>
+        </div>
 
         {/* Order summary */}
         <div className="rounded-2xl bg-card p-4 shadow-sm">
