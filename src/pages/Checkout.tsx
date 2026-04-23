@@ -1150,13 +1150,13 @@ export default function Checkout() {
         </div>
 
         {/* Payment method on delivery */}
-        <div className="rounded-2xl bg-card p-4 shadow-sm mb-4">
-          <h2 className="font-bold text-foreground mb-3">Оплата при получении</h2>
+        <div className="rounded-2xl bg-card px-4 py-2.5 shadow-sm mb-4">
+          <h2 className="font-bold text-foreground mb-2 text-sm">Оплата при получении</h2>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setPaymentMethod("cash")}
-              className={`rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+              className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                 paymentMethod === "cash"
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border bg-background text-foreground"
@@ -1167,7 +1167,7 @@ export default function Checkout() {
             <button
               type="button"
               onClick={() => setPaymentMethod("card")}
-              className={`rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
+              className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                 paymentMethod === "card"
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border bg-background text-foreground"
