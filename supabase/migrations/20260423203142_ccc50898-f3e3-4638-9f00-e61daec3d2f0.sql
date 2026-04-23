@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN confirmation_method text NOT NULL DEFAULT 'call';

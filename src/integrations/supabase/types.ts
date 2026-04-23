@@ -346,6 +346,7 @@ export type Database = {
       orders: {
         Row: {
           buyer_id: string
+          confirmation_method: string
           created_at: string
           delivery_address: string | null
           delivery_cost: number | null
@@ -363,6 +364,7 @@ export type Database = {
         }
         Insert: {
           buyer_id: string
+          confirmation_method?: string
           created_at?: string
           delivery_address?: string | null
           delivery_cost?: number | null
@@ -380,6 +382,7 @@ export type Database = {
         }
         Update: {
           buyer_id?: string
+          confirmation_method?: string
           created_at?: string
           delivery_address?: string | null
           delivery_cost?: number | null
