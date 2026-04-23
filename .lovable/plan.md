@@ -1,81 +1,92 @@
 
 
-## Блок «Оплата при получении» на странице оформления заказа
+## Блок «Как подтвердить заказ?» на странице оформления заказа
 
-### Что есть
+### Изменения в БД
 
-В таблице `orders` уже существует колонка `payment_method TEXT DEFAULT 'cash'` (миграция от 13.01) — миграции БД не требуются.
+В таблицу `orders` добавить колонку:
+```sql
+ALTER TABLE public.orders 
+ADD COLUMN confirmation_method text NOT NULL DEFAULT 'call';
+```
+Значения: `'call'` (Позвонить) или `'message'` (Написать).
 
 ### Изменения в `src/pages/Checkout.tsx`
 
-1. **Состояние** (рядом с другими useState, ~строка 84):
+1. **Состояние** (рядом со строкой 87, после `paymentMethod`):
 ```ts
-const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
+const [confirmationMethod, setConfirmationMethod] = useState<"call" | "message">("call");
 ```
 
-2. **Новый блок UI перед «Итого»** (вставить перед строкой 1151, секция `{/* Order summary */}`):
+2. **Новый блок UI** (вставить между строкой 1179 и 1181 — то есть между блоком «Оплата при получении» и блоком «Итого»):
 ```tsx
-<div className="rounded-2xl bg-card p-4 shadow-sm mb-4">
-  <h2 className="font-bold text-foreground mb-3">Оплата при получении</h2>
+{/* Confirmation method */}
+<div className="rounded-2xl bg-card px-4 py-2.5 shadow-sm mb-4">
+  <h2 className="font-bold text-foreground mb-2 text-sm">Как подтвердить заказ?</h2>
   <div className="grid grid-cols-2 gap-2">
     <button
       type="button"
-      onClick={() => setPaymentMethod("cash")}
-      className={`rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
-        paymentMethod === "cash"
+      onClick={() => setConfirmationMethod("call")}
+      className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+        confirmationMethod === "call"
           ? "border-primary bg-primary/10 text-primary"
           : "border-border bg-background text-foreground"
       }`}
     >
-      Наличные
+      Позвонить
     </button>
     <button
       type="button"
-      onClick={() => setPaymentMethod("card")}
-      className={`rounded-xl border-2 p-3 text-sm font-medium transition-colors ${
-        paymentMethod === "card"
+      onClick={() => setConfirmationMethod("message")}
+      className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+        confirmationMethod === "message"
           ? "border-primary bg-primary/10 text-primary"
           : "border-border bg-background text-foreground"
       }`}
     >
-      Карта
+      Написать
     </button>
   </div>
 </div>
 ```
 
-3. **Передача в БД** — в `supabase.from("orders").insert({...})` (строка ~571) добавить поле:
+3. **Передача в БД** — в `supabase.from("orders").insert({...})` (строка 598, рядом с `payment_method`) добавить:
 ```ts
-payment_method: paymentMethod,
+confirmation_method: confirmationMethod,
 ```
 
 ### Изменения в `src/pages/admin/AdminOrders.tsx`
 
-1. **Тип `Order`** (строка ~49) — добавить:
+1. **Тип `Order`** — после `payment_method: string | null;` (строка 53) добавить:
 ```ts
-payment_method: string | null;
+confirmation_method: string | null;
 ```
 
-2. **Запрос `fetchOrders`** (строка ~107) — добавить `payment_method,` в select.
+2. **Запрос `fetchOrders`** (после строки 113) — добавить в select:
+```ts
+confirmation_method,
+```
 
-3. **Вывод в карточке заказа** (после блока «Delivery type info», после строки 523) — добавить строку с иконкой:
+3. **Вывод в карточке заказа** (после блока «Payment method on delivery», после строки 533) — добавить:
 ```tsx
+{/* Confirmation method */}
 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-  <Banknote className="h-4 w-4" />
+  <Phone className="h-4 w-4" />
   <span>
-    Оплата при получении: {order.payment_method === "card" ? "Карта" : "Наличные"}
+    Подтверждение заказа: {order.confirmation_method === "message" ? "Написать" : "Позвонить"}
   </span>
 </div>
 ```
-(`Banknote` импортируется из `lucide-react`, проверить — добавить если нет).
+(Иконка `Phone` из `lucide-react` — проверить импорт, добавить если нет.)
 
 ### Файлы
 
-- `src/pages/Checkout.tsx` — состояние, UI-блок, передача `payment_method` в insert.
+- Миграция БД — добавление колонки `confirmation_method` в `orders`.
+- `src/pages/Checkout.tsx` — состояние, UI-блок над «Итого», передача поля в insert.
 - `src/pages/admin/AdminOrders.tsx` — тип, select, отображение.
 
 ### Что не меняется
 
-- БД — колонка `payment_method` уже существует со значением по умолчанию `'cash'`.
-- Existing email-уведомления (`send-new-order-notification`) — опционально можно расширить, но в этой задаче не запрошено.
+- Email-уведомления (`send-new-order-notification`) — в этой задаче не запрошено.
+- Дефолтное значение в БД — `'call'` (Позвонить), что совпадает с UI по умолчанию.
 
