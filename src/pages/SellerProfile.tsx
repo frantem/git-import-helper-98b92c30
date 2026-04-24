@@ -297,7 +297,7 @@ export default function SellerProfile() {
       />
       <Header />
 
-      <main className="container mx-auto px-3 py-4">
+      <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <PageHeader title="Продавец" />
 
         {/* Seller profile header */}
