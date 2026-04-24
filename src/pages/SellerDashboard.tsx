@@ -55,7 +55,7 @@ export default function SellerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
       <Header />
       <main className="container mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">{farmerName}</h1>
