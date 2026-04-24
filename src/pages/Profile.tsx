@@ -117,7 +117,7 @@ export default function Profile() {
   const canApply = !application || application.status === "rejected";
 
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-0 border-[#faf5ea]">
+    <div className="min-h-screen pb-16 md:pb-0 border-[#faf5ea] bg-[#faf5ea]">
       <Header />
 
       <main className="container mx-auto px-3 py-4">
