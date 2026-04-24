@@ -229,7 +229,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0 border-[#faf5ea]">
+    <div className="min-h-screen pb-20 md:pb-0 border-[#faf5ea] bg-[#faf5ea]">
       <Header />
 
       <main className="container mx-auto px-4 py-8">
