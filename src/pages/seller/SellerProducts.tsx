@@ -376,7 +376,7 @@ export default function SellerProducts() {
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <Header />
-      <main className="container mx-auto px-3 py-4">
+      <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <div className="flex items-center gap-2 mb-4">
           <Link to="/seller">
             <Button variant="ghost" className="p-2 min-h-[44px] min-w-[44px]">
