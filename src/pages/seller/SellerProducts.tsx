@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
+import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
