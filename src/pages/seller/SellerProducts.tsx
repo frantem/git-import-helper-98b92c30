@@ -733,6 +733,12 @@ export default function SellerProducts() {
           </div>
         </div>
       )}
+      <ImageCropDialog
+        open={!!cropSrc}
+        imageSrc={cropSrc}
+        onCancel={() => setCropSrc(null)}
+        onCropped={handleCroppedUpload}
+      />
     </div>
   );
 }
