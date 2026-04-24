@@ -455,7 +455,7 @@ export default function SellerProducts() {
             <h2 className="text-lg font-bold text-foreground">{editingProduct ? "Редактировать товар" : "Новый товар"}</h2>
           </div>
 
-          <div className="p-4 pb-28 space-y-4">
+          <div className="p-4 pb-28 space-y-4 bg-[#faf5ea]">
             <div className="space-y-2">
               <Label>Название <span className="text-destructive">*</span></Label>
               <Input value={productForm.title} onChange={(e) => setProductForm({ ...productForm, title: e.target.value })} placeholder="Название товара" />
