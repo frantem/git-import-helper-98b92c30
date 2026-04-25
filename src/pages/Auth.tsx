@@ -261,6 +261,33 @@ export default function Auth() {
               {getTitle()}
             </h1>
 
+            {(mode === "login" || mode === "register") && (
+              <Tabs
+                value={authMethod}
+                onValueChange={(v) => setAuthMethod(v as AuthMethod)}
+                className="mb-4"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="phone">Телефон</TabsTrigger>
+                  <TabsTrigger value="email">Email</TabsTrigger>
+                </TabsList>
+                <TabsContent value="phone" className="mt-4">
+                  <PhoneAuthForm onSuccess={handlePhoneAuthSuccess} />
+                  <p className="mt-4 text-center text-xs text-muted-foreground">
+                    Регистрируясь, вы соглашаетесь с{" "}
+                    <a href="/privacy-policy" className="text-primary hover:underline">
+                      политикой конфиденциальности
+                    </a>
+                  </p>
+                </TabsContent>
+                <TabsContent value="email" className="mt-4">
+                  {/* Email/password form rendered below via existing markup */}
+                </TabsContent>
+              </Tabs>
+            )}
+
+            {/* Hide email/password form when user is on phone tab in login/register modes */}
+            {!((mode === "login" || mode === "register") && authMethod === "phone") && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (
                 <>
