@@ -510,8 +510,9 @@ export default function Auth() {
                 </>
               )}
             </form>
+            )}
 
-            {mode === "login" && (
+            {mode === "login" && authMethod === "email" && (
               <div className="mt-4 space-y-3 text-center">
                 <button
                   type="button"
