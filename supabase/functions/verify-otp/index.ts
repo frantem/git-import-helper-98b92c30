@@ -78,10 +78,10 @@ Deno.serve(async (req) => {
   }
 
   const phone = normalizeBYPhone(body.phone);
-  if (!phone) return jsonResponse({ error: "Некорректный номер телефона" }, 400);
+  if (!phone) return jsonResponse({ success: false, error: "Некорректный номер телефона" });
 
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  if (!/^\d{4}$/.test(code)) return jsonResponse({ error: "Код должен состоять из 4 цифр" }, 400);
+  if (!/^\d{4}$/.test(code)) return jsonResponse({ success: false, error: "Код должен состоять из 4 цифр" });
 
   const admin = createClient(supabaseUrl, serviceKey);
 
@@ -99,16 +99,16 @@ Deno.serve(async (req) => {
 
   if (otpFetchError) {
     console.error("OTP fetch error:", otpFetchError);
-    return jsonResponse({ error: "Ошибка сервера" }, 500);
+    return jsonResponse({ success: false, error: "Ошибка сервера" });
   }
 
   if (!otpRow) {
-    return jsonResponse({ error: "Код не найден или истёк. Запросите новый." }, 400);
+    return jsonResponse({ success: false, error: "Код не найден или истёк. Запросите новый." });
   }
 
   if (otpRow.attempts >= MAX_ATTEMPTS) {
     await admin.from("phone_otp_codes").update({ verified: true }).eq("id", otpRow.id);
-    return jsonResponse({ error: "Превышено число попыток. Запросите новый код." }, 400);
+    return jsonResponse({ success: false, error: "Превышено число попыток. Запросите новый код." });
   }
 
   const expectedHash = await hashCode(code, phone);
@@ -120,10 +120,11 @@ Deno.serve(async (req) => {
       .update({ attempts: newAttempts, verified: reachedLimit })
       .eq("id", otpRow.id);
     return jsonResponse({
+      success: false,
       error: reachedLimit
         ? "Превышено число попыток. Запросите новый код."
         : `Неверный код. Осталось попыток: ${MAX_ATTEMPTS - newAttempts}`,
-    }, 400);
+    });
   }
 
   // Mark verified
