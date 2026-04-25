@@ -117,15 +117,15 @@ const handler = async (req: Request): Promise<Response> => {
     const result = await res.json();
     console.log("Meta CAPI response:", JSON.stringify(result));
 
-    return new Response(JSON.stringify(result), {
-      status: res.ok ? 200 : 500,
+    return new Response(JSON.stringify({ ...result, skipped: !res.ok }), {
+      status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: unknown) {
-    console.error("Meta CAPI error:", error);
+    console.warn("Meta CAPI error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ skipped: true, error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };

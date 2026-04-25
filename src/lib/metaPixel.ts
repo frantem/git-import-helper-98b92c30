@@ -57,9 +57,10 @@ export const trackMetaEvent = (
       },
     })
     .then((res) => {
-      console.log(`[Meta Pixel] CAPI response (${eventName}):`, res.data ?? res.error);
+      if (res.error) console.warn(`[Meta Pixel] CAPI skipped (${eventName}):`, res.error);
+      else console.log(`[Meta Pixel] CAPI response (${eventName}):`, res.data);
     })
-    .catch((err) => console.error(`[Meta Pixel] CAPI error (${eventName}):`, err));
+    .catch((err) => console.warn(`[Meta Pixel] CAPI skipped (${eventName}):`, err));
 
   console.log(`[Meta Pixel] Event sent: ${eventName}`, eventId, params);
   return eventId;

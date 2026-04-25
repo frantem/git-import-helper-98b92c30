@@ -78,10 +78,10 @@ Deno.serve(async (req) => {
   }
 
   const phone = normalizeBYPhone(body.phone);
-  if (!phone) return jsonResponse({ error: "Некорректный номер телефона" }, 400);
+  if (!phone) return jsonResponse({ success: false, error: "Некорректный номер телефона" });
 
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  if (!/^\d{4}$/.test(code)) return jsonResponse({ error: "Код должен состоять из 4 цифр" }, 400);
+  if (!/^\d{4}$/.test(code)) return jsonResponse({ success: false, error: "Код должен состоять из 4 цифр" });
 
   const admin = createClient(supabaseUrl, serviceKey);
 
@@ -99,16 +99,16 @@ Deno.serve(async (req) => {
 
   if (otpFetchError) {
     console.error("OTP fetch error:", otpFetchError);
-    return jsonResponse({ error: "Ошибка сервера" }, 500);
+    return jsonResponse({ success: false, error: "Ошибка сервера" });
   }
 
   if (!otpRow) {
-    return jsonResponse({ error: "Код не найден или истёк. Запросите новый." }, 400);
+    return jsonResponse({ success: false, error: "Код не найден или истёк. Запросите новый." });
   }
 
   if (otpRow.attempts >= MAX_ATTEMPTS) {
     await admin.from("phone_otp_codes").update({ verified: true }).eq("id", otpRow.id);
-    return jsonResponse({ error: "Превышено число попыток. Запросите новый код." }, 400);
+    return jsonResponse({ success: false, error: "Превышено число попыток. Запросите новый код." });
   }
 
   const expectedHash = await hashCode(code, phone);
@@ -120,85 +120,84 @@ Deno.serve(async (req) => {
       .update({ attempts: newAttempts, verified: reachedLimit })
       .eq("id", otpRow.id);
     return jsonResponse({
+      success: false,
       error: reachedLimit
         ? "Превышено число попыток. Запросите новый код."
         : `Неверный код. Осталось попыток: ${MAX_ATTEMPTS - newAttempts}`,
-    }, 400);
+    });
   }
 
   // Mark verified
   await admin.from("phone_otp_codes").update({ verified: true }).eq("id", otpRow.id);
 
   // Find or create user
-  const email = phoneToEmail(phone);
-
-  // Check if user exists by listing users filtered by email
-  // (admin.listUsers paginates; with our load it's fine, but use direct query for safety)
-  const { data: existingUserList } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1,
-    // Note: Supabase JS does not support email filter on listUsers directly,
-    // so we use a separate lookup against profiles by phone.
-  });
-  // Better: lookup by phone in profiles (unique)
+  const virtualEmail = phoneToEmail(phone);
   let userId: string | null = null;
+  let signInEmail = virtualEmail;
 
-  const { data: existingProfile } = await admin
+  // Existing profiles may belong to email/Google users, so use their real auth email.
+  const { data: existingProfile, error: profileLookupError } = await admin
     .from("profiles")
-    .select("user_id")
+    .select("user_id, email")
     .eq("phone", phone)
     .maybeSingle();
 
+  if (profileLookupError) {
+    console.error("Profile lookup error:", profileLookupError);
+    return jsonResponse({ success: false, error: "Ошибка сервера. Попробуйте позже." });
+  }
+
   if (existingProfile?.user_id) {
-    userId = existingProfile.user_id;
+    const existingUserId = existingProfile.user_id;
+    userId = existingUserId;
+    const { data: authUserData, error: authUserError } = await admin.auth.admin.getUserById(existingUserId);
+
+    if (authUserError || !authUserData?.user?.email) {
+      console.error("getUserById error:", authUserError);
+      return jsonResponse({ success: false, error: "Ошибка авторизации" });
+    }
+
+    signInEmail = authUserData.user.email;
   } else {
-    // Maybe user exists by virtual email but profile.phone is empty (first-time login)
-    // Try to find by getUserByEmail-like trick: use admin.listUsers and filter
-    // Fallback: just attempt createUser; if duplicate email -> fetch by listing
     const createResult = await admin.auth.admin.createUser({
-      email,
+      email: virtualEmail,
       email_confirm: true,
       password: randomPassword(),
       user_metadata: { phone, phone_auth: true },
     });
 
     if (createResult.error) {
-      // If user already exists with this email, find them
-      if (createResult.error.message?.toLowerCase().includes("already") ||
-          createResult.error.status === 422) {
-        // Find existing by paging through users (small project; OK)
+      if (createResult.error.message?.toLowerCase().includes("already") || createResult.error.status === 422) {
         let foundId: string | null = null;
         for (let page = 1; page <= 50 && !foundId; page++) {
           const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
           if (!list?.users || list.users.length === 0) break;
-          const found = list.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+          const found = list.users.find((u) => u.email?.toLowerCase() === virtualEmail.toLowerCase());
           if (found) foundId = found.id;
           if (list.users.length < 200) break;
         }
         if (!foundId) {
-          console.error("Could not find user despite 'already exists' error");
-          return jsonResponse({ error: "Ошибка сервера. Попробуйте позже." }, 500);
+          console.error("Could not find user despite duplicate virtual email");
+          return jsonResponse({ success: false, error: "Ошибка сервера. Попробуйте позже." });
         }
         userId = foundId;
       } else {
         console.error("createUser error:", createResult.error);
-        return jsonResponse({ error: "Не удалось создать аккаунт" }, 500);
+        return jsonResponse({ success: false, error: "Не удалось создать аккаунт" });
       }
     } else {
       userId = createResult.data.user?.id ?? null;
     }
 
     if (!userId) {
-      return jsonResponse({ error: "Ошибка сервера" }, 500);
+      return jsonResponse({ success: false, error: "Ошибка сервера" });
     }
 
-    // Update profile with phone (handle_new_user trigger created the profile already)
     await admin
       .from("profiles")
       .update({ phone, phone_verified: true })
       .eq("user_id", userId);
 
-    // Assign buyer role if missing
     const { data: existingRoles } = await admin
       .from("user_roles")
       .select("id")
@@ -208,24 +207,22 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Ensure phone_verified flag is true for existing users too
   await admin
     .from("profiles")
     .update({ phone_verified: true })
     .eq("user_id", userId);
 
-  // Generate a magic link, then verify it server-side to get a session token pair.
+  // Generate a magic link for the actual auth user email, then verify it server-side to get a session token pair.
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",
-    email,
+    email: signInEmail,
   });
 
   if (linkError || !linkData?.properties?.hashed_token) {
     console.error("generateLink error:", linkError);
-    return jsonResponse({ error: "Ошибка авторизации" }, 500);
+    return jsonResponse({ success: false, error: "Ошибка авторизации" });
   }
 
-  // Use anon client to verify the OTP/magiclink and get a real session
   const anonClient = createClient(supabaseUrl, anonKey);
   const { data: verifyData, error: verifyError } = await anonClient.auth.verifyOtp({
     type: "magiclink",
@@ -234,7 +231,7 @@ Deno.serve(async (req) => {
 
   if (verifyError || !verifyData?.session) {
     console.error("verifyOtp error:", verifyError);
-    return jsonResponse({ error: "Ошибка авторизации" }, 500);
+    return jsonResponse({ success: false, error: "Ошибка авторизации" });
   }
 
   return jsonResponse({
