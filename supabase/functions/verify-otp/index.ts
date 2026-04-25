@@ -147,8 +147,9 @@ Deno.serve(async (req) => {
   }
 
   if (existingProfile?.user_id) {
-    userId = existingProfile.user_id;
-    const { data: authUserData, error: authUserError } = await admin.auth.admin.getUserById(userId);
+    const existingUserId = existingProfile.user_id;
+    userId = existingUserId;
+    const { data: authUserData, error: authUserError } = await admin.auth.admin.getUserById(existingUserId);
 
     if (authUserError || !authUserData?.user?.email) {
       console.error("getUserById error:", authUserError);
