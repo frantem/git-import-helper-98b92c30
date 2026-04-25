@@ -811,6 +811,7 @@ export type Database = {
           id: string
           max_orders_per_day: number | null
           phone: string | null
+          phone_verified: boolean
           pickup_slots: Json | null
           updated_at: string
           user_id: string
@@ -826,6 +827,7 @@ export type Database = {
           id?: string
           max_orders_per_day?: number | null
           phone?: string | null
+          phone_verified?: boolean
           pickup_slots?: Json | null
           updated_at?: string
           user_id: string
@@ -841,6 +843,7 @@ export type Database = {
           id?: string
           max_orders_per_day?: number | null
           phone?: string | null
+          phone_verified?: boolean
           pickup_slots?: Json | null
           updated_at?: string
           user_id?: string
