@@ -533,7 +533,7 @@ export default function Auth() {
               </div>
             )}
 
-            {mode === "register" && (
+            {mode === "register" && authMethod === "email" && (
               <div className="mt-4 space-y-2 text-center">
                 <button
                   type="button"
