@@ -85,7 +85,7 @@ export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
         return;
       }
       toast.success("Код отправлен");
-      setResendCountdown(respData.retry_after ?? 30);
+      setResendCountdown(respData.retry_after ?? 60);
       setCode(["", "", "", ""]);
       setStep("code");
     } catch (e) {
@@ -269,7 +269,7 @@ export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
       <div className="text-center">
         {resendCountdown > 0 ? (
           <p className="text-sm text-muted-foreground">
-            Отправить код повторно через 0:{resendCountdown.toString().padStart(2, "0")}
+            Отправить код повторно через {Math.floor(resendCountdown / 60)}:{(resendCountdown % 60).toString().padStart(2, "0")}
           </p>
         ) : (
           <button
