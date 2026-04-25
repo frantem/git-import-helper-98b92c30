@@ -415,6 +415,54 @@ export type Database = {
           },
         ]
       }
+      phone_otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          verified: boolean
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          phone: string
+          verified?: boolean
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      phone_send_log: {
+        Row: {
+          id: string
+          phone: string
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          phone: string
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          phone?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
       pickup_points: {
         Row: {
           address: string
