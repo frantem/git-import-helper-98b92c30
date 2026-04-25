@@ -11,8 +11,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhoneAuthForm } from "@/components/PhoneAuthForm";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
+type AuthMethod = "phone" | "email";
 
 const isNetworkError = (msg: string) =>
   msg.includes("Load failed") || msg.includes("Failed to fetch") || msg.includes("NetworkError");
