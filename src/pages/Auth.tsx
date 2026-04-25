@@ -11,8 +11,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhoneAuthForm } from "@/components/PhoneAuthForm";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
+type AuthMethod = "phone" | "email";
 
 const isNetworkError = (msg: string) =>
   msg.includes("Load failed") || msg.includes("Failed to fetch") || msg.includes("NetworkError");
@@ -37,6 +40,14 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecoveryReady, setIsRecoveryReady] = useState(false);
   const [isCheckingRecovery, setIsCheckingRecovery] = useState(initialMode === "reset");
+  const [authMethod, setAuthMethod] = useState<AuthMethod>("phone");
+
+  const handlePhoneAuthSuccess = () => {
+    clearDraft("auth-form-draft");
+    const returnTo = localStorage.getItem('locus-return-to');
+    localStorage.removeItem('locus-return-to');
+    navigate(returnTo || "/profile");
+  };
 
   const { signIn, signUp, resetPassword, updatePassword, user } = useAuth();
   const navigate = useNavigate();
@@ -250,6 +261,33 @@ export default function Auth() {
               {getTitle()}
             </h1>
 
+            {(mode === "login" || mode === "register") && (
+              <Tabs
+                value={authMethod}
+                onValueChange={(v) => setAuthMethod(v as AuthMethod)}
+                className="mb-4"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="phone">Телефон</TabsTrigger>
+                  <TabsTrigger value="email">Email</TabsTrigger>
+                </TabsList>
+                <TabsContent value="phone" className="mt-4">
+                  <PhoneAuthForm onSuccess={handlePhoneAuthSuccess} />
+                  <p className="mt-4 text-center text-xs text-muted-foreground">
+                    Регистрируясь, вы соглашаетесь с{" "}
+                    <a href="/privacy-policy" className="text-primary hover:underline">
+                      политикой конфиденциальности
+                    </a>
+                  </p>
+                </TabsContent>
+                <TabsContent value="email" className="mt-4">
+                  {/* Email/password form rendered below via existing markup */}
+                </TabsContent>
+              </Tabs>
+            )}
+
+            {/* Hide email/password form when user is on phone tab in login/register modes */}
+            {!((mode === "login" || mode === "register") && authMethod === "phone") && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (
                 <>
@@ -472,8 +510,9 @@ export default function Auth() {
                 </>
               )}
             </form>
+            )}
 
-            {mode === "login" && (
+            {mode === "login" && authMethod === "email" && (
               <div className="mt-4 space-y-3 text-center">
                 <button
                   type="button"
@@ -494,7 +533,7 @@ export default function Auth() {
               </div>
             )}
 
-            {mode === "register" && (
+            {mode === "register" && authMethod === "email" && (
               <div className="mt-4 space-y-2 text-center">
                 <button
                   type="button"
