@@ -12,7 +12,7 @@ const corsHeaders = {
 const MTS_BASE_URL = "https://api.communicator.mts.by";
 const ALPHA_NAME = "Locusfood";
 const CODE_TTL_SECONDS = 300; // 5 min
-const RATE_LIMIT_SECONDS = 30; // min interval between sends per phone
+const RATE_LIMIT_SECONDS = 60; // min interval between sends per phone
 const HOURLY_LIMIT = 10; // max sends per phone per hour
 
 // Belarusian mobile operator codes
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     .limit(1);
 
   if (recent && recent.length > 0) {
-    return jsonResponse({ error: "Подождите 30 секунд перед повторной отправкой" }, 429);
+    return jsonResponse({ error: "Подождите минуту перед повторной отправкой" }, 429);
   }
 
   // Hourly limit
