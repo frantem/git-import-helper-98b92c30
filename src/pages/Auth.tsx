@@ -40,6 +40,14 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecoveryReady, setIsRecoveryReady] = useState(false);
   const [isCheckingRecovery, setIsCheckingRecovery] = useState(initialMode === "reset");
+  const [authMethod, setAuthMethod] = useState<AuthMethod>("phone");
+
+  const handlePhoneAuthSuccess = () => {
+    clearDraft("auth-form-draft");
+    const returnTo = localStorage.getItem('locus-return-to');
+    localStorage.removeItem('locus-return-to');
+    navigate(returnTo || "/profile");
+  };
 
   const { signIn, signUp, resetPassword, updatePassword, user } = useAuth();
   const navigate = useNavigate();
