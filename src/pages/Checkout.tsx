@@ -22,6 +22,7 @@ import {
   isPickupDateAvailable,
   getDeliveryTimeSlotsForDate,
   isDeliveryDateAvailable,
+  getMinskTime,
 } from "@/lib/pickupUtils";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { Check, MapPin, Truck, Banknote, RefreshCw, LogIn, Settings, Home, Package, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
