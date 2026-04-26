@@ -9,7 +9,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { calculatePickupTime, calculatePickupReadyDate, PickupTimeResult, calculateDeliveryTime, calculateDeliveryTimePerSeller, DeliveryTimeResult, parseWorkingHoursEnd } from "@/lib/pickupUtils";
+import {
+  calculatePickupTime,
+  calculatePickupReadyDate,
+  PickupTimeResult,
+  calculateDeliveryTime,
+  calculateDeliveryTimePerSeller,
+  DeliveryTimeResult,
+  parseWorkingHoursEnd,
+  safePrepTime,
+  getPickupTimeSlotsForDate,
+  isPickupDateAvailable,
+  getDeliveryTimeSlotsForDate,
+  isDeliveryDateAvailable,
+} from "@/lib/pickupUtils";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { Check, MapPin, Truck, Banknote, RefreshCw, LogIn, Settings, Home, Package, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -108,66 +121,40 @@ export default function Checkout() {
     return new Date(utcTime + 3 * 60 * 60000);
   };
 
-  // Calculate fast delivery time — bottleneck is the seller whose items are ready LATEST for the customer
-  const fastDeliveryResult = useMemo<DeliveryTimeResult>(() => {
-    // Group items by farmer_id and find the real bottleneck by actual ready datetime
-    const farmerIds = [...new Set(items.map(i => i.product.farmer_id).filter(Boolean))] as string[];
-
-    let bottleneckFarmerId: string | null = null;
-    let bottleneckMaxPrep = 90;
-    let latestReadyTimestamp = -1;
-
-    for (const fid of farmerIds) {
-      const farmerItems = items.filter(i => i.product.farmer_id === fid);
-      const maxPrep = Math.max(...farmerItems.map(i => (i.product as any).prep_time_minutes || 90));
+  // Build prep-per-seller list (используется и для доставки, и для слотов)
+  const prepPerSeller = useMemo(() => {
+    const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
+    return farmerIds.map((fid) => {
+      const farmerItems = items.filter((i) => i.product.farmer_id === fid);
+      const maxPrep = Math.max(0, ...farmerItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
       const s = sellerPickupSettings.get(fid);
-      const slots = (s?.pickup_slots as PickupSlots | null) ?? null;
-      const busy = s?.busy_dates ?? null;
-      const vacation = s?.vacation_dates ?? null;
-
-      const ready = calculatePickupReadyDate(maxPrep, slots, busy, vacation);
-      const readyTs = ready
-        ? ready.readyDate.getTime() - (ready.readyDate.getTime() % 86400000) + ready.readyTimeMinutes * 60000
-        : 0;
-
-      if (readyTs > latestReadyTimestamp) {
-        latestReadyTimestamp = readyTs;
-        bottleneckFarmerId = fid;
-        bottleneckMaxPrep = maxPrep;
-      }
-    }
-
-    // Build sellerData for only the bottleneck seller
-    const sellerData = bottleneckFarmerId ? (() => {
-      const s = sellerPickupSettings.get(bottleneckFarmerId);
-      return [{
-        farmerId: bottleneckFarmerId,
-        pickupSlots: (s?.pickup_slots as PickupSlots | null) ?? null,
-        busyDates: s?.busy_dates ?? null,
-        vacationDates: s?.vacation_dates ?? null
-      }];
-    })() : [];
-
-    const maxPrep = bottleneckFarmerId ? bottleneckMaxPrep : Math.max(...items.map(i => (i.product as any).prep_time_minutes || 90), 90);
-
-    // For pickup delivery type, respect pickup point working hours
-    const selectedPointData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
-    const ppEndMinutes = deliveryType === "pickup" ? parseWorkingHoursEnd(selectedPointData?.working_hours) ?? undefined : undefined;
-    return calculateDeliveryTime(maxPrep, sellerData, adminSettings, ppEndMinutes);
-  }, [items, sellerPickupSettings, adminSettings, deliveryType, selectedPoint, pickupPoints]);
-
-  // Collect all busy/vacation dates from sellers in cart (for calendar blocking)
-  const allBlockedDates = useMemo(() => {
-    const blocked: Date[] = [];
-    sellerPickupSettings.forEach((s) => {
-      [...(s.busy_dates || []), ...(s.vacation_dates || [])].forEach((d) => {
-        blocked.push(new Date(d + "T00:00:00"));
-      });
+      return {
+        farmerId: fid,
+        prepTimeMinutes: maxPrep,
+        schedule: {
+          pickupSlots: (s?.pickup_slots as PickupSlots | null) ?? null,
+          busyDates: s?.busy_dates ?? null,
+          vacationDates: s?.vacation_dates ?? null,
+        },
+      };
     });
-    return blocked;
-  }, [sellerPickupSettings]);
+  }, [items, sellerPickupSettings]);
 
-  // Compute earliest delivery date from fastDeliveryResult
+  // Pickup-point end-of-day cutoff (для типа "пункт выдачи")
+  const pickupPointEndMinutes = useMemo(() => {
+    if (deliveryType !== "pickup" || !selectedPoint) return undefined;
+    const point = pickupPoints.find((p) => p.id === selectedPoint);
+    return parseWorkingHoursEnd(point?.working_hours) ?? undefined;
+  }, [deliveryType, selectedPoint, pickupPoints]);
+
+  // Ближайшая доставка (учитывает ВСЕХ продавцов в корзине)
+  const fastDeliveryResult = useMemo<DeliveryTimeResult>(() => {
+    return calculateDeliveryTime(prepPerSeller, adminSettings, pickupPointEndMinutes);
+  }, [prepPerSeller, adminSettings, pickupPointEndMinutes]);
+
+
+
+  // Самая ранняя возможная дата доставки (для блокировки календаря)
   const earliestDeliveryDate = useMemo<Date>(() => {
     const now = getMinskTime();
     const text = fastDeliveryResult.text;
@@ -177,12 +164,11 @@ export default function Checkout() {
       d.setDate(d.getDate() + 1);
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
-    // Parse "DD.MM HH:MM–HH:MM"
     const match = text.match(/^(\d{2})\.(\d{2})/);
     if (match) {
       const day = parseInt(match[1]);
       const month = parseInt(match[2]) - 1;
-      let year = now.getFullYear();
+      const year = now.getFullYear();
       const candidate = new Date(year, month, day);
       if (candidate < now) candidate.setFullYear(year + 1);
       return candidate;
@@ -190,166 +176,42 @@ export default function Checkout() {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }, [fastDeliveryResult]);
 
-  // Whether courier delivery has any available date at all
   const noDeliveryAvailable = useMemo(
     () => fastDeliveryResult.text === "Нет доступных дат",
-    [fastDeliveryResult]
+    [fastDeliveryResult],
   );
 
-  // Generate available time slots for selected date (using Minsk time)
+  // Слоты доставки на выбранную дату (с учётом готовности всех продавцов)
   const availableTimeSlots = useMemo(() => {
-    if (!selectedDate) return [];
-    if (noDeliveryAvailable) return [];
-    const slots: string[] = [];
-    const { delivery_start_hour: startHour, delivery_end_hour: endHour } = adminSettings;
+    if (!selectedDate || noDeliveryAvailable) return [];
+    return getDeliveryTimeSlotsForDate(prepPerSeller, adminSettings, selectedDate, pickupPointEndMinutes);
+  }, [selectedDate, prepPerSeller, adminSettings, pickupPointEndMinutes, noDeliveryAvailable]);
 
-    // Check if selected date is the earliest delivery date
-    const isEarliestDate =
-      selectedDate.getFullYear() === earliestDeliveryDate.getFullYear() &&
-      selectedDate.getMonth() === earliestDeliveryDate.getMonth() &&
-      selectedDate.getDate() === earliestDeliveryDate.getDate();
-
-    let minSlotMinutes = isEarliestDate ? fastDeliveryResult.earliestMinutes : startHour * 60;
-
-    // Independent guard: if selected date is today (Minsk time), filter out past hours
-    const nowMinsk = getMinskTime();
-    const isToday =
-      selectedDate.getFullYear() === nowMinsk.getFullYear() &&
-      selectedDate.getMonth() === nowMinsk.getMonth() &&
-      selectedDate.getDate() === nowMinsk.getDate();
-    if (isToday) {
-      const currentMinskMinutes = nowMinsk.getHours() * 60 + nowMinsk.getMinutes();
-      minSlotMinutes = Math.max(minSlotMinutes, currentMinskMinutes);
-    }
-
-    for (let hour = startHour; hour < endHour && hour < 24; hour++) {
-      const slotMinutes = hour * 60;
-      if (slotMinutes < minSlotMinutes) continue;
-      const nextHour = hour + 1;
-      slots.push(`${hour.toString().padStart(2, "0")}:00–${nextHour.toString().padStart(2, "0")}:00`);
-    }
-    return slots;
-  }, [selectedDate, adminSettings, fastDeliveryResult, earliestDeliveryDate, noDeliveryAvailable]);
-
-  // Handle date selection
+  // Handle date/time selection
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-    setSelectedTime(""); // Reset time when date changes
+    setSelectedTime("");
   };
 
-  // Handle time selection and close popover
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
     setIsDateTimePopoverOpen(false);
   };
 
-  // Helper: generate time slots for a specific seller on a specific date (with carryover)
+  // Слоты самовывоза для конкретного продавца на дату
   const getSellerTimeSlots = (farmerId: string, date: Date): string[] => {
-    const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-    const settings = sellerPickupSettings.get(farmerId);
-    if (!settings?.pickup_slots) return [];
-    const slots = settings.pickup_slots as PickupSlots;
-    const dayKey = DAY_KEYS[date.getDay()];
-    const daySlot = slots[dayKey];
-    if (!daySlot || !daySlot.active) return [];
-
-    const parseT = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-    const slotStart = parseT(daySlot.start);
-    const slotEnd = parseT(daySlot.end);
-
-    // Check busy/vacation
-    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-    if (settings.busy_dates?.includes(dateStr)) return [];
-    if (settings.vacation_dates?.includes(dateStr)) return [];
-
-    // Get max prep time for this seller's items
-    const farmerItems = items.filter((i) => i.product.farmer_id === farmerId);
-    const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
-
-    // Calculate when the item is actually ready using carryover logic
-    const readyResult = calculatePickupReadyDate(
-      maxPrep,
-      slots,
-      settings.busy_dates,
-      settings.vacation_dates,
-    );
-
-    if (!readyResult) return [];
-
-    // Compare selected date with ready date
-    const readyDateStr = `${readyResult.readyDate.getFullYear()}-${(readyResult.readyDate.getMonth() + 1).toString().padStart(2, "0")}-${readyResult.readyDate.getDate().toString().padStart(2, "0")}`;
-
-    let earliestSlotMinutes = slotStart;
-
-    if (dateStr === readyDateStr) {
-      // On the ready date, slots start from readyTime
-      earliestSlotMinutes = Math.max(slotStart, readyResult.readyTimeMinutes);
-    } else if (date < readyResult.readyDate) {
-      // Before ready date — no slots available
-      return [];
-    }
-    // After ready date — full slot window available (earliestSlotMinutes = slotStart)
-
-    const result: string[] = [];
-    for (let hour = Math.floor(earliestSlotMinutes / 60); hour < Math.floor(slotEnd / 60) && hour < 24; hour++) {
-      const startMin = hour * 60;
-      const endMin = (hour + 1) * 60;
-      if (startMin < earliestSlotMinutes) continue;
-      if (endMin > slotEnd) continue;
-
-      result.push(`${hour.toString().padStart(2, "0")}:00\u2013${(hour + 1).toString().padStart(2, "0")}:00`);
-    }
-    return result;
+    const sellerData = prepPerSeller.find((s) => s.farmerId === farmerId);
+    if (!sellerData) return [];
+    return getPickupTimeSlotsForDate(sellerData.prepTimeMinutes, sellerData.schedule, date);
   };
 
-  // Check if a date is disabled for a specific seller (with carryover)
+  // Блокировка дат самовывоза для конкретного продавца
   const isDateDisabledForSeller = (date: Date, farmerId: string): boolean => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (date < today) return true;
-
-    const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-    const settings = sellerPickupSettings.get(farmerId);
-    if (!settings?.pickup_slots) return true;
-    const slots = settings.pickup_slots as PickupSlots;
-    const dayKey = DAY_KEYS[date.getDay()];
-    const daySlot = slots[dayKey];
-    if (!daySlot || !daySlot.active) return true;
-
-    // Check busy/vacation dates
-    const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-    if (settings.busy_dates?.includes(dateStr)) return true;
-    if (settings.vacation_dates?.includes(dateStr)) return true;
-
-    // Get max prep time for this seller's items
-    const farmerItems = items.filter((i) => i.product.farmer_id === farmerId);
-    const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
-
-    // Calculate when the item is actually ready using carryover logic
-    const readyResult = calculatePickupReadyDate(
-      maxPrep,
-      slots,
-      settings.busy_dates,
-      settings.vacation_dates,
-    );
-
-    if (!readyResult) return true;
-
-    // Date is available if it's on or after the ready date
-    const readyDateOnly = new Date(readyResult.readyDate);
-    readyDateOnly.setHours(0, 0, 0, 0);
-    const checkDateOnly = new Date(date);
-    checkDateOnly.setHours(0, 0, 0, 0);
-
-    if (checkDateOnly < readyDateOnly) return true;
-
-    // On the ready date, check if there are actually slots available
-    if (checkDateOnly.getTime() === readyDateOnly.getTime()) {
-      return getSellerTimeSlots(farmerId, date).length === 0;
-    }
-
-    return false;
+    const sellerData = prepPerSeller.find((s) => s.farmerId === farmerId);
+    if (!sellerData) return true;
+    return !isPickupDateAvailable(sellerData.prepTimeMinutes, sellerData.schedule, date);
   };
+
 
   // Calculate delivery cost
   const deliveryCost = deliveryType === "courier" ? 690 : 0; // 6,90р = 690 kopecks
@@ -553,7 +415,7 @@ export default function Checkout() {
           } else {
             const s = sellerPickupSettings.get(fid);
             const farmerItems = items.filter((i) => i.product.farmer_id === fid);
-            const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+            const maxPrep = Math.max(0, ...farmerItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
             const result = calculatePickupTime(
               maxPrep,
               s?.pickup_slots as PickupSlots | null ?? null,
@@ -792,7 +654,7 @@ export default function Checkout() {
               });
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const settings = sellerPickupSettings.get(fid);
-                const maxPrep = Math.max(...groupItems.map((i) => (i.product as any).prep_time_minutes || 90));
+                const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
                 const ppData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
                 const ppEnd = parseWorkingHoursEnd(ppData?.working_hours) ?? undefined;
                 const deliveryResult = calculateDeliveryTimePerSeller(
@@ -951,27 +813,12 @@ export default function Checkout() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="start">
                       <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (date < today) return true;
                   const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                   if (dateOnly < earliestDeliveryDate) return true;
-                  // Block busy/vacation dates of all sellers
-                  if (allBlockedDates.some((bd) =>
-                    bd.getFullYear() === date.getFullYear() &&
-                    bd.getMonth() === date.getMonth() &&
-                    bd.getDate() === date.getDate()
-                  )) return true;
-                  // Independent today-check by Minsk time: block today if no future slots remain
-                  const nowMinsk = getMinskTime();
-                  const isToday =
-                    date.getFullYear() === nowMinsk.getFullYear() &&
-                    date.getMonth() === nowMinsk.getMonth() &&
-                    date.getDate() === nowMinsk.getDate();
-                  if (isToday) {
-                    const currentMinskMinutes = nowMinsk.getHours() * 60 + nowMinsk.getMinutes();
-                    const { delivery_start_hour: sH, delivery_end_hour: eH } = adminSettings;
-                    const minStart = Math.max(sH * 60, currentMinskMinutes, fastDeliveryResult.earliestMinutes);
-                    if (minStart >= eH * 60) return true;
-                  }
-                  return false;
+                  return !isDeliveryDateAvailable(prepPerSeller, adminSettings, date, pickupPointEndMinutes);
                 }} className="pointer-events-auto" locale={ru} />
                       {selectedDate && <div className="p-3 border-t border-border">
                           <Label className="text-sm mb-2 block">Время:</Label>
@@ -1019,7 +866,7 @@ export default function Checkout() {
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const farmer = farmersMap.get(fid);
                 const settings = sellerPickupSettings.get(fid);
-                const maxPrep = Math.max(...groupItems.map((i) => (i.product as any).prep_time_minutes || 90));
+                const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
 
                 const pickupResult = calculatePickupTime(
                   maxPrep,
