@@ -115,12 +115,7 @@ export default function Checkout() {
     delivery_end_hour: 24
   });
 
-  // Helper: Get current time in Minsk timezone (UTC+3)
-  const getMinskTime = () => {
-    const now = new Date();
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    return new Date(utcTime + 3 * 60 * 60000);
-  };
+  // Helper: Get current time in Minsk timezone (UTC+3) — единый источник из pickupUtils
 
   // Build prep-per-seller list (используется и для доставки, и для слотов)
   const prepPerSeller = useMemo(() => {
