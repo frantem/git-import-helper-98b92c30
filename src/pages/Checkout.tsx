@@ -424,7 +424,7 @@ export default function Checkout() {
           } else {
             const s = sellerPickupSettings.get(fid);
             const farmerItems = items.filter((i) => i.product.farmer_id === fid);
-            const maxPrep = Math.max(...farmerItems.map((i) => (i.product as any).prep_time_minutes || 90));
+            const maxPrep = Math.max(0, ...farmerItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
             const result = calculatePickupTime(
               maxPrep,
               s?.pickup_slots as PickupSlots | null ?? null,
