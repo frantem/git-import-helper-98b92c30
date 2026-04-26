@@ -766,7 +766,9 @@ export default function Checkout() {
                   <Label htmlFor="courier-fast" className="flex-1 cursor-pointer">
                     <span className="font-medium text-foreground">Ближайшая доставка</span>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      Привезем ваш заказ: {fastDeliveryResult.text}
+                      {noDeliveryAvailable
+                        ? "Нет доступных дат для доставки в ближайшее время"
+                        : `Привезем ваш заказ: ${fastDeliveryResult.text}`}
                     </p>
                   </Label>
                 </div>
