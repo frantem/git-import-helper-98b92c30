@@ -152,16 +152,7 @@ export default function Checkout() {
     return calculateDeliveryTime(prepPerSeller, adminSettings, pickupPointEndMinutes);
   }, [prepPerSeller, adminSettings, pickupPointEndMinutes]);
 
-  // Все занятые/отпускные даты (для блокировки календаря)
-  const allBlockedDates = useMemo(() => {
-    const blocked: Date[] = [];
-    sellerPickupSettings.forEach((s) => {
-      [...(s.busy_dates || []), ...(s.vacation_dates || [])].forEach((d) => {
-        blocked.push(new Date(d + "T00:00:00"));
-      });
-    });
-    return blocked;
-  }, [sellerPickupSettings]);
+
 
   // Самая ранняя возможная дата доставки (для блокировки календаря)
   const earliestDeliveryDate = useMemo<Date>(() => {
