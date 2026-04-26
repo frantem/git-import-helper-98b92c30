@@ -822,27 +822,12 @@ export default function Checkout() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="start">
                       <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (date < today) return true;
                   const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                   if (dateOnly < earliestDeliveryDate) return true;
-                  // Block busy/vacation dates of all sellers
-                  if (allBlockedDates.some((bd) =>
-                    bd.getFullYear() === date.getFullYear() &&
-                    bd.getMonth() === date.getMonth() &&
-                    bd.getDate() === date.getDate()
-                  )) return true;
-                  // Independent today-check by Minsk time: block today if no future slots remain
-                  const nowMinsk = getMinskTime();
-                  const isToday =
-                    date.getFullYear() === nowMinsk.getFullYear() &&
-                    date.getMonth() === nowMinsk.getMonth() &&
-                    date.getDate() === nowMinsk.getDate();
-                  if (isToday) {
-                    const currentMinskMinutes = nowMinsk.getHours() * 60 + nowMinsk.getMinutes();
-                    const { delivery_start_hour: sH, delivery_end_hour: eH } = adminSettings;
-                    const minStart = Math.max(sH * 60, currentMinskMinutes, fastDeliveryResult.earliestMinutes);
-                    if (minStart >= eH * 60) return true;
-                  }
-                  return false;
+                  return !isDeliveryDateAvailable(prepPerSeller, adminSettings, date, pickupPointEndMinutes);
                 }} className="pointer-events-auto" locale={ru} />
                       {selectedDate && <div className="p-3 border-t border-border">
                           <Label className="text-sm mb-2 block">Время:</Label>
