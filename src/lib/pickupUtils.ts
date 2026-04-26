@@ -16,50 +16,59 @@ export const SLOT_STEP_MINUTES = 30;
 export const DEFAULT_SLOT_LENGTH_MINUTES = 60;
 
 /** Сколько дней вперёд просматриваем при поиске доступных дат */
-const SEARCH_HORIZON_DAYS = 14;
+const SEARCH_HORIZON_DAYS = 30;
 
 // ============================================================================
 // ВРЕМЯ И ФОРМАТ
 // ============================================================================
 
-/** Текущее время в Europe/Minsk (UTC+3) */
-function getMinskTime(): Date {
+/**
+ * Текущее время в Europe/Minsk (UTC+3) как «локальный» Date,
+ * у которого getHours/getDate соответствуют минскому календарю.
+ */
+export function getMinskTime(): Date {
   const now = new Date();
-  const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utcTime + 3 * 60 * 60000);
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utcMs + 3 * 60 * 60000);
 }
 
-/** Форматировать минуты от полуночи как HH:MM */
-function fmtMinutes(totalMinutes: number): string {
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-}
-
-/** Парсинг "HH:MM" в минуты от полуночи */
-function parseTime(t: string): number {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-
-/** Форматирование даты как DD.MM */
-function fmtDate(d: Date): string {
-  return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}`;
-}
-
-/** Один день в YYYY-MM-DD */
+/** YYYY-MM-DD дата без учёта времени */
 function toYmd(d: Date): string {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
 }
 
-/** Проверка, что строка с датой совпадает с целевой датой по дню */
-function dateMatches(dateStr: string, target: Date): boolean {
-  const d = new Date(dateStr);
-  return (
-    d.getFullYear() === target.getFullYear() &&
-    d.getMonth() === target.getMonth() &&
-    d.getDate() === target.getDate()
-  );
+/** Минуты от полуночи в HH:MM. Корректно обрабатывает 24:00 как 24:00 (используется только для конца окна). */
+function fmtMinutes(totalMinutes: number): string {
+  const safe = Math.max(0, Math.min(24 * 60, Math.round(totalMinutes)));
+  const h = Math.floor(safe / 60);
+  const m = safe % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
+/** Парсинг "HH:MM" в минуты. Невалидное → null. */
+function parseTime(t: string | null | undefined): number | null {
+  if (!t) return null;
+  const m = t.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  if (isNaN(h) || isNaN(mm) || h < 0 || h > 24 || mm < 0 || mm > 59) return null;
+  return h * 60 + mm;
+}
+
+function fmtDate(d: Date): string {
+  return `${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+}
+
+/** Дата (только Y/M/D) из строки YYYY-MM-DD без сдвигов часового пояса. */
+function ymdToDate(s: string): Date | null {
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (!m) return null;
+  return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+}
+
+function sameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 /** Округление вверх до ближайшего шага */
@@ -67,29 +76,19 @@ function ceilToStep(value: number, step: number): number {
   return Math.ceil(value / step) * step;
 }
 
-/** Безопасное время приготовления: 0 — это валидное значение, fallback применяется только если undefined/null */
+/** Безопасное время приготовления: 0 — валидно. */
 export function safePrepTime(value: number | null | undefined, fallback = 0): number {
   if (value === null || value === undefined || Number.isNaN(value)) return fallback;
-  return Math.max(0, Math.floor(value));
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.floor(n));
 }
 
-/** Префикс "Сегодня" / "Завтра" / "DD.MM" */
 function dayPrefix(checkDate: Date, todayMinsk: Date): string {
-  const sameDay =
-    checkDate.getFullYear() === todayMinsk.getFullYear() &&
-    checkDate.getMonth() === todayMinsk.getMonth() &&
-    checkDate.getDate() === todayMinsk.getDate();
-  if (sameDay) return "Сегодня";
-
+  if (sameDay(checkDate, todayMinsk)) return "Сегодня";
   const tomorrow = new Date(todayMinsk);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (
-    checkDate.getFullYear() === tomorrow.getFullYear() &&
-    checkDate.getMonth() === tomorrow.getMonth() &&
-    checkDate.getDate() === tomorrow.getDate()
-  ) {
-    return "Завтра";
-  }
+  if (sameDay(checkDate, tomorrow)) return "Завтра";
   return fmtDate(checkDate);
 }
 
@@ -105,12 +104,15 @@ export interface PickupTimeResult {
 export interface DeliveryTimeResult {
   text: string;
   isTomorrow: boolean;
-  earliestMinutes: number; // минуты от полуночи на дату доставки
+  earliestMinutes: number;
 }
 
 export interface PickupReadyDateResult {
+  /** Дата, в которую заказ полностью готов (Y/M/D Минск) */
   readyDate: Date;
+  /** Минута дня, в которую заказ становится готов */
   readyTimeMinutes: number;
+  /** Сколько дней вперёд от сегодня (для UI) */
   dayOffset: number;
 }
 
@@ -128,11 +130,47 @@ interface AdminDeliverySettings {
 }
 
 interface OrderCounts {
-  [key: string]: number; // "farmerId:YYYY-MM-DD" -> count
+  [key: string]: number;
 }
 
-interface CookingCarryover {
-  remainingMinutes: number;
+// ============================================================================
+// ПРОВЕРКА ДОСТУПНОСТИ ДНЯ ПРОДАВЦА
+// ============================================================================
+
+function dateInList(list: string[] | null, target: Date): boolean {
+  if (!list || list.length === 0) return false;
+  const targetYmd = toYmd(target);
+  for (const s of list) {
+    const m = String(s).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (!m) continue;
+    const norm = `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+    if (norm === targetYmd) return true;
+  }
+  return false;
+}
+
+function isSellerDayAvailable(checkDate: Date, schedule: SellerSchedule): boolean {
+  const slots = schedule.pickupSlots;
+  if (!slots) return false;
+  const dayKey = DAY_KEYS[checkDate.getDay()];
+  const slot = slots[dayKey];
+  if (!slot || !slot.active) return false;
+  if (dateInList(schedule.busyDates, checkDate)) return false;
+  if (dateInList(schedule.vacationDates, checkDate)) return false;
+  return true;
+}
+
+function getSellerSlotForDate(
+  checkDate: Date,
+  schedule: SellerSchedule,
+): { start: number; end: number } | null {
+  if (!isSellerDayAvailable(checkDate, schedule)) return null;
+  const dayKey = DAY_KEYS[checkDate.getDay()];
+  const slot = schedule.pickupSlots![dayKey]!;
+  const start = parseTime(slot.start);
+  const end = parseTime(slot.end);
+  if (start === null || end === null || end <= start) return null;
+  return { start, end };
 }
 
 // ============================================================================
@@ -140,71 +178,12 @@ interface CookingCarryover {
 // ============================================================================
 
 /**
- * Проверить, активен ли день для продавца (рабочий, не выходной, не отпуск).
- */
-function isSellerDayAvailable(checkDate: Date, schedule: SellerSchedule): boolean {
-  const slots = schedule.pickupSlots;
-  if (!slots) return false;
-  const dayKey = DAY_KEYS[checkDate.getDay()];
-  const slot = slots[dayKey];
-  if (!slot || !slot.active) return false;
-  if (schedule.busyDates?.some((d) => dateMatches(d, checkDate))) return false;
-  if (schedule.vacationDates?.some((d) => dateMatches(d, checkDate))) return false;
-  return true;
-}
-
-/**
- * Получить рабочее окно (start, end) продавца на дату — в минутах от полуночи.
- * Возвращает null, если день недоступен.
- */
-function getSellerSlotForDate(checkDate: Date, schedule: SellerSchedule): { start: number; end: number } | null {
-  if (!isSellerDayAvailable(checkDate, schedule)) return null;
-  const dayKey = DAY_KEYS[checkDate.getDay()];
-  const slot = schedule.pickupSlots![dayKey]!;
-  return { start: parseTime(slot.start), end: parseTime(slot.end) };
-}
-
-/**
- * Распределить готовку по одному рабочему окну с учётом carryover.
- * Возвращает либо время готовности (минуты), либо новый carryover для переноса.
- */
-function cookInWindow(
-  remainingPrep: number,
-  slotStart: number,
-  slotEnd: number,
-  isToday: boolean,
-  nowMinutes: number,
-): { readyTime: number | null; carryover: CookingCarryover | null } {
-  const cookStart = isToday ? Math.max(nowMinutes, slotStart) : slotStart;
-  const availableInWindow = slotEnd - cookStart;
-
-  if (availableInWindow <= 0) {
-    return { readyTime: null, carryover: { remainingMinutes: remainingPrep } };
-  }
-
-  if (remainingPrep === 0) {
-    // Готовить ничего не нужно — готов прямо со старта окна
-    return { readyTime: cookStart, carryover: null };
-  }
-
-  if (remainingPrep <= availableInWindow) {
-    return { readyTime: cookStart + remainingPrep, carryover: null };
-  }
-
-  // Не успели — переносим остаток
-  return {
-    readyTime: null,
-    carryover: { remainingMinutes: remainingPrep - availableInWindow },
-  };
-}
-
-/**
- * Найти первую дату+минуту, когда товары продавца будут готовы для выдачи покупателю.
- * Учитывает: график работы, busy/vacation, минимальное окно выдачи (30 мин).
+ * Найти первую дату+минуту, когда заказ продавца будет ПОЛНОСТЬЮ готов.
+ * Готовка распределяется по последовательным рабочим окнам без буферов и без сброса прогресса.
  *
- * @param prepTimeMinutes общее время приготовления (сумма по продавцу). 0 = "в наличии".
- * @param requireMinPickupWindow требовать минимум MIN_PICKUP_WINDOW_MINUTES между готовностью и закрытием окна.
- *   true для самовывоза (покупатель должен успеть забрать), false для расчёта готовности к доставке.
+ * @param requireMinPickupWindow если true — требуется минимум MIN_PICKUP_WINDOW_MINUTES
+ *   между готовностью и закрытием окна выдачи (для самовывоза). Если в день готовности этого
+ *   запаса нет — переходим к следующему рабочему окну (готовка уже завершена, ищем где выдать).
  */
 export function findEarliestReady(
   prepTimeMinutes: number,
@@ -216,49 +195,74 @@ export function findEarliestReady(
 ): PickupReadyDateResult | null {
   const prep = safePrepTime(prepTimeMinutes);
   const now = options.nowMinsk ?? getMinskTime();
+  const minRequired = options.requireMinPickupWindow ? MIN_PICKUP_WINDOW_MINUTES : 0;
 
-  // Если у продавца нет графика — считаем что готов сразу
+  // Если у продавца нет графика — fallback: готов сразу через prep минут
   if (!schedule.pickupSlots) {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     return {
-      readyDate: new Date(now),
-      readyTimeMinutes: nowMinutes + prep,
+      readyDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      readyTimeMinutes: Math.min(24 * 60, nowMinutes + prep),
       dayOffset: 0,
     };
   }
 
-  let carryover: CookingCarryover | null = null;
-  const minRequired = options.requireMinPickupWindow ? MIN_PICKUP_WINDOW_MINUTES : 0;
+  let remaining = prep;
+  /** Дата и время фактической готовности (когда она наступит) */
+  let cookedReadyDate: Date | null = null;
+  let cookedReadyMinutes: number | null = null;
 
   for (let offset = 0; offset < SEARCH_HORIZON_DAYS; offset++) {
-    const checkDate = new Date(now);
+    const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
 
     const window = getSellerSlotForDate(checkDate, schedule);
-    if (!window) continue; // день недоступен — carryover сохраняется
+    if (!window) continue;
 
     const isToday = offset === 0;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const remaining = carryover?.remainingMinutes ?? prep;
 
-    const result = cookInWindow(remaining, window.start, window.end, isToday, nowMinutes);
-    carryover = result.carryover;
+    // Если готовка ещё не завершена — продолжаем готовить в этом окне
+    if (cookedReadyDate === null) {
+      const cookStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const available = window.end - cookStart;
+      if (available <= 0) continue;
 
-    if (result.readyTime === null) continue;
+      if (remaining <= available) {
+        // Готовка завершена в этом окне
+        const ready = cookStart + remaining;
+        cookedReadyDate = checkDate;
+        cookedReadyMinutes = ready;
+        remaining = 0;
 
-    // Проверка минимального окна выдачи (для самовывоза)
-    if (window.end - result.readyTime < minRequired) {
-      // Окно слишком короткое после готовности — продолжаем искать следующее
-      // и сбрасываем carryover (готовка уже завершена в этом окне, но забрать нельзя)
-      carryover = null;
-      continue;
+        // Проверка минимального окна выдачи в этот же день
+        if (window.end - ready >= minRequired) {
+          return {
+            readyDate: checkDate,
+            readyTimeMinutes: ready,
+            dayOffset: offset,
+          };
+        }
+        // Иначе ищем следующее доступное окно для выдачи
+        continue;
+      } else {
+        remaining -= available;
+        continue;
+      }
     }
 
-    return {
-      readyDate: checkDate,
-      readyTimeMinutes: result.readyTime,
-      dayOffset: offset,
-    };
+    // Готовка уже завершена — ищем первое окно с минимальным запасом
+    if (window.end - window.start >= minRequired) {
+      // Можем выдать со старта этого окна
+      const giveOutStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      if (window.end - giveOutStart >= minRequired) {
+        return {
+          readyDate: checkDate,
+          readyTimeMinutes: giveOutStart,
+          dayOffset: offset,
+        };
+      }
+    }
   }
 
   return null;
@@ -268,32 +272,40 @@ export function findEarliestReady(
 // САМОВЫВОЗ
 // ============================================================================
 
-/**
- * Доступные слоты самовывоза для продавца на конкретную дату.
- * Слоты с шагом 30 мин, длиной 1 час (или меньше, чтобы не выйти за окно).
- * На дату готовности первый слот начинается с округлённого вверх времени готовности.
- */
 export function getPickupTimeSlotsForDate(
   prepTimeMinutes: number,
   schedule: SellerSchedule,
   date: Date,
+  nowMinsk?: Date,
 ): string[] {
   const window = getSellerSlotForDate(date, schedule);
   if (!window) return [];
 
-  const ready = findEarliestReady(prepTimeMinutes, schedule, { requireMinPickupWindow: true });
+  const now = nowMinsk ?? getMinskTime();
+  const ready = findEarliestReady(prepTimeMinutes, schedule, {
+    requireMinPickupWindow: true,
+    nowMinsk: now,
+  });
   if (!ready) return [];
 
-  // Если выбранная дата раньше даты готовности — нет слотов
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const readyDateOnly = new Date(ready.readyDate.getFullYear(), ready.readyDate.getMonth(), ready.readyDate.getDate());
-  if (dateOnly.getTime() < readyDateOnly.getTime()) return [];
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const readyDateOnly = new Date(
+    ready.readyDate.getFullYear(),
+    ready.readyDate.getMonth(),
+    ready.readyDate.getDate(),
+  ).getTime();
+  if (dateOnly < readyDateOnly) return [];
 
-  // Ранний край: на дату готовности — фактическое время готовности (округлённое вверх до шага),
-  // на более поздние даты — начало рабочего окна.
+  // Минимальный старт слота
   let earliest = window.start;
-  if (dateOnly.getTime() === readyDateOnly.getTime()) {
+  if (dateOnly === readyDateOnly) {
     earliest = Math.max(window.start, ceilToStep(ready.readyTimeMinutes, SLOT_STEP_MINUTES));
+  }
+
+  // Если выбранная дата = сегодня, не предлагать прошедшее время
+  if (sameDay(date, now)) {
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    earliest = Math.max(earliest, ceilToStep(nowMinutes, SLOT_STEP_MINUTES));
   }
 
   const slots: string[] = [];
@@ -305,22 +317,21 @@ export function getPickupTimeSlotsForDate(
   return slots;
 }
 
-/**
- * Проверка: доступна ли дата для самовывоза у продавца.
- */
 export function isPickupDateAvailable(
   prepTimeMinutes: number,
   schedule: SellerSchedule,
   date: Date,
+  nowMinsk?: Date,
 ): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (date < today) return false;
-  return getPickupTimeSlotsForDate(prepTimeMinutes, schedule, date).length > 0;
+  const now = nowMinsk ?? getMinskTime();
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const targetOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  if (targetOnly < todayOnly) return false;
+  return getPickupTimeSlotsForDate(prepTimeMinutes, schedule, date, now).length > 0;
 }
 
 /**
- * Краткое описание ближайшего самовывоза: "Сегодня 10:30–17:00", "Завтра 09:00–18:00" и т.д.
+ * Краткое описание ближайшего самовывоза: "Сегодня 10:30–17:00" и т.д.
  * Учитывает максимум заказов в день.
  */
 export function calculatePickupTime(
@@ -352,52 +363,60 @@ export function calculatePickupTime(
   };
 
   const now = getMinskTime();
-  let carryover: CookingCarryover | null = null;
+  let remaining = prep;
+  let cooked = false;
 
   for (let offset = 0; offset < SEARCH_HORIZON_DAYS; offset++) {
-    const checkDate = new Date(now);
+    const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
 
     const window = getSellerSlotForDate(checkDate, schedule);
     if (!window) continue;
 
-    // Проверка лимита заказов на эту дату
+    // Проверка лимита заказов на дату
     const dateStr = toYmd(checkDate);
     const currentCount = orderCounts[`${farmerId}:${dateStr}`] || 0;
-    if (currentCount >= maxOrdersPerDay) continue;
+    if (currentCount >= maxOrdersPerDay) {
+      // Этот день забит — не можем готовить и не можем выдавать в этот день
+      continue;
+    }
 
     const isToday = offset === 0;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const remaining = carryover?.remainingMinutes ?? prep;
 
-    const cooked = cookInWindow(remaining, window.start, window.end, isToday, nowMinutes);
-    carryover = cooked.carryover;
+    if (!cooked) {
+      const cookStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const available = window.end - cookStart;
+      if (available <= 0) continue;
 
-    if (cooked.readyTime === null) continue;
-
-    // Минимальное окно выдачи 30 мин
-    if (window.end - cooked.readyTime < MIN_PICKUP_WINDOW_MINUTES) {
-      carryover = null;
-      continue;
+      if (remaining <= available) {
+        const ready = cookStart + remaining;
+        cooked = true;
+        remaining = 0;
+        const readyAligned = Math.max(ready, ceilToStep(ready, SLOT_STEP_MINUTES));
+        if (window.end - readyAligned >= MIN_PICKUP_WINDOW_MINUTES) {
+          const text = `${dayPrefix(checkDate, now)} ${fmtMinutes(readyAligned)}\u2013${fmtMinutes(window.end)}`;
+          return { text, isFallback: false };
+        }
+        continue;
+      } else {
+        remaining -= available;
+        continue;
+      }
     }
 
-    const readyAligned = ceilToStep(cooked.readyTime, SLOT_STEP_MINUTES);
-    if (window.end - readyAligned < MIN_PICKUP_WINDOW_MINUTES) {
-      carryover = null;
-      continue;
+    // Готовка завершена — ищем окно для выдачи
+    const giveOutStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+    const aligned = ceilToStep(giveOutStart, SLOT_STEP_MINUTES);
+    if (window.end - aligned >= MIN_PICKUP_WINDOW_MINUTES) {
+      const text = `${dayPrefix(checkDate, now)} ${fmtMinutes(aligned)}\u2013${fmtMinutes(window.end)}`;
+      return { text, isFallback: false };
     }
-
-    const text = `${dayPrefix(checkDate, now)} ${fmtMinutes(readyAligned)}\u2013${fmtMinutes(window.end)}`;
-    return { text, isFallback: false };
   }
 
   return { text: "Нет доступных дат", isFallback: false };
 }
 
-/**
- * Альтернативный API: вернуть структурированную дату+время первой готовности.
- * Используется в Checkout для блокировки календаря.
- */
 export function calculatePickupReadyDate(
   prepTimeMinutes: number,
   pickupSlots: PickupSlots | null | undefined,
@@ -415,9 +434,6 @@ export function calculatePickupReadyDate(
 // ДОСТАВКА (КУРЬЕР / ПУНКТ ВЫДАЧИ)
 // ============================================================================
 
-/**
- * Парсинг "10:00–20:00" → конец работы в минутах.
- */
 export function parseWorkingHoursEnd(workingHours: string | null | undefined): number | null {
   if (!workingHours) return null;
   const match = workingHours.match(/(\d{1,2}:\d{2})\s*[-\u2013]\s*(\d{1,2}:\d{2})/);
@@ -425,77 +441,86 @@ export function parseWorkingHoursEnd(workingHours: string | null | undefined): n
   return parseTime(match[2]);
 }
 
+/** Нормализация настроек админа с защитой от мусора */
+function normalizeAdminSettings(s: AdminDeliverySettings): {
+  cutoffMin: number;
+  avgDelivery: number;
+  deliveryStart: number;
+  deliveryEnd: number;
+} {
+  const cutoffMin = Math.max(0, Math.min(24 * 60, Math.floor(s.cutoff_time_minutes ?? 1050)));
+  const avgDelivery = Math.max(0, Math.floor(s.avg_delivery_time_minutes ?? 70));
+  const startH = Math.max(0, Math.min(24, Math.floor(s.delivery_start_hour ?? 6)));
+  const endH = Math.max(0, Math.min(24, Math.floor(s.delivery_end_hour ?? 24)));
+  const deliveryStart = startH * 60;
+  let deliveryEnd = endH === 0 ? 24 * 60 : endH * 60;
+  if (deliveryEnd <= deliveryStart) {
+    // Битые настройки — fallback
+    deliveryEnd = 24 * 60;
+  }
+  return { cutoffMin, avgDelivery, deliveryStart, deliveryEnd };
+}
+
 /**
- * Когда заказ от ВСЕХ продавцов в корзине будет готов и доставлен покупателю.
- * Узкое место — самый поздний из готовых продавцов.
- *
- * @param sellerSettings ВСЕ продавцы в корзине, не только bottleneck
- * @param pickupPointEndMinutes ограничение по часу закрытия пункта выдачи
+ * Когда заказ ВСЕХ продавцов в корзине будет готов и доставлен покупателю.
  */
 export function calculateDeliveryTime(
   prepPerSeller: Array<{ prepTimeMinutes: number; schedule: SellerSchedule }>,
   adminSettings: AdminDeliverySettings,
   pickupPointEndMinutes?: number,
 ): DeliveryTimeResult {
-  const { cutoff_time_minutes, avg_delivery_time_minutes, delivery_start_hour, delivery_end_hour } = adminSettings;
-  const deliveryStartMin = delivery_start_hour * 60;
-  const rawDeliveryEndMin = delivery_end_hour * 60;
-  const deliveryEndMin = pickupPointEndMinutes
-    ? Math.min(rawDeliveryEndMin, pickupPointEndMinutes)
-    : rawDeliveryEndMin;
-
-  const now = getMinskTime();
-
-  // Если продавцов нет — fallback (не должно происходить в норме)
   if (prepPerSeller.length === 0) {
     return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
   }
 
-  // Считаем готовность каждого продавца независимо.
-  // Для доставки требуем только что заказ ВООБЩЕ готов в окне (не нужны 30 мин на самовывоз).
+  const { cutoffMin, avgDelivery, deliveryStart, deliveryEnd: rawEnd } = normalizeAdminSettings(adminSettings);
+  const deliveryEnd = pickupPointEndMinutes ? Math.min(rawEnd, pickupPointEndMinutes) : rawEnd;
+  if (deliveryEnd <= deliveryStart) {
+    return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
+  }
+
+  const now = getMinskTime();
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Готовность каждого продавца
   const readiness = prepPerSeller.map((s) =>
     findEarliestReady(s.prepTimeMinutes, s.schedule, { requireMinPickupWindow: false, nowMinsk: now }),
   );
-
   if (readiness.some((r) => r === null)) {
     return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
   }
 
-  // Узкое место — продавец с самой поздней готовностью (по абсолютному времени)
+  // Самая поздняя готовность (по абсолютному времени)
   const latestReady = readiness.reduce<PickupReadyDateResult>((acc, r) => {
-    const accTs = acc.readyDate.getTime() - (acc.readyDate.getTime() % 86400000) + acc.readyTimeMinutes * 60000;
-    const rTs = r!.readyDate.getTime() - (r!.readyDate.getTime() % 86400000) + r!.readyTimeMinutes * 60000;
-    return rTs > accTs ? r! : acc;
+    const accDay = new Date(acc.readyDate.getFullYear(), acc.readyDate.getMonth(), acc.readyDate.getDate()).getTime();
+    const rDay = new Date(r!.readyDate.getFullYear(), r!.readyDate.getMonth(), r!.readyDate.getDate()).getTime();
+    if (rDay !== accDay) return rDay > accDay ? r! : acc;
+    return r!.readyTimeMinutes > acc.readyTimeMinutes ? r! : acc;
   }, readiness[0]!);
 
-  // На дату готовности продавца применяем cutoff и пытаемся доставить;
-  // если не помещается — переходим на следующий рабочий день доставки.
+  // Перебираем дни, начиная с дня готовности
   for (let offset = 0; offset < SEARCH_HORIZON_DAYS; offset++) {
     const checkDate = new Date(latestReady.readyDate);
     checkDate.setDate(checkDate.getDate() + offset);
 
-    const isSameDayAsReady = offset === 0;
-    const isToday =
-      checkDate.getFullYear() === now.getFullYear() &&
-      checkDate.getMonth() === now.getMonth() &&
-      checkDate.getDate() === now.getDate();
+    const isToday = sameDay(checkDate, todayOnly);
+    const isReadyDay = offset === 0;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // Cutoff: применяется только на сегодня
+    // Cutoff: на сегодня — если уже поздно, доставка не сегодня
+    if (isToday && nowMinutes > cutoffMin) continue;
+
+    // Самое раннее время прибытия на этой дате
+    const readyHere = isReadyDay ? latestReady.readyTimeMinutes : 0;
+    let arrival = Math.max(deliveryStart, readyHere + avgDelivery);
     if (isToday) {
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      if (nowMinutes > cutoff_time_minutes) continue;
+      arrival = Math.max(arrival, nowMinutes + avgDelivery);
     }
-
-    // Время готовности на этой дате
-    const readyHere = isSameDayAsReady ? latestReady.readyTimeMinutes : deliveryStartMin;
-
-    let arrival = readyHere + avg_delivery_time_minutes;
-    arrival = Math.max(arrival, deliveryStartMin);
     arrival = ceilToStep(arrival, SLOT_STEP_MINUTES);
 
-    if (arrival + MIN_PICKUP_WINDOW_MINUTES > deliveryEndMin) continue;
+    if (arrival + MIN_PICKUP_WINDOW_MINUTES > deliveryEnd) continue;
 
-    const end = Math.min(arrival + DEFAULT_SLOT_LENGTH_MINUTES, deliveryEndMin);
+    const end = Math.min(arrival + DEFAULT_SLOT_LENGTH_MINUTES, deliveryEnd);
     return {
       text: `${dayPrefix(checkDate, now)} ${fmtMinutes(arrival)}\u2013${fmtMinutes(end)}`,
       isTomorrow: !isToday,
@@ -506,9 +531,6 @@ export function calculateDeliveryTime(
   return { text: "Нет доступных дат", isTomorrow: true, earliestMinutes: 0 };
 }
 
-/**
- * Ближайшая доставка для одного продавца (используется в карточках "пункт выдачи" по продавцам).
- */
 export function calculateDeliveryTimePerSeller(
   prepTimeMinutes: number,
   pickupSlots: PickupSlots | null,
@@ -518,20 +540,14 @@ export function calculateDeliveryTimePerSeller(
   pickupPointEndMinutes?: number,
 ): DeliveryTimeResult {
   return calculateDeliveryTime(
-    [
-      {
-        prepTimeMinutes,
-        schedule: { pickupSlots, busyDates, vacationDates },
-      },
-    ],
+    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, vacationDates } }],
     adminSettings,
     pickupPointEndMinutes,
   );
 }
 
 /**
- * Доступные слоты для "Доставка в указанное время" на конкретную дату.
- * Учитывает реальную готовность заказа от ВСЕХ продавцов.
+ * Слоты для "Доставка в указанное время" на конкретную дату.
  */
 export function getDeliveryTimeSlotsForDate(
   prepPerSeller: Array<{ prepTimeMinutes: number; schedule: SellerSchedule }>,
@@ -539,40 +555,40 @@ export function getDeliveryTimeSlotsForDate(
   date: Date,
   pickupPointEndMinutes?: number,
 ): string[] {
-  const { avg_delivery_time_minutes, delivery_start_hour, delivery_end_hour } = adminSettings;
-  const deliveryStart = delivery_start_hour * 60;
-  const rawEnd = delivery_end_hour * 60;
+  const { cutoffMin, avgDelivery, deliveryStart, deliveryEnd: rawEnd } = normalizeAdminSettings(adminSettings);
   const deliveryEnd = pickupPointEndMinutes ? Math.min(rawEnd, pickupPointEndMinutes) : rawEnd;
+  if (deliveryEnd <= deliveryStart) return [];
 
   const now = getMinskTime();
-  const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
+  const isToday = sameDay(date, now);
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (dateOnly < todayOnly) return [];
 
-  // Считаем готовность всех продавцов
+  if (isToday) {
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    if (nowMinutes > cutoffMin) return [];
+  }
+
   const readiness = prepPerSeller.map((s) =>
     findEarliestReady(s.prepTimeMinutes, s.schedule, { requireMinPickupWindow: false, nowMinsk: now }),
   );
   if (readiness.some((r) => r === null)) return [];
 
-  // На выбранной дате каждый продавец должен быть готов либо РАНЬШЕ этой даты, либо в этот же день
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  // На выбранной дате каждый продавец должен быть готов раньше или в этот же день
   let latestReadyOnDate = 0;
   for (const r of readiness) {
     const readyDay = new Date(r!.readyDate.getFullYear(), r!.readyDate.getMonth(), r!.readyDate.getDate()).getTime();
-    if (readyDay > dateOnly) return []; // продавец не готов к этой дате
+    if (readyDay > dateOnly) return [];
     if (readyDay === dateOnly) {
       latestReadyOnDate = Math.max(latestReadyOnDate, r!.readyTimeMinutes);
     }
-    // Если продавец готов раньше — его готовность не ограничивает время на этой дате
   }
 
-  // Минимальное время прибытия = max(начало доставки, готовность + время доставки, текущее время если сегодня)
-  let earliestArrival = Math.max(deliveryStart, latestReadyOnDate + avg_delivery_time_minutes);
+  let earliestArrival = Math.max(deliveryStart, latestReadyOnDate + avgDelivery);
   if (isToday) {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    earliestArrival = Math.max(earliestArrival, nowMinutes + avg_delivery_time_minutes);
+    earliestArrival = Math.max(earliestArrival, nowMinutes + avgDelivery);
   }
   earliestArrival = ceilToStep(earliestArrival, SLOT_STEP_MINUTES);
 
@@ -585,9 +601,6 @@ export function getDeliveryTimeSlotsForDate(
   return slots;
 }
 
-/**
- * Проверка: доступна ли дата для доставки (с учётом всех продавцов и настроек).
- */
 export function isDeliveryDateAvailable(
   prepPerSeller: Array<{ prepTimeMinutes: number; schedule: SellerSchedule }>,
   adminSettings: AdminDeliverySettings,

@@ -22,6 +22,7 @@ import {
   isPickupDateAvailable,
   getDeliveryTimeSlotsForDate,
   isDeliveryDateAvailable,
+  getMinskTime,
 } from "@/lib/pickupUtils";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { Check, MapPin, Truck, Banknote, RefreshCw, LogIn, Settings, Home, Package, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
@@ -114,12 +115,7 @@ export default function Checkout() {
     delivery_end_hour: 24
   });
 
-  // Helper: Get current time in Minsk timezone (UTC+3)
-  const getMinskTime = () => {
-    const now = new Date();
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    return new Date(utcTime + 3 * 60 * 60000);
-  };
+  // Helper: Get current time in Minsk timezone (UTC+3) — единый источник из pickupUtils
 
   // Build prep-per-seller list (используется и для доставки, и для слотов)
   const prepPerSeller = useMemo(() => {
@@ -770,7 +766,9 @@ export default function Checkout() {
                   <Label htmlFor="courier-fast" className="flex-1 cursor-pointer">
                     <span className="font-medium text-foreground">Ближайшая доставка</span>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      Привезем ваш заказ: {fastDeliveryResult.text}
+                      {noDeliveryAvailable
+                        ? "Нет доступных дат для доставки в ближайшее время"
+                        : `Привезем ваш заказ: ${fastDeliveryResult.text}`}
                     </p>
                   </Label>
                 </div>
@@ -1084,7 +1082,7 @@ export default function Checkout() {
 
       {/* Checkout button */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card p-3 shadow-lg md:hidden">
-        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || deliveryType === "pickup" && (!selectedPoint || pickupPoints.length === 0) || deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime)}>
+        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "pickup" && (!selectedPoint || pickupPoints.length === 0)) || (deliveryType === "courier" && courierDeliveryMode === "fast" && noDeliveryAvailable) || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
           {isLoading ? "Оформление..." : "Заказать"}
         </Button>
       </div>

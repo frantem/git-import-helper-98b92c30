@@ -252,9 +252,9 @@ export default function AdminSettings() {
                 <Clock className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground">Время развоза</h3>
+                <h3 className="font-bold text-foreground">Дедлайн приёма заказов на сегодня</h3>
                 <p className="text-sm text-muted-foreground">
-                  Во сколько происходит ежедневная доставка заказов
+                  После какого времени заказ автоматически переносится на следующий день
                 </p>
               </div>
             </div>
@@ -269,8 +269,8 @@ export default function AdminSettings() {
                 className="w-32"
               />
               <p className="text-xs text-muted-foreground">
-                Заказы, готовые до этого времени, доставляются в тот же день.
-                Остальные — на следующий день.
+                Заказы, оформленные после этого времени, доставляются не сегодня.
+                Само время доставки берётся из «Рабочих часов доставки» ниже.
               </p>
             </div>
           </div>
