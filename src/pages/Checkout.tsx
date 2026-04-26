@@ -663,7 +663,7 @@ export default function Checkout() {
               });
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const settings = sellerPickupSettings.get(fid);
-                const maxPrep = Math.max(...groupItems.map((i) => (i.product as any).prep_time_minutes || 90));
+                const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
                 const ppData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
                 const ppEnd = parseWorkingHoursEnd(ppData?.working_hours) ?? undefined;
                 const deliveryResult = calculateDeliveryTimePerSeller(
@@ -890,7 +890,7 @@ export default function Checkout() {
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const farmer = farmersMap.get(fid);
                 const settings = sellerPickupSettings.get(fid);
-                const maxPrep = Math.max(...groupItems.map((i) => (i.product as any).prep_time_minutes || 90));
+                const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
 
                 const pickupResult = calculatePickupTime(
                   maxPrep,
