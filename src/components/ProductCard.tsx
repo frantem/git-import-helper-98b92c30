@@ -110,16 +110,9 @@ export const ProductCard = memo(function ProductCard({
             </div>
           }
         </div>
-
-        <button
-          onClick={handleAddToCart}
-          className="absolute bottom-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground transition-colors active:scale-95 shadow-md bg-[#234835]"
-          aria-label="Добавить в корзину">
-          <ShoppingCart className="h-5 w-5" />
-        </button>
       </div>
 
-      <div className="flex-1 p-2.5 px-[8px] py-[8px] flex flex-col">
+      <div className="flex-1 p-2.5 px-[8px] py-[8px] pb-12 flex flex-col">
         <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight text-foreground">
           {product.name}
         </h3>
@@ -157,5 +150,12 @@ export const ProductCard = memo(function ProductCard({
           }
         </div>
       </div>
+
+      <button
+        onClick={handleAddToCart}
+        className="absolute bottom-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground transition-colors active:scale-95 shadow-md bg-[#234835]"
+        aria-label="Добавить в корзину">
+        <ShoppingCart className="h-5 w-5" />
+      </button>
     </Link>);
 });
