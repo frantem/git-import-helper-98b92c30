@@ -274,7 +274,6 @@ export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
             type="tel"
             inputMode="numeric"
             autoComplete={idx === 0 ? "one-time-code" : "off"}
-            maxLength={1}
             value={digit}
             onChange={(e) => handleCodeChange(idx, e.target.value)}
             onKeyDown={(e) => handleCodeKeyDown(idx, e)}
