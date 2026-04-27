@@ -143,8 +143,33 @@ export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
   };
 
   const handleCodeChange = (idx: number, value: string) => {
-    // Only digits, take last char
-    const digit = value.replace(/\D/g, "").slice(-1);
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) {
+      const next = [...code];
+      next[idx] = "";
+      setCode(next);
+      return;
+    }
+
+    // Multi-digit input (SMS autofill from iOS/Android) — distribute across cells
+    if (digits.length > 1) {
+      const next = ["", "", "", ""];
+      // Preserve already-entered digits before idx
+      for (let i = 0; i < idx; i++) next[i] = code[i] || "";
+      for (let i = 0; i < digits.length && idx + i < 4; i++) {
+        next[idx + i] = digits[i];
+      }
+      setCode(next);
+      const lastFilled = Math.min(idx + digits.length - 1, 3);
+      codeInputs.current[lastFilled]?.focus();
+      if (next.every((c) => c.length === 1)) {
+        void verifyCode(next.join(""));
+      }
+      return;
+    }
+
+    // Single digit — original behavior
+    const digit = digits.slice(-1);
     const next = [...code];
     next[idx] = digit;
     setCode(next);
@@ -249,7 +274,6 @@ export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
             type="tel"
             inputMode="numeric"
             autoComplete={idx === 0 ? "one-time-code" : "off"}
-            maxLength={1}
             value={digit}
             onChange={(e) => handleCodeChange(idx, e.target.value)}
             onKeyDown={(e) => handleCodeKeyDown(idx, e)}
