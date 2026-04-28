@@ -86,6 +86,8 @@ export default function AdminOrders() {
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [farmerPhones, setFarmerPhones] = useState<FarmerPhoneMap>(new Map());
   const [qtyEdits, setQtyEdits] = useState<Record<string, number>>({});
+  const [labelEdits, setLabelEdits] = useState<Record<string, string>>({});
+  const [priceEdits, setPriceEdits] = useState<Record<string, string>>({});
   const [addProductInputs, setAddProductInputs] = useState<Record<string, { productId: string; qty: number }>>({});
 
   useEffect(() => {
