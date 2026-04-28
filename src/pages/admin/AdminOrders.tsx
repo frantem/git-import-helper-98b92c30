@@ -648,7 +648,14 @@ export default function AdminOrders() {
                               const itemTotal = formatPrice(item.unit_price * item.quantity);
                               const editedQty = qtyEdits[item.id];
                               const currentQty = editedQty ?? item.quantity;
-                              const hasChange = editedQty !== undefined && editedQty !== item.quantity;
+                              const editedLabel = labelEdits[item.id];
+                              const currentLabel = editedLabel ?? (item.variant_label ?? "");
+                              const editedPrice = priceEdits[item.id];
+                              const currentPrice = editedPrice ?? kopecksToRublesString(item.unit_price);
+                              const hasChange =
+                                (editedQty !== undefined && editedQty !== item.quantity) ||
+                                (editedLabel !== undefined && editedLabel.trim() !== (item.variant_label ?? "")) ||
+                                (editedPrice !== undefined && parseRublesToKopecks(editedPrice) !== item.unit_price);
                               return (
                                 <div key={item.id} className="border-l-2 border-border pl-2 py-1">
                                   <div className="flex items-center justify-between text-sm gap-2 flex-wrap">
@@ -665,22 +672,51 @@ export default function AdminOrders() {
                                       = {itemTotal.formatted}<BynSymbol />
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2 mt-1 pl-5">
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      value={currentQty}
-                                      onChange={(e) => {
-                                        const v = parseInt(e.target.value, 10);
-                                        setQtyEdits(prev => ({ ...prev, [item.id]: isNaN(v) ? 1 : v }));
-                                      }}
-                                      className="h-8 w-20 text-sm"
-                                      disabled={isProcessing}
-                                    />
+                                  <div className="flex flex-wrap items-end gap-2 mt-1 pl-5">
+                                    <div className="flex flex-col">
+                                      <label className="text-[10px] text-muted-foreground">Кол-во</label>
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        value={currentQty}
+                                        onChange={(e) => {
+                                          const v = parseInt(e.target.value, 10);
+                                          setQtyEdits(prev => ({ ...prev, [item.id]: isNaN(v) ? 1 : v }));
+                                        }}
+                                        className="h-8 w-16 text-sm"
+                                        disabled={isProcessing}
+                                      />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <label className="text-[10px] text-muted-foreground">Вес/вариант</label>
+                                      <Input
+                                        type="text"
+                                        value={currentLabel}
+                                        placeholder="напр. 958"
+                                        onChange={(e) => {
+                                          setLabelEdits(prev => ({ ...prev, [item.id]: e.target.value }));
+                                        }}
+                                        className="h-8 w-24 text-sm"
+                                        disabled={isProcessing}
+                                      />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <label className="text-[10px] text-muted-foreground">Цена, BYN</label>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={currentPrice}
+                                        onChange={(e) => {
+                                          setPriceEdits(prev => ({ ...prev, [item.id]: e.target.value }));
+                                        }}
+                                        className="h-8 w-20 text-sm"
+                                        disabled={isProcessing}
+                                      />
+                                    </div>
                                     {hasChange && (
                                       <Button
                                         size="sm"
-                                        onClick={() => handleUpdateQuantity(order.id, item.id, currentQty)}
+                                        onClick={() => handleUpdateItem(order.id, item.id)}
                                         disabled={isProcessing}
                                         className="h-8 px-2"
                                       >
