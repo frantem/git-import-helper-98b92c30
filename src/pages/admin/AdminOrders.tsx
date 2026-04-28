@@ -335,29 +335,52 @@ export default function AdminOrders() {
     }
   };
 
-  const handleUpdateQuantity = async (orderId: string, itemId: string, newQty: number) => {
-    if (newQty < 1) {
-      toast.error("Количество должно быть не меньше 1");
-      return;
+  const handleUpdateItem = async (orderId: string, itemId: string) => {
+    const update: { quantity?: number; unit_price?: number; variant_label?: string | null } = {};
+
+    const editedQty = qtyEdits[itemId];
+    if (editedQty !== undefined) {
+      if (editedQty < 1 || !Number.isFinite(editedQty)) {
+        toast.error("Количество должно быть не меньше 1");
+        return;
+      }
+      update.quantity = Math.floor(editedQty);
     }
+
+    const editedLabel = labelEdits[itemId];
+    if (editedLabel !== undefined) {
+      const trimmed = editedLabel.trim();
+      update.variant_label = trimmed === "" ? null : trimmed.slice(0, 100);
+    }
+
+    const editedPriceStr = priceEdits[itemId];
+    if (editedPriceStr !== undefined) {
+      const kopecks = parseRublesToKopecks(editedPriceStr);
+      if (kopecks < 0 || !Number.isFinite(kopecks)) {
+        toast.error("Цена должна быть положительным числом");
+        return;
+      }
+      update.unit_price = kopecks;
+    }
+
+    if (Object.keys(update).length === 0) return;
+
     setProcessingOrderId(orderId);
     try {
       const { error } = await supabase
         .from("order_items")
-        .update({ quantity: newQty })
+        .update(update)
         .eq("id", itemId);
       if (error) throw error;
       await recalcOrderTotal(orderId);
-      toast.success("Количество обновлено");
-      setQtyEdits(prev => {
-        const next = { ...prev };
-        delete next[itemId];
-        return next;
-      });
+      toast.success("Позиция обновлена");
+      setQtyEdits(prev => { const n = { ...prev }; delete n[itemId]; return n; });
+      setLabelEdits(prev => { const n = { ...prev }; delete n[itemId]; return n; });
+      setPriceEdits(prev => { const n = { ...prev }; delete n[itemId]; return n; });
       await fetchOrders();
     } catch (err) {
       console.error(err);
-      toast.error("Ошибка при обновлении количества");
+      toast.error("Ошибка при обновлении позиции");
     }
     setProcessingOrderId(null);
   };
