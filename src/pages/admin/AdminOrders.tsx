@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatPrice } from "@/lib/priceUtils";
+import { formatPrice, kopecksToRublesString, parseRublesToKopecks } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock, Plus, Save, Banknote } from "lucide-react";
 import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
@@ -86,6 +86,8 @@ export default function AdminOrders() {
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [farmerPhones, setFarmerPhones] = useState<FarmerPhoneMap>(new Map());
   const [qtyEdits, setQtyEdits] = useState<Record<string, number>>({});
+  const [labelEdits, setLabelEdits] = useState<Record<string, string>>({});
+  const [priceEdits, setPriceEdits] = useState<Record<string, string>>({});
   const [addProductInputs, setAddProductInputs] = useState<Record<string, { productId: string; qty: number }>>({});
 
   useEffect(() => {
@@ -333,29 +335,52 @@ export default function AdminOrders() {
     }
   };
 
-  const handleUpdateQuantity = async (orderId: string, itemId: string, newQty: number) => {
-    if (newQty < 1) {
-      toast.error("Количество должно быть не меньше 1");
-      return;
+  const handleUpdateItem = async (orderId: string, itemId: string) => {
+    const update: { quantity?: number; unit_price?: number; variant_label?: string | null } = {};
+
+    const editedQty = qtyEdits[itemId];
+    if (editedQty !== undefined) {
+      if (editedQty < 1 || !Number.isFinite(editedQty)) {
+        toast.error("Количество должно быть не меньше 1");
+        return;
+      }
+      update.quantity = Math.floor(editedQty);
     }
+
+    const editedLabel = labelEdits[itemId];
+    if (editedLabel !== undefined) {
+      const trimmed = editedLabel.trim();
+      update.variant_label = trimmed === "" ? null : trimmed.slice(0, 100);
+    }
+
+    const editedPriceStr = priceEdits[itemId];
+    if (editedPriceStr !== undefined) {
+      const kopecks = parseRublesToKopecks(editedPriceStr);
+      if (kopecks < 0 || !Number.isFinite(kopecks)) {
+        toast.error("Цена должна быть положительным числом");
+        return;
+      }
+      update.unit_price = kopecks;
+    }
+
+    if (Object.keys(update).length === 0) return;
+
     setProcessingOrderId(orderId);
     try {
       const { error } = await supabase
         .from("order_items")
-        .update({ quantity: newQty })
+        .update(update)
         .eq("id", itemId);
       if (error) throw error;
       await recalcOrderTotal(orderId);
-      toast.success("Количество обновлено");
-      setQtyEdits(prev => {
-        const next = { ...prev };
-        delete next[itemId];
-        return next;
-      });
+      toast.success("Позиция обновлена");
+      setQtyEdits(prev => { const n = { ...prev }; delete n[itemId]; return n; });
+      setLabelEdits(prev => { const n = { ...prev }; delete n[itemId]; return n; });
+      setPriceEdits(prev => { const n = { ...prev }; delete n[itemId]; return n; });
       await fetchOrders();
     } catch (err) {
       console.error(err);
-      toast.error("Ошибка при обновлении количества");
+      toast.error("Ошибка при обновлении позиции");
     }
     setProcessingOrderId(null);
   };
@@ -623,7 +648,14 @@ export default function AdminOrders() {
                               const itemTotal = formatPrice(item.unit_price * item.quantity);
                               const editedQty = qtyEdits[item.id];
                               const currentQty = editedQty ?? item.quantity;
-                              const hasChange = editedQty !== undefined && editedQty !== item.quantity;
+                              const editedLabel = labelEdits[item.id];
+                              const currentLabel = editedLabel ?? (item.variant_label ?? "");
+                              const editedPrice = priceEdits[item.id];
+                              const currentPrice = editedPrice ?? kopecksToRublesString(item.unit_price);
+                              const hasChange =
+                                (editedQty !== undefined && editedQty !== item.quantity) ||
+                                (editedLabel !== undefined && editedLabel.trim() !== (item.variant_label ?? "")) ||
+                                (editedPrice !== undefined && parseRublesToKopecks(editedPrice) !== item.unit_price);
                               return (
                                 <div key={item.id} className="border-l-2 border-border pl-2 py-1">
                                   <div className="flex items-center justify-between text-sm gap-2 flex-wrap">
@@ -640,22 +672,51 @@ export default function AdminOrders() {
                                       = {itemTotal.formatted}<BynSymbol />
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2 mt-1 pl-5">
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      value={currentQty}
-                                      onChange={(e) => {
-                                        const v = parseInt(e.target.value, 10);
-                                        setQtyEdits(prev => ({ ...prev, [item.id]: isNaN(v) ? 1 : v }));
-                                      }}
-                                      className="h-8 w-20 text-sm"
-                                      disabled={isProcessing}
-                                    />
+                                  <div className="flex flex-wrap items-end gap-2 mt-1 pl-5">
+                                    <div className="flex flex-col">
+                                      <label className="text-[10px] text-muted-foreground">Кол-во</label>
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        value={currentQty}
+                                        onChange={(e) => {
+                                          const v = parseInt(e.target.value, 10);
+                                          setQtyEdits(prev => ({ ...prev, [item.id]: isNaN(v) ? 1 : v }));
+                                        }}
+                                        className="h-8 w-16 text-sm"
+                                        disabled={isProcessing}
+                                      />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <label className="text-[10px] text-muted-foreground">Вес/вариант</label>
+                                      <Input
+                                        type="text"
+                                        value={currentLabel}
+                                        placeholder="напр. 958"
+                                        onChange={(e) => {
+                                          setLabelEdits(prev => ({ ...prev, [item.id]: e.target.value }));
+                                        }}
+                                        className="h-8 w-24 text-sm"
+                                        disabled={isProcessing}
+                                      />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <label className="text-[10px] text-muted-foreground">Цена, BYN</label>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={currentPrice}
+                                        onChange={(e) => {
+                                          setPriceEdits(prev => ({ ...prev, [item.id]: e.target.value }));
+                                        }}
+                                        className="h-8 w-20 text-sm"
+                                        disabled={isProcessing}
+                                      />
+                                    </div>
                                     {hasChange && (
                                       <Button
                                         size="sm"
-                                        onClick={() => handleUpdateQuantity(order.id, item.id, currentQty)}
+                                        onClick={() => handleUpdateItem(order.id, item.id)}
                                         disabled={isProcessing}
                                         className="h-8 px-2"
                                       >
