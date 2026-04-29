@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
+import { cdnImage } from "@/lib/imageCdn";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -418,7 +419,7 @@ export default function SellerProducts() {
                 const price = formatPrice(product.price);
                 return (
                   <div key={product.id} className={`flex items-center gap-3 rounded-xl bg-card p-3 ${!product.is_active ? 'opacity-50' : ''}`}>
-                    <img src={product.image_url || "https://placehold.co/60x60"} alt={product.title} className="h-14 w-14 rounded-lg object-cover" />
+                    <img src={product.image_url ? cdnImage(product.image_url, "thumb") : "https://placehold.co/60x60"} alt={product.title} className="h-14 w-14 rounded-lg object-cover" loading="lazy" />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-foreground truncate">{product.title}</h3>
                       <p className="text-sm text-muted-foreground">

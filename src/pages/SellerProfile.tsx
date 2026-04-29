@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { cdnImage } from "@/lib/imageCdn";
 
 interface Farmer {
   id: string;
@@ -418,7 +419,7 @@ export default function SellerProfile() {
                           onClick={() => setLightboxImage(img)}
                           className="h-16 w-16 rounded-lg overflow-hidden bg-secondary"
                         >
-                          <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                          <img src={cdnImage(img, "thumb")} alt="" className="h-full w-full object-cover" loading="lazy" />
                         </button>
                       ))}
                     </div>
@@ -452,7 +453,7 @@ export default function SellerProfile() {
       <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] p-2">
           {lightboxImage && (
-            <img src={lightboxImage} alt="" className="w-full h-auto max-h-[80vh] object-contain rounded" />
+            <img src={cdnImage(lightboxImage, "detail")} alt="" className="w-full h-auto max-h-[80vh] object-contain rounded" />
           )}
         </DialogContent>
       </Dialog>

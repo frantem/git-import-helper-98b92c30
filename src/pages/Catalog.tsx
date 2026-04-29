@@ -13,6 +13,7 @@ import { useProducts, useProductRatings, transformProduct } from "@/hooks/usePro
 import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
+import { cdnImage } from "@/lib/imageCdn";
 import { SEO } from "@/components/SEO";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 
@@ -200,7 +201,7 @@ export default function Catalog() {
                   >
                     <div className="relative h-full w-full overflow-hidden rounded-full border-[2.5px] border-[#faf5ea] bg-muted">
                       {cat.image_url ? (
-                        <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
+                        <img src={cdnImage(cat.image_url, "category")} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-xl">
                           {cat.emoji || "📦"}
