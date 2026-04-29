@@ -579,14 +579,14 @@ export default function Product() {
                 <CarouselContent>
                   {allImages.map((img, index) => <CarouselItem key={index}>
                       <div className="relative aspect-square overflow-hidden rounded-xl bg-card">
-                        <OptimizedImage src={img} alt={`${product.name} - фото ${index + 1}`} className="h-full w-full" loading={index === 0 ? "eager" : "lazy"} />
+                        <OptimizedImage src={img} alt={`${product.name} - фото ${index + 1}`} preset="detail" className="h-full w-full" loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} />
                       </div>
                     </CarouselItem>)}
                 </CarouselContent>
                 <CarouselPrevious className="left-2" />
                 <CarouselNext className="right-2" />
               </Carousel> : <div className="relative aspect-square overflow-hidden rounded-xl bg-card">
-                <OptimizedImage src={product.image} alt={product.name} className="h-full w-full" loading="eager" />
+                <OptimizedImage src={product.image} alt={product.name} preset="detail" className="h-full w-full" loading="eager" fetchPriority="high" />
               </div>}
 
             {product.discount && <span className="absolute left-4 top-4 rounded px-3 py-1 text-sm font-bold text-primary-foreground z-10 bg-[#ab5a3f]">

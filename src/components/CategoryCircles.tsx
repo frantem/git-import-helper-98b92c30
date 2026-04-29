@@ -29,9 +29,8 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
                   <OptimizedImage
                     src={cat.image_url}
                     alt={cat.name}
+                    preset="category"
                     className="h-full w-full"
-                    transformWidth={160}
-                    quality={60}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-muted">
