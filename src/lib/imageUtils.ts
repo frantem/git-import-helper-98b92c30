@@ -19,7 +19,7 @@ interface PresetConfig {
 const PRESETS: Record<CompressPreset, PresetConfig> = {
   banner:   { maxWidth: 1200, maxHeight: 600,  quality: 0.7,  skipBelow:  60 * 1024 },
   category: { maxWidth: 200,  maxHeight: 200,  quality: 0.75, skipBelow:  10 * 1024 },
-  product:  { maxWidth: 800,  maxHeight: 800,  quality: 0.78, skipBelow:  80 * 1024 },
+  product:  { maxWidth: 1000, maxHeight: 1000, quality: 0.8,  skipBelow:  50 * 1024 },
   avatar:   { maxWidth: 400,  maxHeight: 400,  quality: 0.8,  skipBelow:  40 * 1024 },
 };
 

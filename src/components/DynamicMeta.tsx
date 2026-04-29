@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cdnImage } from "@/lib/imageCdn";
 
 export function DynamicMeta() {
   useEffect(() => {
@@ -23,13 +24,14 @@ export function DynamicMeta() {
         }
       }
 
-      // Update OG image
+      // Update OG image (served via CDN at 1200x630 for social previews)
       if (ogImageRes.data?.value) {
+        const ogUrl = cdnImage(ogImageRes.data.value, "og");
         const ogMeta = document.querySelector("meta[property='og:image']") as HTMLMetaElement;
-        if (ogMeta) ogMeta.content = ogImageRes.data.value;
+        if (ogMeta) ogMeta.content = ogUrl;
 
         const twitterMeta = document.querySelector("meta[name='twitter:image']") as HTMLMetaElement;
-        if (twitterMeta) twitterMeta.content = ogImageRes.data.value;
+        if (twitterMeta) twitterMeta.content = ogUrl;
       }
 
       // Google verification

@@ -85,8 +85,7 @@ export const ProductCard = memo(function ProductCard({
           <OptimizedImage
             src={product.image}
             alt={product.name}
-            transformWidth={400}
-            quality={70}
+            preset="card"
             className="h-full w-full" />
 
           {product.isNew && !product.discount &&
