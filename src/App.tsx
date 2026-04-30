@@ -35,6 +35,7 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const LocalLanding = lazy(() => import("./pages/LocalLanding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="/admin/settings" element={<AdminSettings />} />
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/vitebsk/:slug" element={<LocalLanding />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
