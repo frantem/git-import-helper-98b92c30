@@ -555,13 +555,34 @@ export default function Product() {
     } : {}),
   } : undefined;
 
+  const breadcrumbJsonLd = product ? {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Главная", item: "https://locusfood.by" },
+      { "@type": "ListItem", position: 2, name: "Каталог", item: "https://locusfood.by/catalog" },
+      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${product.id}` },
+    ],
+  } : undefined;
+
+  const allJsonLd = productJsonLd && breadcrumbJsonLd
+    ? [
+        { "@context": "https://schema.org", ...productJsonLd },
+        { "@context": "https://schema.org", ...breadcrumbJsonLd },
+      ]
+    : productJsonLd;
+
+  const productSeoDescription = product
+    ? `Купить ${product.name.toLowerCase()} в Витебске. Цена ${(displayPrice / 100).toFixed(2).replace(".", ",")} BYN${product.unit ? ` за ${product.unit}` : ""}. ${product.seller ? `Фермер: ${product.seller}. ` : ""}Доставка по Витебску, оплата при получении.${product.description ? ` ${product.description}` : ""}`.slice(0, 160)
+    : undefined;
+
   return <div className="min-h-screen bg-background pb-32 md:pb-0">
       <SEO
         title={productSeoTitle}
-        description={product?.description || undefined}
+        description={productSeoDescription}
         image={product?.image}
         ogType="product"
-        jsonLd={productJsonLd}
+        canonical={product ? `https://locusfood.by/product/${product.id}` : undefined}
+        jsonLd={allJsonLd as unknown as Record<string, unknown> | Record<string, unknown>[]}
       />
       <Header />
 
