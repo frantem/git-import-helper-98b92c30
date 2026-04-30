@@ -1,136 +1,149 @@
-## Проблема
 
-Превышен лимит Cached Egress в Supabase (6.87 GB из 5 GB). Причина — на сайт отдаётся одна и та же полноразмерная картинка (≈300–800 KB после нашего сжатия) и в карточку 180×180 px, и на страницу товара, и в Open Graph для соцсетей. Каждый просмотр сетки из 20 карточек = 6–15 MB трафика. При 500 заходах в день = ~5 GB.
+# Полный SEO-апгрейд для locusfood.by
 
-Просто «добавить `?width=...&quality=80`» к URL Supabase **не сработает**: image transformations в Supabase Storage — платная функция (от Pro-плана). На текущем free-плане сервер просто игнорирует эти параметры и отдаёт оригинал.
+## Главная проблема (диагностика)
 
-## Решение: бесплатный image-CDN прокси + усиление клиентского сжатия
+Сейчас сервер отдаёт боту пустой `index.html` без названия товара, цены, описания. Все 100+ страниц товаров для Google/Yandex/соцсетей выглядят одинаково → дубликаты → выкидываются из индекса. Это объясняет, почему вас нет в топе по любым запросам.
 
-Подход в два слоя — без потери качества и без оплаты Supabase Pro.
+После внедрения плана:
+- Каждый товар получит уникальный HTML с правильным `<title>`, описанием, H1, JSON-LD, фото — БЕЗ JavaScript.
+- Появятся локальные лендинги под "Сыр в Витебске", "Мёд в Витебске" и т.д.
+- Соцсети начнут показывать корректный превью при шаринге.
+- Yandex наконец сможет индексировать сайт.
 
-### Слой 1. Прокси-CDN с ресайзом и WebP «на лету» (главный эффект)
+Реалистичный срок до позиций: **6–10 недель** после внедрения + регистрации Google Business Profile + начала наработки отзывов.
 
-Использую **wsrv.nl** (бывший images.weserv.nl) — бесплатный, неограниченный публичный image-resizing CDN от Cloudflare, давно стандарт у небольших проектов. Поддерживает WebP/AVIF, ресайз, кеширование на edge.
+---
 
-Формат URL:
-```
-https://wsrv.nl/?url=<url-encoded-supabase-url>&w=400&h=400&fit=cover&output=webp&q=78
-```
+## Часть 1. Edge Function `prerender` (главное)
 
-Что даёт:
-- Картинка 600 KB JPEG → ~25–40 KB WebP для карточки 400×400.
-- Cached Egress из Supabase падает в **10–20 раз**, т.к. wsrv тянет оригинал у Supabase ровно один раз и потом отдаёт со своего CDN.
-- Браузер получает WebP/AVIF автоматически, fallback на JPEG для старых.
-- При сбое wsrv мы откатываемся на оригинальный Supabase URL (через `onError`).
+Создать `supabase/functions/prerender/index.ts`. Функция принимает `?path=/product/UUID`, по типу пути:
 
-### Слой 2. Жёстче клиентское сжатие при загрузке (страховка)
+- `/` → данные главной (название сайта, описание).
+- `/catalog` → "Каталог натуральных продуктов в Витебске".
+- `/catalog?category=X` → название категории + Витебск.
+- `/product/:id` → грузит товар из БД, возвращает HTML с:
+  - `<title>{Название} — купить в Витебске с доставкой | Locus</title>`
+  - `<meta name="description">` с ценой, единицей измерения, фермером.
+  - `<h1>{Название}</h1>` + полный текст описания товара.
+  - `<meta property="og:image">` — фото товара через CDN-прокси (`cdnImage(..., "og")`).
+  - JSON-LD `Product` со schema.org разметкой (price, availability, brand=farmer, aggregateRating если есть отзывы).
+  - Хлебные крошки JSON-LD `BreadcrumbList`.
+- `/seller/:slug` → "Фермер {Имя} — натуральные продукты в Витебске" + JSON-LD `LocalBusiness`.
+- `/vitebsk/:categorySlug` (новые лендинги, см. часть 3).
 
-В `src/lib/imageUtils.ts` пресет `product` сейчас 800×800 / q=0.78. Снижаю до 1000×1000 / q=0.8 (оригинал чуть крупнее для зума, но ужесточаю порог `skipBelow` до 50 KB), пресет `banner` до q=0.72. Это уменьшает размер «исходника», который wsrv будет тянуть один раз.
+Шаблон HTML включает обычный `<div id="root"></div>` и подключение бандла — то есть после рендера React гидратирует страницу и она работает как обычный SPA. Бот видит контент сразу, человек получает интерактивное приложение.
 
-## Технические детали
+CORS: `Access-Control-Allow-Origin: *`, `Cache-Control: public, max-age=300, s-maxage=600` (5 минут — баланс между свежестью и нагрузкой).
 
-### 1. Новая утилита `src/lib/imageCdn.ts`
+## Часть 2. Nginx роутинг (один раз)
 
-```ts
-type ImgPreset = "card" | "thumb" | "detail" | "banner" | "category" | "avatar" | "og";
+Я подготовлю готовый блок для вашего nginx-конфига. Вы добавляете его в `server { ... }` блок locusfood.by:
 
-const PRESETS: Record<ImgPreset, { w: number; h?: number; q: number; fit: string }> = {
-  thumb:    { w: 120, h: 120, q: 75, fit: "cover" },
-  card:     { w: 400, h: 400, q: 78, fit: "cover" },   // ProductCard
-  detail:   { w: 900,           q: 82, fit: "inside" }, // Product page main
-  banner:   { w: 1200, h: 600,  q: 75, fit: "cover" },
-  category: { w: 200, h: 200,  q: 75, fit: "cover" },
-  avatar:   { w: 160, h: 160,  q: 78, fit: "cover" },
-  og:       { w: 1200, h: 630, q: 80, fit: "cover" },
-};
+```nginx
+# SEO prerender for bots
+set $is_bot 0;
+if ($http_user_agent ~* "googlebot|bingbot|yandex|baiduspider|facebookexternalhit|twitterbot|telegrambot|whatsapp|slackbot|linkedinbot|vkshare|applebot|duckduckbot") {
+    set $is_bot 1;
+}
 
-export function cdnImage(src: string | null | undefined, preset: ImgPreset, dpr = 1): string {
-  if (!src) return "/placeholder.svg";
-  // Не трогаем локальные пути и data:/blob:
-  if (src.startsWith("/") || src.startsWith("data:") || src.startsWith("blob:")) return src;
-  const cfg = PRESETS[preset];
-  const params = new URLSearchParams({
-    url: src,
-    w: String(Math.round(cfg.w * dpr)),
-    q: String(cfg.q),
-    fit: cfg.fit,
-    output: "webp",
-    we: "",        // без увеличения, если оригинал меньше
-  });
-  if (cfg.h) params.set("h", String(Math.round(cfg.h * dpr)));
-  return `https://wsrv.nl/?${params.toString()}`;
+location / {
+    if ($is_bot = 1) {
+        rewrite ^(.*)$ /prerender?path=$1 break;
+        proxy_pass https://jxklppwhgmndlivvtxdd.supabase.co/functions/v1;
+        proxy_set_header Host jxklppwhgmndlivvtxdd.supabase.co;
+        proxy_ssl_server_name on;
+    }
+    try_files $uri $uri/ /index.html;
 }
 ```
 
-### 2. Доработка `OptimizedImage`
+Перезагрузка: `sudo nginx -t && sudo systemctl reload nginx`. Всё. Реальные пользователи не затронуты, эффект только для ботов.
 
-Добавляю реально работающий `preset` и srcset для retina, с graceful fallback на оригинал при ошибке wsrv:
+## Часть 3. Локальные SEO-лендинги (`/vitebsk/:slug`)
 
-```tsx
-<img
-  src={cdnImage(src, preset, 1)}
-  srcSet={`${cdnImage(src, preset, 1)} 1x, ${cdnImage(src, preset, 2)} 2x`}
-  onError={(e) => { e.currentTarget.src = src; }} // fallback на Supabase оригинал
-  ...
-/>
-```
+Новый роут в `App.tsx` → новая страница `src/pages/LocalLanding.tsx`. Для каждой категории генерируется страница вида:
 
-API совместим — старый `transformWidth` остаётся no-op, добавляется `preset?: ImgPreset`.
+- URL: `/vitebsk/syr`, `/vitebsk/med`, `/vitebsk/ovoshchi`, `/vitebsk/myaso`, `/vitebsk/torty` и т.д.
+- `<title>`: "Купить {категорию} в Витебске с доставкой — Locus"
+- `<h1>`: "{Категория} в Витебске"
+- Текст-описание (200-400 слов) — берём из нового поля `categories.seo_description` (миграция: `ALTER TABLE categories ADD COLUMN seo_description TEXT, seo_title TEXT, seo_h1 TEXT`).
+- Сетка товаров категории (использует существующий `useProducts` + фильтр).
+- FAQ-блок (3-5 вопросов) с разметкой `FAQPage` JSON-LD.
+- Внутренние ссылки на другие лендинги ("Смотрите также: мёд, овощи").
 
-### 3. Точечная замена в горячих местах (по убыванию трафика)
+Эти страницы добавляются в sitemap и попадают в пререндер — Google индексирует их с уникальным контентом.
 
-| Файл | Где | Пресет |
-|---|---|---|
-| `src/components/ProductCard.tsx` | картинка карточки | `card` |
-| `src/pages/Product.tsx` (line 582, 589) | основное фото и галерея | `detail` |
-| `src/components/BannerCarousel.tsx` | баннер главной | `banner` |
-| `src/components/CategoryCircles.tsx` | круглые категории | `category` |
-| `src/pages/Catalog.tsx` (line 203) | категории каталога | `category` |
-| `src/pages/SellerProfile.tsx` (line 421) | фото продавца | `thumb` |
-| `src/components/DynamicMeta.tsx` / `SEO.tsx` | OG-изображения | `og` |
-| `src/pages/Favorites.tsx`, `seller/SellerProducts.tsx`, `admin/AdminProducts.tsx` | списки | `thumb` |
+## Часть 4. Улучшения существующих страниц (React-side)
 
-Админские страницы (где фото нужны крупно при редактировании) оставляю как есть — трафик там минимальный.
+- `src/pages/Product.tsx`: убедиться, что `<SEO>` ставит title формата `{Название} — купить в Витебске | Locus`, description с ценой, JSON-LD `Product` уже на клиенте (для случая, когда юзер кликнул из приложения).
+- `src/components/SEO.tsx`: расширить — принимать товар целиком, генерировать богатый JSON-LD (offers, aggregateRating, brand).
+- `src/pages/Catalog.tsx`: добавить SEO с динамическим title по категории + "в Витебске".
+- Убрать `<meta name="keywords">` или оставить — Google его игнорирует с 2009, но Yandex слегка учитывает. Оставим, но переделаем под локальные ключи.
 
-### 4. Усиление `src/lib/imageUtils.ts`
+## Часть 5. Sitemap-обогащение
 
-- `product`: maxWidth 800→700, quality 0.78→0.76 (оригинал в Storage компактнее → меньше платим даже за первый прогрев wsrv).
-- `banner`: quality 0.7→0.7, без изменений.
-- Avatar/category уже агрессивны — оставляю.
+Расширить `supabase/functions/sitemap/index.ts`:
+- Добавить URL всех `/vitebsk/:slug` лендингов.
+- Добавить `<image:image>` в каждом `<url>` товара (фото товара) — это поможет в Google Картинках.
+- Добавить `<lastmod>` правильно из `updated_at`.
 
-### 5. Что НЕ ломаем
+Также проверить, что в Google Search Console подан sitemap и страницы реально индексируются.
 
-- `OptimizedImage` API остаётся обратно-совместимым: компоненты без `preset` работают как раньше (но без CDN-оптимизации).
-- При недоступности wsrv.nl `onError` переключает на исходный Supabase URL — сайт продолжит работать.
-- Локальные ассеты (`/placeholder.svg`, `/lovable-uploads/...`) и data-URI не трогаются.
-- Существующие картинки в БД не мигрируем — URL остаётся прежним, только рендер меняется.
+## Часть 6. Что вы делаете руками (вне кода)
 
-## Ожидаемый эффект
+1. **Google Business Profile** — зарегистрируйте по адресу business.google.com. Это даст попадание в карусель карты по локальным запросам. Категория: "Магазин фермерских продуктов" / "Доставка продуктов". Адрес — пункт выдачи. После плана я дам пошаговый чек-лист.
+2. **Yandex Webmaster + Yandex Business** — то же для Яндекса (важно для Беларуси).
+3. **Google Search Console** — переотправить sitemap, запросить переиндексацию топ-10 товаров вручную.
+4. **Контент**: каждое описание товара должно содержать слово "Витебск" хотя бы один раз и описание 100+ слов (Google любит длинный уникальный текст). Я могу сгенерировать черновики через AI, но вы дописываете.
+5. **Отзывы**: попросите первых 10 покупателей оставить отзыв на сайте — `aggregateRating` в JSON-LD даст звёздочки в выдаче и +CTR.
 
-- Cached Egress Supabase: **−85…−92%** (wsrv забирает оригинал один раз и кеширует на своём CDN).
-- Размер карточки в карточной сетке: 300–600 KB → 25–45 KB.
-- LCP на главной/каталоге заметно быстрее (особенно на мобильном 4G).
-- Никаких изменений в БД, секретах, edge-функциях. Только фронтенд.
+---
 
-## Файлы
+## Технические детали
 
-Создаю:
-- `src/lib/imageCdn.ts`
+### Файлы, которые будут созданы:
+- `supabase/functions/prerender/index.ts` — основная логика SSR-пререндера
+- `src/pages/LocalLanding.tsx` — компонент локального лендинга
+- Миграция БД: `categories.seo_description`, `seo_title`, `seo_h1`, `seo_faq` (jsonb)
+- `src/lib/seoHelpers.ts` — генераторы title/description/JSON-LD (общая логика для клиента и edge function)
 
-Меняю:
-- `src/components/ui/optimized-image.tsx` (добавляю `preset`, srcset, fallback)
-- `src/components/ProductCard.tsx`
-- `src/pages/Product.tsx`
-- `src/components/BannerCarousel.tsx`
-- `src/components/CategoryCircles.tsx`
-- `src/pages/Catalog.tsx`
-- `src/pages/SellerProfile.tsx`
-- `src/pages/Favorites.tsx`
-- `src/pages/seller/SellerProducts.tsx`
-- `src/pages/admin/AdminProducts.tsx` (только списки)
-- `src/components/DynamicMeta.tsx` (og-image)
-- `src/lib/imageUtils.ts` (чуть жёстче пресеты)
+### Файлы, которые будут изменены:
+- `src/App.tsx` — добавить роут `/vitebsk/:slug`
+- `src/components/SEO.tsx` — расширенная разметка
+- `src/pages/Product.tsx` — улучшенный JSON-LD `Product`
+- `src/pages/Catalog.tsx` — SEO с категорией+Витебск
+- `supabase/functions/sitemap/index.ts` — добавить лендинги и image-теги
+- `index.html` — подчистить дефолтные мета (они переопределяются)
+- `src/pages/admin/AdminBlocks.tsx` (или новая страница) — UI для редактирования SEO-полей категорий
 
-## Что от вас нужно
+### Что НЕ меняется:
+- URL товаров остаются с UUID (по вашему выбору).
+- Хостинг, домен, деплой — никаких изменений на уровне инфраструктуры (кроме одной правки nginx, которую делаете вы один раз).
+- Существующая функциональность сайта.
 
-Подтвердите план — внедрю. Если не хотите внешний прокси (wsrv.nl) — могу сделать вариант **только со слоем 2** (более жёсткое клиентское сжатие + явные `width/height` атрибуты для браузера), но эффект будет в разы скромнее (~−25%, не −90%).
+---
+
+## Порядок реализации (после approve)
+
+1. Миграция БД (поля SEO в categories).
+2. `seoHelpers.ts` — общие функции.
+3. Edge Function `prerender` — деплой и тест curl'ом с разными User-Agent.
+4. Sitemap обновление.
+5. Локальные лендинги + роут.
+6. Улучшения SEO-компонента и страниц.
+7. Админка для редактирования SEO-описаний категорий.
+8. Я даю вам: nginx-блок + чек-лист по GBP/Yandex/Search Console.
+
+После всех изменений я curl'ом проверю, что бот видит правильный HTML на главной, товаре, лендинге, категории.
+
+---
+
+## Честное ожидание результата
+
+- **Через 1-2 недели**: страницы переиндексируются, в выдаче начнут показываться правильные title/description (вместо "Locus — Маркетплейс локальных продуктов" для всех страниц).
+- **Через 3-6 недель**: рост позиций по средне-конкурентным запросам ("Купить камамбер в Витебске", "Бенто торт Витебск").
+- **Через 2-4 месяца**: топ-3 по узким нишевым запросам реален. По "купить мёд в Витебске" — будете в топ-10/20.
+- **Топ-1 по "купить мёд в Витебске"**: только при условии, что вы (а) сделаете GBP, (б) наберёте 30+ отзывов в Google, (в) получите хотя бы 5-10 обратных ссылок с белорусских сайтов (форумы, каталоги, статьи). Это не код — это маркетинг.
+
+Никто из честных SEO-инженеров не пообещает вам топ-1 за месяц. Кто обещает — врёт. Я даю максимум того, что можно сделать в коде и инфраструктуре.
