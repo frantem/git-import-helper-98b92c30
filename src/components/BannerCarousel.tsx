@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { cdnImage } from "@/lib/imageCdn";
 
 export interface Banner {
   id: string;
@@ -24,9 +25,20 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
 
   const minSwipeDistance = 50;
 
+  // Cache LCP banner URL so the next visit can preload it from index.html.
   useEffect(() => {
     if (banners.length === 0) return;
-    
+    try {
+      localStorage.setItem(
+        "locus-lcp-banner",
+        cdnImage(banners[0].image, "banner")
+      );
+    } catch {}
+  }, [banners]);
+
+  useEffect(() => {
+    if (banners.length === 0) return;
+
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % banners.length);
     }, 10000);
@@ -101,6 +113,8 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
               alt={banner.title}
               preset="banner"
               className="h-full w-full"
+              width={1200}
+              height={600}
               loading={index === 0 ? "eager" : "lazy"}
               fetchPriority={index === 0 ? "high" : "auto"}
             />

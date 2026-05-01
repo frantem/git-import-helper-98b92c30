@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface HomepageBlock {
@@ -46,5 +46,6 @@ export function useHomepageBlocks() {
       };
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
+    placeholderData: keepPreviousData,
   });
 }
