@@ -86,6 +86,7 @@ export default function Product() {
     data: customFields = []
   } = useProductCustomFields(id);
   const { data: seoTemplates } = useSeoTemplates();
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
 
   // Build farmer location string
