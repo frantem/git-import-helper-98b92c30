@@ -27,6 +27,7 @@ import { trackMetaEvent } from "@/lib/metaPixel";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { ProductImageLightbox } from "@/components/ProductImageLightbox";
 interface Review {
   id: string;
   userId: string;
