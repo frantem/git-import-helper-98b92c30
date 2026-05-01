@@ -21,6 +21,25 @@
 
     <link rel="preconnect" href="https://jxklppwhgmndlivvtxdd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://jxklppwhgmndlivvtxdd.supabase.co" />
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin />
+    <link rel="dns-prefetch" href="https://wsrv.nl" />
+
+    <!-- LCP image preload: re-use the banner cached from a previous visit -->
+    <script>
+      (function () {
+        try {
+          var url = localStorage.getItem('locus-lcp-banner');
+          if (url && /^https?:\/\//.test(url)) {
+            var l = document.createElement('link');
+            l.rel = 'preload';
+            l.as = 'image';
+            l.href = url;
+            l.fetchPriority = 'high';
+            document.head.appendChild(l);
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>
