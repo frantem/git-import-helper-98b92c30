@@ -48,7 +48,9 @@ const Index = () => {
   const { data: productsWithRequiredFields = new Set<string>() } = useProductsRequiredFields();
 
   const { data: rawProducts = [], isLoading: isLoadingProducts } = useProducts();
-  const productIds = useMemo(() => rawProducts.map((p) => p.id), [rawProducts]);
+  // Stable key for ratings query: only re-fire when the set of product ids actually changes.
+  const productIdsKey = useMemo(() => rawProducts.map((p) => p.id).sort().join(","), [rawProducts]);
+  const productIds = useMemo(() => productIdsKey ? productIdsKey.split(",") : [], [productIdsKey]);
   const { data: ratings = {} } = useProductRatings(productIds);
   const { data: banners = [], isLoading: isLoadingBanners } = useBanners();
   const { data: categories = [] } = useCategories();
