@@ -81,6 +81,7 @@ export function useProducts() {
     },
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 
