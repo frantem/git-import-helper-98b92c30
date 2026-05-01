@@ -25,9 +25,20 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
 
   const minSwipeDistance = 50;
 
+  // Cache LCP banner URL so the next visit can preload it from index.html.
   useEffect(() => {
     if (banners.length === 0) return;
-    
+    try {
+      localStorage.setItem(
+        "locus-lcp-banner",
+        cdnImage(banners[0].image, "banner")
+      );
+    } catch {}
+  }, [banners]);
+
+  useEffect(() => {
+    if (banners.length === 0) return;
+
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % banners.length);
     }, 10000);
