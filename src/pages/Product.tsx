@@ -27,6 +27,7 @@ import { trackMetaEvent } from "@/lib/metaPixel";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { ProductImageLightbox } from "@/components/ProductImageLightbox";
 interface Review {
   id: string;
   userId: string;
@@ -85,6 +86,7 @@ export default function Product() {
     data: customFields = []
   } = useProductCustomFields(id);
   const { data: seoTemplates } = useSeoTemplates();
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
 
   // Build farmer location string
@@ -599,16 +601,33 @@ export default function Product() {
             {allImages.length > 1 ? <Carousel className="w-full">
                 <CarouselContent>
                   {allImages.map((img, index) => <CarouselItem key={index}>
-                      <div className="relative aspect-square overflow-hidden rounded-xl bg-card">
+                      <button
+                        type="button"
+                        onClick={() => setLightboxIndex(index)}
+                        className="relative aspect-square w-full overflow-hidden rounded-xl bg-card cursor-zoom-in"
+                        aria-label="Открыть фото"
+                      >
                         <OptimizedImage src={img} alt={`${product.name} - фото ${index + 1}`} preset="detail" className="h-full w-full" loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} />
-                      </div>
+                      </button>
                     </CarouselItem>)}
                 </CarouselContent>
                 <CarouselPrevious className="left-2" />
                 <CarouselNext className="right-2" />
-              </Carousel> : <div className="relative aspect-square overflow-hidden rounded-xl bg-card">
+              </Carousel> : <button
+                type="button"
+                onClick={() => setLightboxIndex(0)}
+                className="relative aspect-square w-full overflow-hidden rounded-xl bg-card cursor-zoom-in"
+                aria-label="Открыть фото"
+              >
                 <OptimizedImage src={product.image} alt={product.name} preset="detail" className="h-full w-full" loading="eager" fetchPriority="high" />
-              </div>}
+              </button>}
+
+            <ProductImageLightbox
+              images={allImages.length > 0 ? allImages : [product.image]}
+              startIndex={lightboxIndex}
+              alt={product.name}
+              onClose={() => setLightboxIndex(null)}
+            />
 
             {product.discount && <span className="absolute left-4 top-4 rounded px-3 py-1 text-sm font-bold text-primary-foreground z-10 bg-[#ab5a3f]">
                 -{product.discount}%
