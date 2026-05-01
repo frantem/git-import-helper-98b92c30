@@ -113,6 +113,8 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
               alt={banner.title}
               preset="banner"
               className="h-full w-full"
+              width={1200}
+              height={600}
               loading={index === 0 ? "eager" : "lazy"}
               fetchPriority={index === 0 ? "high" : "auto"}
             />
