@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { cdnImage } from "@/lib/imageCdn";
@@ -25,26 +25,49 @@ export function ProductImageLightbox({
     startIndex: startIndex ?? 0,
     loop: images.length > 1,
     duration: 20,
+    watchDrag: true,
+    containScroll: "trimSnaps",
   });
   const [selected, setSelected] = useState(startIndex ?? 0);
+  const [zoomed, setZoomed] = useState(false);
+  // Refs to each TransformWrapper so we can reset zoom on slide change.
+  const transformRefs = useRef<Array<ReactZoomPanPinchRef | null>>([]);
 
   // Reset to startIndex whenever it changes (lightbox reopened on a different photo)
   useEffect(() => {
     if (open && emblaApi && startIndex !== null) {
       emblaApi.scrollTo(startIndex, true);
       setSelected(startIndex);
+      setZoomed(false);
     }
   }, [open, emblaApi, startIndex]);
 
   useEffect(() => {
     if (!emblaApi) return;
-    const onSelect = () => setSelected(emblaApi.selectedScrollSnap());
+    const onSelect = () => {
+      const newIdx = emblaApi.selectedScrollSnap();
+      setSelected((prev) => {
+        // Reset zoom on the slide we're leaving so it reopens at scale 1.
+        if (prev !== newIdx) {
+          transformRefs.current[prev]?.resetTransform(0);
+        }
+        return newIdx;
+      });
+      setZoomed(false);
+    };
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
     return () => {
       emblaApi.off("select", onSelect);
     };
   }, [emblaApi]);
+
+  // Toggle Embla drag based on zoom state — when zoomed, let user pan the image
+  // without the carousel hijacking horizontal gestures.
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.reInit({ watchDrag: !zoomed });
+  }, [emblaApi, zoomed]);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
@@ -63,7 +86,7 @@ export function ProductImageLightbox({
           <button
             onClick={onClose}
             aria-label="Закрыть"
-            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+            className="absolute right-3 top-3 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
           >
             <X className="h-6 w-6" />
           </button>
@@ -77,12 +100,21 @@ export function ProductImageLightbox({
                   className="relative flex h-full min-w-0 shrink-0 grow-0 basis-full items-center justify-center"
                 >
                   <TransformWrapper
+                    ref={(el) => {
+                      transformRefs.current[i] = el;
+                    }}
                     doubleClick={{ mode: "toggle", step: 2 }}
                     pinch={{ step: 5 }}
                     wheel={{ step: 0.2 }}
                     minScale={1}
                     maxScale={4}
                     centerOnInit
+                    panning={{ disabled: !zoomed || i !== selected }}
+                    onTransformed={(_ref, state) => {
+                      if (i !== selected) return;
+                      const isZoomed = state.scale > 1.01;
+                      setZoomed((prev) => (prev !== isZoomed ? isZoomed : prev));
+                    }}
                   >
                     <TransformComponent
                       wrapperClass="!h-full !w-full"
@@ -100,6 +132,25 @@ export function ProductImageLightbox({
               ))}
             </div>
           </div>
+
+          {/* Tap zones for prev/next — only active when not zoomed and >1 image.
+              25% width on each side; central 50% reserved for double-tap zoom. */}
+          {images.length > 1 && !zoomed && (
+            <>
+              <button
+                type="button"
+                onClick={scrollPrev}
+                aria-label="Предыдущее фото"
+                className="absolute left-0 top-0 z-10 h-full w-1/4 cursor-w-resize bg-transparent"
+              />
+              <button
+                type="button"
+                onClick={scrollNext}
+                aria-label="Следующее фото"
+                className="absolute right-0 top-0 z-10 h-full w-1/4 cursor-e-resize bg-transparent"
+              />
+            </>
+          )}
 
           {/* Prev/Next (desktop) */}
           {images.length > 1 && (
@@ -123,11 +174,11 @@ export function ProductImageLightbox({
 
           {/* Counter + dots */}
           {images.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2">
+            <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2">
               <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm">
                 {selected + 1} / {images.length}
               </span>
-              <div className="flex gap-1.5">
+              <div className="pointer-events-auto flex gap-1.5">
                 {images.map((_, i) => (
                   <button
                     key={i}
