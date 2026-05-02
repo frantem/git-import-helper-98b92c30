@@ -110,7 +110,7 @@ export function ProductImageLightbox({
                     maxScale={4}
                     centerOnInit
                     panning={{ disabled: !zoomed || i !== selected }}
-                    onTransformed={(_ref, state) => {
+                    onTransform={(_ref, state) => {
                       if (i !== selected) return;
                       const isZoomed = state.scale > 1.01;
                       setZoomed((prev) => (prev !== isZoomed ? isZoomed : prev));
