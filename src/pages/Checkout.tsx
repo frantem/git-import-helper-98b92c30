@@ -549,7 +549,10 @@ export default function Checkout() {
         <p className="text-muted-foreground text-center mb-6">
           Менеджер свяжется с Вами для подтверждения заказа. Сейчас безналичная оплата не работает. Оплата наличными при получении.
         </p>
-        <div className="flex gap-3">
+        {showEmailPrompt && (
+          <EmailChangePrompt onDone={() => setEmailPromptDismissed(true)} />
+        )}
+        <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={() => navigate("/orders")}>
             Мои заказы
           </Button>
