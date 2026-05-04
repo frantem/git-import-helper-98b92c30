@@ -1,56 +1,77 @@
-## Проблема
+## Цель
 
-В лайтбоксе фото товара (`src/components/ProductImageLightbox.tsx`) свайп между фото на мобильном не работает, и нет возможности листать тапом по левому/правому краю.
+После оформления заказа, если у пользователя в `auth.users.email` стоит заглушка `*@phone.locusfood.by` (создаётся в `verify-otp` для пользователей, заходящих по телефону), показать блок с предложением добавить настоящий Email с подтверждением через код.
 
-**Причина:** компонент `TransformWrapper` из `react-zoom-pan-pinch` оборачивает каждое фото и при `scale === 1` всё равно перехватывает все touch-события (touchstart/move/end) для собственного pan/pinch. Из-за этого Embla Carousel под ним не получает горизонтальные свайпы и не переключает слайды.
+## UX-флоу (на экране «Заказ оформлен!» в `src/pages/Checkout.tsx`)
 
-## Решение
+1. После успеха заказа проверяем `user.email`. Если он заканчивается на `@phone.locusfood.by` — показываем карточку:
+   «Хотите получать уведомления о заказах на почту? Введите ваш Email».
+2. Шаг 1: поле Email + кнопка «Получить код». На submit вызываем edge function `send-email-change-code`.
+3. Шаг 2: поле «Код из письма» (6 цифр) + кнопка «Подтвердить». Вызываем `verify-email-change-code`. При успехе — toast «Email подтверждён», блок скрывается.
+4. Кнопка «Пропустить» — закрывает блок (можно вернуться позже из настроек, но это вне scope).
 
-### 1. Не блокировать свайпы Embla, пока фото не увеличено
+## Backend (Supabase)
 
-В `ProductImageLightbox.tsx` отслеживать текущий `scale` каждого слайда через `onTransformed` у `TransformWrapper`. Когда `scale === 1` (фото не зумлено) — отключать панорамирование `TransformWrapper` (`panning={{ disabled: true }}`), чтобы touch-события свободно проходили к Embla и работал горизонтальный свайп между фото. Как только пользователь сделал double-tap или pinch и `scale > 1` — включать `panning` обратно, чтобы можно было таскать увеличенное изображение.
+### Таблица `email_change_codes` (новая, миграция)
 
-Дополнительно: пока `scale > 1` хотя бы у одного слайда — отключать перетаскивание Embla через `emblaApi.reInit({ watchDrag: false })`, иначе при попытке pan'а зумленного фото может «уехать» весь карусельный трек. При возврате к `scale === 1` — `watchDrag: true`.
+- `id uuid pk default gen_random_uuid()`
+- `user_id uuid not null`
+- `new_email text not null`
+- `code_hash text not null` (sha256, как в phone_otp_codes)
+- `attempts int not null default 0`
+- `expires_at timestamptz not null` (10 минут)
+- `created_at timestamptz default now()`
+- `verified bool default false`
+- RLS: `No client access` (как у `phone_otp_codes`) — все операции через edge functions с service-role.
 
-### 2. Тап-зоны по краям для перелистывания
+### Edge function `send-email-change-code` (новая)
 
-Поверх контента добавить две прозрачные кнопки на мобильном (видны/активны только при `scale === 1`, чтобы не мешать pan'у зумленного фото):
-- левая зона ~25% ширины → `scrollPrev()`
-- правая зона ~25% ширины → `scrollNext()`
-- центральные ~50% оставить «пустыми», чтобы по ним работал double-tap зум и не было ложных переключений.
+- Auth: проверяет JWT, берёт `user_id` и текущий email. Требует, чтобы текущий email был `*@phone.locusfood.by` (защита от misuse).
+- Validate `new_email` (zod, normalize lowercase). Проверить, что email не занят другим пользователем (через `supabase.auth.admin.listUsers` поиск по email или select из `auth.users` через service role).
+- Rate limit: не больше 1 кода в 60с и 5 в час на user_id (отдельная таблица или просто проверить `created_at` в `email_change_codes`).
+- Сгенерировать 6-значный код, сохранить sha256-hash + new_email + expires_at (10 мин).
+- Отправить письмо через Resend (используя `RESEND_API_KEY`, `SENDER_EMAIL` = `Locus <info@locusfood.by>`) с темой «Код подтверждения Email — Locus» и кодом в теле.
+- `verify_jwt = false` в config.toml + ручная валидация JWT (как в существующих функциях).
 
-Эти зоны имеют `z-index` выше карусели, но ниже кнопки закрытия и стрелок. На десктопе можно оставить (они не мешают), либо скрыть `md:hidden` — оставлю активными везде, т.к. это улучшает UX и на десктопе.
+### Edge function `verify-email-change-code` (новая)
 
-### 3. Мелкие правки UX
+- Auth + достать `user_id`.
+- Принять `{ new_email, code }`.
+- Найти последнюю не-verified запись для user_id+new_email с `expires_at > now()`. Если attempts >= 5 — отклонить. Сравнить sha256(code) с `code_hash`. Иначе attempts++.
+- При успехе: `supabase.auth.admin.updateUserById(user_id, { email: new_email, email_confirm: true })` — это перезапишет старый `*@phone.locusfood.by` email на новый и отметит подтверждённым (старый автоматически удаляется, т.к. поле `email` одно).
+- Также обновить `profiles.email = new_email`.
+- Отметить запись `verified = true`, удалить остальные коды этого user.
 
-- Embla: добавить опции `dragFree: false`, `containScroll: "trimSnaps"` — уже ок, но убедиться что включён `loop` только при `images.length > 1` (уже так).
-- Сбрасывать зум до 1 при смене слайда (через `emblaApi.on("select", ...)` вызывать `resetTransform()` у предыдущего слайда), чтобы при перелистывании следующее фото открывалось в обычном масштабе.
-- Кнопка закрытия и счётчик/точки — без изменений.
+## Frontend
 
-## Затронутые файлы
+### Новый компонент `src/components/EmailChangePrompt.tsx`
 
-- `src/components/ProductImageLightbox.tsx` — единственный изменяемый файл.
+- Двух-шаговая форма (email → код), zod-валидация, состояния loading/error.
+- Использует `supabase.functions.invoke('send-email-change-code'/'verify-email-change-code')`.
+- При успехе вызывает `onDone()` и `supabase.auth.refreshSession()` чтобы клиент увидел новый email.
 
-## Что НЕ трогаем
+### Интеграция в `src/pages/Checkout.tsx`
 
-- `src/pages/Product.tsx` — интеграция лайтбокса остаётся прежней.
-- Зависимости (`react-zoom-pan-pinch`, `embla-carousel-react`) — не меняем.
-- Десктопные стрелки и счётчик — без изменений.
+В блоке `if (orderSuccess)` (строки 540–558) добавить под текстом:
+```tsx
+{user?.email?.endsWith('@phone.locusfood.by') && (
+  <EmailChangePrompt onDone={() => { /* hide */ }} />
+)}
+```
+Локальный state `emailPromptDismissed` управляет видимостью.
 
 ## Технические детали
 
-```text
-[Lightbox]
- ├─ Embla viewport (ref={emblaRef})           ← получает свайпы при scale=1
- │   └─ slides[]
- │        └─ TransformWrapper
- │             ├─ panning.disabled = scale === 1   ← ключевое
- │             ├─ onTransformed → setScaleForSlide(i, scale)
- │             └─ <img />
- ├─ Tap zone left  (25% width, onClick=scrollPrev, hidden when scale>1)
- ├─ Tap zone right (25% width, onClick=scrollNext, hidden when scale>1)
- ├─ Close button (z-20)
- └─ Desktop arrows + dots (z-20)
-```
+- Секреты уже есть: `RESEND_API_KEY`, `SENDER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`.
+- В `supabase/config.toml` добавить `verify_jwt = false` для обеих новых функций.
+- Хеш кода: `crypto.subtle.digest('SHA-256', ...)` как в `verify-otp`.
+- Проверка занятости email: через `supabase.auth.admin.listUsers({ filter: ... })` или прямой select из `auth.users` через service role клиент.
 
-После внедрения: на мобильном горизонтальный свайп листает фото, тап по левой/правой четверти экрана — листает в соответствующую сторону, double-tap/pinch по-прежнему зумит, и при зуме pan работает корректно.
+## Файлы
+
+- new: `supabase/migrations/<ts>_email_change_codes.sql`
+- new: `supabase/functions/send-email-change-code/index.ts`
+- new: `supabase/functions/verify-email-change-code/index.ts`
+- edit: `supabase/config.toml` (две новые секции)
+- new: `src/components/EmailChangePrompt.tsx`
+- edit: `src/pages/Checkout.tsx` (показать промпт после успеха)
