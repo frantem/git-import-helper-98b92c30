@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.verify-otp]
 verify_jwt = false
+
+[functions.send-email-change-code]
+verify_jwt = false
+
+[functions.verify-email-change-code]
+verify_jwt = false

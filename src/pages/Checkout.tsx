@@ -38,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { EmailChangePrompt } from "@/components/EmailChangePrompt";
 interface PickupPoint {
   id: string;
   name: string;
@@ -81,6 +82,8 @@ export default function Checkout() {
   const [isLoadingPoints, setIsLoadingPoints] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [emailPromptDismissed, setEmailPromptDismissed] = useState(false);
+  const showEmailPrompt = !emailPromptDismissed && !!user?.email?.toLowerCase().endsWith("@phone.locusfood.by");
 
   // Delivery type state
   const [deliveryType, setDeliveryType] = useState<"pickup" | "courier" | "self" | "">("");
@@ -546,7 +549,10 @@ export default function Checkout() {
         <p className="text-muted-foreground text-center mb-6">
           Менеджер свяжется с Вами для подтверждения заказа. Сейчас безналичная оплата не работает. Оплата наличными при получении.
         </p>
-        <div className="flex gap-3">
+        {showEmailPrompt && (
+          <EmailChangePrompt onDone={() => setEmailPromptDismissed(true)} />
+        )}
+        <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={() => navigate("/orders")}>
             Мои заказы
           </Button>
