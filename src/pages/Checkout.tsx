@@ -82,6 +82,8 @@ export default function Checkout() {
   const [isLoadingPoints, setIsLoadingPoints] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [emailPromptDismissed, setEmailPromptDismissed] = useState(false);
+  const showEmailPrompt = !emailPromptDismissed && !!user?.email?.toLowerCase().endsWith("@phone.locusfood.by");
 
   // Delivery type state
   const [deliveryType, setDeliveryType] = useState<"pickup" | "courier" | "self" | "">("");
