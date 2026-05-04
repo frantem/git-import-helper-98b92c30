@@ -38,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { EmailChangePrompt } from "@/components/EmailChangePrompt";
 interface PickupPoint {
   id: string;
   name: string;
