@@ -130,6 +130,39 @@ export type Database = {
           },
         ]
       }
+      email_change_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          new_email: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          new_email: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          new_email?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       farmers: {
         Row: {
           address_details: string | null
