@@ -581,9 +581,10 @@ export function calculateDeliveryTimePerSeller(
   vacationDates: string[] | null,
   adminSettings: AdminDeliverySettings,
   pickupPointEndMinutes?: number,
+  orderLeadTimeHours?: number,
 ): DeliveryTimeResult {
   return calculateDeliveryTime(
-    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, vacationDates } }],
+    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, vacationDates, orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)) } }],
     adminSettings,
     pickupPointEndMinutes,
   );
