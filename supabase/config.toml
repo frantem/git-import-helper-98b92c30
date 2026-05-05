@@ -1,7 +1,7 @@
 project_id = "jxklppwhgmndlivvtxdd"
 
 [functions.meta-conversions-api]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-new-order-notification]
 verify_jwt = false
