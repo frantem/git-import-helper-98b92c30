@@ -165,6 +165,7 @@ function isSellerDayAvailable(checkDate: Date, schedule: SellerSchedule): boolea
 function getSellerSlotForDate(
   checkDate: Date,
   schedule: SellerSchedule,
+  nowMinsk?: Date,
 ): { start: number; end: number } | null {
   if (!isSellerDayAvailable(checkDate, schedule)) return null;
   const dayKey = DAY_KEYS[checkDate.getDay()];
@@ -172,6 +173,22 @@ function getSellerSlotForDate(
   const start = parseTime(slot.start);
   const end = parseTime(slot.end);
   if (start === null || end === null || end <= start) return null;
+
+  // Минимальный срок приёма заказа до начала окна выдачи
+  const leadHours = schedule.orderLeadTimeHours ?? 0;
+  if (leadHours > 0) {
+    const now = nowMinsk ?? getMinskTime();
+    const windowStart = new Date(
+      checkDate.getFullYear(),
+      checkDate.getMonth(),
+      checkDate.getDate(),
+      0, 0, 0, 0,
+    );
+    windowStart.setMinutes(windowStart.getMinutes() + start);
+    const diffMinutes = (windowStart.getTime() - now.getTime()) / 60000;
+    if (diffMinutes < leadHours * 60) return null;
+  }
+
   return { start, end };
 }
 
