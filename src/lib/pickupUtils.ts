@@ -84,6 +84,20 @@ export function safePrepTime(value: number | null | undefined, fallback = 0): nu
   return Math.max(0, Math.floor(n));
 }
 
+/**
+ * Форматирует общее время ожидания (минуты) в краткую человекочитаемую строку:
+ *   < 60 мин → ~Nмин.
+ *   < 24 ч  → ~Nч.
+ *   ≥ 24 ч  → ~Nдн.
+ */
+export function formatRelativeTime(totalMinutes: number): string {
+  const m = Math.max(0, Math.round(totalMinutes));
+  if (m < 60) return `~${m}мин.`;
+  const hours = Math.round(m / 60);
+  if (hours < 24) return `~${hours}ч.`;
+  const days = Math.round(hours / 24);
+  return `~${days}дн.`;
+
 function dayPrefix(checkDate: Date, todayMinsk: Date): string {
   if (sameDay(checkDate, todayMinsk)) return "Сегодня";
   const tomorrow = new Date(todayMinsk);
