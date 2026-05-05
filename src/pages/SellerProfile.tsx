@@ -235,6 +235,7 @@ export default function SellerProfile() {
             isNew: p.is_new || false,
             farmer_id: p.farmer_id,
             prep_time_minutes: p.prep_time_minutes || 0,
+            order_lead_time_hours: (p as any).order_lead_time_hours || 0,
           };
         });
 
