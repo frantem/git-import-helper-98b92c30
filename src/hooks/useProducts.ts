@@ -69,6 +69,7 @@ export function useProducts() {
           farmer_id,
           category_id,
           prep_time_minutes,
+          order_lead_time_hours,
           farmers(name),
           categories(name, slug),
           product_categories(categories(name, slug)),
