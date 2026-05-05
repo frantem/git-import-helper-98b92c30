@@ -166,6 +166,7 @@ export function transformProduct(
     isNew: p.is_new || false,
     farmer_id: p.farmer_id,
     prep_time_minutes: p.prep_time_minutes || 0,
+    order_lead_time_hours: p.order_lead_time_hours || 0,
     defaultVariant: (() => {
       const variants = p.product_variants;
       if (!variants || variants.length === 0) return undefined;
