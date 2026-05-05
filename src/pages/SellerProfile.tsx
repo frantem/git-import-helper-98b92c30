@@ -41,6 +41,7 @@ interface Product {
   isNew?: boolean;
   farmer_id?: string;
   prep_time_minutes?: number;
+  order_lead_time_hours?: number;
 }
 
 interface SellerReview {
