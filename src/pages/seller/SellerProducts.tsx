@@ -600,6 +600,20 @@ export default function SellerProducts() {
               </div>
             </div>
 
+            {/* Order lead time */}
+            <div className="space-y-2">
+              <Label>Минимальный срок приёма заказа до выдачи (часов)</Label>
+              <p className="text-xs text-muted-foreground">
+                Например, 20 — заказ на среду 17:00 будет приниматься только до понедельника 21:00. Оставьте 0, если нет ограничения.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input type="number" value={productForm.order_lead_time_hours}
+                  onChange={(e) => setProductForm({ ...productForm, order_lead_time_hours: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
+                  placeholder="0" className="w-32" min={0} />
+                <span className="text-sm text-muted-foreground">часов</span>
+              </div>
+            </div>
+
             {/* Images */}
             <div className="space-y-2">
               <Label>Фото товара</Label>
