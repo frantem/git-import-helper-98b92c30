@@ -269,6 +269,7 @@ export default function AdminProducts() {
     setProductForm({
       title: product.title, description: product.description || "", category_id: product.category_id,
       image_url: product.image_url || "", prep_time_minutes: (product as any).prep_time_minutes || "",
+      order_lead_time_hours: (product as any).order_lead_time_hours || "",
       composition: (product as any).composition || "", calories: (product as any).calories ?? "",
       protein: (product as any).protein ?? "", fat: (product as any).fat ?? "",
       carbs: (product as any).carbs ?? "", shelf_life: (product as any).shelf_life || "",
