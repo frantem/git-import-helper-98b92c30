@@ -120,6 +120,8 @@ interface SellerSchedule {
   pickupSlots: PickupSlots | null;
   busyDates: string[] | null;
   vacationDates: string[] | null;
+  /** Минимальный срок приёма заказа до начала окна выдачи (часы). По умолчанию 0. */
+  orderLeadTimeHours?: number;
 }
 
 interface AdminDeliverySettings {
