@@ -459,10 +459,16 @@ export function calculatePickupReadyDate(
   pickupSlots: PickupSlots | null | undefined,
   busyDates: string[] | null | undefined,
   vacationDates: string[] | null | undefined,
+  orderLeadTimeHours?: number,
 ): PickupReadyDateResult | null {
   return findEarliestReady(
     prepTimeMinutes,
-    { pickupSlots: pickupSlots ?? null, busyDates: busyDates ?? null, vacationDates: vacationDates ?? null },
+    {
+      pickupSlots: pickupSlots ?? null,
+      busyDates: busyDates ?? null,
+      vacationDates: vacationDates ?? null,
+      orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)),
+    },
     { requireMinPickupWindow: true },
   );
 }
