@@ -652,12 +652,15 @@ export default function Product() {
 
           {/* Title - right after image */}
           <h1 className="mt-2 text-xl font-bold text-foreground md:text-2xl">{product.name}</h1>
-          <p className={cn("mt-1 text-sm", product.prep_time_minutes && product.prep_time_minutes > 0 ? "text-muted-foreground" : "text-green-600")}>
-            {!product.prep_time_minutes || product.prep_time_minutes === 0
-              ? "В наличии"
-              : `Время приготовления: ${product.prep_time_minutes < 60 ? `${product.prep_time_minutes}мин.` : `${Math.round(product.prep_time_minutes / 60)}ч.`}`
-            }
-          </p>
+          {(() => {
+            const totalMin = (product.prep_time_minutes || 0) + ((product as any).order_lead_time_hours || 0) * 60;
+            const isInStock = totalMin === 0;
+            return (
+              <p className={cn("mt-1 text-sm", isInStock ? "text-green-600" : "text-muted-foreground")}>
+                {isInStock ? "В наличии" : `Время приготовления: ${formatRelativeTime(totalMin).replace("~", "")}`}
+              </p>
+            );
+          })()}
 
           {/* Rating - compact, only show if there are reviews */}
           {displayRating !== null && displayReviewCount > 0 && <div className="mt-1 flex items-center gap-3 rounded-md p-1">
