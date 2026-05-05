@@ -17,6 +17,7 @@ interface DBProduct {
   farmer_id: string;
   category_id: string;
   prep_time_minutes: number;
+  order_lead_time_hours: number;
   farmers?: { name: string };
   categories?: { name: string; slug: string };
   product_categories?: DBProductCategory[];
