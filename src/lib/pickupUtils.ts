@@ -361,24 +361,27 @@ export function calculatePickupTime(
   vacationDates: string[] | null | undefined,
   orderCounts: OrderCounts,
   farmerId: string,
+  orderLeadTimeHours?: number,
 ): PickupTimeResult {
   const prep = safePrepTime(prepTimeMinutes);
+  const lead = Math.max(0, Math.floor(orderLeadTimeHours ?? 0));
 
   if (!pickupSlots) {
-    const hours = Math.max(1, Math.ceil(prep / 60));
-    return { text: prep === 0 ? "В наличии" : `Через ${hours}ч.`, isFallback: true };
+    const totalMin = prep + lead * 60;
+    return { text: totalMin === 0 ? "В наличии" : formatRelativeTime(totalMin), isFallback: true };
   }
 
   const hasActiveDay = Object.values(pickupSlots).some((s) => s.active);
   if (!hasActiveDay) {
-    const hours = Math.max(1, Math.ceil(prep / 60));
-    return { text: prep === 0 ? "В наличии" : `Через ${hours}ч.`, isFallback: true };
+    const totalMin = prep + lead * 60;
+    return { text: totalMin === 0 ? "В наличии" : formatRelativeTime(totalMin), isFallback: true };
   }
 
   const schedule: SellerSchedule = {
     pickupSlots,
     busyDates: busyDates ?? null,
     vacationDates: vacationDates ?? null,
+    orderLeadTimeHours: lead,
   };
 
   const now = getMinskTime();
