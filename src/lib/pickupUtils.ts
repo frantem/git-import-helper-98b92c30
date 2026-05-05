@@ -235,7 +235,7 @@ export function findEarliestReady(
     const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
 
-    const window = getSellerSlotForDate(checkDate, schedule);
+    const window = getSellerSlotForDate(checkDate, schedule, now);
     if (!window) continue;
 
     const isToday = offset === 0;
