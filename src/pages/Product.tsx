@@ -232,8 +232,9 @@ export default function Product() {
     village: dbProduct.farmers?.village,
     isNew: dbProduct.is_new,
     farmer_id: dbProduct.farmer_id,
-    prep_time_minutes: dbProduct.prep_time_minutes
-  } : null;
+    prep_time_minutes: dbProduct.prep_time_minutes,
+    order_lead_time_hours: (dbProduct as any).order_lead_time_hours || 0
+  } as any : null;
 
   // Build all images array for carousel
   const allImages = dbProduct ? [dbProduct.image_url || "/placeholder.svg", ...productImages.map(img => img.image_url)] : [];
