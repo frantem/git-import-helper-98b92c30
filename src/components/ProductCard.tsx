@@ -142,7 +142,7 @@ export const ProductCard = memo(function ProductCard({
         </div>
         <div className="mt-auto">
           {(() => {
-            const prep = formatPrepTime(product.prep_time_minutes);
+            const prep = formatPrepTime(product.prep_time_minutes, (product as any).order_lead_time_hours);
             return (
               <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
                 {prep.label}
