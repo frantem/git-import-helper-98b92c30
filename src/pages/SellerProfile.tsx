@@ -192,7 +192,7 @@ export default function SellerProfile() {
         .from("products")
         .select(`
           id, title, price, old_price, image_url, unit, is_new, farmer_id,
-          category_id, prep_time_minutes, categories(name, slug)
+          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug)
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
