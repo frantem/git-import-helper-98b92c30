@@ -15,6 +15,7 @@ interface DBProduct {
   farmer_id: string;
   category_id: string;
   prep_time_minutes: number;
+  order_lead_time_hours: number;
   composition: string | null;
   calories: number | null;
   protein: number | null;

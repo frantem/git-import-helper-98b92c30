@@ -41,6 +41,7 @@ interface Product {
   isNew?: boolean;
   farmer_id?: string;
   prep_time_minutes?: number;
+  order_lead_time_hours?: number;
 }
 
 interface SellerReview {
@@ -191,7 +192,7 @@ export default function SellerProfile() {
         .from("products")
         .select(`
           id, title, price, old_price, image_url, unit, is_new, farmer_id,
-          category_id, prep_time_minutes, categories(name, slug)
+          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug)
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
@@ -234,6 +235,7 @@ export default function SellerProfile() {
             isNew: p.is_new || false,
             farmer_id: p.farmer_id,
             prep_time_minutes: p.prep_time_minutes || 0,
+            order_lead_time_hours: (p as any).order_lead_time_hours || 0,
           };
         });
 

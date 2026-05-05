@@ -82,7 +82,7 @@ export default function AdminProducts() {
   const [mainVariant, setMainVariant] = useState<ProductVariant>({ label: "", price: 0, discount_percent: 0 });
   const [productForm, setProductForm] = useState({
     title: "", description: "", category_id: "", image_url: "",
-    prep_time_minutes: "" as any, composition: "", calories: "" as any,
+    prep_time_minutes: "" as any, order_lead_time_hours: "" as any, composition: "", calories: "" as any,
     protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "",
   });
   const [customFields, setCustomFields] = useState<CustomFieldLocal[]>([]);
@@ -178,6 +178,7 @@ export default function AdminProducts() {
         price: priceInKopecks, old_price: oldPriceInKopecks, unit: mainVariant.label,
         category_id: selectedCategoryIds[0], image_url: productForm.image_url || null,
         prep_time_minutes: productForm.prep_time_minutes || 0,
+        order_lead_time_hours: productForm.order_lead_time_hours || 0,
         composition: productForm.composition || null,
         calories: productForm.calories !== "" ? parseFloat(String(productForm.calories).replace(',', '.')) : null,
         protein: productForm.protein !== "" ? parseFloat(String(productForm.protein).replace(',', '.')) : null,
@@ -268,6 +269,7 @@ export default function AdminProducts() {
     setProductForm({
       title: product.title, description: product.description || "", category_id: product.category_id,
       image_url: product.image_url || "", prep_time_minutes: (product as any).prep_time_minutes || "",
+      order_lead_time_hours: (product as any).order_lead_time_hours || "",
       composition: (product as any).composition || "", calories: (product as any).calories ?? "",
       protein: (product as any).protein ?? "", fat: (product as any).fat ?? "",
       carbs: (product as any).carbs ?? "", shelf_life: (product as any).shelf_life || "",
@@ -319,7 +321,7 @@ export default function AdminProducts() {
     setSelectedCategoryIds([]);
     setCustomFields([]);
     setMainVariant({ label: "", price: 0, discount_percent: 0 });
-    setProductForm({ title: "", description: "", category_id: "", image_url: "", prep_time_minutes: "" as any, composition: "", calories: "" as any, protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "" });
+    setProductForm({ title: "", description: "", category_id: "", image_url: "", prep_time_minutes: "" as any, order_lead_time_hours: "" as any, composition: "", calories: "" as any, protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "" });
     setMainPriceInput("");
     setVariantPriceInputs({});
     setProductAddons([]);
@@ -509,6 +511,20 @@ export default function AdminProducts() {
                   onChange={(e) => setProductForm({ ...productForm, prep_time_minutes: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
                   placeholder="0" className="w-32" min={0} />
                 <span className="text-sm text-muted-foreground">минут</span>
+              </div>
+            </div>
+
+            {/* Order lead time */}
+            <div className="space-y-2">
+              <Label>Минимальный срок приёма заказа до выдачи (часов)</Label>
+              <p className="text-xs text-muted-foreground">
+                Например, 20 — заказ на среду 17:00 будет приниматься только до понедельника 21:00. Оставьте 0, если нет ограничения.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input type="number" value={productForm.order_lead_time_hours}
+                  onChange={(e) => setProductForm({ ...productForm, order_lead_time_hours: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
+                  placeholder="0" className="w-32" min={0} />
+                <span className="text-sm text-muted-foreground">часов</span>
               </div>
             </div>
 

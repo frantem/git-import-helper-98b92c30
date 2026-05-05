@@ -757,6 +757,7 @@ export type Database = {
           is_featured: boolean | null
           is_new: boolean | null
           old_price: number | null
+          order_lead_time_hours: number
           prep_time_minutes: number
           price: number
           protein: number | null
@@ -782,6 +783,7 @@ export type Database = {
           is_featured?: boolean | null
           is_new?: boolean | null
           old_price?: number | null
+          order_lead_time_hours?: number
           prep_time_minutes?: number
           price?: number
           protein?: number | null
@@ -807,6 +809,7 @@ export type Database = {
           is_featured?: boolean | null
           is_new?: boolean | null
           old_price?: number | null
+          order_lead_time_hours?: number
           prep_time_minutes?: number
           price?: number
           protein?: number | null

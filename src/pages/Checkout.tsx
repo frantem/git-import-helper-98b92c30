@@ -126,14 +126,17 @@ export default function Checkout() {
     return farmerIds.map((fid) => {
       const farmerItems = items.filter((i) => i.product.farmer_id === fid);
       const maxPrep = Math.max(0, ...farmerItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
+      const maxLead = Math.max(0, ...farmerItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
       const s = sellerPickupSettings.get(fid);
       return {
         farmerId: fid,
         prepTimeMinutes: maxPrep,
+        orderLeadTimeHours: maxLead,
         schedule: {
           pickupSlots: (s?.pickup_slots as PickupSlots | null) ?? null,
           busyDates: s?.busy_dates ?? null,
           vacationDates: s?.vacation_dates ?? null,
+          orderLeadTimeHours: maxLead,
         },
       };
     });
@@ -415,6 +418,7 @@ export default function Checkout() {
             const s = sellerPickupSettings.get(fid);
             const farmerItems = items.filter((i) => i.product.farmer_id === fid);
             const maxPrep = Math.max(0, ...farmerItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
+            const maxLead = Math.max(0, ...farmerItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
             const result = calculatePickupTime(
               maxPrep,
               s?.pickup_slots as PickupSlots | null ?? null,
@@ -422,7 +426,8 @@ export default function Checkout() {
               s?.busy_dates ?? null,
               s?.vacation_dates ?? null,
               orderCountsMap,
-              fid
+              fid,
+              maxLead
             );
             sellerTimesMap[fid] = result.text;
             timeTexts.push(result.text);
@@ -657,6 +662,7 @@ export default function Checkout() {
               return Array.from(groups.entries()).map(([fid, groupItems]) => {
                 const settings = sellerPickupSettings.get(fid);
                 const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
+                const maxLead = Math.max(0, ...groupItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
                 const ppData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
                 const ppEnd = parseWorkingHoursEnd(ppData?.working_hours) ?? undefined;
                 const deliveryResult = calculateDeliveryTimePerSeller(
@@ -665,7 +671,8 @@ export default function Checkout() {
                   settings?.busy_dates ?? null,
                   settings?.vacation_dates ?? null,
                   adminSettings,
-                  ppEnd
+                  ppEnd,
+                  maxLead
                 );
                 return (
                   <div key={fid} className="space-y-1">
@@ -871,6 +878,7 @@ export default function Checkout() {
                 const farmer = farmersMap.get(fid);
                 const settings = sellerPickupSettings.get(fid);
                 const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
+                const maxLead = Math.max(0, ...groupItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
 
                 const pickupResult = calculatePickupTime(
                   maxPrep,
@@ -879,7 +887,8 @@ export default function Checkout() {
                   settings?.busy_dates,
                   settings?.vacation_dates,
                   orderCountsMap,
-                  fid
+                  fid,
+                  maxLead
                 );
 
                 return (

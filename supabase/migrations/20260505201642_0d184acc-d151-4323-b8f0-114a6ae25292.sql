@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN order_lead_time_hours integer NOT NULL DEFAULT 0;

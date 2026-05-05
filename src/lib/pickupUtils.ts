@@ -84,6 +84,21 @@ export function safePrepTime(value: number | null | undefined, fallback = 0): nu
   return Math.max(0, Math.floor(n));
 }
 
+/**
+ * Форматирует общее время ожидания (минуты) в краткую человекочитаемую строку:
+ *   < 60 мин → ~Nмин.
+ *   < 24 ч  → ~Nч.
+ *   ≥ 24 ч  → ~Nдн.
+ */
+export function formatRelativeTime(totalMinutes: number): string {
+  const m = Math.max(0, Math.round(totalMinutes));
+  if (m < 60) return `~${m}мин.`;
+  const hours = Math.round(m / 60);
+  if (hours < 24) return `~${hours}ч.`;
+  const days = Math.round(hours / 24);
+  return `~${days}дн.`;
+}
+
 function dayPrefix(checkDate: Date, todayMinsk: Date): string {
   if (sameDay(checkDate, todayMinsk)) return "Сегодня";
   const tomorrow = new Date(todayMinsk);
@@ -120,6 +135,8 @@ interface SellerSchedule {
   pickupSlots: PickupSlots | null;
   busyDates: string[] | null;
   vacationDates: string[] | null;
+  /** Минимальный срок приёма заказа до начала окна выдачи (часы). По умолчанию 0. */
+  orderLeadTimeHours?: number;
 }
 
 interface AdminDeliverySettings {
@@ -163,6 +180,7 @@ function isSellerDayAvailable(checkDate: Date, schedule: SellerSchedule): boolea
 function getSellerSlotForDate(
   checkDate: Date,
   schedule: SellerSchedule,
+  nowMinsk?: Date,
 ): { start: number; end: number } | null {
   if (!isSellerDayAvailable(checkDate, schedule)) return null;
   const dayKey = DAY_KEYS[checkDate.getDay()];
@@ -170,6 +188,22 @@ function getSellerSlotForDate(
   const start = parseTime(slot.start);
   const end = parseTime(slot.end);
   if (start === null || end === null || end <= start) return null;
+
+  // Минимальный срок приёма заказа до начала окна выдачи
+  const leadHours = schedule.orderLeadTimeHours ?? 0;
+  if (leadHours > 0) {
+    const now = nowMinsk ?? getMinskTime();
+    const windowStart = new Date(
+      checkDate.getFullYear(),
+      checkDate.getMonth(),
+      checkDate.getDate(),
+      0, 0, 0, 0,
+    );
+    windowStart.setMinutes(windowStart.getMinutes() + start);
+    const diffMinutes = (windowStart.getTime() - now.getTime()) / 60000;
+    if (diffMinutes < leadHours * 60) return null;
+  }
+
   return { start, end };
 }
 
@@ -216,7 +250,7 @@ export function findEarliestReady(
     const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
 
-    const window = getSellerSlotForDate(checkDate, schedule);
+    const window = getSellerSlotForDate(checkDate, schedule, now);
     if (!window) continue;
 
     const isToday = offset === 0;
@@ -278,10 +312,10 @@ export function getPickupTimeSlotsForDate(
   date: Date,
   nowMinsk?: Date,
 ): string[] {
-  const window = getSellerSlotForDate(date, schedule);
+  const now = nowMinsk ?? getMinskTime();
+  const window = getSellerSlotForDate(date, schedule, now);
   if (!window) return [];
 
-  const now = nowMinsk ?? getMinskTime();
   const ready = findEarliestReady(prepTimeMinutes, schedule, {
     requireMinPickupWindow: true,
     nowMinsk: now,
@@ -342,24 +376,27 @@ export function calculatePickupTime(
   vacationDates: string[] | null | undefined,
   orderCounts: OrderCounts,
   farmerId: string,
+  orderLeadTimeHours?: number,
 ): PickupTimeResult {
   const prep = safePrepTime(prepTimeMinutes);
+  const lead = Math.max(0, Math.floor(orderLeadTimeHours ?? 0));
 
   if (!pickupSlots) {
-    const hours = Math.max(1, Math.ceil(prep / 60));
-    return { text: prep === 0 ? "В наличии" : `Через ${hours}ч.`, isFallback: true };
+    const totalMin = prep + lead * 60;
+    return { text: totalMin === 0 ? "В наличии" : formatRelativeTime(totalMin), isFallback: true };
   }
 
   const hasActiveDay = Object.values(pickupSlots).some((s) => s.active);
   if (!hasActiveDay) {
-    const hours = Math.max(1, Math.ceil(prep / 60));
-    return { text: prep === 0 ? "В наличии" : `Через ${hours}ч.`, isFallback: true };
+    const totalMin = prep + lead * 60;
+    return { text: totalMin === 0 ? "В наличии" : formatRelativeTime(totalMin), isFallback: true };
   }
 
   const schedule: SellerSchedule = {
     pickupSlots,
     busyDates: busyDates ?? null,
     vacationDates: vacationDates ?? null,
+    orderLeadTimeHours: lead,
   };
 
   const now = getMinskTime();
@@ -370,7 +407,7 @@ export function calculatePickupTime(
     const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
 
-    const window = getSellerSlotForDate(checkDate, schedule);
+    const window = getSellerSlotForDate(checkDate, schedule, now);
     if (!window) continue;
 
     // Проверка лимита заказов на дату
@@ -422,10 +459,16 @@ export function calculatePickupReadyDate(
   pickupSlots: PickupSlots | null | undefined,
   busyDates: string[] | null | undefined,
   vacationDates: string[] | null | undefined,
+  orderLeadTimeHours?: number,
 ): PickupReadyDateResult | null {
   return findEarliestReady(
     prepTimeMinutes,
-    { pickupSlots: pickupSlots ?? null, busyDates: busyDates ?? null, vacationDates: vacationDates ?? null },
+    {
+      pickupSlots: pickupSlots ?? null,
+      busyDates: busyDates ?? null,
+      vacationDates: vacationDates ?? null,
+      orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)),
+    },
     { requireMinPickupWindow: true },
   );
 }
@@ -538,9 +581,10 @@ export function calculateDeliveryTimePerSeller(
   vacationDates: string[] | null,
   adminSettings: AdminDeliverySettings,
   pickupPointEndMinutes?: number,
+  orderLeadTimeHours?: number,
 ): DeliveryTimeResult {
   return calculateDeliveryTime(
-    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, vacationDates } }],
+    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, vacationDates, orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)) } }],
     adminSettings,
     pickupPointEndMinutes,
   );

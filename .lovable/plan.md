@@ -1,77 +1,77 @@
-## Цель
+## Что добавляем
 
-После оформления заказа, если у пользователя в `auth.users.email` стоит заглушка `*@phone.locusfood.by` (создаётся в `verify-otp` для пользователей, заходящих по телефону), показать блок с предложением добавить настоящий Email с подтверждением через код.
+Новое поле **`order_lead_time_hours`** (целое, по умолчанию `0`) на уровне **товара** (не продавца). Это «минимальный срок приёма заказа до выдачи» в часах. Если указано — окно выдачи становится недоступным, если до его начала осталось меньше указанных часов.
 
-## UX-флоу (на экране «Заказ оформлен!» в `src/pages/Checkout.tsx`)
+Пример для пекаря (хлеб, окна Ср/Вс 17:00–20:00, lead = 20):
+- Заказ на среду — принимается только до **понедельника 21:00**
+- Заказ на воскресенье — только до **субботы 21:00**
 
-1. После успеха заказа проверяем `user.email`. Если он заканчивается на `@phone.locusfood.by` — показываем карточку:
-   «Хотите получать уведомления о заказах на почту? Введите ваш Email».
-2. Шаг 1: поле Email + кнопка «Получить код». На submit вызываем edge function `send-email-change-code`.
-3. Шаг 2: поле «Код из письма» (6 цифр) + кнопка «Подтвердить». Вызываем `verify-email-change-code`. При успехе — toast «Email подтверждён», блок скрывается.
-4. Кнопка «Пропустить» — закрывает блок (можно вернуться позже из настроек, но это вне scope).
+По умолчанию `0` → поведение всех существующих товаров не меняется.
 
-## Backend (Supabase)
+## 1. БД миграция
 
-### Таблица `email_change_codes` (новая, миграция)
-
-- `id uuid pk default gen_random_uuid()`
-- `user_id uuid not null`
-- `new_email text not null`
-- `code_hash text not null` (sha256, как в phone_otp_codes)
-- `attempts int not null default 0`
-- `expires_at timestamptz not null` (10 минут)
-- `created_at timestamptz default now()`
-- `verified bool default false`
-- RLS: `No client access` (как у `phone_otp_codes`) — все операции через edge functions с service-role.
-
-### Edge function `send-email-change-code` (новая)
-
-- Auth: проверяет JWT, берёт `user_id` и текущий email. Требует, чтобы текущий email был `*@phone.locusfood.by` (защита от misuse).
-- Validate `new_email` (zod, normalize lowercase). Проверить, что email не занят другим пользователем (через `supabase.auth.admin.listUsers` поиск по email или select из `auth.users` через service role).
-- Rate limit: не больше 1 кода в 60с и 5 в час на user_id (отдельная таблица или просто проверить `created_at` в `email_change_codes`).
-- Сгенерировать 6-значный код, сохранить sha256-hash + new_email + expires_at (10 мин).
-- Отправить письмо через Resend (используя `RESEND_API_KEY`, `SENDER_EMAIL` = `Locus <info@locusfood.by>`) с темой «Код подтверждения Email — Locus» и кодом в теле.
-- `verify_jwt = false` в config.toml + ручная валидация JWT (как в существующих функциях).
-
-### Edge function `verify-email-change-code` (новая)
-
-- Auth + достать `user_id`.
-- Принять `{ new_email, code }`.
-- Найти последнюю не-verified запись для user_id+new_email с `expires_at > now()`. Если attempts >= 5 — отклонить. Сравнить sha256(code) с `code_hash`. Иначе attempts++.
-- При успехе: `supabase.auth.admin.updateUserById(user_id, { email: new_email, email_confirm: true })` — это перезапишет старый `*@phone.locusfood.by` email на новый и отметит подтверждённым (старый автоматически удаляется, т.к. поле `email` одно).
-- Также обновить `profiles.email = new_email`.
-- Отметить запись `verified = true`, удалить остальные коды этого user.
-
-## Frontend
-
-### Новый компонент `src/components/EmailChangePrompt.tsx`
-
-- Двух-шаговая форма (email → код), zod-валидация, состояния loading/error.
-- Использует `supabase.functions.invoke('send-email-change-code'/'verify-email-change-code')`.
-- При успехе вызывает `onDone()` и `supabase.auth.refreshSession()` чтобы клиент увидел новый email.
-
-### Интеграция в `src/pages/Checkout.tsx`
-
-В блоке `if (orderSuccess)` (строки 540–558) добавить под текстом:
-```tsx
-{user?.email?.endsWith('@phone.locusfood.by') && (
-  <EmailChangePrompt onDone={() => { /* hide */ }} />
-)}
+```sql
+ALTER TABLE public.products
+  ADD COLUMN order_lead_time_hours integer NOT NULL DEFAULT 0;
 ```
-Локальный state `emailPromptDismissed` управляет видимостью.
 
-## Технические детали
+`prep_time_minutes` остаётся как есть.
 
-- Секреты уже есть: `RESEND_API_KEY`, `SENDER_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`.
-- В `supabase/config.toml` добавить `verify_jwt = false` для обеих новых функций.
-- Хеш кода: `crypto.subtle.digest('SHA-256', ...)` как в `verify-otp`.
-- Проверка занятости email: через `supabase.auth.admin.listUsers({ filter: ... })` или прямой select из `auth.users` через service role клиент.
+## 2. Логика недоступности дат (`src/lib/pickupUtils.ts`)
 
-## Файлы
+Сейчас в корзине могут быть товары от разных продавцов и с разным lead-time. Для каждого окна выдачи продавца проверяем максимум `order_lead_time_hours` среди товаров этого продавца в корзине:
 
-- new: `supabase/migrations/<ts>_email_change_codes.sql`
-- new: `supabase/functions/send-email-change-code/index.ts`
-- new: `supabase/functions/verify-email-change-code/index.ts`
-- edit: `supabase/config.toml` (две новые секции)
-- new: `src/components/EmailChangePrompt.tsx`
-- edit: `src/pages/Checkout.tsx` (показать промпт после успеха)
+```
+windowStartMinsk - now >= max(orderLeadTimeHours по товарам продавца) * 60 минут
+```
+
+Если условие не выполняется — окно/день скрывается в календаре (как уже работает для vacation/busy).
+
+Затрагиваемые функции: `findEarliestReady`, `calculatePickupTime`, `getPickupTimeSlotsForDate`, `isPickupDateAvailable`. Сигнатуры расширяем опциональным параметром `orderLeadTimeHoursPerSeller: Record<farmerId, number>` (или передаём вместе с items).
+
+`prep_time_minutes` продолжает работать как сейчас.
+
+## 3. Отображение «времени приготовления» в карточке товара
+
+Текущая логика в `ProductCard.tsx` показывает только `prep_time_minutes`. Меняем на **сумму**:
+
+```ts
+const totalMinutes = (prep_time_minutes ?? 0) + (order_lead_time_hours ?? 0) * 60;
+```
+
+Форматирование:
+- `0` → «В наличии» (зелёным)
+- `< 60` мин → `~Nмин.`
+- `< 24` ч → `~Nч.`
+- `≥ 24` ч → `~Nдн.` (новое — для случаев типа 48ч)
+
+Применяется везде где показывается prep-time: `ProductCard`, страница товара `Product.tsx` (если там тоже отображается), любые блоки превью.
+
+## 4. UI редактирования товара
+
+В форме товара (там где сейчас редактируется `prep_time_minutes`) добавить поле:
+- Лейбл: **«Минимальный срок приёма заказа до выдачи (часов)»**
+- Описание: «Например, 20 — заказ на среду 17:00 будет приниматься только до понедельника 21:00. Оставьте 0, если нет ограничения.»
+- Тип: number, min 0
+
+Файлы: форма редактирования товара продавцом (`SellerProducts` / соответствующий диалог) и админская форма товара (`AdminProducts`).
+
+## 5. Места, где читается товар
+
+Добавить `order_lead_time_hours` в SELECT:
+- `src/hooks/useProducts.ts` (для карточек)
+- `src/hooks/useProduct.ts` (страница товара)
+- `src/pages/Checkout.tsx` (для расчёта доступных дат — собрать map farmer_id → max(lead_time) по товарам в корзине)
+- `src/integrations/supabase/types.ts` обновится автоматически после миграции
+
+## Совместимость
+
+- Default `0` → ни один существующий товар/продавец не меняет поведение.
+- `prep_time_minutes` не трогаем.
+- Если в корзине несколько товаров одного продавца — берём максимум lead-time (самый «медленный» товар диктует ограничение).
+
+## Что НЕ делаем
+
+- Не трогаем профиль продавца / `get_seller_pickup_settings` (логика остаётся на уровне товара).
+- Не меняем график работы продавца.
+- Не меняем расчёт `estimated_delivery_time` после создания заказа (он уже корректно использует окна выдачи).

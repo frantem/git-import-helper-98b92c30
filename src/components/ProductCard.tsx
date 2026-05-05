@@ -9,11 +9,14 @@ import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { usePrefetchProduct } from "@/hooks/useProduct";
 
-function formatPrepTime(minutes?: number): { label: string; isInStock: boolean } {
-  if (!minutes || minutes === 0) return { label: "В наличии", isInStock: true };
-  if (minutes < 60) return { label: `~${minutes}мин.`, isInStock: false };
-  const hours = Math.round(minutes / 60);
-  return { label: `~${hours}ч.`, isInStock: false };
+function formatPrepTime(prepMinutes?: number, leadHours?: number): { label: string; isInStock: boolean } {
+  const totalMinutes = (prepMinutes || 0) + (leadHours || 0) * 60;
+  if (totalMinutes === 0) return { label: "В наличии", isInStock: true };
+  if (totalMinutes < 60) return { label: `~${totalMinutes}мин.`, isInStock: false };
+  const hours = Math.round(totalMinutes / 60);
+  if (hours < 24) return { label: `~${hours}ч.`, isInStock: false };
+  const days = Math.round(hours / 24);
+  return { label: `~${days}дн.`, isInStock: false };
 }
 
 interface ProductCardProps {
@@ -139,7 +142,7 @@ export const ProductCard = memo(function ProductCard({
         </div>
         <div className="mt-auto">
           {(() => {
-            const prep = formatPrepTime(product.prep_time_minutes);
+            const prep = formatPrepTime(product.prep_time_minutes, (product as any).order_lead_time_hours);
             return (
               <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
                 {prep.label}
