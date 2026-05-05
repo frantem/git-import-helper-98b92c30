@@ -97,6 +97,7 @@ export function formatRelativeTime(totalMinutes: number): string {
   if (hours < 24) return `~${hours}ч.`;
   const days = Math.round(hours / 24);
   return `~${days}дн.`;
+}
 
 function dayPrefix(checkDate: Date, todayMinsk: Date): string {
   if (sameDay(checkDate, todayMinsk)) return "Сегодня";
