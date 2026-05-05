@@ -878,6 +878,7 @@ export default function Checkout() {
                 const farmer = farmersMap.get(fid);
                 const settings = sellerPickupSettings.get(fid);
                 const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
+                const maxLead = Math.max(0, ...groupItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
 
                 const pickupResult = calculatePickupTime(
                   maxPrep,
@@ -886,7 +887,8 @@ export default function Checkout() {
                   settings?.busy_dates,
                   settings?.vacation_dates,
                   orderCountsMap,
-                  fid
+                  fid,
+                  maxLead
                 );
 
                 return (
