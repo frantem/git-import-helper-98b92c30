@@ -201,6 +201,7 @@ export default function SellerProducts() {
         price: priceInKopecks, old_price: oldPriceInKopecks, unit: mainVariant.label,
         category_id: selectedCategoryIds[0], image_url: productForm.image_url || null,
         farmer_id: farmerId, prep_time_minutes: productForm.prep_time_minutes || 0,
+        order_lead_time_hours: productForm.order_lead_time_hours || 0,
         composition: productForm.composition || null,
         calories: productForm.calories !== "" ? parseFloat(String(productForm.calories).replace(',', '.')) : null,
         protein: productForm.protein !== "" ? parseFloat(String(productForm.protein).replace(',', '.')) : null,
