@@ -39,6 +39,19 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Require an authenticated Supabase session (anon or user JWT) to prevent abuse of the project's META token.
+    const authHeader = req.headers.get("Authorization") || req.headers.get("apikey");
+    const expectedAnon = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!authHeader || (expectedAnon && !authHeader.includes(expectedAnon))) {
+      // Allow user JWTs too: just require a Bearer token of reasonable length
+      if (!authHeader?.startsWith("Bearer ") || authHeader.length < 40) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+    }
+
     if (!ACCESS_TOKEN) {
       console.warn("META_ACCESS_TOKEN is not configured, skipping");
       return new Response(
