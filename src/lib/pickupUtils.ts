@@ -297,10 +297,10 @@ export function getPickupTimeSlotsForDate(
   date: Date,
   nowMinsk?: Date,
 ): string[] {
-  const window = getSellerSlotForDate(date, schedule);
+  const now = nowMinsk ?? getMinskTime();
+  const window = getSellerSlotForDate(date, schedule, now);
   if (!window) return [];
 
-  const now = nowMinsk ?? getMinskTime();
   const ready = findEarliestReady(prepTimeMinutes, schedule, {
     requireMinPickupWindow: true,
     nowMinsk: now,
