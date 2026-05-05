@@ -126,14 +126,17 @@ export default function Checkout() {
     return farmerIds.map((fid) => {
       const farmerItems = items.filter((i) => i.product.farmer_id === fid);
       const maxPrep = Math.max(0, ...farmerItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
+      const maxLead = Math.max(0, ...farmerItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
       const s = sellerPickupSettings.get(fid);
       return {
         farmerId: fid,
         prepTimeMinutes: maxPrep,
+        orderLeadTimeHours: maxLead,
         schedule: {
           pickupSlots: (s?.pickup_slots as PickupSlots | null) ?? null,
           busyDates: s?.busy_dates ?? null,
           vacationDates: s?.vacation_dates ?? null,
+          orderLeadTimeHours: maxLead,
         },
       };
     });
