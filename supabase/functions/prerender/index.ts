@@ -415,6 +415,32 @@ Deno.serve(async (req) => {
   const [pathname, search] = cleanPath.split("?");
   const searchParams = new URLSearchParams(search || "");
 
+  // Static file passthrough: verification files, robots, sitemap, assets, etc.
+  // Without this, prerender returns the homepage HTML for any unknown path,
+  // which breaks search-engine verification files (Yandex, Google, etc.).
+  const STATIC_FILE_RE = /\.(html?|txt|xml|svg|ico|png|jpe?g|webp|gif|js|css|map|woff2?|json|pdf)$/i;
+  if (STATIC_FILE_RE.test(pathname) && pathname !== "/index.html") {
+    try {
+      const origin = await fetch(`${DOMAIN}${pathname}${search ? `?${search}` : ""}`, {
+        headers: { "User-Agent": "prerender-static-passthrough" },
+        redirect: "follow",
+      });
+      const body = await origin.arrayBuffer();
+      return new Response(body, {
+        status: origin.status,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": origin.headers.get("Content-Type") || "application/octet-stream",
+          "Cache-Control": "public, max-age=300, s-maxage=600",
+          "X-Robots-Tag": "all",
+        },
+      });
+    } catch (err) {
+      console.error("prerender static passthrough error:", err);
+      return new Response("Not found", { status: 404, headers: corsHeaders });
+    }
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
