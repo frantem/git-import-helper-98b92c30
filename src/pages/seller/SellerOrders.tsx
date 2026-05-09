@@ -33,6 +33,7 @@ interface SellerOrder {
   delivery_cost: number;
   notes: string | null;
   estimated_delivery_time: string | null;
+  payment_method: string | null;
   pickup_point: { name: string; address: string; working_hours: string | null } | null;
   buyer: { full_name: string | null; phone: string | null } | null;
   items: SellerOrderItem[];
@@ -78,7 +79,7 @@ export default function SellerOrders() {
       .select(`
         id, quantity, unit_price, status, variant_label, custom_fields,
         product:products(title),
-        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, buyer_id,
+        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id,
           pickup_point:pickup_points(name, address, working_hours)
         )
       `)
@@ -132,6 +133,7 @@ export default function SellerOrders() {
           delivery_cost: e.order.delivery_cost,
           notes: e.order.notes,
           estimated_delivery_time: e.order.estimated_delivery_time,
+          payment_method: e.order.payment_method ?? null,
           pickup_point: e.order.pickup_point,
           buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
           items: e.items,
@@ -254,6 +256,11 @@ export default function SellerOrders() {
                           ? "Пункт выдачи"
                           : "Самовывоз у фермера"}
                     </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Package className="h-4 w-4" />
+                    <span>Оплата: {order.payment_method === "card" ? "Карта" : "Наличные"}</span>
                   </div>
 
                   {order.delivery_type === "courier" && order.delivery_address && (
