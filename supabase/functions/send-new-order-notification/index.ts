@@ -156,7 +156,8 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedTotal = `${totalRubles} р. ${totalKopecks > 0 ? totalKopecks.toString().padStart(2, "0") + " к." : ""}`;
 
     const formatItemDetails = (item: OrderItemRaw) => {
-      let line = `• ${item.product?.title || "Товар"} — ${item.quantity} ${item.product?.unit || "шт."} × ${Math.floor(item.unit_price / 100)} р.`;
+      const variantSuffix = item.variant_label ? ` — ${item.variant_label}` : "";
+      let line = `• ${item.product?.title || "Товар"} — ${item.quantity} шт.${variantSuffix} × ${Math.floor(item.unit_price / 100)} р.`;
       if (item.custom_fields?.fields?.length) {
         line += "\n" + item.custom_fields.fields.map(f => `  ${f.label}: ${f.value}`).join("\n");
       }
