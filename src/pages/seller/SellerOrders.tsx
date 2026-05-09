@@ -133,6 +133,7 @@ export default function SellerOrders() {
           delivery_cost: e.order.delivery_cost,
           notes: e.order.notes,
           estimated_delivery_time: e.order.estimated_delivery_time,
+          payment_method: e.order.payment_method ?? null,
           pickup_point: e.order.pickup_point,
           buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
           items: e.items,
