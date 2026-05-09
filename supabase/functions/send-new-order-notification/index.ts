@@ -37,6 +37,7 @@ interface OrderItemRaw {
   quantity: number;
   unit_price: number;
   farmer_id: string;
+  variant_label: string | null;
   custom_fields: {
     fields?: Array<{ label: string; value: string }>;
     addons?: Array<{ name: string; price: number }>;
