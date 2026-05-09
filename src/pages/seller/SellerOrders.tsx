@@ -258,6 +258,11 @@ export default function SellerOrders() {
                     </span>
                   </div>
 
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Package className="h-4 w-4" />
+                    <span>Оплата: {order.payment_method === "card" ? "Карта" : "Наличные"}</span>
+                  </div>
+
                   {order.delivery_type === "courier" && order.delivery_address && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <MapPin className="h-4 w-4" />
