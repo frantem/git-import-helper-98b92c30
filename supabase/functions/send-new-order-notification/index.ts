@@ -141,6 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
         quantity,
         unit_price,
         farmer_id,
+        variant_label,
         custom_fields,
         product:products(title, unit)
       `,
