@@ -250,11 +250,11 @@ export default function SellerOrders() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                     <Truck className="h-4 w-4" />
                     <span>
-                      {order.delivery_type === "courier"
-                        ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + " бел.руб." : "бесплатно"})`
-                        : order.delivery_type === "pickup"
-                          ? "Пункт выдачи"
-                          : "Самовывоз у фермера"}
+                    {order.delivery_type === "courier"
+                      ? `Курьер (${order.delivery_cost ? (order.delivery_cost / 100) + " бел.руб." : "бесплатно"})`
+                      : order.delivery_type === "pickup"
+                        ? "Пункт выдачи"
+                        : "Самовывоз"}
                     </span>
                   </div>
 
