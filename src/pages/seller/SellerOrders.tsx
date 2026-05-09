@@ -33,6 +33,7 @@ interface SellerOrder {
   delivery_cost: number;
   notes: string | null;
   estimated_delivery_time: string | null;
+  payment_method: string | null;
   pickup_point: { name: string; address: string; working_hours: string | null } | null;
   buyer: { full_name: string | null; phone: string | null } | null;
   items: SellerOrderItem[];
