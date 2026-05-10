@@ -120,6 +120,19 @@ export default function SellerOrders() {
       .rpc("get_buyer_profiles_for_seller", { _buyer_ids: buyerIds });
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
+    // Fetch referrer farmer names
+    const referrerIds = [...new Set(
+      Array.from(orderMap.values()).map(e => e.order.referrer_farmer_id).filter(Boolean)
+    )] as string[];
+    const referrerMap = new Map<string, string>();
+    if (referrerIds.length > 0) {
+      const { data: referrerFarmers } = await supabase
+        .from("farmers")
+        .select("id, name")
+        .in("id", referrerIds);
+      referrerFarmers?.forEach(f => referrerMap.set(f.id, f.name));
+    }
+
     // Build final list sorted by date desc
     const result: SellerOrder[] = Array.from(orderMap.values())
       .map(e => {
@@ -135,6 +148,7 @@ export default function SellerOrders() {
           notes: e.order.notes,
           estimated_delivery_time: e.order.estimated_delivery_time,
           payment_method: e.order.payment_method ?? null,
+          referrer_farmer_name: e.order.referrer_farmer_id ? (referrerMap.get(e.order.referrer_farmer_id) || null) : null,
           pickup_point: e.order.pickup_point,
           buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
           items: e.items,
