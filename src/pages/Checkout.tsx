@@ -621,7 +621,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
                 deliveryType === "courier"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground hover:bg-secondary/50"
+                  : "border-border bg-background text-foreground hover:bg-secondary/50 bg-[#f9f2e7]"
               }`}
               onClick={() => { setDeliveryType("courier"); trackMetaEvent("AddPaymentInfo", { delivery_type: "home_delivery" }); }}
             >
@@ -640,7 +640,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
                 deliveryType === "self"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground hover:bg-secondary/50"
+                  : "border-border bg-background text-foreground hover:bg-secondary/50 bg-[#f9f2e7]"
               }`}
               onClick={() => { setDeliveryType("self"); trackMetaEvent("AddPaymentInfo", { delivery_type: "pickup" }); }}
             >
@@ -776,7 +776,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
               courierDeliveryMode === "fast" ?
               "border-primary bg-primary/10 text-primary" :
-              "border-border bg-background text-foreground hover:bg-secondary/50"}`}
+              "border-border bg-background text-foreground hover:bg-secondary/50 bg-[#f9f2e7]"}`}
               onClick={() => setCourierDeliveryMode("fast")}>
 
                   <RadioGroupItem
@@ -799,7 +799,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
               courierDeliveryMode === "scheduled" ?
               "border-primary bg-primary/10 text-primary" :
-              "border-border bg-background text-foreground hover:bg-secondary/50"}`
+              "border-border bg-background text-foreground hover:bg-secondary/50 bg-[#f9f2e7]"}`
               }
               onClick={() => setCourierDeliveryMode("scheduled")}>
 
