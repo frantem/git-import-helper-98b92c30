@@ -278,6 +278,13 @@ export default function SellerOrders() {
                     <span>Оплата: {order.payment_method === "card" ? "Карта" : "Наличные"}</span>
                   </div>
 
+                  {order.referrer_farmer_name && (
+                    <div className="flex items-center gap-2 text-sm text-primary mb-2">
+                      <User className="h-4 w-4" />
+                      <span>Пришёл от: {order.referrer_farmer_name}</span>
+                    </div>
+                  )}
+
                   {order.delivery_type === "courier" && order.delivery_address && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <MapPin className="h-4 w-4" />
