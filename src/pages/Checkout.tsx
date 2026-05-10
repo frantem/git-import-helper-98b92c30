@@ -590,7 +590,7 @@ export default function Checkout() {
   return <div className="min-h-screen pb-32 md:pb-0 bg-[#faf5ea]">
       <Header />
       
-      <main className="container mx-auto px-3 py-4 bg-[#b65e43]">
+      <main className="container mx-auto px-3 py-4">
         <PageHeader title="Оформление заказа" backPath="/cart" />
 
         {/* Delivery type selection - MOVED TO TOP */}
