@@ -773,20 +773,20 @@ export default function Checkout() {
 
                 {/* Fast delivery option */}
                 <div
-              className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${
+              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
               courierDeliveryMode === "fast" ?
-              "bg-primary/10 border border-primary/30" :
-              "hover:bg-secondary/50"}`}
+              "border-primary bg-primary/10 text-primary" :
+              "border-border bg-background text-foreground hover:bg-secondary/50"}`}
               onClick={() => setCourierDeliveryMode("fast")}>
 
                   <RadioGroupItem
                 value="fast"
                 id="courier-fast"
-                className="mt-1" />
+                className="sr-only" />
 
-                  <Label htmlFor="courier-fast" className="flex-1 cursor-pointer">
-                    <span className="font-medium text-foreground">Ближайшая доставка</span>
-                    <p className="text-sm text-muted-foreground mt-0.5">
+                  <Label htmlFor="courier-fast" className="block cursor-pointer">
+                    <span className="font-medium">Ближайшая доставка</span>
+                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
                       {noDeliveryAvailable
                         ? "Нет доступных дат для доставки в ближайшее время"
                         : `Привезем ваш заказ: ${fastDeliveryResult.text}`}
@@ -796,17 +796,17 @@ export default function Checkout() {
 
                 {/* Scheduled delivery option */}
                 <div
-              className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${
+              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
               courierDeliveryMode === "scheduled" ?
-              "bg-primary/10 border border-primary/30" :
-              "hover:bg-secondary/50"}`
+              "border-primary bg-primary/10 text-primary" :
+              "border-border bg-background text-foreground hover:bg-secondary/50"}`
               }
               onClick={() => setCourierDeliveryMode("scheduled")}>
 
-                  <RadioGroupItem value="scheduled" id="courier-scheduled" className="mt-1" />
-                  <Label htmlFor="courier-scheduled" className="flex-1 cursor-pointer">
-                    <span className="font-medium text-foreground">Доставка в указанное время</span>
-                    <p className="text-sm text-muted-foreground mt-0.5">
+                  <RadioGroupItem value="scheduled" id="courier-scheduled" className="sr-only" />
+                  <Label htmlFor="courier-scheduled" className="block cursor-pointer">
+                    <span className="font-medium">Доставка в указанное время</span>
+                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "scheduled" ? "text-primary/80" : "text-muted-foreground"}`}>
                       Вы можете выбрать дату и время, когда мы Вам доставим товары
                     </p>
                   </Label>
