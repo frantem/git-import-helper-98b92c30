@@ -1031,7 +1031,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                 paymentMethod === "cash"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground"
+                  : "border-border bg-[#f8f1e3] text-foreground"
               }`}
             >
               Наличные
@@ -1042,7 +1042,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                 paymentMethod === "card"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground"
+                  : "border-border bg-[#f8f1e3] text-foreground"
               }`}
             >
               Карта
@@ -1060,7 +1060,7 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                 confirmationMethod === "call"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground"
+                  : "border-border bg-[#f8f1e3] text-foreground"
               }`}
             >
               Позвонить
@@ -1071,8 +1071,9 @@ export default function Checkout() {
               className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                 confirmationMethod === "message"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-background text-foreground"
+                  : "border-border bg-[#f8f1e3] text-foreground"
               }`}
+
             >
               Написать
             </button>
