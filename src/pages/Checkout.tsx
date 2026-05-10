@@ -601,17 +601,15 @@ export default function Checkout() {
           </div>
           
           <RadioGroup value={deliveryType} onValueChange={(v) => setDeliveryType(v as "pickup" | "courier" | "self")} className="space-y-2">
-            {/* Pickup point option */}
-            <div className="relative flex items-start gap-3 py-3 px-3 rounded-lg bg-muted/60 opacity-60 cursor-not-allowed select-none">
-              <RadioGroupItem value="pickup" id="delivery-pickup" className="mt-1" disabled />
-              <Label htmlFor="delivery-pickup" className="flex-1 cursor-not-allowed">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-muted-foreground">Пункт выдачи</span>
-                  </div>
-                  <span className="text-muted-foreground font-medium">Бесплатно</span>
-                </div>
+            {/* Pickup point option (disabled) */}
+            <div className="relative rounded-lg border-2 border-border bg-muted/60 px-3 py-2.5 opacity-60 cursor-not-allowed select-none">
+              <RadioGroupItem value="pickup" id="delivery-pickup" className="sr-only" disabled />
+              <Label htmlFor="delivery-pickup" className="flex justify-between items-center cursor-not-allowed">
+                <span className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium text-muted-foreground">Пункт выдачи</span>
+                </span>
+                <span className="text-muted-foreground font-medium">Бесплатно</span>
               </Label>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="bg-muted-foreground/80 text-background text-xs font-bold px-3 py-1 rounded-full">В разработке</span>
@@ -619,30 +617,40 @@ export default function Checkout() {
             </div>
 
             {/* Courier delivery option */}
-            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "courier" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => { setDeliveryType("courier"); trackMetaEvent("AddPaymentInfo", { delivery_type: "home_delivery" }); }}>
-              <RadioGroupItem value="courier" id="delivery-courier" className="mt-1" />
-              <Label htmlFor="delivery-courier" className="flex-1 cursor-pointer">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Доставка на дом</span>
-                  </div>
-                  <span className="text-foreground font-medium">6,90<BynSymbol /></span>
-                </div>
+            <div
+              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
+                deliveryType === "courier"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground hover:bg-secondary/50"
+              }`}
+              onClick={() => { setDeliveryType("courier"); trackMetaEvent("AddPaymentInfo", { delivery_type: "home_delivery" }); }}
+            >
+              <RadioGroupItem value="courier" id="delivery-courier" className="sr-only" />
+              <Label htmlFor="delivery-courier" className="flex justify-between items-center cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span className="font-medium">Доставка на дом</span>
+                </span>
+                <span className="font-medium">6,90<BynSymbol /></span>
               </Label>
             </div>
 
             {/* Self-pickup option */}
-            <div className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${deliveryType === "self" ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50"}`} onClick={() => { setDeliveryType("self"); trackMetaEvent("AddPaymentInfo", { delivery_type: "pickup" }); }}>
-              <RadioGroupItem value="self" id="delivery-self" className="mt-1" />
-              <Label htmlFor="delivery-self" className="flex-1 cursor-pointer">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Самовывоз</span>
-                  </div>
-                  <span className="text-primary font-medium">Бесплатно</span>
-                </div>
+            <div
+              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
+                deliveryType === "self"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground hover:bg-secondary/50"
+              }`}
+              onClick={() => { setDeliveryType("self"); trackMetaEvent("AddPaymentInfo", { delivery_type: "pickup" }); }}
+            >
+              <RadioGroupItem value="self" id="delivery-self" className="sr-only" />
+              <Label htmlFor="delivery-self" className="flex justify-between items-center cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span className="font-medium">Самовывоз</span>
+                </span>
+                <span className={`font-medium ${deliveryType === "self" ? "" : "text-primary"}`}>Бесплатно</span>
               </Label>
             </div>
           </RadioGroup>
@@ -765,20 +773,20 @@ export default function Checkout() {
 
                 {/* Fast delivery option */}
                 <div
-              className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${
+              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
               courierDeliveryMode === "fast" ?
-              "bg-primary/10 border border-primary/30" :
-              "hover:bg-secondary/50"}`}
+              "border-primary bg-primary/10 text-primary" :
+              "border-border bg-background text-foreground hover:bg-secondary/50"}`}
               onClick={() => setCourierDeliveryMode("fast")}>
 
                   <RadioGroupItem
                 value="fast"
                 id="courier-fast"
-                className="mt-1" />
+                className="sr-only" />
 
-                  <Label htmlFor="courier-fast" className="flex-1 cursor-pointer">
-                    <span className="font-medium text-foreground">Ближайшая доставка</span>
-                    <p className="text-sm text-muted-foreground mt-0.5">
+                  <Label htmlFor="courier-fast" className="block cursor-pointer">
+                    <span className="font-medium">Ближайшая доставка</span>
+                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
                       {noDeliveryAvailable
                         ? "Нет доступных дат для доставки в ближайшее время"
                         : `Привезем ваш заказ: ${fastDeliveryResult.text}`}
@@ -788,17 +796,17 @@ export default function Checkout() {
 
                 {/* Scheduled delivery option */}
                 <div
-              className={`flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors ${
+              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
               courierDeliveryMode === "scheduled" ?
-              "bg-primary/10 border border-primary/30" :
-              "hover:bg-secondary/50"}`
+              "border-primary bg-primary/10 text-primary" :
+              "border-border bg-background text-foreground hover:bg-secondary/50"}`
               }
               onClick={() => setCourierDeliveryMode("scheduled")}>
 
-                  <RadioGroupItem value="scheduled" id="courier-scheduled" className="mt-1" />
-                  <Label htmlFor="courier-scheduled" className="flex-1 cursor-pointer">
-                    <span className="font-medium text-foreground">Доставка в указанное время</span>
-                    <p className="text-sm text-muted-foreground mt-0.5">
+                  <RadioGroupItem value="scheduled" id="courier-scheduled" className="sr-only" />
+                  <Label htmlFor="courier-scheduled" className="block cursor-pointer">
+                    <span className="font-medium">Доставка в указанное время</span>
+                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "scheduled" ? "text-primary/80" : "text-muted-foreground"}`}>
                       Вы можете выбрать дату и время, когда мы Вам доставим товары
                     </p>
                   </Label>
