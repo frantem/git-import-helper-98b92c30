@@ -34,6 +34,7 @@ interface SellerOrder {
   notes: string | null;
   estimated_delivery_time: string | null;
   payment_method: string | null;
+  referrer_farmer_name: string | null;
   pickup_point: { name: string; address: string; working_hours: string | null } | null;
   buyer: { full_name: string | null; phone: string | null } | null;
   items: SellerOrderItem[];
@@ -79,7 +80,7 @@ export default function SellerOrders() {
       .select(`
         id, quantity, unit_price, status, variant_label, custom_fields,
         product:products(title),
-        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id,
+        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id, referrer_farmer_id,
           pickup_point:pickup_points(name, address, working_hours)
         )
       `)
@@ -119,6 +120,19 @@ export default function SellerOrders() {
       .rpc("get_buyer_profiles_for_seller", { _buyer_ids: buyerIds });
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
+    // Fetch referrer farmer names
+    const referrerIds = [...new Set(
+      Array.from(orderMap.values()).map(e => e.order.referrer_farmer_id).filter(Boolean)
+    )] as string[];
+    const referrerMap = new Map<string, string>();
+    if (referrerIds.length > 0) {
+      const { data: referrerFarmers } = await supabase
+        .from("farmers")
+        .select("id, name")
+        .in("id", referrerIds);
+      referrerFarmers?.forEach(f => referrerMap.set(f.id, f.name));
+    }
+
     // Build final list sorted by date desc
     const result: SellerOrder[] = Array.from(orderMap.values())
       .map(e => {
@@ -134,6 +148,7 @@ export default function SellerOrders() {
           notes: e.order.notes,
           estimated_delivery_time: e.order.estimated_delivery_time,
           payment_method: e.order.payment_method ?? null,
+          referrer_farmer_name: e.order.referrer_farmer_id ? (referrerMap.get(e.order.referrer_farmer_id) || null) : null,
           pickup_point: e.order.pickup_point,
           buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
           items: e.items,
@@ -262,6 +277,13 @@ export default function SellerOrders() {
                     <Package className="h-4 w-4" />
                     <span>Оплата: {order.payment_method === "card" ? "Карта" : "Наличные"}</span>
                   </div>
+
+                  {order.referrer_farmer_name && (
+                    <div className="flex items-center gap-2 text-sm text-primary mb-2">
+                      <User className="h-4 w-4" />
+                      <span>Пришёл от: {order.referrer_farmer_name}</span>
+                    </div>
+                  )}
 
                   {order.delivery_type === "courier" && order.delivery_address && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">

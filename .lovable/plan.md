@@ -1,28 +1,21 @@
-## Исправления по заказу от 9 мая 2026
+## Показывать реферера в /seller/orders
 
-### 1. Email о новом заказе показывает неверные данные
+По аналогии с /admin/orders, в карточке заказа на странице продавца отображать "Пришёл от: {Имя фермера}", если у заказа есть `referrer_farmer_id`. Если нет — ничего не показывать.
 
-**Файл:** `supabase/functions/send-new-order-notification/index.ts`
+### Файл: `src/pages/seller/SellerOrders.tsx`
 
-**Проблема:** Функция формирует строку как `${quantity} ${product.unit}` и полностью игнорирует `variant_label`. Поэтому "Бенто торт" со стандартным `unit = "500г"` и выбранным вариантом `800г` приходит как `1 500г` (выглядит как "1500 г").
+1. В тип `SellerOrder` добавить поле `referrer_farmer_name: string | null`.
+2. В SELECT по `order_items.order` добавить `referrer_farmer_id`.
+3. После сборки `orderMap` собрать уникальные `referrer_farmer_id`, одним запросом получить имена из `farmers` (`select id, name`) и положить в Map.
+4. При маппинге заказа подставить `referrer_farmer_name` (или null).
+5. В разметке карточки (рядом с блоком покупателя/доставки) добавить:
+   ```tsx
+   {order.referrer_farmer_name && (
+     <div className="flex items-center gap-2 text-sm text-primary mb-2">
+       <User className="h-4 w-4" />
+       <span>Пришёл от: {order.referrer_farmer_name}</span>
+     </div>
+   )}
+   ```
 
-**Решение:**
-- Подтягивать `variant_label` из `order_items` (добавить в SELECT).
-- Формат строки: `• {Название} — {quantity} шт.{ — variant_label если есть} × {price} р.`
-- Пример: `• Бенто торт — 1 шт. — 800г × 35 р.`
-
-### 2. Способ оплаты в заказах продавца
-
-**Файл:** `src/pages/seller/SellerOrders.tsx`
-
-- В SELECT (строка ~81) добавить поле `payment_method` из `orders`.
-- В типе `SellerOrder` добавить `payment_method: string | null`.
-- В карточке заказа отображать строку: `Оплата: Карта` или `Оплата: Наличные` (по аналогии с AdminOrders.tsx, строка 558).
-
----
-
-### Технические детали
-
-- Реферальное окно (24 часа) оставляем без изменений.
-- Изменения только во фронтенде (SellerOrders) и одной Edge Function (send-new-order-notification). Edge Function развернётся автоматически.
-- БД-миграции не требуются — все нужные поля (`variant_label`, `payment_method`) уже есть в схеме.
+Изменения только во фронтенде, миграции БД не нужны (поле `referrer_farmer_id` уже есть в `orders`, таблица `farmers` доступна на чтение всем).
