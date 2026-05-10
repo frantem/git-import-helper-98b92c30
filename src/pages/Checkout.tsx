@@ -594,7 +594,7 @@ export default function Checkout() {
         <PageHeader title="Оформление заказа" backPath="/cart" />
 
         {/* Delivery type selection - MOVED TO TOP */}
-        <div className="rounded-2xl bg-card p-4 shadow-sm mb-4 bg-slate-100">
+        <div className="rounded-2xl bg-card p-4 shadow-sm mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Truck className="h-5 w-5 text-primary" />
             <h2 className="font-bold text-foreground">Выберите доставку:</h2>
