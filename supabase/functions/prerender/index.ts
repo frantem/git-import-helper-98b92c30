@@ -183,12 +183,20 @@ function homeMeta(): PageMeta {
   };
 }
 
-async function productMeta(supabase: any, id: string): Promise<PageMeta | null> {
-  const { data: product } = await supabase
+async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
+  let query = supabase
     .from("products")
-    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id")
-    .eq("id", id)
-    .maybeSingle();
+    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, seo_title, seo_description, slug");
+
+  if (isUuid) {
+    query = query.eq("id", idOrSlug);
+  } else {
+    query = query.eq("slug", idOrSlug);
+  }
+
+  const { data: product } = await query.maybeSingle();
 
   if (!product || product.is_deleted) return null;
 
@@ -214,15 +222,13 @@ async function productMeta(supabase: any, id: string): Promise<PageMeta | null> 
     : null;
 
   const priceFormatted = (product.price / 100).toFixed(2).replace(".", ",");
-  const title = `${product.title} — купить в ${CITY} с доставкой | ${SITE_NAME}`;
-  const descParts = [
-    `Купить ${product.title.toLowerCase()} в ${CITY}`,
-    `Цена ${priceFormatted} BYN${product.unit ? ` за ${product.unit}` : ""}`,
-  ];
-  if (sellerName) descParts.push(`От фермера: ${sellerName}`);
-  descParts.push("Доставка по Витебску, оплата при получении");
-  if (product.description) descParts.push(product.description);
-  const description = truncateMeta(descParts.join(". "));
+
+  // Smart Meta-Tag Fallbacks
+  const title = product.seo_title || `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
+
+  const description = product.seo_description || truncateMeta(
+    `Заказать ${product.title} от локальных мастеров в ${CITY}. 100% натуральный состав, единая доставка. Цена: ${priceFormatted} руб.`
+  );
 
   const productLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -231,6 +237,10 @@ async function productMeta(supabase: any, id: string): Promise<PageMeta | null> 
     description: product.description || description,
     image: product.image_url ? [ogImageUrl(product.image_url)] : undefined,
     sku: product.id,
+    brand: {
+      "@type": "Brand",
+      name: SITE_NAME
+    },
     url: `${DOMAIN}/product/${product.id}`,
     offers: {
       "@type": "Offer",
@@ -274,7 +284,7 @@ async function productMeta(supabase: any, id: string): Promise<PageMeta | null> 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.id}`,
+    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,
@@ -290,7 +300,7 @@ async function catalogMeta(supabase: any, categorySlug?: string | null): Promise
       .eq("slug", categorySlug)
       .maybeSingle();
     if (cat) {
-      const title = cat.seo_title || `Купить ${cat.name.toLowerCase()} в ${CITY} с доставкой — ${SITE_NAME}`;
+      const title = cat.seo_title || `${cat.name} в ${CITY} — купить свежее и натуральное на ${SITE_NAME}`;
       const description = cat.seo_description
         ? truncateMeta(cat.seo_description)
         : truncateMeta(`${cat.name} в ${CITY} от местных фермеров. Свежие натуральные продукты с доставкой по городу. Оплата при получении.`);
@@ -400,6 +410,69 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   };
 }
 
+// ----- Dynamic Sitemap Generator -----
+
+async function generateSitemap(supabase: any): Promise<string> {
+  const urls: { loc: string; priority: string; lastmod?: string }[] = [
+    { loc: `${DOMAIN}/`, priority: "1.0" },
+    { loc: `${DOMAIN}/catalog`, priority: "0.8" },
+  ];
+
+  // Fetch Categories
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("slug, updated_at");
+
+  if (categories) {
+    categories.forEach((cat: any) => {
+      urls.push({
+        loc: `${DOMAIN}/catalog?category=${cat.slug}`,
+        priority: "0.8",
+        lastmod: cat.updated_at ? new Date(cat.updated_at).toISOString().split('T')[0] : undefined
+      });
+      urls.push({
+        loc: `${DOMAIN}/vitebsk/${cat.slug}`,
+        priority: "0.8"
+      });
+    });
+  }
+
+  // Fetch Products
+  const { data: products } = await supabase
+    .from("products")
+    .select("id, updated_at, slug, image_url")
+    .eq("is_active", true)
+    .eq("is_deleted", false);
+
+  const productUrls: any[] = [];
+  if (products) {
+    products.forEach((prod: any) => {
+      productUrls.push({
+        loc: `${DOMAIN}/product/${prod.slug || prod.id}`,
+        priority: "0.6",
+        lastmod: prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : undefined,
+        image: prod.image_url ? ogImageUrl(prod.image_url) : undefined
+      });
+    });
+  }
+
+  const allUrls = [...urls, ...productUrls];
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${allUrls.map(u => `  <url>
+    <loc>${u.loc}</loc>
+    <priority>${u.priority}</priority>
+    ${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}
+    ${u.image ? `    <image:image>
+      <image:loc>${u.image}</image:loc>
+    </image:image>` : ''}
+  </url>`).join('\n')}
+</urlset>`;
+
+  return xml;
+}
+
 // ----- Main handler -----
 
 Deno.serve(async (req) => {
@@ -414,6 +487,29 @@ Deno.serve(async (req) => {
   const cleanPath = rawPath.replace(/^\/functions\/v1\/prerender/, "") || "/";
   const [pathname, search] = cleanPath.split("?");
   const searchParams = new URLSearchParams(search || "");
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // Dynamic Sitemap
+  if (pathname === "/sitemap.xml") {
+    try {
+      const sitemap = await generateSitemap(supabase);
+      return new Response(sitemap, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/xml; charset=utf-8",
+          "Cache-Control": "public, max-age=3600, s-maxage=7200",
+        },
+      });
+    } catch (err) {
+      console.error("Sitemap generation error:", err);
+      return new Response("Error generating sitemap", { status: 500, headers: corsHeaders });
+    }
+  }
 
   // Static file passthrough: verification files, robots, sitemap, assets, etc.
   // Without this, prerender returns the homepage HTML for any unknown path,
@@ -440,11 +536,6 @@ Deno.serve(async (req) => {
       return new Response("Not found", { status: 404, headers: corsHeaders });
     }
   }
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
 
   let meta: PageMeta | null = null;
 
