@@ -183,12 +183,22 @@ function homeMeta(): PageMeta {
   };
 }
 
-async function productMeta(supabase: any, id: string): Promise<PageMeta | null> {
-  const { data: product } = await supabase
+async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
+  let query = supabase
     .from("products")
-    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, seo_title, seo_description")
-    .eq("id", id)
-    .maybeSingle();
+
+    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, seo_title, seo_description, slug");
+
+  if (isUuid) {
+    query = query.eq("id", idOrSlug);
+  } else {
+    query = query.eq("slug", idOrSlug);
+  }
+
+  const { data: product } = await query.maybeSingle();
+
 
   if (!product || product.is_deleted) return null;
 
@@ -207,7 +217,7 @@ async function productMeta(supabase: any, id: string): Promise<PageMeta | null> 
   const { data: reviews } = await supabase
     .from("reviews")
     .select("rating")
-    .eq("product_id", id);
+    .eq("product_id", product.id);
   const reviewCount = reviews?.length || 0;
   const rating = reviewCount > 0
     ? reviews!.reduce((s: number, r: any) => s + r.rating, 0) / reviewCount
@@ -276,7 +286,7 @@ async function productMeta(supabase: any, id: string): Promise<PageMeta | null> 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.id}`,
+    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,
@@ -432,26 +442,33 @@ async function generateSitemap(supabase: any): Promise<string> {
   // Fetch Products
   const { data: products } = await supabase
     .from("products")
-    .select("id, updated_at")
+    .select("id, updated_at, slug, image_url")
     .eq("is_active", true)
     .eq("is_deleted", false);
 
+  const productUrls: any[] = [];
   if (products) {
     products.forEach((prod: any) => {
-      urls.push({
-        loc: `${DOMAIN}/product/${prod.id}`,
+      productUrls.push({
+        loc: `${DOMAIN}/product/${prod.slug || prod.id}`,
         priority: "0.6",
-        lastmod: prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : undefined
+        lastmod: prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : undefined,
+        image: prod.image_url ? ogImageUrl(prod.image_url) : undefined
       });
     });
   }
 
+  const allUrls = [...urls, ...productUrls];
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(u => `  <url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${allUrls.map(u => `  <url>
     <loc>${u.loc}</loc>
     <priority>${u.priority}</priority>
     ${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}
+    ${u.image ? `    <image:image>
+      <image:loc>${u.image}</image:loc>
+    </image:image>` : ''}
   </url>`).join('\n')}
 </urlset>`;
 
