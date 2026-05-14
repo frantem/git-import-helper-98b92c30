@@ -215,7 +215,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   const { data: reviews } = await supabase
     .from("reviews")
     .select("rating")
-    .eq("product_id", id);
+    .eq("product_id", product.id);
   const reviewCount = reviews?.length || 0;
   const rating = reviewCount > 0
     ? reviews!.reduce((s: number, r: any) => s + r.rating, 0) / reviewCount
