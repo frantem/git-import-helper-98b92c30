@@ -21,6 +21,7 @@ export interface Product {
   farmer_id?: string;
   prep_time_minutes?: number;
   order_lead_time_hours?: number;
+  slug?: string;
   defaultVariant?: {
     id: string;
     label: string;

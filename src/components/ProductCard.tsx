@@ -57,7 +57,7 @@ export const ProductCard = memo(function ProductCard({
     e.stopPropagation();
 
     if (hasRequiredFields) {
-      navigate(`/product/${product.id}?fill_required=true`);
+      navigate(`/product/${product.slug || product.id}?fill_required=true`);
       return;
     }
 
@@ -76,7 +76,7 @@ export const ProductCard = memo(function ProductCard({
 
   return (
     <Link
-      to={`/product/${product.id}`}
+      to={`/product/${product.slug || product.id}`}
       onMouseEnter={handlePrefetch}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md",

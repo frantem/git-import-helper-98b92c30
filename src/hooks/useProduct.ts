@@ -50,51 +50,62 @@ interface ProductAddon {
   sort_order: number;
 }
 
-export function useProduct(id: string | undefined) {
-  const isUUID = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+export function useProduct(idOrSlug: string | undefined) {
+  const isUUID = idOrSlug && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
 
   return useQuery({
-    queryKey: ["product", id],
+    queryKey: ["product", idOrSlug],
     queryFn: async () => {
-      if (!id || !isUUID) return null;
+      if (!idOrSlug) return null;
 
-      // Parallel requests for all product data
-      const [productRes, imagesRes, variantsRes, addonsRes] = await Promise.all([
-        supabase
-          .from("products")
-          .select(`
-            *,
-            farmers(id, name, district, village, photo_url, city, street),
-            categories(name, emoji)
-          `)
-          .eq("id", id)
-          .single(),
+      // First, get the product to ensure we have the correct UUID id
+      let productQuery = supabase
+        .from("products")
+        .select(`
+          *,
+          farmers(id, name, district, village, photo_url, city, street),
+          categories(name, emoji)
+        `);
+
+      if (isUUID) {
+        productQuery = productQuery.eq("id", idOrSlug);
+      } else {
+        productQuery = productQuery.eq("slug", idOrSlug);
+      }
+
+      const { data: product, error: productError } = await productQuery.maybeSingle();
+
+      if (productError) throw productError;
+      if (!product) return null;
+
+      const productId = product.id;
+
+      // Parallel requests for other product data using the actual UUID
+      const [imagesRes, variantsRes, addonsRes] = await Promise.all([
         supabase
           .from("product_images")
           .select("*")
-          .eq("product_id", id)
+          .eq("product_id", productId)
           .order("sort_order"),
         supabase
           .from("product_variants")
           .select("*")
-          .eq("product_id", id)
+          .eq("product_id", productId)
           .order("sort_order"),
         supabase
           .from("product_addons")
           .select("*")
-          .eq("product_id", id)
+          .eq("product_id", productId)
           .order("sort_order"),
       ]);
 
-      if (productRes.error) throw productRes.error;
-
       // Fetch farmer's average rating if we have farmer_id
       let farmerRating: number | null = null;
-      if (productRes.data?.farmer_id) {
+      if (product?.farmer_id) {
         const { data: farmerProducts } = await supabase
           .from("products")
           .select("id")
-          .eq("farmer_id", productRes.data.farmer_id);
+          .eq("farmer_id", product.farmer_id);
 
         if (farmerProducts && farmerProducts.length > 0) {
           const productIds = farmerProducts.map((p) => p.id);
@@ -110,14 +121,14 @@ export function useProduct(id: string | undefined) {
       }
 
       return {
-        product: productRes.data as DBProduct,
+        product: product as DBProduct,
         images: (imagesRes.data as ProductImage[]) || [],
         variants: (variantsRes.data as ProductVariant[]) || [],
         addons: (addonsRes.data as ProductAddon[]) || [],
         farmerRating,
       };
     },
-    enabled: !!id && !!isUUID,
+    enabled: !!idOrSlug,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
