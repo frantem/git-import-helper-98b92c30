@@ -188,6 +188,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   let query = supabase
     .from("products")
+
     .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, seo_title, seo_description, slug");
 
   if (isUuid) {
@@ -197,6 +198,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   }
 
   const { data: product } = await query.maybeSingle();
+
 
   if (!product || product.is_deleted) return null;
 
@@ -241,7 +243,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
       "@type": "Brand",
       name: SITE_NAME
     },
-    url: `${DOMAIN}/product/${product.slug || product.id}`,
+    url: `${DOMAIN}/product/${product.id}`,
     offers: {
       "@type": "Offer",
       url: `${DOMAIN}/product/${product.slug || product.id}`,
