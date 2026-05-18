@@ -246,7 +246,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     url: `${DOMAIN}/product/${product.id}`,
     offers: {
       "@type": "Offer",
-      url: `${DOMAIN}/product/${product.id}`,
+      url: `${DOMAIN}/product/${product.slug || product.id}`,
       priceCurrency: "BYN",
       price: (product.price / 100).toFixed(2),
       availability: product.is_active
