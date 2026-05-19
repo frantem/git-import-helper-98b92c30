@@ -219,12 +219,12 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   const priceFormatted = (product.price / 100).toFixed(2).replace(".", ",");
 
-  // Smart Meta-Tag Fallbacks
-  const title = product.seo_title || `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
+  const title = `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
 
-  const description = product.seo_description || truncateMeta(
+  const description = truncateMeta(
     `Заказать ${product.title} от локальных мастеров в ${CITY}. 100% натуральный состав, единая доставка. Цена: ${priceFormatted} руб.`
   );
+
 
   const productLd: Record<string, unknown> = {
     "@context": "https://schema.org",
