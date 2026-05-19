@@ -280,7 +280,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
+    canonical: `${DOMAIN}/product/${product.id}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,
