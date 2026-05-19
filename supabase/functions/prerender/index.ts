@@ -184,20 +184,14 @@ function homeMeta(): PageMeta {
 }
 
 async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-
-  let query = supabase
+  // products table is identified by UUID only — no slug column exists.
+  const { data: product } = await supabase
     .from("products")
+    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id")
+    .eq("id", idOrSlug)
+    .maybeSingle();
 
-    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, seo_title, seo_description, slug");
 
-  if (isUuid) {
-    query = query.eq("id", idOrSlug);
-  } else {
-    query = query.eq("slug", idOrSlug);
-  }
-
-  const { data: product } = await query.maybeSingle();
 
 
   if (!product || product.is_deleted) return null;
