@@ -510,7 +510,7 @@ export default function Product() {
       price: (displayPrice / 100).toFixed(2),
       priceCurrency: "BYN",
       availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: `https://locusfood.by/product/${dbProduct.slug || product.id}`,
+      url: `https://locusfood.by/product/${product.id}`,
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       shippingDetails: {
         "@type": "OfferShippingDetails",
@@ -564,7 +564,7 @@ export default function Product() {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Главная", item: "https://locusfood.by" },
       { "@type": "ListItem", position: 2, name: "Каталог", item: "https://locusfood.by/catalog" },
-      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${dbProduct.slug || product.id}` },
+      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${product.id}` },
     ],
   } : undefined;
 
@@ -585,7 +585,7 @@ export default function Product() {
         description={productSeoDescription}
         image={product?.image}
         ogType="product"
-        canonical={product ? `https://locusfood.by/product/${dbProduct.slug || product.id}` : undefined}
+        canonical={product ? `https://locusfood.by/product/${product.id}` : undefined}
         jsonLd={allJsonLd as unknown as Record<string, unknown> | Record<string, unknown>[]}
       />
       <Header />
