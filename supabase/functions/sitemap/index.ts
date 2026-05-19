@@ -107,10 +107,11 @@ Deno.serve(async (req) => {
     <loc>${DOMAIN}/product/${p.id}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>${img ? `
+    <priority>0.9</priority>${img ? `
     <image:image>
       <image:loc>${img}</image:loc>
       <image:title>${escapedTitle}</image:title>
+      <image:caption>${escapedTitle} — купить в Витебске с доставкой</image:caption>
     </image:image>` : ""}
   </url>`;
   }
