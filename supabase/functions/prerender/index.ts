@@ -184,20 +184,14 @@ function homeMeta(): PageMeta {
 }
 
 async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-
-  let query = supabase
+  // products table is identified by UUID only — no slug column exists.
+  const { data: product } = await supabase
     .from("products")
+    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id")
+    .eq("id", idOrSlug)
+    .maybeSingle();
 
-    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, seo_title, seo_description, slug");
 
-  if (isUuid) {
-    query = query.eq("id", idOrSlug);
-  } else {
-    query = query.eq("slug", idOrSlug);
-  }
-
-  const { data: product } = await query.maybeSingle();
 
 
   if (!product || product.is_deleted) return null;
@@ -225,12 +219,12 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   const priceFormatted = (product.price / 100).toFixed(2).replace(".", ",");
 
-  // Smart Meta-Tag Fallbacks
-  const title = product.seo_title || `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
+  const title = `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
 
-  const description = product.seo_description || truncateMeta(
+  const description = truncateMeta(
     `Заказать ${product.title} от локальных мастеров в ${CITY}. 100% натуральный состав, единая доставка. Цена: ${priceFormatted} руб.`
   );
+
 
   const productLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -246,7 +240,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     url: `${DOMAIN}/product/${product.id}`,
     offers: {
       "@type": "Offer",
-      url: `${DOMAIN}/product/${product.slug || product.id}`,
+      url: `${DOMAIN}/product/${product.id}`,
       priceCurrency: "BYN",
       price: (product.price / 100).toFixed(2),
       availability: product.is_active
@@ -286,7 +280,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
+    canonical: `${DOMAIN}/product/${product.id}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,
