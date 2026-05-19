@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
   for (const p of products) {
     const lastmod = p.updated_at ? p.updated_at.split("T")[0] : now;
     const img = ogImageUrl(p.image_url);
+    const escapedImg = (img || "").replace(/&/g, "&amp;");
     const escapedTitle = (p.title || "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -109,7 +110,7 @@ Deno.serve(async (req) => {
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>${img ? `
     <image:image>
-      <image:loc>${img}</image:loc>
+      <image:loc>${escapedImg}</image:loc>
       <image:title>${escapedTitle}</image:title>
       <image:caption>${escapedTitle} — купить в Витебске с доставкой</image:caption>
     </image:image>` : ""}
