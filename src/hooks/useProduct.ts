@@ -51,29 +51,21 @@ interface ProductAddon {
 }
 
 export function useProduct(idOrSlug: string | undefined) {
-  const isUUID = idOrSlug && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-
   return useQuery({
     queryKey: ["product", idOrSlug],
     queryFn: async () => {
       if (!idOrSlug) return null;
 
-      // First, get the product to ensure we have the correct UUID id
-      let productQuery = supabase
+      // Products are looked up by UUID only — the products table has no slug column.
+      const { data: product, error: productError } = await supabase
         .from("products")
         .select(`
           *,
           farmers(id, name, district, village, photo_url, city, street),
           categories(name, emoji)
-        `);
-
-      if (isUUID) {
-        productQuery = productQuery.eq("id", idOrSlug);
-      } else {
-        productQuery = productQuery.eq("slug", idOrSlug);
-      }
-
-      const { data: product, error: productError } = await productQuery.maybeSingle();
+        `)
+        .eq("id", idOrSlug)
+        .maybeSingle();
 
       if (productError) throw productError;
       if (!product) return null;
