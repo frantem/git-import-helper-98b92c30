@@ -249,17 +249,6 @@ export default function SellerOrders() {
                     <User className="h-4 w-4" />
                     <span>{order.buyer?.full_name || "Покупатель"}</span>
                   </div>
-                  {order.buyer?.phone ? (
-                    <a href={`tel:${order.buyer.phone}`} className="flex items-center gap-2 text-sm text-primary hover:underline mb-2">
-                      <Phone className="h-4 w-4" />
-                      <span>{order.buyer.phone}</span>
-                    </a>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Phone className="h-4 w-4" />
-                      <span>Не указан</span>
-                    </div>
-                  )}
 
                   {/* Delivery info */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
