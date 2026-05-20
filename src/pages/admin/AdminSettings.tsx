@@ -527,6 +527,48 @@ export default function AdminSettings() {
             </div>
           </div>
 
+          {/* Telegram Notifications */}
+          <div className="rounded-xl bg-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Send className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Telegram-уведомления</h3>
+                <p className="text-sm text-muted-foreground">
+                  Бот шлёт уведомления о новых заказах админу и продавцам
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tg-bot-username">Username бота (без @)</Label>
+              <Input
+                id="tg-bot-username"
+                value={telegramBotUsername}
+                onChange={(e) => setTelegramBotUsername(e.target.value)}
+                placeholder="locusfood_bot"
+              />
+              <p className="text-xs text-muted-foreground">
+                Используется в ссылке привязки продавцов: t.me/&lt;username&gt;?start=&lt;код&gt;
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tg-admin-chat">Chat ID администратора</Label>
+              <Input
+                id="tg-admin-chat"
+                value={adminTelegramChatId}
+                onChange={(e) => setAdminTelegramChatId(e.target.value)}
+                placeholder="123456789 (можно несколько через запятую)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Узнать свой chat_id: напишите боту @userinfobot. Несколько ID разделяйте запятой.
+              </p>
+            </div>
+          </div>
+
+
           <Button onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
