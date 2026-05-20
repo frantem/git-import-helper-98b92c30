@@ -634,6 +634,22 @@ export default function AdminOrders() {
                     </div>
                   )}
 
+                  <div className="mb-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setEditingSchedule({
+                        id: order.id,
+                        date: order.delivery_date ?? "",
+                        time: order.estimated_delivery_time ?? "",
+                      })}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Изменить дату/время
+                    </Button>
+                  </div>
+
                   {order.referrer_farmer_name && (
                     <div className="flex items-center gap-2 text-sm text-primary mb-3">
                       <User className="h-4 w-4" />
