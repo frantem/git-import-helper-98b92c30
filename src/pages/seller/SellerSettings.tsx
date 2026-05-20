@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Camera, Copy } from "lucide-react";
+import { ArrowLeft, Camera, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
@@ -43,6 +43,12 @@ export default function SellerSettings() {
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
   const [busyDates, setBusyDates] = useState<Date[]>([]);
   const [vacationDates, setVacationDates] = useState<Date[]>([]);
+
+  // Telegram linking
+  const [telegramChatId, setTelegramChatId] = useState<string | null>(null);
+  const [telegramLinkCode, setTelegramLinkCode] = useState<string | null>(null);
+  const [telegramBotUsername, setTelegramBotUsername] = useState<string>("");
+  const [tgBusy, setTgBusy] = useState(false);
 
   const draftKey = user ? `seller_settings_draft_${user.id}` : null;
 
@@ -108,7 +114,7 @@ export default function SellerSettings() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("pickup_slots, max_orders_per_day, busy_dates, vacation_dates")
+        .select("pickup_slots, max_orders_per_day, busy_dates, vacation_dates, telegram_chat_id, telegram_link_code")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -117,7 +123,14 @@ export default function SellerSettings() {
         if (profile.max_orders_per_day != null) maxOrders = profile.max_orders_per_day as number;
         if (profile.busy_dates) busy = (profile.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
         if (profile.vacation_dates) vacation = (profile.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
+        setTelegramChatId((profile as any).telegram_chat_id || null);
+        setTelegramLinkCode((profile as any).telegram_link_code || null);
       }
+
+      // Load bot username (public app_setting)
+      const { data: botSetting } = await supabase
+        .from("app_settings").select("value").eq("key", "telegram_bot_username").maybeSingle();
+      setTelegramBotUsername(botSetting?.value || "");
 
       // Restore draft on top of DB data if exists
       const key = `seller_settings_draft_${user.id}`;
@@ -218,6 +231,38 @@ export default function SellerSettings() {
       setIsSaving(false);
     }
   };
+
+  const handleGenerateLinkCode = async () => {
+    if (!user) return;
+    setTgBusy(true);
+    const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ telegram_link_code: code } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      toast.error("Не удалось сгенерировать код");
+    } else {
+      setTelegramLinkCode(code);
+    }
+    setTgBusy(false);
+  };
+
+  const handleUnlinkTelegram = async () => {
+    if (!user) return;
+    setTgBusy(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ telegram_chat_id: null } as any)
+      .eq("user_id", user.id);
+    if (error) toast.error("Не удалось отвязать");
+    else {
+      setTelegramChatId(null);
+      toast.success("Telegram отвязан");
+    }
+    setTgBusy(false);
+  };
+
 
   if (authLoading || isLoading) {
     return (
@@ -362,6 +407,57 @@ export default function SellerSettings() {
             vacationDates={vacationDates}
             onVacationDatesChange={setVacationDates}
           />
+
+          {/* Telegram-уведомления */}
+          <div className="pt-4 border-t border-border space-y-3">
+            <div className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" />
+              <h3 className="font-medium text-foreground">Telegram-уведомления</h3>
+            </div>
+            {telegramChatId ? (
+              <div className="space-y-2">
+                <p className="text-sm text-success">✓ Telegram привязан. Вы получаете уведомления о новых заказах.</p>
+                <Button variant="outline" size="sm" onClick={handleUnlinkTelegram} disabled={tgBusy}>
+                  Отвязать Telegram
+                </Button>
+              </div>
+            ) : !telegramBotUsername ? (
+              <p className="text-sm text-muted-foreground">
+                Бот ещё не настроен администратором. Пожалуйста, обратитесь в поддержку.
+              </p>
+            ) : telegramLinkCode ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  1. Откройте ссылку ниже в Telegram и нажмите «Start»:
+                </p>
+                <a
+                  href={`https://t.me/${telegramBotUsername}?start=${telegramLinkCode}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-sm text-primary underline break-all"
+                >
+                  https://t.me/{telegramBotUsername}?start={telegramLinkCode}
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Код привязки: <span className="font-mono font-bold">{telegramLinkCode}</span>
+                </p>
+                <Button variant="ghost" size="sm" onClick={handleGenerateLinkCode} disabled={tgBusy}>
+                  Сгенерировать новый код
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Привяжите Telegram, чтобы получать уведомления о новых заказах с кнопкой подтверждения.
+                </p>
+                <Button onClick={handleGenerateLinkCode} disabled={tgBusy} size="sm">
+                  <Send className="h-4 w-4 mr-2" />
+                  Привязать Telegram
+                </Button>
+              </div>
+            )}
+          </div>
+
 
           <Button onClick={handleSave} className="w-full" disabled={isSaving}>
             {isSaving ? "Сохранение..." : "Сохранить"}

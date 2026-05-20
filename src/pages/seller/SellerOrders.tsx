@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { ArrowLeft, Package, MapPin, Calendar, User, Truck, Check, Clock } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Truck, Check, Clock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface SellerOrderItem {
@@ -15,6 +15,7 @@ interface SellerOrderItem {
   quantity: number;
   unit_price: number;
   status: string;
+  confirmed_at: string | null;
   variant_label: string | null;
   custom_fields: {
     fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
@@ -54,6 +55,7 @@ export default function SellerOrders() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<SellerOrder[]>([]);
+  const [farmerId, setFarmerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -73,12 +75,13 @@ export default function SellerOrders() {
       .maybeSingle();
 
     if (!farmer) { setIsLoading(false); return; }
+    setFarmerId(farmer.id);
 
     // Fetch order items for this farmer, with order + product info
     const { data: items, error } = await supabase
       .from("order_items")
       .select(`
-        id, quantity, unit_price, status, variant_label, custom_fields,
+        id, quantity, unit_price, status, confirmed_at, variant_label, custom_fields,
         product:products(title),
         order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id, referrer_farmer_id,
           pickup_point:pickup_points(name, address, working_hours)
@@ -92,6 +95,8 @@ export default function SellerOrders() {
       setIsLoading(false);
       return;
     }
+
+    const farmerId = farmer.id;
 
     // Group by order
     const orderMap = new Map<string, { order: any; items: SellerOrderItem[]; total: number }>();
@@ -107,12 +112,14 @@ export default function SellerOrders() {
         quantity: item.quantity,
         unit_price: item.unit_price,
         status: item.status,
+        confirmed_at: item.confirmed_at ?? null,
         variant_label: item.variant_label,
         custom_fields: item.custom_fields,
         product: item.product,
       });
       entry.total += item.unit_price * item.quantity;
     }
+
 
     // Fetch buyer profiles
     const buyerIds = [...new Set(Array.from(orderMap.values()).map(e => e.order.buyer_id))];
@@ -188,6 +195,22 @@ export default function SellerOrders() {
     setProcessingId(null);
   };
 
+  const handleConfirmOrder = async (orderId: string) => {
+    if (!farmerId) return;
+    setProcessingId(orderId);
+    const { error } = await supabase.rpc("confirm_order_items_for_farmer", {
+      _order_id: orderId, _farmer_id: farmerId,
+    });
+    if (error) {
+      toast.error("Не удалось подтвердить заказ");
+    } else {
+      await supabase.rpc("mark_order_confirmed_if_all", { _order_id: orderId });
+      toast.success("Заказ подтверждён");
+      fetchOrders();
+    }
+    setProcessingId(null);
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
@@ -221,6 +244,7 @@ export default function SellerOrders() {
               const price = formatPrice(order.itemsTotal);
               const status = statusLabels[order.status] || statusLabels.pending;
               const allCollected = order.items.length > 0 && order.items.every(i => i.status === "collected");
+              const allConfirmed = order.items.length > 0 && order.items.every(i => !!i.confirmed_at);
               const isSelfPickup = order.delivery_type === "self";
               const canMarkDelivered = isSelfPickup && allCollected && order.status !== "delivered";
 
@@ -308,9 +332,25 @@ export default function SellerOrders() {
                   {/* Items */}
                   <div className="border-t border-border pt-3 space-y-1">
                     <p className="text-sm font-medium text-foreground mb-2">Мои товары:</p>
+
+                    {!allConfirmed && (
+                      <div className="mb-3">
+                        <Button
+                          onClick={() => handleConfirmOrder(order.id)}
+                          disabled={processingId === order.id}
+                          size="sm"
+                          className="w-full"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Подтвердить заказ
+                        </Button>
+                      </div>
+                    )}
+
                     {order.items.map((item) => {
                       const itemTotal = formatPrice(item.unit_price * item.quantity);
                       const isCollected = item.status === "collected";
+                      const isConfirmed = !!item.confirmed_at;
                       return (
                         <div key={item.id} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-1 flex-1 min-w-0">
@@ -327,7 +367,7 @@ export default function SellerOrders() {
                             <span className="text-muted-foreground whitespace-nowrap">
                               {itemTotal.formatted}<BynSymbol />
                             </span>
-                            {!isCollected && (
+                            {!isCollected && isConfirmed && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -343,6 +383,7 @@ export default function SellerOrders() {
                         </div>
                       );
                     })}
+
 
                     {/* Custom fields / addons detail for each item */}
                     {order.items.map((item) => {

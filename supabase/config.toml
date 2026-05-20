@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.verify-email-change-code]
 verify_jwt = false
+
+[functions.send-new-order-telegram]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false

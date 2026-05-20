@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
-import { Loader2, Clock, Save, Truck, Image, Share2, Upload, Search } from "lucide-react";
+import { Loader2, Clock, Save, Truck, Image, Share2, Upload, Search, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { FileText } from "lucide-react";
 
@@ -41,6 +41,10 @@ export default function AdminSettings() {
   const [productTitleTemplate, setProductTitleTemplate] = useState("");
   const [categoryTitleTemplate, setCategoryTitleTemplate] = useState("");
 
+  // Telegram
+  const [adminTelegramChatId, setAdminTelegramChatId] = useState("");
+  const [telegramBotUsername, setTelegramBotUsername] = useState("");
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -58,7 +62,7 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     
-    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes, prodTplRes, catTplRes] = await Promise.all([
+    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes, prodTplRes, catTplRes, tgAdminRes, tgBotRes] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", "cutoff_time_minutes").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "avg_delivery_time_minutes").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "delivery_start_hour").maybeSingle(),
@@ -70,6 +74,8 @@ export default function AdminSettings() {
       supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "product_title_template").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "category_title_template").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "admin_telegram_chat_id").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "telegram_bot_username").maybeSingle(),
     ]);
 
     if (cutoffRes.data) {
@@ -107,7 +113,9 @@ export default function AdminSettings() {
     if (googleVerRes.data?.value) setGoogleVerification(googleVerRes.data.value);
     if (prodTplRes.data?.value) setProductTitleTemplate(prodTplRes.data.value);
     if (catTplRes.data?.value) setCategoryTitleTemplate(catTplRes.data.value);
-    
+    if (tgAdminRes.data?.value) setAdminTelegramChatId(tgAdminRes.data.value);
+    if (tgBotRes.data?.value) setTelegramBotUsername(tgBotRes.data.value);
+
     setIsLoading(false);
   };
 
@@ -211,6 +219,12 @@ export default function AdminSettings() {
       supabase
         .from("app_settings")
         .upsert({ key: "category_title_template", value: categoryTitleTemplate, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "admin_telegram_chat_id", value: adminTelegramChatId, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "telegram_bot_username", value: telegramBotUsername.replace(/^@/, ""), updated_at: new Date().toISOString() }, { onConflict: "key" }),
     ];
 
     const results = await Promise.all(updates);
@@ -512,6 +526,48 @@ export default function AdminSettings() {
               </p>
             </div>
           </div>
+
+          {/* Telegram Notifications */}
+          <div className="rounded-xl bg-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <Send className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Telegram-уведомления</h3>
+                <p className="text-sm text-muted-foreground">
+                  Бот шлёт уведомления о новых заказах админу и продавцам
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tg-bot-username">Username бота (без @)</Label>
+              <Input
+                id="tg-bot-username"
+                value={telegramBotUsername}
+                onChange={(e) => setTelegramBotUsername(e.target.value)}
+                placeholder="locusfood_bot"
+              />
+              <p className="text-xs text-muted-foreground">
+                Используется в ссылке привязки продавцов: t.me/&lt;username&gt;?start=&lt;код&gt;
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tg-admin-chat">Chat ID администратора</Label>
+              <Input
+                id="tg-admin-chat"
+                value={adminTelegramChatId}
+                onChange={(e) => setAdminTelegramChatId(e.target.value)}
+                placeholder="123456789 (можно несколько через запятую)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Узнать свой chat_id: напишите боту @userinfobot. Несколько ID разделяйте запятой.
+              </p>
+            </div>
+          </div>
+
 
           <Button onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving ? (
