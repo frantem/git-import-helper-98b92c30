@@ -219,6 +219,12 @@ export default function AdminSettings() {
       supabase
         .from("app_settings")
         .upsert({ key: "category_title_template", value: categoryTitleTemplate, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "admin_telegram_chat_id", value: adminTelegramChatId, updated_at: new Date().toISOString() }, { onConflict: "key" }),
+      supabase
+        .from("app_settings")
+        .upsert({ key: "telegram_bot_username", value: telegramBotUsername.replace(/^@/, ""), updated_at: new Date().toISOString() }, { onConflict: "key" }),
     ];
 
     const results = await Promise.all(updates);
