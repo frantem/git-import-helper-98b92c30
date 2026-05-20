@@ -317,6 +317,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          confirmed_at: string | null
           created_at: string
           custom_fields: Json | null
           farmer_id: string
@@ -329,6 +330,7 @@ export type Database = {
           variant_label: string | null
         }
         Insert: {
+          confirmed_at?: string | null
           created_at?: string
           custom_fields?: Json | null
           farmer_id: string
@@ -341,6 +343,7 @@ export type Database = {
           variant_label?: string | null
         }
         Update: {
+          confirmed_at?: string | null
           created_at?: string
           custom_fields?: Json | null
           farmer_id?: string
@@ -849,6 +852,8 @@ export type Database = {
           phone: string | null
           phone_verified: boolean
           pickup_slots: Json | null
+          telegram_chat_id: string | null
+          telegram_link_code: string | null
           updated_at: string
           user_id: string
           vacation_dates: Json | null
@@ -865,6 +870,8 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean
           pickup_slots?: Json | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
           updated_at?: string
           user_id: string
           vacation_dates?: Json | null
@@ -881,6 +888,8 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean
           pickup_slots?: Json | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
           updated_at?: string
           user_id?: string
           vacation_dates?: Json | null
@@ -1054,6 +1063,10 @@ export type Database = {
     Functions: {
       can_seller_read_order: { Args: { _order_id: string }; Returns: boolean }
       can_seller_update_order: { Args: { _order_id: string }; Returns: boolean }
+      confirm_order_items_for_farmer: {
+        Args: { _farmer_id: string; _order_id: string }
+        Returns: number
+      }
       get_buyer_profiles_for_seller: {
         Args: { _buyer_ids: string[] }
         Returns: {
@@ -1086,6 +1099,10 @@ export type Database = {
           pickup_slots: Json
           vacation_dates: Json
         }[]
+      }
+      mark_order_confirmed_if_all: {
+        Args: { _order_id: string }
+        Returns: boolean
       }
     }
     Enums: {
