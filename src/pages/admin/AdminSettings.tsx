@@ -41,6 +41,10 @@ export default function AdminSettings() {
   const [productTitleTemplate, setProductTitleTemplate] = useState("");
   const [categoryTitleTemplate, setCategoryTitleTemplate] = useState("");
 
+  // Telegram
+  const [adminTelegramChatId, setAdminTelegramChatId] = useState("");
+  const [telegramBotUsername, setTelegramBotUsername] = useState("");
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
