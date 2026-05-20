@@ -62,7 +62,7 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     
-    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes, prodTplRes, catTplRes] = await Promise.all([
+    const [cutoffRes, avgDeliveryRes, startHourRes, endHourRes, faviconRes, ogImageRes, seoTitleRes, seoDescRes, googleVerRes, prodTplRes, catTplRes, tgAdminRes, tgBotRes] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", "cutoff_time_minutes").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "avg_delivery_time_minutes").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "delivery_start_hour").maybeSingle(),
@@ -74,6 +74,8 @@ export default function AdminSettings() {
       supabase.from("app_settings").select("value").eq("key", "google_verification").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "product_title_template").maybeSingle(),
       supabase.from("app_settings").select("value").eq("key", "category_title_template").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "admin_telegram_chat_id").maybeSingle(),
+      supabase.from("app_settings").select("value").eq("key", "telegram_bot_username").maybeSingle(),
     ]);
 
     if (cutoffRes.data) {
