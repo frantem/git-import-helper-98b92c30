@@ -44,6 +44,12 @@ export default function SellerSettings() {
   const [busyDates, setBusyDates] = useState<Date[]>([]);
   const [vacationDates, setVacationDates] = useState<Date[]>([]);
 
+  // Telegram linking
+  const [telegramChatId, setTelegramChatId] = useState<string | null>(null);
+  const [telegramLinkCode, setTelegramLinkCode] = useState<string | null>(null);
+  const [telegramBotUsername, setTelegramBotUsername] = useState<string>("");
+  const [tgBusy, setTgBusy] = useState(false);
+
   const draftKey = user ? `seller_settings_draft_${user.id}` : null;
 
   // Save full snapshot to localStorage
