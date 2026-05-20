@@ -408,6 +408,57 @@ export default function SellerSettings() {
             onVacationDatesChange={setVacationDates}
           />
 
+          {/* Telegram-уведомления */}
+          <div className="pt-4 border-t border-border space-y-3">
+            <div className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" />
+              <h3 className="font-medium text-foreground">Telegram-уведомления</h3>
+            </div>
+            {telegramChatId ? (
+              <div className="space-y-2">
+                <p className="text-sm text-success">✓ Telegram привязан. Вы получаете уведомления о новых заказах.</p>
+                <Button variant="outline" size="sm" onClick={handleUnlinkTelegram} disabled={tgBusy}>
+                  Отвязать Telegram
+                </Button>
+              </div>
+            ) : !telegramBotUsername ? (
+              <p className="text-sm text-muted-foreground">
+                Бот ещё не настроен администратором. Пожалуйста, обратитесь в поддержку.
+              </p>
+            ) : telegramLinkCode ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  1. Откройте ссылку ниже в Telegram и нажмите «Start»:
+                </p>
+                <a
+                  href={`https://t.me/${telegramBotUsername}?start=${telegramLinkCode}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-sm text-primary underline break-all"
+                >
+                  https://t.me/{telegramBotUsername}?start={telegramLinkCode}
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Код привязки: <span className="font-mono font-bold">{telegramLinkCode}</span>
+                </p>
+                <Button variant="ghost" size="sm" onClick={handleGenerateLinkCode} disabled={tgBusy}>
+                  Сгенерировать новый код
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Привяжите Telegram, чтобы получать уведомления о новых заказах с кнопкой подтверждения.
+                </p>
+                <Button onClick={handleGenerateLinkCode} disabled={tgBusy} size="sm">
+                  <Send className="h-4 w-4 mr-2" />
+                  Привязать Telegram
+                </Button>
+              </div>
+            )}
+          </div>
+
+
           <Button onClick={handleSave} className="w-full" disabled={isSaving}>
             {isSaving ? "Сохранение..." : "Сохранить"}
           </Button>
