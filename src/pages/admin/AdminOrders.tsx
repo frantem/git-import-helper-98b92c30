@@ -906,6 +906,45 @@ export default function AdminOrders() {
         )}
       </main>
 
+      <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && setEditingSchedule(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить дату и время доставки</DialogTitle>
+          </DialogHeader>
+          {editingSchedule && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Дата доставки</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editingSchedule.date}
+                  onChange={(e) => setEditingSchedule({ ...editingSchedule, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-time">Ожидаемое время</Label>
+                <Input
+                  id="edit-time"
+                  type="text"
+                  placeholder="например, 14:00–16:00"
+                  value={editingSchedule.time}
+                  onChange={(e) => setEditingSchedule({ ...editingSchedule, time: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingSchedule(null)} disabled={savingSchedule}>
+              Отмена
+            </Button>
+            <Button onClick={handleSaveSchedule} disabled={savingSchedule}>
+              Сохранить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <BottomNavigation />
     </div>
   );
