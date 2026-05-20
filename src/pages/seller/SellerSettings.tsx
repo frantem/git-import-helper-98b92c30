@@ -232,6 +232,38 @@ export default function SellerSettings() {
     }
   };
 
+  const handleGenerateLinkCode = async () => {
+    if (!user) return;
+    setTgBusy(true);
+    const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ telegram_link_code: code } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      toast.error("Не удалось сгенерировать код");
+    } else {
+      setTelegramLinkCode(code);
+    }
+    setTgBusy(false);
+  };
+
+  const handleUnlinkTelegram = async () => {
+    if (!user) return;
+    setTgBusy(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ telegram_chat_id: null } as any)
+      .eq("user_id", user.id);
+    if (error) toast.error("Не удалось отвязать");
+    else {
+      setTelegramChatId(null);
+      toast.success("Telegram отвязан");
+    }
+    setTgBusy(false);
+  };
+
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
