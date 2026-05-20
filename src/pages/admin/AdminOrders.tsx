@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPrice, kopecksToRublesString, parseRublesToKopecks } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock, Plus, Save, Banknote } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Mail, Check, Truck, Trash2, Clock, Plus, Save, Banknote, Pencil } from "lucide-react";
 import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
 import { toast } from "sonner";
 import {
@@ -22,6 +22,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface OrderItem {
   id: string;
@@ -89,6 +97,27 @@ export default function AdminOrders() {
   const [labelEdits, setLabelEdits] = useState<Record<string, string>>({});
   const [priceEdits, setPriceEdits] = useState<Record<string, string>>({});
   const [addProductInputs, setAddProductInputs] = useState<Record<string, { productId: string; qty: number }>>({});
+  const [editingSchedule, setEditingSchedule] = useState<{ id: string; date: string; time: string } | null>(null);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  const handleSaveSchedule = async () => {
+    if (!editingSchedule) return;
+    setSavingSchedule(true);
+    const newDate = editingSchedule.date.trim() || null;
+    const newTime = editingSchedule.time.trim() || null;
+    const { error } = await supabase
+      .from("orders")
+      .update({ delivery_date: newDate, estimated_delivery_time: newTime })
+      .eq("id", editingSchedule.id);
+    setSavingSchedule(false);
+    if (error) {
+      toast.error("Не удалось сохранить изменения");
+      return;
+    }
+    setOrders(prev => prev.map(o => o.id === editingSchedule.id ? { ...o, delivery_date: newDate, estimated_delivery_time: newTime } : o));
+    setEditingSchedule(null);
+    toast.success("Изменения сохранены");
+  };
 
   useEffect(() => {
     if (!user || role !== "admin") {
@@ -605,6 +634,22 @@ export default function AdminOrders() {
                     </div>
                   )}
 
+                  <div className="mb-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setEditingSchedule({
+                        id: order.id,
+                        date: order.delivery_date ?? "",
+                        time: order.estimated_delivery_time ?? "",
+                      })}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Изменить дату/время
+                    </Button>
+                  </div>
+
                   {order.referrer_farmer_name && (
                     <div className="flex items-center gap-2 text-sm text-primary mb-3">
                       <User className="h-4 w-4" />
@@ -860,6 +905,45 @@ export default function AdminOrders() {
           </div>
         )}
       </main>
+
+      <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && setEditingSchedule(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить дату и время доставки</DialogTitle>
+          </DialogHeader>
+          {editingSchedule && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Дата доставки</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editingSchedule.date}
+                  onChange={(e) => setEditingSchedule({ ...editingSchedule, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-time">Ожидаемое время</Label>
+                <Input
+                  id="edit-time"
+                  type="text"
+                  placeholder="например, 14:00–16:00"
+                  value={editingSchedule.time}
+                  onChange={(e) => setEditingSchedule({ ...editingSchedule, time: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingSchedule(null)} disabled={savingSchedule}>
+              Отмена
+            </Button>
+            <Button onClick={handleSaveSchedule} disabled={savingSchedule}>
+              Сохранить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <BottomNavigation />
     </div>
