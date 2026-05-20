@@ -55,6 +55,7 @@ export default function SellerOrders() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<SellerOrder[]>([]);
+  const [farmerId, setFarmerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
