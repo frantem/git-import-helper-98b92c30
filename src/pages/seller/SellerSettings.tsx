@@ -114,7 +114,7 @@ export default function SellerSettings() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("pickup_slots, max_orders_per_day, busy_dates, vacation_dates")
+        .select("pickup_slots, max_orders_per_day, busy_dates, vacation_dates, telegram_chat_id, telegram_link_code")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -123,7 +123,14 @@ export default function SellerSettings() {
         if (profile.max_orders_per_day != null) maxOrders = profile.max_orders_per_day as number;
         if (profile.busy_dates) busy = (profile.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
         if (profile.vacation_dates) vacation = (profile.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
+        setTelegramChatId((profile as any).telegram_chat_id || null);
+        setTelegramLinkCode((profile as any).telegram_link_code || null);
       }
+
+      // Load bot username (public app_setting)
+      const { data: botSetting } = await supabase
+        .from("app_settings").select("value").eq("key", "telegram_bot_username").maybeSingle();
+      setTelegramBotUsername(botSetting?.value || "");
 
       // Restore draft on top of DB data if exists
       const key = `seller_settings_draft_${user.id}`;
