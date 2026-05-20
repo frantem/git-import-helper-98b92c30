@@ -244,6 +244,7 @@ export default function SellerOrders() {
               const price = formatPrice(order.itemsTotal);
               const status = statusLabels[order.status] || statusLabels.pending;
               const allCollected = order.items.length > 0 && order.items.every(i => i.status === "collected");
+              const allConfirmed = order.items.length > 0 && order.items.every(i => !!i.confirmed_at);
               const isSelfPickup = order.delivery_type === "self";
               const canMarkDelivered = isSelfPickup && allCollected && order.status !== "delivered";
 
