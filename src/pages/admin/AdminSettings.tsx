@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
-import { Loader2, Clock, Save, Truck, Image, Share2, Upload, Search } from "lucide-react";
+import { Loader2, Clock, Save, Truck, Image, Share2, Upload, Search, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { FileText } from "lucide-react";
 
