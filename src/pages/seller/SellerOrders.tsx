@@ -274,13 +274,6 @@ export default function SellerOrders() {
                     </div>
                   )}
 
-                  {order.delivery_type === "courier" && order.delivery_address && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{order.delivery_address}</span>
-                    </div>
-                  )}
-
                   {order.pickup_point && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <MapPin className="h-4 w-4" />
