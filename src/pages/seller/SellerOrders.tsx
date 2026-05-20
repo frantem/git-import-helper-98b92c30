@@ -195,6 +195,22 @@ export default function SellerOrders() {
     setProcessingId(null);
   };
 
+  const handleConfirmOrder = async (orderId: string) => {
+    if (!farmerId) return;
+    setProcessingId(orderId);
+    const { error } = await supabase.rpc("confirm_order_items_for_farmer", {
+      _order_id: orderId, _farmer_id: farmerId,
+    });
+    if (error) {
+      toast.error("Не удалось подтвердить заказ");
+    } else {
+      await supabase.rpc("mark_order_confirmed_if_all", { _order_id: orderId });
+      toast.success("Заказ подтверждён");
+      fetchOrders();
+    }
+    setProcessingId(null);
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
