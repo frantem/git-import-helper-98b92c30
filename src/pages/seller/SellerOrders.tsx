@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { ArrowLeft, Package, MapPin, Calendar, User, Phone, Truck, Check, Clock } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Calendar, User, Truck, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface SellerOrderItem {
