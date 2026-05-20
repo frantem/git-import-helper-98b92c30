@@ -113,7 +113,9 @@ export default function AdminSettings() {
     if (googleVerRes.data?.value) setGoogleVerification(googleVerRes.data.value);
     if (prodTplRes.data?.value) setProductTitleTemplate(prodTplRes.data.value);
     if (catTplRes.data?.value) setCategoryTitleTemplate(catTplRes.data.value);
-    
+    if (tgAdminRes.data?.value) setAdminTelegramChatId(tgAdminRes.data.value);
+    if (tgBotRes.data?.value) setTelegramBotUsername(tgBotRes.data.value);
+
     setIsLoading(false);
   };
 
