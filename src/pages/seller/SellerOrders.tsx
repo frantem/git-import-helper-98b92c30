@@ -274,6 +274,7 @@ export default function SellerOrders() {
                     </div>
                   )}
 
+                  {order.pickup_point && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <MapPin className="h-4 w-4" />
                       <span>{order.pickup_point.name}</span>
