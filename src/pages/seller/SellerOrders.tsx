@@ -75,6 +75,7 @@ export default function SellerOrders() {
       .maybeSingle();
 
     if (!farmer) { setIsLoading(false); return; }
+    setFarmerId(farmer.id);
 
     // Fetch order items for this farmer, with order + product info
     const { data: items, error } = await supabase
