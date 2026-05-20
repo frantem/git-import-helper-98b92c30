@@ -79,7 +79,7 @@ export default function SellerOrders() {
     const { data: items, error } = await supabase
       .from("order_items")
       .select(`
-        id, quantity, unit_price, status, variant_label, custom_fields,
+        id, quantity, unit_price, status, confirmed_at, variant_label, custom_fields,
         product:products(title),
         order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id, referrer_farmer_id,
           pickup_point:pickup_points(name, address, working_hours)
@@ -93,6 +93,8 @@ export default function SellerOrders() {
       setIsLoading(false);
       return;
     }
+
+    const farmerId = farmer.id;
 
     // Group by order
     const orderMap = new Map<string, { order: any; items: SellerOrderItem[]; total: number }>();
@@ -108,12 +110,14 @@ export default function SellerOrders() {
         quantity: item.quantity,
         unit_price: item.unit_price,
         status: item.status,
+        confirmed_at: item.confirmed_at ?? null,
         variant_label: item.variant_label,
         custom_fields: item.custom_fields,
         product: item.product,
       });
       entry.total += item.unit_price * item.quantity;
     }
+
 
     // Fetch buyer profiles
     const buyerIds = [...new Set(Array.from(orderMap.values()).map(e => e.order.buyer_id))];
