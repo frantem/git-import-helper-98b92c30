@@ -15,6 +15,7 @@ interface SellerOrderItem {
   quantity: number;
   unit_price: number;
   status: string;
+  confirmed_at: string | null;
   variant_label: string | null;
   custom_fields: {
     fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
