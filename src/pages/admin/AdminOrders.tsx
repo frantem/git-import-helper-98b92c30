@@ -97,6 +97,27 @@ export default function AdminOrders() {
   const [labelEdits, setLabelEdits] = useState<Record<string, string>>({});
   const [priceEdits, setPriceEdits] = useState<Record<string, string>>({});
   const [addProductInputs, setAddProductInputs] = useState<Record<string, { productId: string; qty: number }>>({});
+  const [editingSchedule, setEditingSchedule] = useState<{ id: string; date: string; time: string } | null>(null);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  const handleSaveSchedule = async () => {
+    if (!editingSchedule) return;
+    setSavingSchedule(true);
+    const newDate = editingSchedule.date.trim() || null;
+    const newTime = editingSchedule.time.trim() || null;
+    const { error } = await supabase
+      .from("orders")
+      .update({ delivery_date: newDate, estimated_delivery_time: newTime })
+      .eq("id", editingSchedule.id);
+    setSavingSchedule(false);
+    if (error) {
+      toast.error("Не удалось сохранить изменения");
+      return;
+    }
+    setOrders(prev => prev.map(o => o.id === editingSchedule.id ? { ...o, delivery_date: newDate, estimated_delivery_time: newTime } : o));
+    setEditingSchedule(null);
+    toast.success("Изменения сохранены");
+  };
 
   useEffect(() => {
     if (!user || role !== "admin") {
