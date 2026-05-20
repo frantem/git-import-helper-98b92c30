@@ -332,9 +332,25 @@ export default function SellerOrders() {
                   {/* Items */}
                   <div className="border-t border-border pt-3 space-y-1">
                     <p className="text-sm font-medium text-foreground mb-2">Мои товары:</p>
+
+                    {!allConfirmed && (
+                      <div className="mb-3">
+                        <Button
+                          onClick={() => handleConfirmOrder(order.id)}
+                          disabled={processingId === order.id}
+                          size="sm"
+                          className="w-full"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Подтвердить заказ
+                        </Button>
+                      </div>
+                    )}
+
                     {order.items.map((item) => {
                       const itemTotal = formatPrice(item.unit_price * item.quantity);
                       const isCollected = item.status === "collected";
+                      const isConfirmed = !!item.confirmed_at;
                       return (
                         <div key={item.id} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-1 flex-1 min-w-0">
@@ -351,7 +367,7 @@ export default function SellerOrders() {
                             <span className="text-muted-foreground whitespace-nowrap">
                               {itemTotal.formatted}<BynSymbol />
                             </span>
-                            {!isCollected && (
+                            {!isCollected && isConfirmed && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -367,6 +383,7 @@ export default function SellerOrders() {
                         </div>
                       );
                     })}
+
 
                     {/* Custom fields / addons detail for each item */}
                     {order.items.map((item) => {
