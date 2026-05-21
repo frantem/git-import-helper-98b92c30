@@ -850,42 +850,14 @@ export default function AdminOrders() {
                   {/* Action buttons */}
                   <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
                     {order.status === "pending" && (
-                      <>
-                        <Button
-                          onClick={() => handleConfirmOrder(order.id)}
-                          disabled={isProcessing}
-                          className="flex items-center gap-1"
-                        >
-                          <Check className="h-4 w-4" />
-                          Подтвердить
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              disabled={isProcessing}
-                              className="flex items-center gap-1"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Удалить
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить заказ?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Это действие нельзя отменить. Заказ будет полностью удалён.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteOrder(order.id)}>
-                                Удалить
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
+                      <Button
+                        onClick={() => handleConfirmOrder(order.id)}
+                        disabled={isProcessing}
+                        className="flex items-center gap-1"
+                      >
+                        <Check className="h-4 w-4" />
+                        Подтвердить
+                      </Button>
                     )}
 
                     {order.status === "confirmed" && order.delivery_type !== "self" && (
@@ -898,6 +870,36 @@ export default function AdminOrders() {
                         {order.delivery_type === "pickup" ? "Прибыл в ПВЗ" : "Доставлен"}
                       </Button>
                     )}
+
+                    {order.status !== "delivered" && order.status !== "cancelled" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            disabled={isProcessing}
+                            className="flex items-center gap-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Удалить
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Удалить заказ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Это действие нельзя отменить. Заказ будет полностью удалён.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Отмена</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteOrder(order.id)}>
+                              Удалить
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+
                   </div>
                 </div>
               );
