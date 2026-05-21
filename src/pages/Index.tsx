@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { CategoryCircles } from "@/components/CategoryCircles";
@@ -206,16 +207,8 @@ const Index = () => {
         )}
       </main>
 
-      <footer className="border-t border-border py-4 pb-20 md:pb-4">
-        <div className="container mx-auto px-3 flex flex-col items-center gap-1 text-[11px] text-muted-foreground">
-          <span className="text-center whitespace-pre-line">УНП: CE6154534{"\n"}+375297399485 Котович Артём Владимирович</span>
-          <div className="flex items-center gap-1">
-            <span>© 2026 Locus</span>
-            <span>·</span>
-            <Link to="/privacy-policy" className="hover:underline">Политика конфиденциальности</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
+
 
       <BottomNavigation />
     </div>
