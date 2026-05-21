@@ -549,11 +549,6 @@ export default function Auth() {
                 >
                   Уже есть аккаунт? Войдите
                 </button>
-                <div>
-                  <a href="/privacy-policy" className="text-xs text-muted-foreground hover:text-primary hover:underline">
-                    Политика конфиденциальности
-                  </a>
-                </div>
               </div>
             )}
           </div>
