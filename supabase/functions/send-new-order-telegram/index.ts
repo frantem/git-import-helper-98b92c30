@@ -114,24 +114,26 @@ Deno.serve(async (req) => {
       return `- ${title}${variant ? " " + variant : ""}${qtySuffix} = ${formatBYN(total)}`;
     };
 
-    // Delivery line
-    const dateText = order.delivery_date ? formatDeliveryDate(order.delivery_date) : "";
-    const timeText = order.estimated_delivery_time ? ` ${order.estimated_delivery_time}` : "";
-    let deliveryLine = "";
+    // Delivery + datetime line (avoid duplicating date when estimated_delivery_time already includes it)
+    const dateTimeLine = order.estimated_delivery_time
+      ? String(order.estimated_delivery_time)
+      : (order.delivery_date ? formatDeliveryDate(order.delivery_date) : "");
+
+    let deliveryHeader = "";
     if (order.delivery_type === "courier") {
-      deliveryLine = `Вы выбрали доставку${dateText ? ` на ${dateText}${timeText}` : ""}.`;
+      deliveryHeader = `Вы выбрали доставку.`;
     } else if (order.delivery_type === "pickup") {
       const pp = (order.pickup_point as any)?.name || "пункт выдачи";
-      deliveryLine = `Вы выбрали самовывоз из «${pp}»${dateText ? ` на ${dateText}${timeText}` : ""}.`;
+      deliveryHeader = `Вы выбрали самовывоз из «${pp}».`;
     } else {
-      deliveryLine = `Вы выбрали самовывоз у продавца${dateText ? ` на ${dateText}${timeText}` : ""}.`;
+      deliveryHeader = `Вы выбрали самовывоз у продавца.`;
     }
 
     const paymentLine = order.payment_method === "card" ? "Карта." : "Наличные.";
 
     // ============ ADMIN MESSAGE ============
     const adminLines = [
-      `Здравствуйте, ${buyerName}! Это locusfood`,
+      `Здравствуйте ${buyerName}! Это locusfood`,
       ``,
       `Мы получили ваш заказ:`,
       ...allItems.map(itemLine),
@@ -141,7 +143,8 @@ Deno.serve(async (req) => {
     }
     adminLines.push(`Всего: ${formatBYN(order.total_amount)}`);
     adminLines.push(``);
-    adminLines.push(deliveryLine);
+    adminLines.push(deliveryHeader);
+    if (dateTimeLine) adminLines.push(dateTimeLine);
     adminLines.push(paymentLine);
     if (order.notes) {
       adminLines.push(``);
@@ -169,14 +172,12 @@ Deno.serve(async (req) => {
         `Новый заказ!`,
         ...myItems.map(itemLine),
         ``,
-        order.delivery_type === "courier"
-          ? `Доставка${dateText ? ` на ${dateText}${timeText}` : ""}.`
-          : order.delivery_type === "self"
-            ? `Самовывоз${dateText ? ` на ${dateText}${timeText}` : ""}.`
-            : `Самовывоз из «${(order.pickup_point as any)?.name || "пункт выдачи"}»${dateText ? ` на ${dateText}${timeText}` : ""}.`,
-        ``,
-        `Пожалуйста, подтвердите заказ`,
+        deliveryHeader,
       ];
+      if (dateTimeLine) sellerLines.push(dateTimeLine);
+      sellerLines.push(``);
+      sellerLines.push(`Пожалуйста, подтвердите заказ`);
+
       const cbData = `c:${orderId.replace(/-/g, "")}:${farmerId.slice(0, 8)}`;
       const res = await tg("sendMessage", {
         chat_id: chatId,
