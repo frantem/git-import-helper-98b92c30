@@ -634,7 +634,7 @@ export default function Checkout() {
               <Label htmlFor="delivery-courier" className="flex justify-between items-center cursor-pointer">
                 <span className="flex items-center gap-2">
                   <Home className="h-4 w-4" />
-                  <span className="font-medium">Доставка на дом</span>
+                  <span className="font-medium">Доставка</span>
                 </span>
                 <span className="font-medium">6,90<BynSymbol /></span>
               </Label>
