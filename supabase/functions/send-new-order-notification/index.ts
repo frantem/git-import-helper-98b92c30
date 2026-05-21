@@ -183,7 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
       deliveryType === "pickup"
         ? `📦 Пункт выдачи: ${pickupPointName}`
         : deliveryType === "courier"
-          ? `🚗 Доставка на дом: ${deliveryAddress || "адрес не указан"}`
+          ? `🚗 Доставка: ${deliveryAddress || "адрес не указан"}`
           : "🏠 Самовывоз";
 
     const deliveryCostText = deliveryCost > 0 ? ` (+${Math.floor(deliveryCost / 100)} р. за доставку)` : "";
