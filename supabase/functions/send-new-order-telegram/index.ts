@@ -25,12 +25,8 @@ function formatBYN(cents: number): string {
   return `${r},${k.toString().padStart(2, "0")} BYN`;
 }
 
-function formatDeliveryDate(dateStr: string | null): string {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr.includes("T") ? dateStr : dateStr + "T00:00:00");
-    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", timeZone: "Europe/Minsk" });
-  } catch { return dateStr; }
+function formatFarmerAddress(f: { city?: string | null; street?: string | null; address_details?: string | null }): string {
+  return [f.city, f.street, f.address_details].map(s => (s || "").trim()).filter(Boolean).join(", ");
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +39,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { orderId } = await req.json();
+    const { orderId, seller_times } = await req.json();
+    const sellerTimes: Record<string, string> = seller_times || {};
     if (!orderId) {
       return new Response(JSON.stringify({ error: "orderId required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -58,7 +55,7 @@ Deno.serve(async (req) => {
     // Order + pickup point
     const { data: order, error: orderErr } = await supabase
       .from("orders")
-      .select(`id, buyer_id, total_amount, delivery_type, delivery_cost, delivery_date,
+      .select(`id, buyer_id, total_amount, delivery_type, delivery_address, delivery_cost, delivery_date,
         estimated_delivery_time, payment_method, notes,
         pickup_point:pickup_points(name, address)`)
       .eq("id", orderId)
@@ -78,11 +75,11 @@ Deno.serve(async (req) => {
       .eq("order_id", orderId);
     const allItems = (items || []) as any[];
 
-    // Farmers (chat_ids + names)
+    // Farmers (chat_ids + names + addresses)
     const farmerIds = [...new Set(allItems.map(i => i.farmer_id))];
     const { data: farmers } = await supabase
       .from("farmers")
-      .select("id, name, user_id")
+      .select("id, name, user_id, city, street, address_details")
       .in("id", farmerIds);
 
     const farmerUserIds = (farmers || []).map(f => f.user_id).filter(Boolean) as string[];
@@ -92,9 +89,9 @@ Deno.serve(async (req) => {
       .in("user_id", farmerUserIds);
 
     const chatByFarmer = new Map<string, string>();
-    const nameByFarmer = new Map<string, string>();
+    const farmerById = new Map<string, any>();
     (farmers || []).forEach(f => {
-      nameByFarmer.set(f.id, f.name);
+      farmerById.set(f.id, f);
       const p = farmerProfiles?.find(pp => pp.user_id === f.user_id);
       if (p?.telegram_chat_id) chatByFarmer.set(f.id, p.telegram_chat_id);
     });
@@ -114,38 +111,53 @@ Deno.serve(async (req) => {
       return `- ${title}${variant ? " " + variant : ""}${qtySuffix} = ${formatBYN(total)}`;
     };
 
-    // Delivery + datetime line (avoid duplicating date when estimated_delivery_time already includes it)
+    const paymentLine = order.payment_method === "card" ? "Карта." : "Наличные.";
     const dateTimeLine = order.estimated_delivery_time
       ? String(order.estimated_delivery_time)
-      : (order.delivery_date ? formatDeliveryDate(order.delivery_date) : "");
-
-    let deliveryHeader = "";
-    if (order.delivery_type === "courier") {
-      deliveryHeader = `Вы выбрали доставку.`;
-    } else if (order.delivery_type === "pickup") {
-      const pp = (order.pickup_point as any)?.name || "пункт выдачи";
-      deliveryHeader = `Вы выбрали самовывоз из «${pp}».`;
-    } else {
-      deliveryHeader = `Вы выбрали самовывоз у продавца.`;
-    }
-
-    const paymentLine = order.payment_method === "card" ? "Карта." : "Наличные.";
+      : "";
 
     // ============ ADMIN MESSAGE ============
-    const adminLines = [
-      `Здравствуйте ${buyerName}! Это locusfood`,
-      ``,
-      `Мы получили ваш заказ:`,
-      ...allItems.map(itemLine),
-    ];
-    if (order.delivery_cost && order.delivery_cost > 0) {
-      adminLines.push(`- Курьер ${formatBYN(order.delivery_cost)}`);
-    }
-    adminLines.push(`Всего: ${formatBYN(order.total_amount)}`);
+    const adminLines: string[] = [];
+    adminLines.push(`Здравствуйте ${buyerName}! Это locusfood`);
     adminLines.push(``);
-    adminLines.push(deliveryHeader);
-    if (dateTimeLine) adminLines.push(dateTimeLine);
-    adminLines.push(paymentLine);
+
+    if (order.delivery_type === "self") {
+      adminLines.push(`Мы получили ваш заказ!`);
+      adminLines.push(`Вы выбрали самовывоз:`);
+      for (const fid of farmerIds) {
+        const f = farmerById.get(fid);
+        const myItems = allItems.filter(i => i.farmer_id === fid);
+        adminLines.push(``);
+        adminLines.push(f?.name || "Продавец");
+        const addr = f ? formatFarmerAddress(f) : "";
+        if (addr) adminLines.push(addr);
+        const t = sellerTimes[fid];
+        if (t) adminLines.push(t);
+        myItems.forEach(it => adminLines.push(itemLine(it)));
+      }
+      adminLines.push(``);
+      adminLines.push(`Всего: ${formatBYN(order.total_amount)}`);
+      adminLines.push(``);
+      adminLines.push(paymentLine);
+    } else {
+      adminLines.push(`Мы получили ваш заказ:`);
+      allItems.forEach(it => adminLines.push(itemLine(it)));
+      if (order.delivery_cost && order.delivery_cost > 0) {
+        adminLines.push(`- Курьер ${formatBYN(order.delivery_cost)}`);
+      }
+      adminLines.push(`Всего: ${formatBYN(order.total_amount)}`);
+      adminLines.push(``);
+      if (order.delivery_type === "courier") {
+        adminLines.push(`Вы выбрали доставку.`);
+        if (order.delivery_address) adminLines.push(`Адрес доставки: ${order.delivery_address}`);
+      } else {
+        const pp = (order.pickup_point as any)?.name || "пункт выдачи";
+        adminLines.push(`Вы выбрали самовывоз из «${pp}».`);
+      }
+      if (dateTimeLine) adminLines.push(dateTimeLine);
+      adminLines.push(paymentLine);
+    }
+
     if (order.notes) {
       adminLines.push(``);
       adminLines.push(`Комментарий: ${order.notes}`);
@@ -163,18 +175,27 @@ Deno.serve(async (req) => {
     }
 
     // ============ SELLER MESSAGES ============
+    const sellerDeliveryWord =
+      order.delivery_type === "courier" ? "Курьер" :
+      order.delivery_type === "pickup" ? "Самовывоз из ПВЗ" :
+      "Самовывоз у продавца";
+
     for (const farmerId of farmerIds) {
       const chatId = chatByFarmer.get(farmerId);
-      if (!chatId) continue; // seller not linked
+      if (!chatId) continue;
 
       const myItems = allItems.filter(i => i.farmer_id === farmerId);
+      const timeForSeller = order.delivery_type === "self"
+        ? (sellerTimes[farmerId] || "")
+        : dateTimeLine;
+
       const sellerLines = [
         `Новый заказ!`,
         ...myItems.map(itemLine),
         ``,
-        deliveryHeader,
+        sellerDeliveryWord,
       ];
-      if (dateTimeLine) sellerLines.push(dateTimeLine);
+      if (timeForSeller) sellerLines.push(timeForSeller);
       sellerLines.push(``);
       sellerLines.push(`Пожалуйста, подтвердите заказ`);
 
