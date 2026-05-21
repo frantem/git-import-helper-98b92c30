@@ -79,12 +79,36 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }));
     }
 
-    // ===== Confirm callback =====
+    // ===== Confirm callback (supports new "c:" short format and legacy "confirm:") =====
     const cb = update.callback_query;
-    if (cb?.data?.startsWith("confirm:")) {
-      const [, orderId, farmerId] = cb.data.split(":");
+    if (cb?.data?.startsWith("c:") || cb?.data?.startsWith("confirm:")) {
       const chatId = cb.message.chat.id.toString();
       const messageId = cb.message.message_id;
+
+      let orderId: string | null = null;
+      let farmerId: string | null = null;
+
+      if (cb.data.startsWith("c:")) {
+        // c:{orderHex32}:{farmerPrefix8}
+        const [, orderHex, farmerPrefix] = cb.data.split(":");
+        if (orderHex?.length === 32) {
+          orderId = `${orderHex.slice(0,8)}-${orderHex.slice(8,12)}-${orderHex.slice(12,16)}-${orderHex.slice(16,20)}-${orderHex.slice(20)}`;
+        }
+        // Resolve full farmer_id via order_items of this order
+        if (orderId && farmerPrefix) {
+          const { data: oi } = await supabase
+            .from("order_items").select("farmer_id").eq("order_id", orderId);
+          farmerId = (oi || []).map(r => r.farmer_id).find(fid => fid?.startsWith(farmerPrefix)) || null;
+        }
+      } else {
+        const [, oid, fid] = cb.data.split(":");
+        orderId = oid; farmerId = fid;
+      }
+
+      if (!orderId || !farmerId) {
+        await tg("answerCallbackQuery", { callback_query_id: cb.id, text: "Неверная кнопка", show_alert: true });
+        return new Response(JSON.stringify({ ok: true }));
+      }
 
       // Verify that chat owner is the farmer's owner
       const { data: profile } = await supabase
