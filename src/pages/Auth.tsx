@@ -426,12 +426,8 @@ export default function Auth() {
                   : "Сохранить пароль"}
               </Button>
 
-              {mode === "register" && (
-                <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                  Регистрируясь, вы соглашаетесь с{" "}
-                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Политикой конфиденциальности</a>
-                </p>
-              )}
+
+
 
               {(mode === "login" || mode === "register") && (
                 <>
@@ -549,6 +545,10 @@ export default function Auth() {
                 >
                   Уже есть аккаунт? Войдите
                 </button>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Регистрируясь, вы соглашаетесь с{" "}
+                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Политикой конфиденциальности</a>
+                </p>
               </div>
             )}
           </div>
