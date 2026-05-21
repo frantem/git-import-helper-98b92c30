@@ -177,15 +177,17 @@ Deno.serve(async (req) => {
         ``,
         `Пожалуйста, подтвердите заказ`,
       ];
-      await tg("sendMessage", {
+      const cbData = `c:${orderId.replace(/-/g, "")}:${farmerId.slice(0, 8)}`;
+      const res = await tg("sendMessage", {
         chat_id: chatId,
         text: sellerLines.join("\n"),
         reply_markup: {
           inline_keyboard: [[
-            { text: "✅ Подтверждаю", callback_data: `confirm:${orderId}:${farmerId}` },
+            { text: "✅ Подтверждаю", callback_data: cbData },
           ]],
         },
       });
+      console.log(`Seller ${farmerId} → chat ${chatId}: ok=${res?.ok} cb_len=${cbData.length}`);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
