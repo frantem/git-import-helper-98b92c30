@@ -323,6 +323,13 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           "Отправить заявку"
         )}
       </Button>
+
+      <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+        Подавая заявку, вы соглашаетесь с{" "}
+        <a href="/seller-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Условиями для продавцов</a>{" "}
+        и{" "}
+        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Политикой конфиденциальности</a>
+      </p>
     </form>
   );
 }
