@@ -509,7 +509,7 @@ export default function Checkout() {
 
       // Send Telegram notifications to admin + sellers (parallel, non-blocking)
       supabase.functions.invoke("send-new-order-telegram", {
-        body: { orderId: order.id }
+        body: { orderId: order.id, seller_times: sellerTimesMap }
       }).catch((err) => console.error("Failed to send telegram notification:", err));
 
       // Send self-pickup notification to buyer if delivery_type is "self"
