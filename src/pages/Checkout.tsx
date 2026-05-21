@@ -1106,6 +1106,13 @@ export default function Checkout() {
               {priceFormatted.formatted}<BynSymbol />
             </span>
           </div>
+
+          <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
+            Нажимая кнопку, вы соглашаетесь с{" "}
+            <a href="/oferta" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Публичной офертой</a>{" "}
+            и{" "}
+            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Политикой конфиденциальности</a>
+          </p>
         </div>
       </main>
 
