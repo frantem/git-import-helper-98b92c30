@@ -1,65 +1,37 @@
-## Проблема
+## План
 
-Белый экран на `locusfood.by` после возврата к старой вкладке или при переходе в раздел — классический баг SPA с code-splitting:
+### 1. Страница `/delivery` — Правила доставки и возврата
+Создать `src/pages/Delivery.tsx` по образцу `PrivacyPolicy.tsx` (Header + PageHeader + карточка `max-w-3xl` с разделами `text-sm leading-relaxed`). Содержимое — дословно из `LOCUS_Правила_доставки_и_возврата.docx` (9 разделов, контакты, реквизиты). SEO: title «Правила доставки и возврата | Locus», canonical `https://locusfood.by/delivery`.
 
-- В `src/App.tsx` страницы загружаются через `React.lazy(() => import(...))` — это отдельные JS-чанки с хэшем в имени (`Catalog-abc123.js`).
-- При новом деплое создаются чанки с новыми хэшами, старые удаляются с сервера.
-- Старая вкладка/страница, открытая до деплоя, держит ссылки на удалённые файлы. При навигации (`/catalog` → категория) React пытается подгрузить `Catalog-abc123.js`, получает 404/MIME error, `lazy()` бросает исключение внутри `<Suspense>` — а Error Boundary отсутствует → весь React-tree падает → белый экран.
-- Перезагрузка помогает, потому что грузится новый `index.html` с актуальными именами чанков. Но следующий lazy-импорт другого старого чанка снова падает.
+Зарегистрировать lazy-роут `/delivery` в `src/App.tsx`.
 
-Это объясняет всё описанное поведение: белый экран на старой вкладке, успешная перезагрузка на главную, повторный белый экран при заходе в категорию.
+### 2. Страница `/cookies` — Политика cookies
+Создать `src/pages/CookiesPolicy.tsx` в том же стиле. Содержимое — дословно из `LOCUS_Политика_cookies.docx` (6 разделов). SEO: title «Политика cookies | Locus», canonical `https://locusfood.by/cookies`. Нужна отдельная страница, так как баннер ссылается на «Политику cookies» — этого документа сейчас на сайте нет.
 
-## Решение
+Зарегистрировать lazy-роут `/cookies` в `src/App.tsx`.
 
-Сделать систему самовосстанавливающейся в двух местах, без изменения бизнес-логики:
+### 3. Футер — добавить две ссылки
+В `src/components/Footer.tsx` добавить в общую цепочку (рядом с «Политика конфиденциальности», «Публичная оферта», «Условия для продавцов») ещё две: «Доставка и возврат» → `/delivery` и «Cookies» → `/cookies`. Стиль и разделители `·` сохраняются.
 
-### 1. ErrorBoundary вокруг `<Suspense>` в `src/App.tsx`
+### 4. Cookie-баннер
+Создать `src/components/CookieBanner.tsx`:
+- Тонкая фиксированная полоса внизу экрана (`fixed bottom-0 inset-x-0 z-50`).
+- Тёмный фон (`bg-foreground text-background` — даёт тёмное на светлой теме и наоборот, в рамках design tokens), мелкий текст, минималистично.
+- Текст: «Мы используем cookies и аналитику для улучшения сервиса. Подробнее — в <Link to="/cookies">Политике cookies</Link>».
+- Кнопка «Понятно» (shadcn Button, `size="sm"`).
+- При клике пишем `localStorage.setItem('locus-cookies-ack', '1')` и скрываем.
+- При монтировании проверяем флаг; если стоит — не рендерим. Чтобы не моргало при SSR/первом рендере и не сдвигало layout, используем `useEffect` для установки `visible`.
+- На мобильных учесть нижнюю навигацию: добавить класс `pb-[env(safe-area-inset-bottom)]` и поднять `BottomNavigation` не требуется — баннер исчезает после клика; пока виден, он лежит над `BottomNavigation` (одноразовое неудобство при первом визите, как у крупных сайтов).
 
-Новый компонент `src/components/ChunkErrorBoundary.tsx`:
-- Ловит ошибки рендера.
-- Если сообщение/имя похоже на ошибку загрузки модуля (`ChunkLoadError`, `Loading chunk`, `Failed to fetch dynamically imported module`, `error loading dynamically imported module`, `Importing a module script failed`) — выполняет **один** `window.location.reload()`.
-- Защита от бесконечной перезагрузки: ставим флаг в `sessionStorage` (`locus-chunk-reload-at`) с временной меткой; если перезагрузка уже была за последние 10 секунд — показываем дружелюбный fallback с кнопкой «Обновить» и ссылкой на главную вместо немедленного reload.
-- На любые другие ошибки — обычный fallback (не маскируем баги приложения).
+Подключить `<CookieBanner />` один раз в `src/App.tsx` внутри `BrowserRouter` рядом с `MetaPageTracker`.
 
-Оборачиваем `<Suspense>` в `App.tsx`:
-```tsx
-<ChunkErrorBoundary>
-  <Suspense fallback={null}>
-    <Routes>...</Routes>
-  </Suspense>
-</ChunkErrorBoundary>
-```
+### Что не меняем
+- Существующие страницы `/privacy-policy`, `/oferta`, `/seller-terms` не трогаем.
+- Никаких новых зависимостей.
+- Бизнес-логику, auth, аналитику не меняем.
 
-### 2. Глобальный перехват в `src/main.tsx`
-
-Добавить слушатели на уровне окна — на случай, если динамический импорт падает вне React-дерева (preload, навигация во время гидрации):
-
-- `window.addEventListener('error', ...)` — фильтр по `event.message` / `event.filename` (`.js` чанк + ошибка загрузки).
-- `window.addEventListener('unhandledrejection', ...)` — фильтр по `event.reason?.message` с теми же сигнатурами.
-
-Логика та же: при срабатывании — `sessionStorage`-guard + один `location.reload()`. Без guard'а получим reload-loop, если у пользователя реально нет сети.
-
-### 3. Минорные подкрепления
-
-- В `vite.config.ts` оставляем текущий `manualChunks` как есть (он не причина проблемы, наоборот — меньше мелких чанков).
-- `index.html` не меняем.
-- Никакого Service Worker не добавляем (его сейчас нет — и не нужно вводить ради этой задачи).
-
-## Файлы
-
-- **Создать** `src/components/ChunkErrorBoundary.tsx` — class-компонент + проверка сигнатур chunk-ошибок + reload-guard + fallback UI в стиле сайта (`bg-background`, кнопка accent).
-- **Изменить** `src/App.tsx` — импорт и обёртка `<Suspense>`.
-- **Изменить** `src/main.tsx` — глобальные `error` / `unhandledrejection` слушатели с тем же guard'ом (вынести логику guard в общий хелпер `src/lib/chunkReload.ts`, чтобы App и main использовали одно и то же).
-
-## Что это НЕ ломает
-
-- Авторизацию, OAuth-флоу, Supabase, Resend, пререндер для ботов — не трогаем.
-- Бизнес-логику страниц — не трогаем.
-- Дизайн — fallback использует существующие семантические токены.
-
-## Как проверить после деплоя
-
-1. Открыть сайт, перейти в `/catalog`.
-2. Сделать новый деплой (изменится хэш чанков).
-3. Не обновляя вкладку, кликнуть в категорию — раньше был белый экран, теперь должен произойти автоматический `reload` и открыться нужная страница.
-4. Проверить в DevTools: после reload в `sessionStorage` стоит `locus-chunk-reload-at`; второй reload не происходит.
+### Технические детали
+- Lazy-импорты новых страниц по образцу остальных в `App.tsx`.
+- Все тексты — на русском, дословно из .docx; разметка — `<h2 className="text-base font-bold">`, `<ul className="list-disc pl-5">`, абзацы `<p>`, ссылки через `text-primary hover:underline`.
+- Email-ссылки `mailto:support@locusfood.by`.
+- localStorage-ключ: `locus-cookies-ack`.
