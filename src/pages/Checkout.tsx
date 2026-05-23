@@ -1109,7 +1109,7 @@ export default function Checkout() {
 
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
             Нажимая кнопку, вы соглашаетесь с{" "}
-            <a href="/oferta" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Публичной офертой</a>{" "}
+            <a href="/delivery" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Доставкой и возвратом</a>{" "}
             и{" "}
             <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Политикой конфиденциальности</a>
           </p>
