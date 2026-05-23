@@ -503,7 +503,7 @@ export default function Product() {
     image: product.image !== "/placeholder.svg" ? product.image : undefined,
     brand: {
       "@type": "Brand",
-      name: product.seller,
+      name: product.seller || "Locus",
     },
     offers: {
       "@type": "Offer",
@@ -516,25 +516,28 @@ export default function Product() {
         "@type": "OfferShippingDetails",
         shippingRate: {
           "@type": "MonetaryAmount",
-          value: "0",
+          value: "6.90",
           currency: "BYN",
         },
         shippingDestination: {
           "@type": "DefinedRegion",
           addressCountry: "BY",
-          addressRegion: "Витебск",
+          addressRegion: "Витебская область",
         },
         deliveryTime: {
           "@type": "ShippingDeliveryTime",
           handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
-          transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 2, unitCode: "DAY" },
+          transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
         },
       },
       hasMerchantReturnPolicy: {
         "@type": "MerchantReturnPolicy",
         applicableCountry: "BY",
-        returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-        merchantReturnLink: "https://locusfood.by/privacy-policy",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteWindow",
+        merchantReturnDays: 14,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
+        merchantReturnLink: "https://locusfood.by/delivery",
       },
     },
     ...(displayRating && displayReviewCount > 0 ? {
