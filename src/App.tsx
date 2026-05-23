@@ -9,6 +9,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MetaPageTracker } from "@/components/MetaPageTracker";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { CookieBanner } from "@/components/CookieBanner";
 import Index from "./pages/Index";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
@@ -38,6 +39,8 @@ const Settings = lazy(() => import("./pages/Settings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Oferta = lazy(() => import("./pages/Oferta"));
 const SellerTerms = lazy(() => import("./pages/SellerTerms"));
+const Delivery = lazy(() => import("./pages/Delivery"));
+const CookiesPolicy = lazy(() => import("./pages/CookiesPolicy"));
 const LocalLanding = lazy(() => import("./pages/LocalLanding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -84,11 +87,14 @@ const App = () => (
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/oferta" element={<Oferta />} />
                   <Route path="/seller-terms" element={<SellerTerms />} />
+                  <Route path="/delivery" element={<Delivery />} />
+                  <Route path="/cookies" element={<CookiesPolicy />} />
                   <Route path="/vitebsk/:slug" element={<LocalLanding />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
             </ChunkErrorBoundary>
+            <CookieBanner />
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>

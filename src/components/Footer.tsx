@@ -15,6 +15,10 @@ export const Footer = () => {
           <Link to="/oferta" className="hover:underline">Публичная оферта</Link>
           <span>·</span>
           <Link to="/seller-terms" className="hover:underline">Условия для продавцов</Link>
+          <span>·</span>
+          <Link to="/delivery" className="hover:underline">Доставка и возврат</Link>
+          <span>·</span>
+          <Link to="/cookies" className="hover:underline">Cookies</Link>
         </div>
       </div>
     </footer>
