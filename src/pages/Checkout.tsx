@@ -557,7 +557,7 @@ export default function Checkout() {
         </div>
         <h1 className="text-2xl font-bold text-foreground mb-2">Заказ оформлен!</h1>
         <p className="text-muted-foreground text-center mb-6">
-          Менеджер свяжется с Вами для подтверждения заказа. Номер поддержки: +375 (29) 7399485
+          Менеджер свяжется с Вами для подтверждения заказа. Номер поддержки: +375(29)7399485
         </p>
         {showEmailPrompt && (
           <EmailChangePrompt onDone={() => setEmailPromptDismissed(true)} />
