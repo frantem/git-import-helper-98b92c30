@@ -233,9 +233,10 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     description: product.description || description,
     image: product.image_url ? [ogImageUrl(product.image_url)] : undefined,
     sku: product.id,
+    mpn: product.id,
     brand: {
       "@type": "Brand",
-      name: SITE_NAME
+      name: sellerName || SITE_NAME,
     },
     url: `${DOMAIN}/product/${product.id}`,
     offers: {
@@ -248,9 +249,35 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
         : "https://schema.org/OutOfStock",
       areaServed: { "@type": "City", name: CITY_NOM },
       seller: { "@type": "Organization", name: SITE_NAME },
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: "6.90",
+          currency: "BYN",
+        },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "BY",
+          addressRegion: "Витебская область",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
+          transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "BY",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteWindow",
+        merchantReturnDays: 14,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
+        merchantReturnLink: `${DOMAIN}/delivery`,
+      },
     },
   };
-  if (sellerName) productLd.brand = { "@type": "Brand", name: sellerName };
   if (rating && reviewCount > 0) {
     productLd.aggregateRating = {
       "@type": "AggregateRating",

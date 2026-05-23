@@ -1,37 +1,43 @@
-## План
+## Проблема
 
-### 1. Страница `/delivery` — Правила доставки и возврата
-Создать `src/pages/Delivery.tsx` по образцу `PrivacyPolicy.tsx` (Header + PageHeader + карточка `max-w-3xl` с разделами `text-sm leading-relaxed`). Содержимое — дословно из `LOCUS_Правила_доставки_и_возврата.docx` (9 разделов, контакты, реквизиты). SEO: title «Правила доставки и возврата | Locus», canonical `https://locusfood.by/delivery`.
+Google Search Console сканирует HTML, отданный **bot-prerender** (`supabase/functions/prerender/index.ts`) — именно туда nginx направляет googlebot. На клиентской странице (`src/pages/Product.tsx`) поля уже есть, но в prerender их нет, плюс `seoHelpers.ts` тоже неполный. Поэтому Google видит ошибки.
 
-Зарегистрировать lazy-роут `/delivery` в `src/App.tsx`.
+## Что меняем
 
-### 2. Страница `/cookies` — Политика cookies
-Создать `src/pages/CookiesPolicy.tsx` в том же стиле. Содержимое — дословно из `LOCUS_Политика_cookies.docx` (6 разделов). SEO: title «Политика cookies | Locus», canonical `https://locusfood.by/cookies`. Нужна отдельная страница, так как баннер ссылается на «Политику cookies» — этого документа сейчас на сайте нет.
+### 1. `supabase/functions/prerender/index.ts` — основной фикс (это видит Google)
 
-Зарегистрировать lazy-роут `/cookies` в `src/App.tsx`.
+В `productLd.offers` добавить:
 
-### 3. Футер — добавить две ссылки
-В `src/components/Footer.tsx` добавить в общую цепочку (рядом с «Политика конфиденциальности», «Публичная оферта», «Условия для продавцов») ещё две: «Доставка и возврат» → `/delivery` и «Cookies» → `/cookies`. Стиль и разделители `·` сохраняются.
+- `shippingDetails` (OfferShippingDetails)
+  - `shippingRate`: MonetaryAmount, `value: "6.90"`, `currency: "BYN"` (соответствует фактической цене курьерской доставки на /checkout)
+  - `shippingDestination`: DefinedRegion, `addressCountry: "BY"`, `addressRegion: "Витебская область"`
+  - `deliveryTime`: handlingTime 0–1 day, transitTime 0–1 day
+- `hasMerchantReturnPolicy` (MerchantReturnPolicy)
+  - `applicableCountry: "BY"`
+  - `returnPolicyCategory: "https://schema.org/MerchantReturnFiniteWindow"`
+  - `merchantReturnDays: 14`
+  - `returnMethod: "https://schema.org/ReturnByMail"`
+  - `returnFees: "https://schema.org/FreeReturn"`
+  - `merchantReturnLink: "https://locusfood.by/delivery"`
 
-### 4. Cookie-баннер
-Создать `src/components/CookieBanner.tsx`:
-- Тонкая фиксированная полоса внизу экрана (`fixed bottom-0 inset-x-0 z-50`).
-- Тёмный фон (`bg-foreground text-background` — даёт тёмное на светлой теме и наоборот, в рамках design tokens), мелкий текст, минималистично.
-- Текст: «Мы используем cookies и аналитику для улучшения сервиса. Подробнее — в <Link to="/cookies">Политике cookies</Link>».
-- Кнопка «Понятно» (shadcn Button, `size="sm"`).
-- При клике пишем `localStorage.setItem('locus-cookies-ack', '1')` и скрываем.
-- При монтировании проверяем флаг; если стоит — не рендерим. Чтобы не моргало при SSR/первом рендере и не сдвигало layout, используем `useEffect` для установки `visible`.
-- На мобильных учесть нижнюю навигацию: добавить класс `pb-[env(safe-area-inset-bottom)]` и поднять `BottomNavigation` не требуется — баннер исчезает после клика; пока виден, он лежит над `BottomNavigation` (одноразовое неудобство при первом визите, как у крупных сайтов).
+Гарантировать **brand** (глобальный идентификатор): уже задаётся `SITE_NAME` и перезаписывается `sellerName`. Дополнительно добавить `mpn: product.id` и оставить `sku` для подстраховки.
 
-Подключить `<CookieBanner />` один раз в `src/App.tsx` внутри `BrowserRouter` рядом с `MetaPageTracker`.
+### 2. `src/lib/seoHelpers.ts` (`productJsonLd`)
 
-### Что не меняем
-- Существующие страницы `/privacy-policy`, `/oferta`, `/seller-terms` не трогаем.
-- Никаких новых зависимостей.
-- Бизнес-логику, auth, аналитику не меняем.
+Те же поля `shippingDetails` и `hasMerchantReturnPolicy` в `offers`, brand всегда присутствует (fallback на `SITE_NAME` если `sellerName` пуст), добавить `mpn`.
 
-### Технические детали
-- Lazy-импорты новых страниц по образцу остальных в `App.tsx`.
-- Все тексты — на русском, дословно из .docx; разметка — `<h2 className="text-base font-bold">`, `<ul className="list-disc pl-5">`, абзацы `<p>`, ссылки через `text-primary hover:underline`.
-- Email-ссылки `mailto:support@locusfood.by`.
-- localStorage-ключ: `locus-cookies-ack`.
+### 3. `src/pages/Product.tsx`
+
+- Заменить `MerchantReturnNotPermitted` на `MerchantReturnFiniteWindow` (14 дней, бесплатно, ссылка `/delivery`) — соответствует реальной политике из страницы «Доставка и возврат».
+- Поменять `shippingRate.value` с `"0"` на `"6.90"` (реальная цена курьерской доставки).
+- Гарантировать brand fallback на «Locus», если `product.seller` пуст.
+
+## После деплоя
+
+Edge-функцию `prerender` нужно задеплоить (она на стороне Supabase). После этого попросить пересканировать страницу в Search Console — ошибки исчезнут.
+
+## Не трогаем
+
+- Бизнес-логику корзины/чекаута.
+- Структуру БД.
+- UI страниц.
