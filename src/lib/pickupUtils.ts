@@ -189,18 +189,20 @@ function getSellerSlotForDate(
   const end = parseTime(slot.end);
   if (start === null || end === null || end <= start) return null;
 
-  // Минимальный срок приёма заказа до начала окна выдачи
+  // Минимальный срок приёма заказа: окно непригодно только если оно полностью
+  // закроется раньше, чем наступит «сейчас + lead». Это не лид от начала окна,
+  // а лид от текущего момента до момента выдачи.
   const leadHours = schedule.orderLeadTimeHours ?? 0;
   if (leadHours > 0) {
     const now = nowMinsk ?? getMinskTime();
-    const windowStart = new Date(
+    const windowEnd = new Date(
       checkDate.getFullYear(),
       checkDate.getMonth(),
       checkDate.getDate(),
       0, 0, 0, 0,
     );
-    windowStart.setMinutes(windowStart.getMinutes() + start);
-    const diffMinutes = (windowStart.getTime() - now.getTime()) / 60000;
+    windowEnd.setMinutes(windowEnd.getMinutes() + end);
+    const diffMinutes = (windowEnd.getTime() - now.getTime()) / 60000;
     if (diffMinutes < leadHours * 60) return null;
   }
 
