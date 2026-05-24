@@ -248,6 +248,8 @@ export function findEarliestReady(
   let cookedReadyDate: Date | null = null;
   let cookedReadyMinutes: number | null = null;
 
+  const leadMinutes = (schedule.orderLeadTimeHours ?? 0) * 60;
+
   for (let offset = 0; offset < SEARCH_HORIZON_DAYS; offset++) {
     const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
@@ -257,10 +259,19 @@ export function findEarliestReady(
 
     const isToday = offset === 0;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    // Минимальная минута-дня, в которую можно действовать с учётом lead.
+    // Для будущих дней значение будет отрицательным и не повлияет на cookStart.
+    const dayStartMs = checkDate.getTime();
+    const earliestActionMinuteOfDay =
+      ((now.getTime() + leadMinutes * 60000) - dayStartMs) / 60000;
 
     // Если готовка ещё не завершена — продолжаем готовить в этом окне
     if (cookedReadyDate === null) {
-      const cookStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const cookStart = Math.max(
+        window.start,
+        isToday ? nowMinutes : 0,
+        earliestActionMinuteOfDay,
+      );
       const available = window.end - cookStart;
       if (available <= 0) continue;
 
@@ -289,8 +300,11 @@ export function findEarliestReady(
 
     // Готовка уже завершена — ищем первое окно с минимальным запасом
     if (window.end - window.start >= minRequired) {
-      // Можем выдать со старта этого окна
-      const giveOutStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const giveOutStart = Math.max(
+        window.start,
+        isToday ? nowMinutes : 0,
+        earliestActionMinuteOfDay,
+      );
       if (window.end - giveOutStart >= minRequired) {
         return {
           readyDate: checkDate,
