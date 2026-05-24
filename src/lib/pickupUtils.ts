@@ -416,6 +416,7 @@ export function calculatePickupTime(
   };
 
   const now = getMinskTime();
+  const leadMinutes = lead * 60;
   let remaining = prep;
   let cooked = false;
 
@@ -436,9 +437,16 @@ export function calculatePickupTime(
 
     const isToday = offset === 0;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const dayStartMs = checkDate.getTime();
+    const earliestActionMinuteOfDay =
+      ((now.getTime() + leadMinutes * 60000) - dayStartMs) / 60000;
 
     if (!cooked) {
-      const cookStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const cookStart = Math.max(
+        window.start,
+        isToday ? nowMinutes : 0,
+        earliestActionMinuteOfDay,
+      );
       const available = window.end - cookStart;
       if (available <= 0) continue;
 
@@ -459,7 +467,11 @@ export function calculatePickupTime(
     }
 
     // Готовка завершена — ищем окно для выдачи
-    const giveOutStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+    const giveOutStart = Math.max(
+      window.start,
+      isToday ? nowMinutes : 0,
+      earliestActionMinuteOfDay,
+    );
     const aligned = ceilToStep(giveOutStart, SLOT_STEP_MINUTES);
     if (window.end - aligned >= MIN_PICKUP_WINDOW_MINUTES) {
       const text = `${dayPrefix(checkDate, now)} ${fmtMinutes(aligned)}\u2013${fmtMinutes(window.end)}`;
