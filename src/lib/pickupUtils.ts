@@ -189,18 +189,20 @@ function getSellerSlotForDate(
   const end = parseTime(slot.end);
   if (start === null || end === null || end <= start) return null;
 
-  // Минимальный срок приёма заказа до начала окна выдачи
+  // Минимальный срок приёма заказа: окно непригодно только если оно полностью
+  // закроется раньше, чем наступит «сейчас + lead». Это не лид от начала окна,
+  // а лид от текущего момента до момента выдачи.
   const leadHours = schedule.orderLeadTimeHours ?? 0;
   if (leadHours > 0) {
     const now = nowMinsk ?? getMinskTime();
-    const windowStart = new Date(
+    const windowEnd = new Date(
       checkDate.getFullYear(),
       checkDate.getMonth(),
       checkDate.getDate(),
       0, 0, 0, 0,
     );
-    windowStart.setMinutes(windowStart.getMinutes() + start);
-    const diffMinutes = (windowStart.getTime() - now.getTime()) / 60000;
+    windowEnd.setMinutes(windowEnd.getMinutes() + end);
+    const diffMinutes = (windowEnd.getTime() - now.getTime()) / 60000;
     if (diffMinutes < leadHours * 60) return null;
   }
 
@@ -246,6 +248,8 @@ export function findEarliestReady(
   let cookedReadyDate: Date | null = null;
   let cookedReadyMinutes: number | null = null;
 
+  const leadMinutes = (schedule.orderLeadTimeHours ?? 0) * 60;
+
   for (let offset = 0; offset < SEARCH_HORIZON_DAYS; offset++) {
     const checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     checkDate.setDate(checkDate.getDate() + offset);
@@ -255,10 +259,19 @@ export function findEarliestReady(
 
     const isToday = offset === 0;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    // Минимальная минута-дня, в которую можно действовать с учётом lead.
+    // Для будущих дней значение будет отрицательным и не повлияет на cookStart.
+    const dayStartMs = checkDate.getTime();
+    const earliestActionMinuteOfDay =
+      ((now.getTime() + leadMinutes * 60000) - dayStartMs) / 60000;
 
     // Если готовка ещё не завершена — продолжаем готовить в этом окне
     if (cookedReadyDate === null) {
-      const cookStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const cookStart = Math.max(
+        window.start,
+        isToday ? nowMinutes : 0,
+        earliestActionMinuteOfDay,
+      );
       const available = window.end - cookStart;
       if (available <= 0) continue;
 
@@ -287,8 +300,11 @@ export function findEarliestReady(
 
     // Готовка уже завершена — ищем первое окно с минимальным запасом
     if (window.end - window.start >= minRequired) {
-      // Можем выдать со старта этого окна
-      const giveOutStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const giveOutStart = Math.max(
+        window.start,
+        isToday ? nowMinutes : 0,
+        earliestActionMinuteOfDay,
+      );
       if (window.end - giveOutStart >= minRequired) {
         return {
           readyDate: checkDate,
@@ -400,6 +416,7 @@ export function calculatePickupTime(
   };
 
   const now = getMinskTime();
+  const leadMinutes = lead * 60;
   let remaining = prep;
   let cooked = false;
 
@@ -420,9 +437,16 @@ export function calculatePickupTime(
 
     const isToday = offset === 0;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const dayStartMs = checkDate.getTime();
+    const earliestActionMinuteOfDay =
+      ((now.getTime() + leadMinutes * 60000) - dayStartMs) / 60000;
 
     if (!cooked) {
-      const cookStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+      const cookStart = Math.max(
+        window.start,
+        isToday ? nowMinutes : 0,
+        earliestActionMinuteOfDay,
+      );
       const available = window.end - cookStart;
       if (available <= 0) continue;
 
@@ -443,7 +467,11 @@ export function calculatePickupTime(
     }
 
     // Готовка завершена — ищем окно для выдачи
-    const giveOutStart = isToday ? Math.max(nowMinutes, window.start) : window.start;
+    const giveOutStart = Math.max(
+      window.start,
+      isToday ? nowMinutes : 0,
+      earliestActionMinuteOfDay,
+    );
     const aligned = ceilToStep(giveOutStart, SLOT_STEP_MINUTES);
     if (window.end - aligned >= MIN_PICKUP_WINDOW_MINUTES) {
       const text = `${dayPrefix(checkDate, now)} ${fmtMinutes(aligned)}\u2013${fmtMinutes(window.end)}`;

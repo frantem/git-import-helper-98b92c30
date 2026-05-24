@@ -1,43 +1,49 @@
-## Проблема
+## Диагноз
 
-Google Search Console сканирует HTML, отданный **bot-prerender** (`supabase/functions/prerender/index.ts`) — именно туда nginx направляет googlebot. На клиентской странице (`src/pages/Product.tsx`) поля уже есть, но в prerender их нет, плюс `seoHelpers.ts` тоже неполный. Поэтому Google видит ошибки.
+Продукт `e03dac05…` — «Квашеная капуста», `prep_time=0`, `order_lead_time_hours=1`.
+Фермер «не Артём» (`user_id 50a6eb43…`), Вс: **10:00–22:30**.
+Сейчас Вс 19:00. По здравому смыслу: с lead 1ч → самовывоз доступен с 20:00 до 22:30 сегодня.
 
-## Что меняем
+В `src/lib/pickupUtils.ts` функция `getSellerSlotForDate` (стр. 192–205) делает следующее:
 
-### 1. `supabase/functions/prerender/index.ts` — основной фикс (это видит Google)
+```ts
+const windowStart = <дата дня> + slot.start;   // = сегодня 10:00
+const diffMinutes = (windowStart - now) / 60000; // = (10:00 − 19:00) = −540
+if (diffMinutes < leadHours * 60) return null;   // −540 < 60 → ОТКЛОНЯЕТ ВЕСЬ ДЕНЬ
+```
 
-В `productLd.offers` добавить:
+То есть lead-time трактуется как «между **началом окна** и сейчас», а не как «между **сейчас** и моментом выдачи». Для уже открытого окна это всегда даёт отрицательное число и день целиком выкидывается. Поэтому ближайший самовывоз уезжает на завтра (Пн 17:00–22:30).
 
-- `shippingDetails` (OfferShippingDetails)
-  - `shippingRate`: MonetaryAmount, `value: "6.90"`, `currency: "BYN"` (соответствует фактической цене курьерской доставки на /checkout)
-  - `shippingDestination`: DefinedRegion, `addressCountry: "BY"`, `addressRegion: "Витебская область"`
-  - `deliveryTime`: handlingTime 0–1 day, transitTime 0–1 day
-- `hasMerchantReturnPolicy` (MerchantReturnPolicy)
-  - `applicableCountry: "BY"`
-  - `returnPolicyCategory: "https://schema.org/MerchantReturnFiniteWindow"`
-  - `merchantReturnDays: 14`
-  - `returnMethod: "https://schema.org/ReturnByMail"`
-  - `returnFees: "https://schema.org/FreeReturn"`
-  - `merchantReturnLink: "https://locusfood.by/delivery"`
+Та же логика подтягивается во все расчёты доставки/самовывоза, которые используют `getSellerSlotForDate`.
 
-Гарантировать **brand** (глобальный идентификатор): уже задаётся `SITE_NAME` и перезаписывается `sellerName`. Дополнительно добавить `mpn: product.id` и оставить `sku` для подстраховки.
+## Решение
 
-### 2. `src/lib/seoHelpers.ts` (`productJsonLd`)
+Lead time — это «минимум сколько времени должно пройти от заказа до выдачи», а не «до начала окна». Правильная логика:
 
-Те же поля `shippingDetails` и `hasMerchantReturnPolicy` в `offers`, brand всегда присутствует (fallback на `SITE_NAME` если `sellerName` пуст), добавить `mpn`.
+1. В `getSellerSlotForDate`:
+   - Убрать отклонение окна по `windowStart - now < lead`.
+   - Отклонять окно только если оно уже фактически непригодно: `window.end <= now + lead` (для сегодня) или `window.end <= 0` (для будущих дней — невозможно, оставляем как есть).
+2. В местах расчёта `cookStart` (внутри `findEarliestReady` стр. 261 и `calculatePickupTime` стр. 425) для сегодняшнего дня учитывать lead:
+   ```ts
+   const earliestActionable = nowMinutes + leadMinutes;
+   const cookStart = isToday
+     ? Math.max(earliestActionable, window.start)
+     : window.start;
+   ```
+   Где `leadMinutes = (schedule.orderLeadTimeHours ?? 0) * 60`.
+3. Для `findEarliestReady` ветка «готовка уже завершена» (стр. 291) — аналогично применить `earliestActionable` для `giveOutStart`, иначе lead обойдётся в выдаче на следующий день.
 
-### 3. `src/pages/Product.tsx`
+## Ожидаемый результат
 
-- Заменить `MerchantReturnNotPermitted` на `MerchantReturnFiniteWindow` (14 дней, бесплатно, ссылка `/delivery`) — соответствует реальной политике из страницы «Доставка и возврат».
-- Поменять `shippingRate.value` с `"0"` на `"6.90"` (реальная цена курьерской доставки).
-- Гарантировать brand fallback на «Locus», если `product.seller` пуст.
+Для текущего кейса (Вс 19:00, prep=0, lead=1ч, окно 10:00–22:30):
+- earliestActionable = 19:00 + 1ч = 20:00
+- cookStart = max(20:00, 10:00) = 20:00, prep=0 → ready 20:00
+- Слот выдачи: **Сегодня 20:00–22:30** (с учётом шага 30 мин).
 
-## После деплоя
+Самовывоз и доставка перестанут необоснованно «прыгать» на завтра у продавцов, чьё окно уже открыто.
 
-Edge-функцию `prerender` нужно задеплоить (она на стороне Supabase). После этого попросить пересканировать страницу в Search Console — ошибки исчезнут.
+## Затронутые файлы
 
-## Не трогаем
+- `src/lib/pickupUtils.ts` — `getSellerSlotForDate`, `findEarliestReady`, `calculatePickupTime` (и любые сопутствующие места, использующие тот же паттерн `cookStart`/`giveOutStart` — проверю строки 530+ для доставки).
 
-- Бизнес-логику корзины/чекаута.
-- Структуру БД.
-- UI страниц.
+Никакая UI-логика, БД-схема и edge-функции не меняются.
