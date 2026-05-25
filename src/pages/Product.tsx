@@ -25,6 +25,7 @@ import { SEO } from "@/components/SEO";
 import { useSeoTemplates } from "@/hooks/useSeoTemplates";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { formatRelativeTime } from "@/lib/pickupUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
