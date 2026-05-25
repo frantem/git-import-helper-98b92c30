@@ -13,6 +13,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { cdnImage } from "@/lib/imageCdn";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 interface Farmer {
   id: string;
