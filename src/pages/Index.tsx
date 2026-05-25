@@ -19,6 +19,7 @@ import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/SEO";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 let savedAllBlockLimit = 6;
 
