@@ -136,6 +136,7 @@ export default function LocalLanding() {
                   onToggleFavorite={toggleFavorite}
                   hasRequiredFields={productsWithRequiredFields.has(product.id)}
                   isLowestPrice={lowestPriceIds.has(product.id)}
+                  pickupLabel={pickupLabels.get(product.id)}
                 />
               ))}
             </div>
