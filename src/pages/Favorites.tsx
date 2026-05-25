@@ -158,7 +158,7 @@ export default function Favorites() {
             {(() => {
               const lpIds = computeLowestPriceIds(favorites);
               return favorites.map((product) => (
-                <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} isLowestPrice={lpIds.has(product.id)} />
+                <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} isLowestPrice={lpIds.has(product.id)} pickupLabel={pickupLabels.get(product.id)} />
               ));
             })()}
           </div>
