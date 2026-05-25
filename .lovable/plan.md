@@ -1,46 +1,72 @@
-## Что меняем
+## Цель
 
-На превью карточки товара (`ProductCard`) и в карточке товара (`Product.tsx`) вместо текущей метки времени приготовления (`formatPrepTime` → "В наличии" / "~6ч." / "~1дн.") показываем **ближайшую дату самовывоза**:
-- "Сегодня"
-- "Завтра"
-- "DD.MM" (например "28.05")
-- "Нет в наличии" — если ни в одном из 30 ближайших дней нет доступного слота самовывоза
+Объединить телефон продавца с профилем покупателя. Один номер на аккаунт, всегда подтверждённый, всегда лежит в `profiles.phone`.
 
-Без времени (никаких "10:00–17:00").
+## Поведение формы /seller-application
 
-## Как считаем дату
+Три сценария:
 
-Используем уже существующую логику `calculatePickupTime` из `src/lib/pickupUtils.ts` — ту же, что и /checkout при выборе самовывоза. Она учитывает:
-- prep_time_minutes + order_lead_time_hours товара
-- pickup_slots, busy_dates, vacation_dates продавца
-- max_orders_per_day и текущие подтверждённые заказы по продавцу/дате
+### 1. Залогинен, в `profiles.phone` уже есть номер
+- Поле «Телефон» предзаполнено и **read-only** (с подсказкой «Используется номер из вашего профиля»).
+- При отправке используем именно его, без OTP.
 
-Из её результата берём только префикс дня (Сегодня/Завтра/DD.MM), отсекая часть со временем. Если `calculatePickupTime` вернул "Нет доступных дат" — показываем "Нет в наличии".
+### 2. Залогинен, телефона в профиле нет
+- Поле телефона редактируемое. Под ним кнопка «Получить код».
+- После ввода кода (4 цифры, тот же UI, что в `PhoneAuthForm`) — вызываем существующую edge-функцию `link-phone-to-account`. Она проверяет код и записывает телефон + `phone_verified=true` в `profiles`.
+- Только после успешной привязки активируется кнопка «Отправить заявку».
 
-Чтобы не дублировать логику, добавим в `pickupUtils.ts` отдельный экспорт `calculatePickupDateLabel(...)` с теми же входными параметрами, что и `calculatePickupTime`, который возвращает только метку даты ("Сегодня" / "Завтра" / "DD.MM" / "Нет в наличии"). Внутри переиспользует общий поиск ближайшего готового окна.
+### 3. Не залогинен (email + пароль)
+- Сначала вводит email / пароль / имя / телефон.
+- По кнопке «Получить код» отправляем OTP на телефон (`send-otp`).
+- После ввода кода:
+  1. `signUp(email, password)` — создаём аккаунт.
+  2. Сразу после получения сессии — `link-phone-to-account` с уже введённым кодом, чтобы записать телефон в `profiles` как подтверждённый.
+  3. Создаём `seller_applications` запись.
+- Если email уже занят — сообщение «Войдите в аккаунт» (как сейчас).
 
-## Загрузка данных
+В обоих случаях в `seller_applications.phone` пишем тот же подтверждённый номер.
 
-Сейчас `useProducts` тянет только товары; графики продавцов и счётчики заказов не загружаются. Добавим хук `useSellerPickupData(farmerIds)`:
-1. RPC `get_seller_pickup_settings(farmer_ids)` — pickup_slots / max_orders_per_day / busy_dates / vacation_dates.
-2. RPC `get_orders_count_by_dates(farmer_ids, dates)` — счётчики заказов на ближайшие ~30 дней.
-3. Кеш через React Query, staleTime ~5 минут.
+## Бэкенд
 
-В `Catalog`, `Index` (homepage блоки), `Favorites`, `SellerProfile` и `Product` собираем уникальные `farmer_id` отображаемых товаров и зовём этот хук один раз. Передаём готовые данные в `ProductCard` через новый необязательный проп `pickupLabel?: string` (вычисленный на родителе из `calculatePickupDateLabel`).
+### Миграция: backfill телефонов
+Один SQL для существующих заявок:
+```sql
+UPDATE public.profiles p
+SET phone = sa.phone
+FROM (
+  SELECT DISTINCT ON (user_id) user_id, phone
+  FROM public.seller_applications
+  WHERE phone IS NOT NULL AND phone <> ''
+  ORDER BY user_id, created_at DESC
+) sa
+WHERE p.user_id = sa.user_id
+  AND (p.phone IS NULL OR p.phone = '');
+```
+`phone_verified` не трогаем — остаётся `false`, пользователь сможет подтвердить позже в профиле.
 
-Если данные ещё грузятся или у продавца нет графика — показываем старую логику (`formatPrepTime`) как fallback, чтобы не было «мигания».
+### Edge-функции
+- `send-otp`, `verify-otp`, `link-phone-to-account` — уже есть, используем как есть.
+- Новых функций не создаём.
 
-## Файлы
+## Файлы клиента
 
-Технические детали:
-- `src/lib/pickupUtils.ts` — добавить `calculatePickupDateLabel(...)`, без изменения существующих функций.
-- `src/hooks/useSellerPickupData.ts` — новый хук (RPC + React Query).
-- `src/components/ProductCard.tsx` — новый проп `pickupLabel?: string`; если задан — рендерим его вместо `formatPrepTime`; цвет: "Сегодня"/"Завтра" — зелёный (как сейчас "В наличии"), "DD.MM" — muted, "Нет в наличии" — красный.
-- `src/pages/Catalog.tsx`, `src/pages/Index.tsx`, `src/pages/Favorites.tsx`, `src/pages/SellerProfile.tsx` — собрать farmer_ids, посчитать `pickupLabel` для каждого товара, прокинуть в `ProductCard`.
-- `src/pages/Product.tsx` — то же самое в блоке prep-time на детальной странице.
+- **`src/components/SellerApplicationForm.tsx`** — основная переработка:
+  - Локальный стейт `phoneStep: "input" | "code" | "verified"`.
+  - Если профиль уже содержит phone — `verified`, поле disabled.
+  - Если нет — показываем кнопку «Получить код» → step `code` (4 input-ячейки, паттерн взят из `PhoneAuthForm`) → `link-phone-to-account` → `verified`.
+  - Для незалогиненного: при «Получить код» — `send-otp`, при вводе кода — сначала `signUp`, потом `link-phone-to-account` с тем же кодом, потом insert заявки.
+  - Submit-кнопка заявки активна только когда `phoneStep === "verified"` (для залогиненных без телефона и для гостей) или сразу (если телефон уже в профиле).
+
+- **`src/components/PhoneAuthForm.tsx`** — без изменений, но вынесем мелкие хелперы (`formatBYPhone`, `isValidBYPhone`) в `src/lib/phone.ts`, чтобы переиспользовать в `SellerApplicationForm`. Импорты в `PhoneAuthForm.tsx` соответственно обновятся.
 
 ## Что НЕ трогаем
 
-- Логику /checkout (она и так корректна).
-- Поля БД, миграции — не нужны, RPC уже есть.
-- Бизнес-логику prep_time / lead_time — только отображение.
+- `Auth.tsx` и обычный поток регистрации.
+- RLS, таблицы, схему — только UPDATE-миграция на backfill.
+- Логику админ-одобрения заявки (`AdminSellerApplications.tsx`) — `profiles.phone` уже будет валиден к моменту одобрения.
+
+## Технические детали
+
+- `link-phone-to-account` уже проверяет, что номер не занят другим пользователем, и пишет `phone_verified=true`. Для случая «номер уже привязан к другому аккаунту» показываем ошибку из ответа функции.
+- Черновик `useDraftState` сохраняем только для полей анкеты (имя/район/село/описание/email). Введённый код и подтверждённое состояние в localStorage не сохраняем.
+- Если пользователь сменил подтверждённый номер вручную (например, отредактировал input после verified) — сбрасываем в `input` и требуем новой проверки.

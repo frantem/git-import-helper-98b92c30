@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { formatBYPhone, isValidBYPhone } from "@/lib/phone";
 
 const DISTRICTS = [
   "Витебский район",
@@ -50,6 +51,8 @@ interface DraftState {
   email: string;
 }
 
+type PhoneStep = "input" | "code" | "verified";
+
 export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps) {
   const { user, signUp } = useAuth();
   const navigate = useNavigate();
@@ -63,115 +66,221 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     email: "",
   });
   useDraftState(DRAFT_KEY, draft, setDraft);
-  
+
   const [password, setPassword] = useState("");
 
-  // Load profile data (only if draft doesn't have them)
+  // Phone verification state
+  const [phoneStep, setPhoneStep] = useState<PhoneStep>("input");
+  const [phoneFromProfile, setPhoneFromProfile] = useState(false);
+  const [code, setCode] = useState(["", "", "", ""]);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const codeInputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const t = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCountdown]);
+
+  // Load profile data
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
-      
       const { data } = await supabase
         .from("profiles")
         .select("full_name, phone")
         .eq("user_id", user.id)
         .single();
-      
-      if (data) {
-        setDraft(s => ({
-          ...s,
-          name: s.name || data.full_name || "",
-          phone: s.phone === "+375" ? (data.phone || "+375") : s.phone,
-        }));
+      if (!data) return;
+      setDraft((s) => ({
+        ...s,
+        name: s.name || data.full_name || "",
+      }));
+      if (data.phone && data.phone.trim()) {
+        setDraft((s) => ({ ...s, phone: data.phone! }));
+        setPhoneFromProfile(true);
+        setPhoneStep("verified");
       }
     };
-    
     loadProfile();
   }, [user]);
 
-  const formatPhoneNumber = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(3);
-    
-    if (digits.length === 0) return "+375";
-    if (digits.length <= 2) return `+375 (${digits}`;
-    if (digits.length <= 5) return `+375 (${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 7) return `+375 (${digits.slice(0, 2)}) ${digits.slice(2, 5)}-${digits.slice(5)}`;
-    return `+375 (${digits.slice(0, 2)}) ${digits.slice(2, 5)}-${digits.slice(5, 7)}-${digits.slice(7, 9)}`;
-  };
+  useEffect(() => {
+    if (phoneStep === "code") {
+      setTimeout(() => codeInputs.current[0]?.focus(), 100);
+    }
+  }, [phoneStep]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value.length < 4) {
-      setDraft(s => ({ ...s, phone: "+375" }));
-      return;
+    const next = value.length < 4 ? "+375" : formatBYPhone(value);
+    setDraft((s) => ({ ...s, phone: next }));
+    if (phoneStep === "verified" && !phoneFromProfile) {
+      setPhoneStep("input");
     }
-    setDraft(s => ({ ...s, phone: formatPhoneNumber(value) }));
   };
 
-  const validatePhone = (phoneNumber: string) => {
-    const digits = phoneNumber.replace(/\D/g, "");
-    return digits.length === 12;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      if (!draft.email.trim()) {
-        toast.error("Введите email");
-        return;
-      }
-      if (password.length < 6) {
-        toast.error("Пароль должен быть минимум 6 символов");
-        return;
-      }
-    }
-
-    if (!draft.name.trim()) {
-      toast.error("Введите имя");
+  const sendCode = async () => {
+    if (!isValidBYPhone(draft.phone)) {
+      toast.error("Введите корректный номер: +375 (25/29/33/44) XXX-XX-XX");
       return;
     }
-
-    if (!validatePhone(draft.phone)) {
-      toast.error("Введите корректный номер телефона");
-      return;
-    }
-
-    if (!draft.district) {
-      toast.error("Выберите район");
-      return;
-    }
-
-    setIsLoading(true);
-
+    setIsSendingCode(true);
     try {
-      let userId = user?.id;
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        body: { phone: draft.phone },
+      });
+      if (error) {
+        const msg = (data as { error?: string } | null)?.error
+          || (error as { message?: string }).message
+          || "Не удалось отправить код";
+        toast.error(msg);
+        return;
+      }
+      const respData = data as { success?: boolean; retry_after?: number; error?: string };
+      if (!respData?.success) {
+        toast.error(respData?.error || "Не удалось отправить код");
+        return;
+      }
+      toast.success("Код отправлен");
+      setResendCountdown(respData.retry_after ?? 60);
+      setCode(["", "", "", ""]);
+      setPhoneStep("code");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Ошибка сети: " + msg);
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
 
-      if (!user) {
+  const linkPhoneForUser = async (fullCode: string): Promise<boolean> => {
+    const { data, error } = await supabase.functions.invoke("link-phone-to-account", {
+      body: { phone: draft.phone, code: fullCode },
+    });
+    if (error) {
+      const msg = (data as { error?: string } | null)?.error
+        || (error as { message?: string }).message
+        || "Не удалось привязать телефон";
+      toast.error(msg);
+      return false;
+    }
+    const respData = data as { success?: boolean; error?: string };
+    if (!respData?.success) {
+      toast.error(respData?.error || "Не удалось привязать телефон");
+      return false;
+    }
+    return true;
+  };
+
+  const verifyCode = async (fullCode: string) => {
+    setIsVerifyingCode(true);
+    try {
+      if (user) {
+        // Logged-in: just bind phone to current account
+        const ok = await linkPhoneForUser(fullCode);
+        if (!ok) {
+          setCode(["", "", "", ""]);
+          setTimeout(() => codeInputs.current[0]?.focus(), 50);
+          return;
+        }
+        toast.success("Телефон подтверждён");
+        setPhoneStep("verified");
+      } else {
+        // Guest: sign up first, then link, then submit
+        if (!draft.email.trim() || password.length < 6 || !draft.name.trim() || !draft.district) {
+          toast.error("Заполните все обязательные поля");
+          return;
+        }
         const { error: signUpError } = await signUp(draft.email, password, "buyer", draft.name.trim());
-        
         if (signUpError) {
           if (signUpError.message.includes("already registered")) {
             toast.error("Этот email уже зарегистрирован. Войдите в аккаунт.");
           } else {
             toast.error("Ошибка регистрации: " + signUpError.message);
           }
+          setCode(["", "", "", ""]);
           return;
         }
-
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (!newUser) {
-          toast.error("Ошибка получения данных пользователя");
+        // Wait briefly for session to settle
+        let userId: string | undefined;
+        for (let i = 0; i < 10; i++) {
+          const { data: { user: u } } = await supabase.auth.getUser();
+          if (u) { userId = u.id; break; }
+          await new Promise((r) => setTimeout(r, 200));
+        }
+        if (!userId) {
+          toast.error("Не удалось войти после регистрации. Проверьте email и попробуйте снова.");
           return;
         }
-        userId = newUser.id;
+        const ok = await linkPhoneForUser(fullCode);
+        if (!ok) {
+          setCode(["", "", "", ""]);
+          setTimeout(() => codeInputs.current[0]?.focus(), 50);
+          return;
+        }
+        toast.success("Телефон подтверждён");
+        setPhoneStep("verified");
+        // Continue automatically to submit
+        await submitApplication(userId);
       }
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
+  const handleCodeChange = (idx: number, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) {
+      const next = [...code];
+      next[idx] = "";
+      setCode(next);
+      return;
+    }
+    if (digits.length > 1) {
+      const next = ["", "", "", ""];
+      for (let i = 0; i < idx; i++) next[i] = code[i] || "";
+      for (let i = 0; i < digits.length && idx + i < 4; i++) next[idx + i] = digits[i];
+      setCode(next);
+      const lastFilled = Math.min(idx + digits.length - 1, 3);
+      codeInputs.current[lastFilled]?.focus();
+      if (next.every((c) => c.length === 1)) void verifyCode(next.join(""));
+      return;
+    }
+    const digit = digits.slice(-1);
+    const next = [...code];
+    next[idx] = digit;
+    setCode(next);
+    if (digit && idx < 3) codeInputs.current[idx + 1]?.focus();
+    if (next.every((c) => c.length === 1)) void verifyCode(next.join(""));
+  };
+
+  const handleCodeKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !code[idx] && idx > 0) codeInputs.current[idx - 1]?.focus();
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+    if (pasted.length === 0) return;
+    const next = ["", "", "", ""];
+    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
+    setCode(next);
+    if (pasted.length === 4) void verifyCode(pasted);
+    else codeInputs.current[Math.min(pasted.length, 3)]?.focus();
+  };
+
+  const submitApplication = async (userIdParam?: string) => {
+    setIsLoading(true);
+    try {
+      const userId = userIdParam ?? user?.id;
       if (!userId) {
         toast.error("Ошибка авторизации");
         return;
       }
-
       const { data: inserted, error } = await supabase
         .from("seller_applications")
         .insert({
@@ -194,7 +303,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         return;
       }
 
-      // Send email notification to admin (non-blocking)
       if (inserted?.id) {
         supabase.functions.invoke("send-seller-application-notification", {
           body: { application_id: inserted.id },
@@ -202,23 +310,46 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       }
 
       clearDraft(DRAFT_KEY);
-
-      if (!user) {
-        toast.success("Мы отправили письмо на ваш email. Подтвердите email, затем войдите и ваша заявка будет отправлена.");
-      } else {
-        toast.success("Ваши данные получены, ожидайте звонка менеджера");
-      }
+      toast.success("Ваши данные получены, ожидайте звонка менеджера");
       onSuccess?.();
-    } catch (err) {
+    } catch {
       toast.error("Произошла ошибка");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateField = (field: keyof DraftState, value: string) => {
-    setDraft(s => ({ ...s, [field]: value }));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      if (!draft.email.trim()) { toast.error("Введите email"); return; }
+      if (password.length < 6) { toast.error("Пароль должен быть минимум 6 символов"); return; }
+    }
+    if (!draft.name.trim()) { toast.error("Введите имя"); return; }
+    if (!isValidBYPhone(draft.phone)) { toast.error("Введите корректный номер телефона"); return; }
+    if (!draft.district) { toast.error("Выберите район"); return; }
+
+    if (phoneStep !== "verified") {
+      toast.error("Подтвердите номер телефона");
+      return;
+    }
+
+    await submitApplication();
   };
+
+  const updateField = (field: keyof DraftState, value: string) => {
+    setDraft((s) => ({ ...s, [field]: value }));
+  };
+
+  const submitDisabled =
+    isLoading ||
+    isVerifyingCode ||
+    phoneStep !== "verified" ||
+    !draft.name.trim() ||
+    !isValidBYPhone(draft.phone) ||
+    !draft.district ||
+    (!user && (!draft.email.trim() || password.length < 6));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -272,7 +403,98 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           onChange={handlePhoneChange}
           placeholder="+375 (XX) XXX-XX-XX"
           required
+          readOnly={phoneFromProfile}
+          disabled={phoneStep === "code"}
+          className={phoneFromProfile ? "bg-muted" : undefined}
         />
+        {phoneFromProfile && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3 text-green-600" />
+            Используется номер из вашего профиля
+          </p>
+        )}
+        {!phoneFromProfile && phoneStep === "verified" && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3 text-green-600" />
+            Номер подтверждён
+          </p>
+        )}
+        {!phoneFromProfile && phoneStep === "input" && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            disabled={isSendingCode || !isValidBYPhone(draft.phone)}
+            onClick={sendCode}
+          >
+            {isSendingCode ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Отправка...
+              </>
+            ) : (
+              "Получить код"
+            )}
+          </Button>
+        )}
+        {phoneStep === "code" && (
+          <div className="space-y-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setPhoneStep("input");
+                setCode(["", "", "", ""]);
+              }}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+              disabled={isVerifyingCode}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Изменить номер
+            </button>
+            <div className="text-center text-sm text-muted-foreground">
+              Введите код, отправленный на<br />
+              <span className="font-medium text-foreground">{draft.phone}</span>
+            </div>
+            <div className="flex justify-center gap-2" onPaste={handleCodePaste}>
+              {code.map((digit, idx) => (
+                <input
+                  key={idx}
+                  ref={(el) => (codeInputs.current[idx] = el)}
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete={idx === 0 ? "one-time-code" : "off"}
+                  value={digit}
+                  onChange={(e) => handleCodeChange(idx, e.target.value)}
+                  onKeyDown={(e) => handleCodeKeyDown(idx, e)}
+                  disabled={isVerifyingCode}
+                  className="h-14 w-12 rounded-md border border-input bg-background text-center text-2xl font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                />
+              ))}
+            </div>
+            {isVerifyingCode && (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Проверка кода...
+              </div>
+            )}
+            <div className="text-center">
+              {resendCountdown > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Отправить код повторно через {Math.floor(resendCountdown / 60)}:{(resendCountdown % 60).toString().padStart(2, "0")}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={sendCode}
+                  disabled={isSendingCode}
+                  className="text-sm text-primary hover:underline disabled:opacity-50"
+                >
+                  {isSendingCode ? "Отправка..." : "Отправить код повторно"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -313,7 +535,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full" disabled={submitDisabled}>
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
