@@ -144,6 +144,18 @@ export const ProductCard = memo(function ProductCard({
         </div>
         <div className="mt-auto">
           {(() => {
+            if (pickupLabel) {
+              const isUnavailable = pickupLabel === "Нет в наличии";
+              const isFast = pickupLabel === "Сегодня" || pickupLabel === "Завтра";
+              return (
+                <span className={cn(
+                  "block text-[10px] leading-tight",
+                  isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground",
+                )}>
+                  {pickupLabel}
+                </span>
+              );
+            }
             const prep = formatPrepTime(product.prep_time_minutes, (product as any).order_lead_time_hours);
             return (
               <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
