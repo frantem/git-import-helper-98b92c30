@@ -11,6 +11,7 @@ import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@/data/products";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 interface DBProduct {
   id: string;
