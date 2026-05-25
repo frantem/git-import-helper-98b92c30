@@ -16,6 +16,7 @@ import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { cdnImage } from "@/lib/imageCdn";
 import { SEO } from "@/components/SEO";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 export default function Catalog() {
   useScrollRestoration();
