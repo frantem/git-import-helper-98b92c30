@@ -53,7 +53,7 @@ export function usePickupLabels(products: PickupProduct[]): Map<string, string> 
         farmer_ids: farmerIds,
       });
       if (error) throw error;
-      return (data || []) as SellerPickupSettings[];
+      return ((data || []) as unknown) as SellerPickupSettings[];
     },
     enabled: farmerIds.length > 0,
     staleTime: 5 * 60 * 1000,
