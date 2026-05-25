@@ -41,6 +41,7 @@ export default function Favorites() {
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { favoriteIds, toggleFavorite } = useFavorites();
+  const pickupLabels = usePickupLabels(favorites);
 
   useEffect(() => {
     if (user) {
