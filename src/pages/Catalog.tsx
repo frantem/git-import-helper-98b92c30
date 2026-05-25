@@ -40,6 +40,7 @@ export default function Catalog() {
   );
 
   const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
+  const pickupLabels = usePickupLabels(products);
 
   const { filteredProducts, pageTitle, category } = useMemo(() => {
     let filtered = products;
