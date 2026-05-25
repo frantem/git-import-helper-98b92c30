@@ -604,7 +604,7 @@ export default function SellerProducts() {
             <div className="space-y-2">
               <Label>Минимальный срок приёма заказа до выдачи (часов)</Label>
               <p className="text-xs text-muted-foreground">
-                Время которое нужно на приготовление товара до открытия рабочего окна в графике. Только для тех кто работает несколько дней в неделю и готов на эти дни брать заказы.
+                Время, которое нужно на приготовление товара до открытия рабочего окна в графике. Только для тех, кто работает несколько дней в неделю и готов на эти дни брать заказы.
               </p>
               <div className="flex items-center gap-2">
                 <Input type="number" value={productForm.order_lead_time_hours}
