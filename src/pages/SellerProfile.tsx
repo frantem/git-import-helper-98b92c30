@@ -62,6 +62,7 @@ export default function SellerProfile() {
   const { user } = useAuth();
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const pickupLabels = usePickupLabels(products);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
