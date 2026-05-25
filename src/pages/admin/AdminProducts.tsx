@@ -505,7 +505,7 @@ export default function AdminProducts() {
             {/* Prep time */}
             <div className="space-y-2">
               <Label>Время приготовления</Label>
-              <p className="text-xs text-muted-foreground">Оставьте пустым, если товар уже готов</p>
+              <p className="text-xs text-muted-foreground">Оставьте пустым, если товар уже готов. Это время начнёт отсчёт только с момента открытия Вашего графика.</p>
               <div className="flex items-center gap-2">
                 <Input type="number" value={productForm.prep_time_minutes}
                   onChange={(e) => setProductForm({ ...productForm, prep_time_minutes: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
@@ -518,7 +518,7 @@ export default function AdminProducts() {
             <div className="space-y-2">
               <Label>Минимальный срок приёма заказа до выдачи (часов)</Label>
               <p className="text-xs text-muted-foreground">
-                Например, 20 — заказ на среду 17:00 будет приниматься только до понедельника 21:00. Оставьте 0, если нет ограничения.
+                Время которое нужно на приготовление товара до открытия рабочего окна в графике.
               </p>
               <div className="flex items-center gap-2">
                 <Input type="number" value={productForm.order_lead_time_hours}
