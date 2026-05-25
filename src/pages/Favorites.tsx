@@ -24,6 +24,9 @@ interface DBProduct {
   is_new: boolean | null;
   is_featured: boolean | null;
   description: string | null;
+  farmer_id: string;
+  prep_time_minutes: number | null;
+  order_lead_time_hours: number | null;
   category: {
     slug: string;
   } | null;
