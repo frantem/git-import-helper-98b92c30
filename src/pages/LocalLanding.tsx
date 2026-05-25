@@ -36,6 +36,7 @@ export default function LocalLanding() {
     [rawProducts, ratings]
   );
   const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
+  const pickupLabels = usePickupLabels(products);
 
   const category = useMemo(
     () => categories.find((c) => c.slug === slug) || null,
