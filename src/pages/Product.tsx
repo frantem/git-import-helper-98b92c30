@@ -237,6 +237,13 @@ export default function Product() {
     order_lead_time_hours: (dbProduct as any).order_lead_time_hours || 0
   } as any : null;
 
+  const pickupLabelInput = useMemo(
+    () => (product ? [{ id: product.id, farmer_id: product.farmer_id, prep_time_minutes: product.prep_time_minutes, order_lead_time_hours: product.order_lead_time_hours }] : []),
+    [product?.id, product?.farmer_id, product?.prep_time_minutes, product?.order_lead_time_hours]
+  );
+  const pickupLabels = usePickupLabels(pickupLabelInput);
+  const pickupLabel = product ? pickupLabels.get(product.id) : undefined;
+
   // Build all images array for carousel
   const allImages = dbProduct ? [dbProduct.image_url || "/placeholder.svg", ...productImages.map(img => img.image_url)] : [];
   const handleAddReview = async (rating: number, text: string, files: File[]) => {
