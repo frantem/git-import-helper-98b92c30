@@ -1,49 +1,46 @@
-## Диагноз
+## Что меняем
 
-Продукт `e03dac05…` — «Квашеная капуста», `prep_time=0`, `order_lead_time_hours=1`.
-Фермер «не Артём» (`user_id 50a6eb43…`), Вс: **10:00–22:30**.
-Сейчас Вс 19:00. По здравому смыслу: с lead 1ч → самовывоз доступен с 20:00 до 22:30 сегодня.
+На превью карточки товара (`ProductCard`) и в карточке товара (`Product.tsx`) вместо текущей метки времени приготовления (`formatPrepTime` → "В наличии" / "~6ч." / "~1дн.") показываем **ближайшую дату самовывоза**:
+- "Сегодня"
+- "Завтра"
+- "DD.MM" (например "28.05")
+- "Нет в наличии" — если ни в одном из 30 ближайших дней нет доступного слота самовывоза
 
-В `src/lib/pickupUtils.ts` функция `getSellerSlotForDate` (стр. 192–205) делает следующее:
+Без времени (никаких "10:00–17:00").
 
-```ts
-const windowStart = <дата дня> + slot.start;   // = сегодня 10:00
-const diffMinutes = (windowStart - now) / 60000; // = (10:00 − 19:00) = −540
-if (diffMinutes < leadHours * 60) return null;   // −540 < 60 → ОТКЛОНЯЕТ ВЕСЬ ДЕНЬ
-```
+## Как считаем дату
 
-То есть lead-time трактуется как «между **началом окна** и сейчас», а не как «между **сейчас** и моментом выдачи». Для уже открытого окна это всегда даёт отрицательное число и день целиком выкидывается. Поэтому ближайший самовывоз уезжает на завтра (Пн 17:00–22:30).
+Используем уже существующую логику `calculatePickupTime` из `src/lib/pickupUtils.ts` — ту же, что и /checkout при выборе самовывоза. Она учитывает:
+- prep_time_minutes + order_lead_time_hours товара
+- pickup_slots, busy_dates, vacation_dates продавца
+- max_orders_per_day и текущие подтверждённые заказы по продавцу/дате
 
-Та же логика подтягивается во все расчёты доставки/самовывоза, которые используют `getSellerSlotForDate`.
+Из её результата берём только префикс дня (Сегодня/Завтра/DD.MM), отсекая часть со временем. Если `calculatePickupTime` вернул "Нет доступных дат" — показываем "Нет в наличии".
 
-## Решение
+Чтобы не дублировать логику, добавим в `pickupUtils.ts` отдельный экспорт `calculatePickupDateLabel(...)` с теми же входными параметрами, что и `calculatePickupTime`, который возвращает только метку даты ("Сегодня" / "Завтра" / "DD.MM" / "Нет в наличии"). Внутри переиспользует общий поиск ближайшего готового окна.
 
-Lead time — это «минимум сколько времени должно пройти от заказа до выдачи», а не «до начала окна». Правильная логика:
+## Загрузка данных
 
-1. В `getSellerSlotForDate`:
-   - Убрать отклонение окна по `windowStart - now < lead`.
-   - Отклонять окно только если оно уже фактически непригодно: `window.end <= now + lead` (для сегодня) или `window.end <= 0` (для будущих дней — невозможно, оставляем как есть).
-2. В местах расчёта `cookStart` (внутри `findEarliestReady` стр. 261 и `calculatePickupTime` стр. 425) для сегодняшнего дня учитывать lead:
-   ```ts
-   const earliestActionable = nowMinutes + leadMinutes;
-   const cookStart = isToday
-     ? Math.max(earliestActionable, window.start)
-     : window.start;
-   ```
-   Где `leadMinutes = (schedule.orderLeadTimeHours ?? 0) * 60`.
-3. Для `findEarliestReady` ветка «готовка уже завершена» (стр. 291) — аналогично применить `earliestActionable` для `giveOutStart`, иначе lead обойдётся в выдаче на следующий день.
+Сейчас `useProducts` тянет только товары; графики продавцов и счётчики заказов не загружаются. Добавим хук `useSellerPickupData(farmerIds)`:
+1. RPC `get_seller_pickup_settings(farmer_ids)` — pickup_slots / max_orders_per_day / busy_dates / vacation_dates.
+2. RPC `get_orders_count_by_dates(farmer_ids, dates)` — счётчики заказов на ближайшие ~30 дней.
+3. Кеш через React Query, staleTime ~5 минут.
 
-## Ожидаемый результат
+В `Catalog`, `Index` (homepage блоки), `Favorites`, `SellerProfile` и `Product` собираем уникальные `farmer_id` отображаемых товаров и зовём этот хук один раз. Передаём готовые данные в `ProductCard` через новый необязательный проп `pickupLabel?: string` (вычисленный на родителе из `calculatePickupDateLabel`).
 
-Для текущего кейса (Вс 19:00, prep=0, lead=1ч, окно 10:00–22:30):
-- earliestActionable = 19:00 + 1ч = 20:00
-- cookStart = max(20:00, 10:00) = 20:00, prep=0 → ready 20:00
-- Слот выдачи: **Сегодня 20:00–22:30** (с учётом шага 30 мин).
+Если данные ещё грузятся или у продавца нет графика — показываем старую логику (`formatPrepTime`) как fallback, чтобы не было «мигания».
 
-Самовывоз и доставка перестанут необоснованно «прыгать» на завтра у продавцов, чьё окно уже открыто.
+## Файлы
 
-## Затронутые файлы
+Технические детали:
+- `src/lib/pickupUtils.ts` — добавить `calculatePickupDateLabel(...)`, без изменения существующих функций.
+- `src/hooks/useSellerPickupData.ts` — новый хук (RPC + React Query).
+- `src/components/ProductCard.tsx` — новый проп `pickupLabel?: string`; если задан — рендерим его вместо `formatPrepTime`; цвет: "Сегодня"/"Завтра" — зелёный (как сейчас "В наличии"), "DD.MM" — muted, "Нет в наличии" — красный.
+- `src/pages/Catalog.tsx`, `src/pages/Index.tsx`, `src/pages/Favorites.tsx`, `src/pages/SellerProfile.tsx` — собрать farmer_ids, посчитать `pickupLabel` для каждого товара, прокинуть в `ProductCard`.
+- `src/pages/Product.tsx` — то же самое в блоке prep-time на детальной странице.
 
-- `src/lib/pickupUtils.ts` — `getSellerSlotForDate`, `findEarliestReady`, `calculatePickupTime` (и любые сопутствующие места, использующие тот же паттерн `cookStart`/`giveOutStart` — проверю строки 530+ для доставки).
+## Что НЕ трогаем
 
-Никакая UI-логика, БД-схема и edge-функции не меняются.
+- Логику /checkout (она и так корректна).
+- Поля БД, миграции — не нужны, RPC уже есть.
+- Бизнес-логику prep_time / lead_time — только отображение.
