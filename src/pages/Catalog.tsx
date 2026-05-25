@@ -228,7 +228,7 @@ export default function Catalog() {
             {filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} />
+                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} pickupLabel={pickupLabels.get(product.id)} />
                 ))}
               </div>
             ) : (
