@@ -664,6 +664,15 @@ export default function Product() {
           {/* Title - right after image */}
           <h1 className="mt-2 text-xl font-bold text-foreground md:text-2xl">{product.name}</h1>
           {(() => {
+            if (pickupLabel) {
+              const isUnavailable = pickupLabel === "Нет в наличии";
+              const isFast = pickupLabel === "Сегодня" || pickupLabel === "Завтра";
+              return (
+                <p className={cn("mt-1 text-sm", isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground")}>
+                  {isUnavailable ? pickupLabel : `Самовывоз: ${pickupLabel}`}
+                </p>
+              );
+            }
             const totalMin = (product.prep_time_minutes || 0) + ((product as any).order_lead_time_hours || 0) * 60;
             const isInStock = totalMin === 0;
             return (
