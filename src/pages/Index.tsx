@@ -67,6 +67,7 @@ const Index = () => {
   );
 
   const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
+  const pickupLabels = usePickupLabels(products);
 
   const ALL_BLOCK_STEP = 10;
   const [allBlockLimit, setAllBlockLimit] = useState(savedAllBlockLimit);
