@@ -67,6 +67,9 @@ export default function Favorites() {
           is_featured,
           is_active,
           description,
+          farmer_id,
+          prep_time_minutes,
+          order_lead_time_hours,
           category:categories(slug),
           farmer:farmers(name, rating)
         )
