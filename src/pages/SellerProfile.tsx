@@ -361,7 +361,7 @@ export default function SellerProfile() {
           ) : (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} pickupLabel={pickupLabels.get(product.id)} />
               ))}
             </div>
           )}
