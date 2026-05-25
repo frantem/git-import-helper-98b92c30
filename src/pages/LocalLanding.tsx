@@ -10,6 +10,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 import {
   localLandingTitle,
   localLandingDescription,
@@ -35,6 +36,7 @@ export default function LocalLanding() {
     [rawProducts, ratings]
   );
   const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
+  const pickupLabels = usePickupLabels(products);
 
   const category = useMemo(
     () => categories.find((c) => c.slug === slug) || null,
@@ -134,6 +136,7 @@ export default function LocalLanding() {
                   onToggleFavorite={toggleFavorite}
                   hasRequiredFields={productsWithRequiredFields.has(product.id)}
                   isLowestPrice={lowestPriceIds.has(product.id)}
+                  pickupLabel={pickupLabels.get(product.id)}
                 />
               ))}
             </div>

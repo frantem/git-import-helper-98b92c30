@@ -13,6 +13,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { cdnImage } from "@/lib/imageCdn";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 interface Farmer {
   id: string;
@@ -61,6 +62,7 @@ export default function SellerProfile() {
   const { user } = useAuth();
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const pickupLabels = usePickupLabels(products);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
@@ -360,7 +362,7 @@ export default function SellerProfile() {
           ) : (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} pickupLabel={pickupLabels.get(product.id)} />
               ))}
             </div>
           )}

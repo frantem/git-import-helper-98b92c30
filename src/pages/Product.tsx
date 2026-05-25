@@ -25,6 +25,7 @@ import { SEO } from "@/components/SEO";
 import { useSeoTemplates } from "@/hooks/useSeoTemplates";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { formatRelativeTime } from "@/lib/pickupUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 import { MapPin } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -235,6 +236,13 @@ export default function Product() {
     prep_time_minutes: dbProduct.prep_time_minutes,
     order_lead_time_hours: (dbProduct as any).order_lead_time_hours || 0
   } as any : null;
+
+  const pickupLabelInput = useMemo(
+    () => (product ? [{ id: product.id, farmer_id: product.farmer_id, prep_time_minutes: product.prep_time_minutes, order_lead_time_hours: product.order_lead_time_hours }] : []),
+    [product?.id, product?.farmer_id, product?.prep_time_minutes, product?.order_lead_time_hours]
+  );
+  const pickupLabels = usePickupLabels(pickupLabelInput);
+  const pickupLabel = product ? pickupLabels.get(product.id) : undefined;
 
   // Build all images array for carousel
   const allImages = dbProduct ? [dbProduct.image_url || "/placeholder.svg", ...productImages.map(img => img.image_url)] : [];
@@ -656,6 +664,15 @@ export default function Product() {
           {/* Title - right after image */}
           <h1 className="mt-2 text-xl font-bold text-foreground md:text-2xl">{product.name}</h1>
           {(() => {
+            if (pickupLabel) {
+              const isUnavailable = pickupLabel === "Нет в наличии";
+              const isFast = pickupLabel === "Сегодня" || pickupLabel === "Завтра";
+              return (
+                <p className={cn("mt-1 text-sm", isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground")}>
+                  {isUnavailable ? pickupLabel : `Самовывоз: ${pickupLabel}`}
+                </p>
+              );
+            }
             const totalMin = (product.prep_time_minutes || 0) + ((product as any).order_lead_time_hours || 0) * 60;
             const isInStock = totalMin === 0;
             return (

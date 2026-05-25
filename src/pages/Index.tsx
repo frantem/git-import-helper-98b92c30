@@ -19,6 +19,7 @@ import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/SEO";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 let savedAllBlockLimit = 6;
 
@@ -66,6 +67,7 @@ const Index = () => {
   );
 
   const lowestPriceIds = useMemo(() => computeLowestPriceIds(products), [products]);
+  const pickupLabels = usePickupLabels(products);
 
   const ALL_BLOCK_STEP = 10;
   const [allBlockLimit, setAllBlockLimit] = useState(savedAllBlockLimit);
@@ -182,7 +184,7 @@ const Index = () => {
               </div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 {blockProductsList.map((product) => (
-                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} />
+                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} pickupLabel={pickupLabels.get(product.id)} />
                 ))}
               </div>
               {hasMoreInAllBlock && (

@@ -11,6 +11,7 @@ import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@/data/products";
 import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
+import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 interface DBProduct {
   id: string;
@@ -23,6 +24,9 @@ interface DBProduct {
   is_new: boolean | null;
   is_featured: boolean | null;
   description: string | null;
+  farmer_id: string;
+  prep_time_minutes: number | null;
+  order_lead_time_hours: number | null;
   category: {
     slug: string;
   } | null;
@@ -37,6 +41,7 @@ export default function Favorites() {
   const [favorites, setFavorites] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { favoriteIds, toggleFavorite } = useFavorites();
+  const pickupLabels = usePickupLabels(favorites);
 
   useEffect(() => {
     if (user) {
@@ -63,6 +68,9 @@ export default function Favorites() {
           is_featured,
           is_active,
           description,
+          farmer_id,
+          prep_time_minutes,
+          order_lead_time_hours,
           category:categories(slug),
           farmer:farmers(name, rating)
         )
@@ -93,7 +101,10 @@ export default function Favorites() {
             deliveryDays: 2,
             unit: p.unit,
             isNew: p.is_new || false,
-          };
+            farmer_id: p.farmer_id,
+            prep_time_minutes: p.prep_time_minutes || 0,
+            order_lead_time_hours: p.order_lead_time_hours || 0,
+          } as Product;
         });
       
       setFavorites(products);
@@ -147,7 +158,7 @@ export default function Favorites() {
             {(() => {
               const lpIds = computeLowestPriceIds(favorites);
               return favorites.map((product) => (
-                <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} isLowestPrice={lpIds.has(product.id)} />
+                <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} isLowestPrice={lpIds.has(product.id)} pickupLabel={pickupLabels.get(product.id)} />
               ));
             })()}
           </div>

@@ -501,6 +501,42 @@ export function calculatePickupReadyDate(
   );
 }
 
+/**
+ * Краткая метка ближайшей доступной даты самовывоза: "Сегодня" / "Завтра" / "DD.MM".
+ * Учитывает prep + lead + график продавца + max_orders_per_day + busy/vacation.
+ * Возвращает "Нет в наличии" если в горизонте поиска нет ни одного валидного окна.
+ * Возвращает null, если у продавца не настроен график (вызывающий код покажет fallback).
+ */
+export function calculatePickupDateLabel(
+  prepTimeMinutes: number,
+  pickupSlots: PickupSlots | null | undefined,
+  maxOrdersPerDay: number,
+  busyDates: string[] | null | undefined,
+  vacationDates: string[] | null | undefined,
+  orderCounts: OrderCounts,
+  farmerId: string,
+  orderLeadTimeHours?: number,
+): string | null {
+  if (!pickupSlots) return null;
+  const hasActiveDay = Object.values(pickupSlots).some((s) => s.active);
+  if (!hasActiveDay) return null;
+
+  const result = calculatePickupTime(
+    prepTimeMinutes,
+    pickupSlots,
+    maxOrdersPerDay,
+    busyDates,
+    vacationDates,
+    orderCounts,
+    farmerId,
+    orderLeadTimeHours,
+  );
+  if (result.isFallback) return null;
+  if (result.text === "Нет доступных дат") return "Нет в наличии";
+  const space = result.text.indexOf(" ");
+  return space > 0 ? result.text.slice(0, space) : result.text;
+}
+
 // ============================================================================
 // ДОСТАВКА (КУРЬЕР / ПУНКТ ВЫДАЧИ)
 // ============================================================================
