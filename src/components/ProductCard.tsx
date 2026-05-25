@@ -26,6 +26,7 @@ interface ProductCardProps {
   onToggleFavorite?: (productId: string) => void;
   hasRequiredFields?: boolean;
   isLowestPrice?: boolean;
+  pickupLabel?: string;
 }
 
 export const ProductCard = memo(function ProductCard({
@@ -35,6 +36,7 @@ export const ProductCard = memo(function ProductCard({
   onToggleFavorite,
   hasRequiredFields = false,
   isLowestPrice = false,
+  pickupLabel,
 }: ProductCardProps) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
