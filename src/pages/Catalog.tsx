@@ -89,7 +89,7 @@ export default function Catalog() {
         description: seoDesc,
         keywords: category.seo_keywords || undefined,
         jsonLd,
-        canonical: `https://locusfood.by/catalog?category=${category.slug}`,
+        canonical: `https://locusfood.by/vitebsk/${category.slug}`,
       };
     }
     if (discountFilter) {

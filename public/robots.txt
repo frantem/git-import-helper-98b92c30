@@ -1,8 +1,16 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /catalog?category=
+Disallow: /catalog?discount=
+Disallow: /catalog?new=
+Disallow: /catalog?search=
 
 User-agent: Bingbot
 Allow: /
+Disallow: /catalog?category=
+Disallow: /catalog?discount=
+Disallow: /catalog?new=
+Disallow: /catalog?search=
 
 User-agent: Twitterbot
 Allow: /
@@ -16,5 +24,9 @@ Disallow: /admin
 Disallow: /checkout
 Disallow: /auth
 Disallow: /cart
+Disallow: /catalog?category=
+Disallow: /catalog?discount=
+Disallow: /catalog?new=
+Disallow: /catalog?search=
 
 Sitemap: https://locusfood.by/sitemap.xml

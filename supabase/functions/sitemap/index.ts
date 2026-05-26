@@ -70,17 +70,8 @@ Deno.serve(async (req) => {
     <priority>0.9</priority>
   </url>`;
 
-  // Category filter pages
-  for (const c of categories) {
-    if (c.slug === "sets") continue;
-    xml += `
-  <url>
-    <loc>${DOMAIN}/catalog?category=${c.slug}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-  }
+  // Note: /catalog?category=<slug> URLs are intentionally omitted.
+  // They canonicalize to /vitebsk/<slug> landing pages to avoid duplicates.
 
   // Local landing pages — high priority for SEO
   for (const c of categories) {
