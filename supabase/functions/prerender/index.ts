@@ -191,10 +191,9 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     .eq("id", idOrSlug)
     .maybeSingle();
 
-
-
-
-  if (!product || product.is_deleted) return null;
+  // Return null for missing, deleted or inactive products so the handler can
+  // respond with 404 + noindex (prevents stale URLs being indexed by Google).
+  if (!product || product.is_deleted || !product.is_active) return null;
 
   // Farmer
   let sellerName: string | null = null;
@@ -330,7 +329,9 @@ async function catalogMeta(supabase: any, categorySlug?: string | null): Promise
       return {
         title,
         description,
-        canonical: `${DOMAIN}/catalog?category=${cat.slug}`,
+        // Canonical points at the dedicated /vitebsk/<slug> landing page to
+        // consolidate signals and avoid duplicate-content indexing issues.
+        canonical: `${DOMAIN}/vitebsk/${cat.slug}`,
         h1: `${cat.name} в ${CITY_NOM}е`,
         bodyContent: `<p>${escapeHtml(description)}</p>`,
       };
