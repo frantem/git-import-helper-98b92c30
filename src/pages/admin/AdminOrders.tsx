@@ -152,6 +152,7 @@ export default function AdminOrders() {
           quantity,
           unit_price,
           status,
+          confirmed_at,
           variant_label,
           custom_fields,
           farmer_id,
