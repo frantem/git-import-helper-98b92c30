@@ -707,8 +707,23 @@ export default function AdminOrders() {
                                 <div key={item.id} className="border-l-2 border-border pl-2 py-1">
                                   <div className="flex items-center justify-between text-sm gap-2 flex-wrap">
                                     <div className="flex items-center gap-1 min-w-0 flex-1">
-                                      <span className={item.status === "collected" ? "text-success" : "text-muted-foreground"}>
-                                        {item.status === "collected" ? "✓" : "○"}
+                                      <span
+                                        className={
+                                          item.status === "collected"
+                                            ? "text-success"
+                                            : item.confirmed_at
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
+                                        }
+                                        title={
+                                          item.status === "collected"
+                                            ? "Собран"
+                                            : item.confirmed_at
+                                            ? "Подтверждён продавцом"
+                                            : "Не подтверждён"
+                                        }
+                                      >
+                                        {item.status === "collected" ? "✓" : item.confirmed_at ? "●" : "○"}
                                       </span>
                                       <span className="text-foreground truncate">
                                         {item.product?.title}
