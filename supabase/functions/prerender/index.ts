@@ -562,6 +562,9 @@ Deno.serve(async (req) => {
   }
 
   let meta: PageMeta | null = null;
+  // For dynamic routes we must distinguish "entity not found" (return 404 +
+  // noindex so Google deindexes the URL) from "static page" (return home meta).
+  let dynamicRoute = false;
 
   try {
     if (pathname === "/" || pathname === "") {
@@ -569,12 +572,15 @@ Deno.serve(async (req) => {
     } else if (pathname === "/catalog") {
       meta = await catalogMeta(supabase, searchParams.get("category"));
     } else if (pathname.startsWith("/product/")) {
+      dynamicRoute = true;
       const id = pathname.replace("/product/", "").split("/")[0];
       meta = await productMeta(supabase, id);
     } else if (pathname.startsWith("/vitebsk/")) {
+      dynamicRoute = true;
       const slug = pathname.replace("/vitebsk/", "").split("/")[0];
       meta = await localLandingMeta(supabase, slug);
     } else if (pathname.startsWith("/seller/")) {
+      dynamicRoute = true;
       const idOrSlug = pathname.replace("/seller/", "").split("/")[0];
       meta = await sellerMeta(supabase, idOrSlug);
     }
@@ -582,10 +588,35 @@ Deno.serve(async (req) => {
     console.error("prerender error:", err);
   }
 
-  // Fallback to home meta if not matched (e.g. /favorites, /privacy-policy)
+  const assets = await getBundleAssets();
+
+  // Dynamic route with no matching entity → 404 + noindex so Google drops the URL.
+  if (dynamicRoute && !meta) {
+    const notFoundMeta: PageMeta = {
+      title: `Страница не найдена — ${SITE_NAME}`,
+      description: `Запрошенная страница не найдена или была удалена. Перейдите в каталог Locus.`,
+      canonical: `${DOMAIN}${pathname}`,
+      h1: "Страница не найдена",
+      bodyContent: `<p>К сожалению, эта страница больше не существует.</p>`,
+    };
+    const notFoundHtml = renderHtml(notFoundMeta, assets).replace(
+      "</head>",
+      `    <meta name="robots" content="noindex, follow" />\n  </head>`
+    );
+    return new Response(notFoundHtml, {
+      status: 404,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=60, s-maxage=120",
+        "X-Robots-Tag": "noindex, follow",
+      },
+    });
+  }
+
+  // Fallback to home meta for unknown static-ish pages (e.g. /favorites)
   if (!meta) meta = homeMeta();
 
-  const assets = await getBundleAssets();
   const html = renderHtml(meta, assets);
 
   return new Response(html, {
