@@ -31,7 +31,7 @@ interface Profile {
 }
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromCart = searchParams.get("from") === "cart";
@@ -51,6 +51,30 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [removeSellerOpen, setRemoveSellerOpen] = useState(false);
+  const [isRemovingSeller, setIsRemovingSeller] = useState(false);
+
+  const handleRemoveSeller = async () => {
+    if (!user) return;
+    setIsRemovingSeller(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Не удалось получить сессию");
+      setIsRemovingSeller(false);
+      return;
+    }
+    const res = await supabase.functions.invoke("delete-seller-account", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.error || (res.data as { error?: string })?.error) {
+      toast.error("Ошибка при удалении профиля продавца");
+      setIsRemovingSeller(false);
+      return;
+    }
+    toast.success("Профиль продавца удалён");
+    setRemoveSellerOpen(false);
+    window.location.href = "/";
+  };
 
   const handleDeleteAccount = async () => {
     if (!user) return;
