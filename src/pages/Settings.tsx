@@ -417,8 +417,8 @@ export default function Settings() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          </div>
         </div>
+
 
         {role === "seller" && (
           <div className="pt-6 pb-2 text-center">
