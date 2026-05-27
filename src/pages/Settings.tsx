@@ -31,7 +31,7 @@ interface Profile {
 }
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromCart = searchParams.get("from") === "cart";
@@ -51,6 +51,30 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [removeSellerOpen, setRemoveSellerOpen] = useState(false);
+  const [isRemovingSeller, setIsRemovingSeller] = useState(false);
+
+  const handleRemoveSeller = async () => {
+    if (!user) return;
+    setIsRemovingSeller(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      toast.error("Не удалось получить сессию");
+      setIsRemovingSeller(false);
+      return;
+    }
+    const res = await supabase.functions.invoke("delete-seller-account", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.error || (res.data as { error?: string })?.error) {
+      toast.error("Ошибка при удалении профиля продавца");
+      setIsRemovingSeller(false);
+      return;
+    }
+    toast.success("Профиль продавца удалён");
+    setRemoveSellerOpen(false);
+    window.location.href = "/";
+  };
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -394,6 +418,39 @@ export default function Settings() {
             </AlertDialog>
           </div>
         </div>
+
+
+        {role === "seller" && (
+          <div className="pt-6 pb-2 text-center">
+            <button
+              type="button"
+              onClick={() => setRemoveSellerOpen(true)}
+              className="text-[11px] text-muted-foreground/70 underline underline-offset-2 hover:text-muted-foreground"
+            >
+              Перестать быть продавцом
+            </button>
+            <AlertDialog open={removeSellerOpen} onOpenChange={setRemoveSellerOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Перестать быть продавцом?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Будут удалены ваш профиль продавца и все товары. История заказов сохранится. Аккаунт покупателя останется активным. Это действие нельзя отменить.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isRemovingSeller}>Отмена</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleRemoveSeller}
+                    disabled={isRemovingSeller}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isRemovingSeller ? "Удаление..." : "Да, удалить"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </main>
 
       <BottomNavigation />
