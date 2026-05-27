@@ -8,7 +8,7 @@ import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+
 import { useEffect, useMemo, useState } from "react";
 import { useProducts, useProductRatings, transformProduct, Product } from "@/hooks/useProducts";
 import { useBanners } from "@/hooks/useBanners";
@@ -45,7 +45,7 @@ const homepageJsonLd = [
 ];
 
 const Index = () => {
-  useScrollRestoration();
+  
   const { favoriteIds, toggleFavorite } = useFavorites();
   const { data: productsWithRequiredFields = new Set<string>() } = useProductsRequiredFields();
 

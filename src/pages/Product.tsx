@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { OptimizedImage } from "@/components/ui/optimized-image";
@@ -60,7 +60,7 @@ export default function Product() {
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const [selectedCheckboxAddons, setSelectedCheckboxAddons] = useState<Set<string>>(new Set());
   const [selectedRadioAddon, setSelectedRadioAddon] = useState<string | null>(null);
-  useScrollRestoration();
+  
 
   // Show toast if redirected from product card with required fields
   useEffect(() => {
