@@ -9,6 +9,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MetaPageTracker } from "@/components/MetaPageTracker";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { ScrollManager } from "@/components/ScrollManager";
 import { CookieBanner } from "@/components/CookieBanner";
 import Index from "./pages/Index";
 
@@ -55,6 +56,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ScrollManager />
             <MetaPageTracker />
             <ChunkErrorBoundary>
               <Suspense fallback={null}>

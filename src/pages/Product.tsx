@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { OptimizedImage } from "@/components/ui/optimized-image";

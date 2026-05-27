@@ -7,7 +7,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Heart, Tag, Sparkles } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+
 import { useMemo } from "react";
 import { useProducts, useProductRatings, transformProduct } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
@@ -19,7 +19,7 @@ import { computeLowestPriceIds } from "@/lib/lowestPriceUtils";
 import { usePickupLabels } from "@/hooks/usePickupLabels";
 
 export default function Catalog() {
-  useScrollRestoration();
+  
   const [searchParams] = useSearchParams();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const { data: productsWithRequiredFields = new Set<string>() } = useProductsRequiredFields();
