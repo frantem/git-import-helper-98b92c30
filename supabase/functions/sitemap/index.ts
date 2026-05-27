@@ -35,13 +35,14 @@ Deno.serve(async (req) => {
   const [productsRes, farmersRes, categoriesRes] = await Promise.all([
     supabase
       .from("products")
-      .select("id, updated_at, title, image_url")
+      .select("id, updated_at, title, image_url, farmer_id")
       .eq("is_active", true)
       .eq("is_deleted", false)
       .order("updated_at", { ascending: false }),
     supabase
       .from("farmers")
-      .select("id, slug, created_at")
+      .select("id, slug, created_at, is_blocked")
+      .eq("is_blocked", false)
       .order("created_at", { ascending: false }),
     supabase
       .from("categories")
@@ -49,9 +50,35 @@ Deno.serve(async (req) => {
       .order("sort_order"),
   ]);
 
-  const products = productsRes.data || [];
+  const allowedFarmerIds = new Set((farmersRes.data || []).map((f: any) => f.id));
+  const products = (productsRes.data || []).filter(
+    (p: any) => !p.farmer_id || allowedFarmerIds.has(p.farmer_id)
+  );
   const farmers = farmersRes.data || [];
-  const categories = categoriesRes.data || [];
+  // Dedupe categories by slug, skip empty/sets
+  const seenCatSlugs = new Set<string>();
+  const categories = (categoriesRes.data || []).filter((c: any) => {
+    if (!c.slug || c.slug === "sets") return false;
+    const slug = String(c.slug).toLowerCase();
+    if (seenCatSlugs.has(slug)) return false;
+    seenCatSlugs.add(slug);
+    return true;
+  });
+  // Dedupe farmer URL keys (slug || id)
+  const seenFarmerKeys = new Set<string>();
+  const uniqueFarmers = farmers.filter((f: any) => {
+    const key = (f.slug || f.id) as string;
+    if (!key || seenFarmerKeys.has(key)) return false;
+    seenFarmerKeys.add(key);
+    return true;
+  });
+  // Dedupe products by id
+  const seenProductIds = new Set<string>();
+  const uniqueProducts = products.filter((p: any) => {
+    if (!p.id || seenProductIds.has(p.id)) return false;
+    seenProductIds.add(p.id);
+    return true;
+  });
   const now = new Date().toISOString().split("T")[0];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -75,7 +102,6 @@ Deno.serve(async (req) => {
 
   // Local landing pages — high priority for SEO
   for (const c of categories) {
-    if (c.slug === "sets") continue;
     xml += `
   <url>
     <loc>${DOMAIN}/vitebsk/${c.slug}</loc>
@@ -86,7 +112,7 @@ Deno.serve(async (req) => {
   }
 
   // Products with image tags
-  for (const p of products) {
+  for (const p of uniqueProducts) {
     const lastmod = p.updated_at ? p.updated_at.split("T")[0] : now;
     const img = ogImageUrl(p.image_url);
     const escapedImg = (img || "").replace(/&/g, "&amp;");
@@ -109,7 +135,7 @@ Deno.serve(async (req) => {
   }
 
   // Sellers
-  for (const f of farmers) {
+  for (const f of uniqueFarmers) {
     const lastmod = f.created_at ? f.created_at.split("T")[0] : now;
     xml += `
   <url>
@@ -119,6 +145,7 @@ Deno.serve(async (req) => {
     <priority>0.6</priority>
   </url>`;
   }
+
 
   xml += `
 </urlset>`;
