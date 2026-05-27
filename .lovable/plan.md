@@ -1,52 +1,77 @@
-## Диагностика ошибок GSC
+## Проблема
 
-### 1. «Вариант страницы с тегом canonical» (`/product/77fe8d1d…`)
+Текущий `useScrollRestoration` ненадёжен:
 
-Этот товар удалён из БД. Сейчас prerender для удалённого/несуществующего товара возвращает «домашнюю» мету вместо 404 → Google видит дубликат главной с canonical на `/`. Это и есть «альтернативная страница с canonical».
+1. **POP (назад)**: восстанавливает позицию через `setTimeout(100ms)`. Но списки товаров (`Index`, `Catalog`) грузятся асинхронно — на 100мс высота страницы ещё маленькая, браузер обрезает `scrollTo` до доступного максимума → пользователя кидает в начало.
+2. **PUSH (вперёд)**: `window.scrollTo(0, 0)` вызывается в эффекте на маунте. Но `Product`/`Cart` лениво грузятся через `Suspense` + есть нативное `history.scrollRestoration = 'auto'` браузера — браузер сам пытается восстановить старую позицию и побеждает наш `scrollTo`. Поэтому при «Купить сейчас» с середины товара кидает в середину `/cart`.
+3. **Хук per-page**: каждая страница инстанцирует свой хук, `prevPathRef` локален. Между размонтированием Index и маунтом Product есть зазор — сохранение позиции теряется.
+4. **Кнопка «Главная»**: `Link to="/"` на уже открытой `/` не триггерит навигацию, ничего не происходит.
 
-### 2. «Страница с переадресацией» (`http://locusfood.by/`)
+## Решение
 
-Это штатный 301 с HTTP на HTTPS из Nginx. Это не ошибка, а информационное сообщение Google — исправлять не нужно, оставляем как есть.
+Заменить per-page хук на **единый глобальный** компонент `ScrollManager`, смонтированный один раз внутри `BrowserRouter` в `App.tsx`. Полностью убрать вызовы `useScrollRestoration()` со страниц.
 
-### 3. «Обнаружена, не проиндексирована» (147 страниц)
+### Что делает `ScrollManager`
 
-Корень проблемы: страницы `/catalog?category=<slug>` дублируют контент дедицированных лендингов `/vitebsk/<slug>` (тот же набор товаров, похожие meta). Google видит их как «низкокачественные дубликаты» и не индексирует. Плюс часть товаров повторяет контент категорий/похожих карточек.
+1. **Один раз при маунте**: `history.scrollRestoration = 'manual'` — отключает нативное восстановление браузера (главная причина «кидает в середину»).
+2. **Хранит позиции** в `Map<historyKey, number>`, ключ — `location.key` (уникален для каждой записи истории, переживает forward/back).
+3. **Сохранение позиции**:
+   - на каждом `scroll` (throttled через `requestAnimationFrame`) — пишет `window.scrollY` под текущим `location.key`;
+   - дополнительно в cleanup эффекта при смене `location.key` — финальный snapshot.
+4. **При навигации**:
+   - `PUSH` / `REPLACE` → немедленно `window.scrollTo(0, 0)` + повтор в `requestAnimationFrame` (страхует от Suspense-фоллбэка, который меняет высоту);
+   - `POP` → берём сохранённую позицию для нового `location.key`. Если её нет — `scrollTo(0,0)`. Если есть — запускаем **polling-loop** через `requestAnimationFrame`, который ждёт пока `document.documentElement.scrollHeight >= saved + window.innerHeight`, и только тогда скроллит. Максимум ~1500мс ожидания, после чего скроллит «как получится».
 
----
+### Кнопка «Главная» в `BottomNavigation`
 
-## Что меняем
+В элементе пункта `/` добавить `onClick`: если `location.pathname === '/'` — `window.scrollTo({ top: 0, behavior: 'smooth' })` и `preventDefault`. Поведение «Главная при нахождении на главной — скролл наверх» — стандартный паттерн, не сломает остальное.
 
-### A. Prerender: 404 для несуществующих/удалённых товаров
+## Технические детали
 
-Файл: `supabase/functions/prerender/index.ts`
+### Файлы
 
-- В `productMeta()` при `!product || is_deleted || !is_active` возвращать `null` (уже возвращает `null` при удалении, но не при неактивном; нужно добавить).
-- В главном обработчике, если для `/product/:id`, `/seller/:id`, `/vitebsk/:slug` мета вернулась `null` — отвечать `404` с meta `<meta name="robots" content="noindex">` и `X-Robots-Tag: noindex` в заголовках. Сейчас, судя по симптому, отдаётся 200 с домашней метой.
+- **создать** `src/components/ScrollManager.tsx` — описанный выше компонент. Без UI, возвращает `null`.
+- **`src/App.tsx`** — добавить `<ScrollManager />` сразу под `<BrowserRouter>` (рядом с `MetaPageTracker`).
+- **`src/hooks/useScrollRestoration.tsx`** — оставить файл, но превратить функции в no-op (на случай если что-то ещё импортирует), либо удалить вызовы и сам файл.
+- **`src/pages/Index.tsx`** — убрать `useScrollRestoration()` и его импорт.
+- **`src/pages/Catalog.tsx`** — то же.
+- **`src/pages/Product.tsx`** — то же.
+- **`src/components/BottomNavigation.tsx`** — добавить `onClick` на пункт «Главная».
 
-### B. Канонизация `/catalog?category=…` → `/vitebsk/<slug>`
+### Ключевая логика polling-restore (POP)
 
-Цель: убрать дубликаты, склеить сигналы на единственный SEO-лендинг.
+```ts
+function restoreWithRetry(target: number, deadline = performance.now() + 1500) {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  if (maxScroll >= target || performance.now() > deadline) {
+    window.scrollTo(0, Math.min(target, Math.max(0, maxScroll)));
+    return;
+  }
+  // если ещё не доскроллить — пробуем доскроллить до доступного и продолжаем ждать
+  if (window.scrollY !== Math.min(target, maxScroll)) {
+    window.scrollTo(0, Math.min(target, maxScroll));
+  }
+  requestAnimationFrame(() => restoreWithRetry(target, deadline));
+}
+```
 
-- `supabase/functions/prerender/index.ts` → `catalogMeta()`: когда есть `categorySlug`, ставить `canonical: ${DOMAIN}/vitebsk/${cat.slug}` (вместо текущего `?category=…`).
-- `src/pages/Catalog.tsx`: то же самое в SEO компоненте — `canonical: https://locusfood.by/vitebsk/${category.slug}`.
-- `supabase/functions/sitemap/index.ts`: убрать блок генерации `/catalog?category=<slug>` (оставить только `/vitebsk/<slug>` и базовый `/catalog`). 147 «лишних» URL уйдут из сайтмапа.
-- `public/robots.txt`: добавить `Disallow: /catalog?category=` для подстраховки (краулинг существующих внешних ссылок остановится).
+Это устраняет «работает через раз» — независимо от того, сколько грузятся товары, как только высота позволяет — позиция восстановится.
 
-### C. Удалить устаревшие/неактивные товары из сайтмапа
+### Сохранение «всегда наверх» при PUSH
 
-`supabase/functions/sitemap/index.ts` уже фильтрует `is_active=true AND is_deleted=false` — ок. Дополнительно: в prerender для неактивных товаров возвращать 410/noindex (см. пункт A).
+```ts
+window.scrollTo(0, 0);
+requestAnimationFrame(() => window.scrollTo(0, 0));
+```
 
-### D. Нормализация регистра слугов категорий (опционально, требует подтверждения)
+Двойной вызов: первый — мгновенно, второй — после того как React отрисует Suspense-фоллбэк или новый контент, перекрывая любые попытки браузера/контента сместить позицию.
 
-Сейчас slugs смешанные: `Bread`, `Confectioner`, `Fish`, `Pickles` (заглавная) vs `dairy`, `grocery`, `herbs`, `honey` (строчные). После пункта B это уже не критично (страницы редиректятся канонически), но всё равно желательно привести к lowercase для консистентности `/vitebsk/bread`. **Если делаем** — нужна миграция `UPDATE categories SET slug = lower(slug)` + проверка, что нигде нет хардкода slug'ов с заглавной. Подтвердите, делаем ли.
+### Зачем `history.scrollRestoration = 'manual'`
 
----
+Без этого Chrome/Safari при `PUSH`/`POP` пытаются восстановить позицию сами, конкурируя с нашим кодом. Это и есть главная причина пункта 2 («кидает в середину `/cart`»). Установка `manual` — стандартное решение для SPA.
 
-## Какая дополнительная информация нужна от вас
+## Что НЕ меняем
 
-1. **Slugs категорий**: привести `Bread/Confectioner/Fish/Pickles` к нижнему регистру? Это «правильно», но потребует одноразовой миграции и старые внешние ссылки на `/catalog?category=Bread` будут вести на 404 (а после пункта B — на канонический `/vitebsk/bread`, всё ок).
-2. **Параметр** `?ref=…` в реферальных ссылках продавца: оставляем как есть (canonical уже игнорит query).
-3. **Удалённый товар `77fe8d1d…**`: подтвердите что это намеренное удаление (тогда отдаём 410/404).   
-Это намереннное удаление.
-
-После ваших ответов я внесу изменения, передеплою edge-функции `prerender` и `sitemap`, и можно будет в GSC нажать «Проверить исправление».
+- Логику Suspense, lazy-роутинг, скелетоны, данные.
+- Никаких изменений в Edge-функциях, БД, бизнес-логике.
+- Только клиентский скролл-менеджмент + одна `onClick` в нижнем меню.
