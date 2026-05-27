@@ -60,7 +60,7 @@ export default function Product() {
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const [selectedCheckboxAddons, setSelectedCheckboxAddons] = useState<Set<string>>(new Set());
   const [selectedRadioAddon, setSelectedRadioAddon] = useState<string | null>(null);
-  useScrollRestoration();
+  
 
   // Show toast if redirected from product card with required fields
   useEffect(() => {
