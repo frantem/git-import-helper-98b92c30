@@ -417,7 +417,40 @@ export default function Settings() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          </div>
         </div>
+
+        {role === "seller" && (
+          <div className="pt-6 pb-2 text-center">
+            <button
+              type="button"
+              onClick={() => setRemoveSellerOpen(true)}
+              className="text-[11px] text-muted-foreground/70 underline underline-offset-2 hover:text-muted-foreground"
+            >
+              Перестать быть продавцом
+            </button>
+            <AlertDialog open={removeSellerOpen} onOpenChange={setRemoveSellerOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Перестать быть продавцом?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Будут удалены ваш профиль продавца и все товары. История заказов сохранится. Аккаунт покупателя останется активным. Это действие нельзя отменить.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isRemovingSeller}>Отмена</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleRemoveSeller}
+                    disabled={isRemovingSeller}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isRemovingSeller ? "Удаление..." : "Да, удалить"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </main>
 
       <BottomNavigation />
