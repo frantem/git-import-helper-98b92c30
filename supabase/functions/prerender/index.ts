@@ -396,12 +396,16 @@ async function localLandingMeta(supabase: any, slug: string): Promise<PageMeta |
 }
 
 async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
-  const { data: farmer } = await supabase
+  // UUIDs go to id.eq, anything else is treated as a slug. Using .or() with a
+  // non-UUID in id.eq.* makes PostgREST throw and returns null → false 404.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const query = supabase
     .from("farmers")
-    .select("id, name, description, photo_url, slug, city")
-    .or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`)
-    .maybeSingle();
-  if (!farmer) return null;
+    .select("id, name, description, photo_url, slug, city, is_blocked");
+  const { data: farmer } = UUID_RE.test(idOrSlug)
+    ? await query.eq("id", idOrSlug).maybeSingle()
+    : await query.eq("slug", idOrSlug).maybeSingle();
+  if (!farmer || farmer.is_blocked) return null;
 
   const title = `Фермер ${farmer.name} — натуральные продукты в ${CITY} | ${SITE_NAME}`;
   const description = truncateMeta(
