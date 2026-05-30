@@ -3,7 +3,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, Navigate } from "react-router-dom";
-import { LayoutDashboard, MapPin, Users, Loader2, ShoppingBag, Image, Settings, Package } from "lucide-react";
+import { LayoutDashboard, MapPin, Users, Loader2, ShoppingBag, Image, Settings, Package, Wallet } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 
 
@@ -62,6 +62,14 @@ export default function Admin() {
             <div>
               <h3 className="font-bold">Товары</h3>
               <p className="text-sm text-muted-foreground">Все товары на сайте</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/commission" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <Wallet className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Комиссия</h3>
+              <p className="text-sm text-muted-foreground">Выплаты продавцам и долги</p>
             </div>
           </Link>
           

@@ -36,6 +36,7 @@ const AdminPickupPoints = lazy(() => import("./pages/admin/AdminPickupPoints"));
 const AdminBlocks = lazy(() => import("./pages/admin/AdminBlocks"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminCommission = lazy(() => import("./pages/admin/AdminCommission"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Oferta = lazy(() => import("./pages/Oferta"));
@@ -86,6 +87,7 @@ const App = () => (
                   <Route path="/admin/blocks" element={<AdminBlocks />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                   <Route path="/admin/products" element={<AdminProducts />} />
+                  <Route path="/admin/commission" element={<AdminCommission />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/oferta" element={<Oferta />} />
                   <Route path="/seller-terms" element={<SellerTerms />} />
