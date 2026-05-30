@@ -126,8 +126,8 @@ export default function AdminCommission() {
 
   const { byDay, debtByFarmer, totals } = useMemo(() => {
     const list = items ?? [];
-    const pickup = list.filter((i) => i.delivery_type === "pickup");
-    const self = list.filter((i) => i.delivery_type === "self");
+    const pickup = list.filter((i) => i.delivery_type === "courier");
+    const self = list.filter((i) => i.delivery_type === "self" || i.delivery_type === "pickup");
 
     // Группировка моей доставки по дню → продавцу
     const byDayMap = new Map<string, Map<string, CommissionItem[]>>();
