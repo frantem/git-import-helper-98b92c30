@@ -3,7 +3,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, Navigate } from "react-router-dom";
-import { LayoutDashboard, MapPin, Users, Loader2, ShoppingBag, Image, Settings, Package } from "lucide-react";
+import { LayoutDashboard, MapPin, Users, Loader2, ShoppingBag, Image, Settings, Package, Wallet } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 
 
