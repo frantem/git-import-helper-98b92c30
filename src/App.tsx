@@ -36,6 +36,7 @@ const AdminPickupPoints = lazy(() => import("./pages/admin/AdminPickupPoints"));
 const AdminBlocks = lazy(() => import("./pages/admin/AdminBlocks"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminCommission = lazy(() => import("./pages/admin/AdminCommission"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Oferta = lazy(() => import("./pages/Oferta"));
