@@ -78,6 +78,7 @@ export function useCommission() {
             payout: subtotal - commission,
             delivery_type: row.order.delivery_type,
             delivery_date: row.order.delivery_date,
+            estimated_delivery_time: row.order.estimated_delivery_time ?? null,
             order_created_at: row.order.created_at,
             buyer_id: row.order.buyer_id,
             settled_at: row.settled_at,
