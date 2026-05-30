@@ -236,27 +236,58 @@ export default function AdminCommission() {
             ) : byDay.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Нет активных заказов с доставкой</p>
             ) : (
-              byDay.map(({ day, sellers }) => {
-                const dayTotalPayout = sellers.reduce(
-                  (s, sg) => s + sg.items.reduce((a, i) => a + i.payout, 0),
+              byDay.map(({ day, orders }) => {
+                const dayTotalPayout = orders.reduce(
+                  (s, o) =>
+                    s +
+                    o.sellers.reduce(
+                      (ss, sg) => ss + sg.items.reduce((a, i) => a + i.payout, 0),
+                      0,
+                    ),
                   0,
                 );
                 return (
-                  <div key={day} className="mb-5">
+                  <div key={day} className="mb-6">
                     <div className="flex items-center justify-between mb-2 px-1">
                       <h2 className="font-bold text-lg">{dateLabel(day)}</h2>
                       <div className="text-sm text-muted-foreground">
                         итого: <span className="font-bold text-foreground">{fmt(dayTotalPayout)}</span>
                       </div>
                     </div>
-                    {sellers.map((sg) => (
-                      <SellerGroup
-                        key={sg.farmer_id + day}
-                        farmerName={sg.farmer_name}
-                        items={sg.items}
-                        mode="payout"
-                      />
-                    ))}
+                    {orders.map((o) => {
+                      const orderTotal = o.sellers.reduce(
+                        (a, sg) => a + sg.items.reduce((x, i) => x + i.payout, 0),
+                        0,
+                      );
+                      return (
+                        <div key={o.order_id} className="rounded-xl bg-muted/40 p-3 mb-3">
+                          <div className="flex items-center justify-between gap-2 mb-2 px-1">
+                            <div className="min-w-0">
+                              <div className="font-semibold truncate">
+                                Заказ #{o.order_id.slice(0, 8)}
+                              </div>
+                              {o.estimated_delivery_time && (
+                                <div className="text-xs text-muted-foreground">
+                                  {o.estimated_delivery_time}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-[11px] text-muted-foreground">к выплате</div>
+                              <div className="font-bold">{fmt(orderTotal)}</div>
+                            </div>
+                          </div>
+                          {o.sellers.map((sg) => (
+                            <SellerGroup
+                              key={sg.farmer_id + o.order_id}
+                              farmerName={sg.farmer_name}
+                              items={sg.items}
+                              mode="payout"
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })
