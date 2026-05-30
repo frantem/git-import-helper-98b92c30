@@ -87,6 +87,7 @@ const App = () => (
                   <Route path="/admin/blocks" element={<AdminBlocks />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                   <Route path="/admin/products" element={<AdminProducts />} />
+                  <Route path="/admin/commission" element={<AdminCommission />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/oferta" element={<Oferta />} />
                   <Route path="/seller-terms" element={<SellerTerms />} />
