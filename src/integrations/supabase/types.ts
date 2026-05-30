@@ -325,6 +325,8 @@ export type Database = {
           order_id: string
           product_id: string
           quantity: number
+          settled_at: string | null
+          settled_by: string | null
           status: string
           unit_price: number
           variant_label: string | null
@@ -338,6 +340,8 @@ export type Database = {
           order_id: string
           product_id: string
           quantity?: number
+          settled_at?: string | null
+          settled_by?: string | null
           status?: string
           unit_price: number
           variant_label?: string | null
@@ -351,6 +355,8 @@ export type Database = {
           order_id?: string
           product_id?: string
           quantity?: number
+          settled_at?: string | null
+          settled_by?: string | null
           status?: string
           unit_price?: number
           variant_label?: string | null

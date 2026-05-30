@@ -1,106 +1,58 @@
-## Что на самом деле говорит Google Search Console
+# Страница «Комиссия» в админке
 
-Сначала уточню цифры — в отчёте **нет 164 страниц с 404**. Реальная картина из CSV:
+## Логика расчёта
 
+Для каждого `order_item` считается ставка комиссии:
+- `5%` если `orders.referrer_farmer_id = order_items.farmer_id` (заказ пришёл по реф. ссылке этого продавца)
+- `10%` во всех остальных случаях
 
-| Причина                                | Страниц | Серьёзность      |
-| -------------------------------------- | ------- | ---------------- |
-| Обнаружена, не проиндексирована        | **142** | Главная проблема |
-| Просканирована, но не проиндексирована | **16**  | Главная проблема |
-| Вариант страницы с canonical           | 4       | Норма, игнор     |
-| Страница с переадресацией              | 1       | Норма, игнор     |
-| **Не найдено (404)**                   | **1**   | Незначительно    |
+Сумма позиции = `unit_price * quantity`. Комиссия = сумма × ставка.
 
+По типу заказа (`orders.delivery_type`):
+- **`pickup` (моя доставка)** — покупатель платит мне, я должен продавцу `сумма − комиссия`. Это «выплата продавцу».
+- **`self` (самовывоз)** — покупатель платит продавцу, продавец должен мне `комиссия`. Это «долг продавца».
 
-И ещё подсказка из графика: 19 мая число неиндексированных скакнуло с 8 → 155. В этот день в sitemap резко добавилось ~150 URL (товары/категории), и Google решил их **не сканировать**, потому что не увидел смысла.
+## Что добавить в БД
 
-## Главная причина — prerender для ботов отключён
+Новое поле на `order_items`:
+- `settled_at timestamptz null` — отметка «рассчитано».
 
-Я проверил, что отдаёт сайт Googlebot для конкретного товара:
+Опционально (для аудита): `settled_by uuid`, `settled_amount integer` (зафиксированная сумма на момент расчёта в копейках).
 
-```
-curl -A "Googlebot/2.1" https://locusfood.by/product/f1b6e518-...
-→ <title>Locus — Маркетплейс локальных продуктов</title>
-→ <meta name="description" content="Locus — маркетплейс локальных продуктов...">
-→ Размер HTML: 5 КБ (пустой SPA-шаблон)
-```
+RLS: только админ может писать в `settled_at` (политика «Admin can manage order items» уже покрывает).
 
-Это значит: на **всех** 198 URL в sitemap Googlebot видит один и тот же дефолтный `index.html` без названия товара, без описания, без цены, без JSON-LD. Для краулера это выглядит как 200 одинаковых страниц-дублей с пустым контентом — он их обнаруживает, но не индексирует. Именно этим объясняются 142 «обнаружено» и 16 «просканировано, но не проиндексировано».
+## Страница `/admin/commission`
 
-Edge Function `supabase/functions/prerender/index.ts` существует и в `sitemap` работает корректно, но nginx-конструкция, которая должна перенаправлять ботов на неё, в текущем `locusfood-minimal` конфиге **отсутствует** (в project-knowledge явно: «Prerender для ботов требует доработки. Пока отключено»).
+Два таба:
 
-## План действий
+### 1. «К расчёту» — активные заказы по дням доставки
+- Группировка: `orders.delivery_date` → внутри по продавцам.
+- На каждый день видно: список продавцов, по каждому — позиции заказа, сумма к выплате (или долг при самовывозе), итого по дню «мне отдать продавцам» и «забрать у продавцов».
+- На каждой позиции кнопка **«Рассчитано»** → ставит `settled_at = now()`.
+- Свернуть позицию после расчёта; день закрывается, когда все позиции `settled`.
+- Фильтр статусов: исключаем `cancelled`; берём только `pending/confirmed/...` с непустым `delivery_date` и `settled_at IS NULL`.
 
-### 1. Включить prerender для ботов в nginx (главное, делает пользователь на сервере)
+### 2. «Долги продавцов» (самовывоз)
+- Список продавцов с суммой накопленного долга = Σ комиссии по их `order_items` где `delivery_type='self'` и `settled_at IS NULL`.
+- Раскрытие — список заказов, кнопка «Рассчитано» на позиции или «Закрыть все» по продавцу.
 
-Безопасная конструкция через `map` (без `proxy_set_header` внутри `if`, которая ломалась раньше). Добавить в `/etc/nginx/nginx.conf` в блок `http {}`:
+## Где менять код
 
-```nginx
-map $http_user_agent $is_bot {
-    default 0;
-    "~*googlebot|bingbot|yandex|duckduckbot|baiduspider|twitterbot|facebookexternalhit|linkedinbot|telegrambot|slackbot|whatsapp|applebot|petalbot|ahrefsbot|semrushbot" 1;
-}
-```
+- `supabase/migrations/...` — добавить колонки на `order_items`.
+- `src/pages/admin/AdminCommission.tsx` — новая страница, два `Tabs`.
+- `src/App.tsx` — маршрут `/admin/commission`.
+- `src/pages/Admin.tsx` — карточка-ссылка «Комиссия» (иконка `Wallet` из lucide).
+- `src/hooks/useCommission.ts` — выборка `orders + order_items + farmers` с join и расчётом ставки/сумм на клиенте.
+- Денежные значения через `formatPrice` + `<BynSymbol />`, даты в Minsk TZ.
 
-И в `/etc/nginx/sites-available/locusfood-minimal` заменить `location / { try_files ... }` на:
+## Что НЕ делаем (если не подтвердишь)
 
-```nginx
-location / {
-    if ($is_bot = 1) {
-        rewrite ^ /__prerender last;
-    }
-    try_files $uri $uri/ /index.html;
-}
+- Не трогаем существующие страницы `/admin/orders` и `/seller/orders`.
+- Не отправляем уведомления продавцам о расчёте.
+- Не считаем комиссию с доставки (`orders.delivery_cost`) — только с товаров.
+- Историю расчётов отдельным экраном не делаем (settled-позиции просто скрываются; смотреть можно в `/admin/orders`).
 
-location = /__prerender {
-    internal;
-    proxy_pass https://jxklppwhgmndlivvtxdd.supabase.co/functions/v1/prerender$request_uri;
-    proxy_set_header Host jxklppwhgmndlivvtxdd.supabase.co;
-    proxy_set_header Authorization "Bearer sb_publishable_4BsZPljQh_EjEdeWnIDjUA_q1JkMlxP";
-    proxy_set_header X-Original-Host $host;
-    proxy_set_header X-Original-Path $request_uri;
-    proxy_ssl_server_name on;
-    proxy_read_timeout 15s;
-    add_header X-Prerendered "true" always;
-}
-```
+## Открытые вопросы (ответь да/нет, иначе возьму по умолчанию)
 
-Затем `sudo nginx -t && sudo systemctl reload nginx`.
-
-Проверка после включения: `curl -A "Googlebot/2.1" https://locusfood.by/product/<id>` должен вернуть HTML с реальным названием товара в `<title>` и блоком `application/ld+json` с Product schema.
-
-### 2. Доработать prerender Edge Function (это сделаю я в коде)
-
-Я прочитаю текущий `supabase/functions/prerender/index.ts` и проверю, что он:
-
-- читает путь из заголовка `X-Original-Path` (а не из `req.url`, которым он становится `/functions/v1/prerender/...`)
-- корректно обрабатывает `/product/:id`, `/seller/:slug`, `/vitebsk/:slug`, `/catalog`, `/`
-- ставит уникальный `<title>`, `<meta name="description">`, `og:*`, `<link rel="canonical">`, JSON-LD Product/BreadcrumbList на каждый URL
-- отдаёт `200` (а не 404) для активных товаров и `404` только для реально удалённых
-
-Если найду расхождения — поправлю под новую nginx-схему выше.
-
-### 3. Починить 1 настоящий 404
-
-Один URL в отчёте реально отдаёт 404. После включения prerender я смогу попросить GSC прислать его URL через Inspection API, либо вы его пришлёте из раздела «Не найдено (404) → Примеры» в GSC, и я разберусь (вероятно, удалённый товар, который ещё висит в sitemap — допилю фильтр `is_deleted`).
-
-### 4. Что НЕ нужно трогать
-
-- 4 страницы «вариант с canonical» и 1 «с переадресацией» — это нормальное поведение, не ошибка.
-- Sitemap уже корректный (фильтрует заблокированных фермеров и `is_deleted` товары).
-- robots.txt уже правильно закрывает `/catalog?category=` (они canonicalize в `/vitebsk/<slug>`).
-
-### 5. После деплоя
-
-1. Открыть GSC → Inspection → проверить любой `/product/...` URL → «Test live URL» → убедиться, что в Rendered HTML виден настоящий title и JSON-LD.
-2. На странице отчёта «Обнаружена, не проиндексирована» нажать **Validate fix**.
-3. Подождать 1–3 недели — Google заново обойдёт страницы и большая часть из 158 должна перейти в «Проиндексировано».
-
-## Что я делаю прямо сейчас, если вы одобрите план
-
-- Читаю `supabase/functions/prerender/index.ts`, при необходимости правлю под схему `X-Original-Path` + добавляю/проверяю JSON-LD и meta для каждого типа страниц.
-- Если пришлёте URL единственной 404-страницы — починю.  
-  
-я сделал что бы на сервере `curl` показал уникальный заголовок `Камамбер стабилизированный купить в Витебске | Натуральные продукты Locus` — значит, prerender для ботов работает.  
-URL единственной 404-страницы: [https://locusfood.by/seller/kamlux](https://locusfood.by/seller/kamlux)  
-  
+1. Хранить ли зафиксированную сумму расчёта (`settled_amount`)? По умолчанию — **нет**, считаем на лету.
+2. Нужна ли возможность **отменить** «Рассчитано» (снять отметку)? По умолчанию — **да**, кнопка «Отменить расчёт».
