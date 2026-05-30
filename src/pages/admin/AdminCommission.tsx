@@ -129,23 +129,38 @@ export default function AdminCommission() {
     const pickup = list.filter((i) => i.delivery_type === "courier");
     const self = list.filter((i) => i.delivery_type === "self" || i.delivery_type === "pickup");
 
-    // Группировка моей доставки по дню → продавцу
-    const byDayMap = new Map<string, Map<string, CommissionItem[]>>();
+    // Группировка моей доставки: день → заказ → продавец
+    const byDayMap = new Map<
+      string,
+      Map<string, { order_id: string; estimated_delivery_time: string | null; sellers: Map<string, CommissionItem[]> }>
+    >();
     for (const it of pickup) {
       const day = it.delivery_date ?? "";
       if (!byDayMap.has(day)) byDayMap.set(day, new Map());
-      const m = byDayMap.get(day)!;
-      if (!m.has(it.farmer_id)) m.set(it.farmer_id, []);
-      m.get(it.farmer_id)!.push(it);
+      const orders = byDayMap.get(day)!;
+      if (!orders.has(it.order_id)) {
+        orders.set(it.order_id, {
+          order_id: it.order_id,
+          estimated_delivery_time: it.estimated_delivery_time,
+          sellers: new Map(),
+        });
+      }
+      const ord = orders.get(it.order_id)!;
+      if (!ord.sellers.has(it.farmer_id)) ord.sellers.set(it.farmer_id, []);
+      ord.sellers.get(it.farmer_id)!.push(it);
     }
     const byDay = Array.from(byDayMap.entries())
       .sort((a, b) => (a[0] || "9999").localeCompare(b[0] || "9999"))
-      .map(([day, sellers]) => ({
+      .map(([day, orders]) => ({
         day,
-        sellers: Array.from(sellers.entries()).map(([fid, items]) => ({
-          farmer_id: fid,
-          farmer_name: items[0].farmer_name,
-          items,
+        orders: Array.from(orders.values()).map((o) => ({
+          order_id: o.order_id,
+          estimated_delivery_time: o.estimated_delivery_time,
+          sellers: Array.from(o.sellers.entries()).map(([fid, items]) => ({
+            farmer_id: fid,
+            farmer_name: items[0].farmer_name,
+            items,
+          })),
         })),
       }));
 
