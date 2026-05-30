@@ -530,6 +530,9 @@ export default function AdminOrders() {
                       <span className="text-sm text-muted-foreground">
                         {formatDate(order.created_at)}
                       </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Заказ #{order.id.slice(0, 8)}
+                      </p>
                       <p className="text-lg font-bold text-foreground">
                         {price.formatted}<BynSymbol />
                       </p>
