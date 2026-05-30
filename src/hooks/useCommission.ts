@@ -16,6 +16,7 @@ export type CommissionItem = {
   payout: number;            // subtotal - commission (что должен мне продавец отдать/я ему — зависит от delivery_type)
   delivery_type: "pickup" | "self" | string;
   delivery_date: string | null;
+  estimated_delivery_time: string | null;
   order_created_at: string;
   buyer_id: string;
   settled_at: string | null;
@@ -43,6 +44,7 @@ export function useCommission() {
             id,
             delivery_type,
             delivery_date,
+            estimated_delivery_time,
             referrer_farmer_id,
             buyer_id,
             status,
@@ -76,6 +78,7 @@ export function useCommission() {
             payout: subtotal - commission,
             delivery_type: row.order.delivery_type,
             delivery_date: row.order.delivery_date,
+            estimated_delivery_time: row.order.estimated_delivery_time ?? null,
             order_created_at: row.order.created_at,
             buyer_id: row.order.buyer_id,
             settled_at: row.settled_at,

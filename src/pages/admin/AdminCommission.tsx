@@ -129,23 +129,38 @@ export default function AdminCommission() {
     const pickup = list.filter((i) => i.delivery_type === "courier");
     const self = list.filter((i) => i.delivery_type === "self" || i.delivery_type === "pickup");
 
-    // Группировка моей доставки по дню → продавцу
-    const byDayMap = new Map<string, Map<string, CommissionItem[]>>();
+    // Группировка моей доставки: день → заказ → продавец
+    const byDayMap = new Map<
+      string,
+      Map<string, { order_id: string; estimated_delivery_time: string | null; sellers: Map<string, CommissionItem[]> }>
+    >();
     for (const it of pickup) {
       const day = it.delivery_date ?? "";
       if (!byDayMap.has(day)) byDayMap.set(day, new Map());
-      const m = byDayMap.get(day)!;
-      if (!m.has(it.farmer_id)) m.set(it.farmer_id, []);
-      m.get(it.farmer_id)!.push(it);
+      const orders = byDayMap.get(day)!;
+      if (!orders.has(it.order_id)) {
+        orders.set(it.order_id, {
+          order_id: it.order_id,
+          estimated_delivery_time: it.estimated_delivery_time,
+          sellers: new Map(),
+        });
+      }
+      const ord = orders.get(it.order_id)!;
+      if (!ord.sellers.has(it.farmer_id)) ord.sellers.set(it.farmer_id, []);
+      ord.sellers.get(it.farmer_id)!.push(it);
     }
     const byDay = Array.from(byDayMap.entries())
       .sort((a, b) => (a[0] || "9999").localeCompare(b[0] || "9999"))
-      .map(([day, sellers]) => ({
+      .map(([day, orders]) => ({
         day,
-        sellers: Array.from(sellers.entries()).map(([fid, items]) => ({
-          farmer_id: fid,
-          farmer_name: items[0].farmer_name,
-          items,
+        orders: Array.from(orders.values()).map((o) => ({
+          order_id: o.order_id,
+          estimated_delivery_time: o.estimated_delivery_time,
+          sellers: Array.from(o.sellers.entries()).map(([fid, items]) => ({
+            farmer_id: fid,
+            farmer_name: items[0].farmer_name,
+            items,
+          })),
         })),
       }));
 
@@ -221,27 +236,58 @@ export default function AdminCommission() {
             ) : byDay.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Нет активных заказов с доставкой</p>
             ) : (
-              byDay.map(({ day, sellers }) => {
-                const dayTotalPayout = sellers.reduce(
-                  (s, sg) => s + sg.items.reduce((a, i) => a + i.payout, 0),
+              byDay.map(({ day, orders }) => {
+                const dayTotalPayout = orders.reduce(
+                  (s, o) =>
+                    s +
+                    o.sellers.reduce(
+                      (ss, sg) => ss + sg.items.reduce((a, i) => a + i.payout, 0),
+                      0,
+                    ),
                   0,
                 );
                 return (
-                  <div key={day} className="mb-5">
+                  <div key={day} className="mb-6">
                     <div className="flex items-center justify-between mb-2 px-1">
                       <h2 className="font-bold text-lg">{dateLabel(day)}</h2>
                       <div className="text-sm text-muted-foreground">
                         итого: <span className="font-bold text-foreground">{fmt(dayTotalPayout)}</span>
                       </div>
                     </div>
-                    {sellers.map((sg) => (
-                      <SellerGroup
-                        key={sg.farmer_id + day}
-                        farmerName={sg.farmer_name}
-                        items={sg.items}
-                        mode="payout"
-                      />
-                    ))}
+                    {orders.map((o) => {
+                      const orderTotal = o.sellers.reduce(
+                        (a, sg) => a + sg.items.reduce((x, i) => x + i.payout, 0),
+                        0,
+                      );
+                      return (
+                        <div key={o.order_id} className="rounded-xl bg-muted/40 p-3 mb-3">
+                          <div className="flex items-center justify-between gap-2 mb-2 px-1">
+                            <div className="min-w-0">
+                              <div className="font-semibold truncate">
+                                Заказ #{o.order_id.slice(0, 8)}
+                              </div>
+                              {o.estimated_delivery_time && (
+                                <div className="text-xs text-muted-foreground">
+                                  {o.estimated_delivery_time}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-[11px] text-muted-foreground">к выплате</div>
+                              <div className="font-bold">{fmt(orderTotal)}</div>
+                            </div>
+                          </div>
+                          {o.sellers.map((sg) => (
+                            <SellerGroup
+                              key={sg.farmer_id + o.order_id}
+                              farmerName={sg.farmer_name}
+                              items={sg.items}
+                              mode="payout"
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })
