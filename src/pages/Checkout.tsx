@@ -390,6 +390,21 @@ export default function Checkout() {
     }
     setIsLoading(true);
     try {
+      // Normalize "Сегодня"/"Завтра" prefix to a concrete DD.MM date (Minsk time)
+      // so that admin/commission/seller pages always show an exact date.
+      const normalizeDeliveryText = (text: string): string => {
+        const now = getMinskTime();
+        const fmt = (d: Date) =>
+          `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (text.startsWith("Сегодня")) return text.replace(/^Сегодня/, fmt(now));
+        if (text.startsWith("Завтра")) {
+          const t = new Date(now);
+          t.setDate(t.getDate() + 1);
+          return text.replace(/^Завтра/, fmt(t));
+        }
+        return text;
+      };
+
       // Build estimated_delivery_time string
       let estimatedDeliveryTime: string | null = null;
       let sellerTimesMap: Record<string, string> = {};
@@ -398,10 +413,10 @@ export default function Checkout() {
           const dateStr = format(selectedDate, "d MMMM", { locale: ru });
           estimatedDeliveryTime = `${dateStr} ${selectedTime}`;
         } else {
-          estimatedDeliveryTime = fastDeliveryResult.text;
+          estimatedDeliveryTime = normalizeDeliveryText(fastDeliveryResult.text);
         }
       } else if (deliveryType === "pickup") {
-        estimatedDeliveryTime = fastDeliveryResult.text;
+        estimatedDeliveryTime = normalizeDeliveryText(fastDeliveryResult.text);
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
         const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
@@ -429,8 +444,9 @@ export default function Checkout() {
               fid,
               maxLead
             );
-            sellerTimesMap[fid] = result.text;
-            timeTexts.push(result.text);
+            const normalized = normalizeDeliveryText(result.text);
+            sellerTimesMap[fid] = normalized;
+            timeTexts.push(normalized);
           }
         }
         // Store combined text for order-level display
