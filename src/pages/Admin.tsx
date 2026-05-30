@@ -64,6 +64,14 @@ export default function Admin() {
               <p className="text-sm text-muted-foreground">Все товары на сайте</p>
             </div>
           </Link>
+
+          <Link to="/admin/commission" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <Wallet className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Комиссия</h3>
+              <p className="text-sm text-muted-foreground">Выплаты продавцам и долги</p>
+            </div>
+          </Link>
           
           <Link to="/admin/banners" className="flex items-center gap-4 rounded-xl bg-card p-6">
             <Image className="h-8 w-8 text-primary" />
