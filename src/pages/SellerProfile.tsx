@@ -128,6 +128,7 @@ export default function SellerProfile() {
       images: imagesMap.get(r.id) || [],
       productTitle: productTitleMap.get(r.product_id) || "Товар",
       productId: r.product_id,
+      productSlug: productSlugMap.get(r.product_id) || null,
     }));
 
     setSellerReviews(mapped);
