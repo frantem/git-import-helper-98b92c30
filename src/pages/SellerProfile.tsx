@@ -408,7 +408,7 @@ export default function SellerProfile() {
                   </div>
 
                   <Link
-                    to={`/product/${review.productId}`}
+                    to={`/product/${review.productSlug || review.productId}`}
                     className="text-xs text-primary hover:underline mb-1 inline-block"
                   >
                     {review.productTitle}
