@@ -59,18 +59,26 @@ export function useProduct(idOrSlug: string | undefined) {
     queryFn: async () => {
       if (!idOrSlug) return null;
 
-      // Products are looked up by UUID only — the products table has no slug column.
-      const { data: product, error: productError } = await supabase
+      // Lookup by UUID or slug. UUID-shaped string goes to id.eq; otherwise treat as slug.
+      // If lookup by slug returns nothing, fall back to id.eq for safety.
+      const isUuid = UUID_RE.test(idOrSlug);
+      const baseSelect = `*, farmers(id, name, district, village, photo_url, city, street), categories(name, emoji)`;
+      let { data: product, error: productError } = await supabase
         .from("products")
-        .select(`
-          *,
-          farmers(id, name, district, village, photo_url, city, street),
-          categories(name, emoji)
-        `)
-        .eq("id", idOrSlug)
+        .select(baseSelect)
+        .eq(isUuid ? "id" : "slug", idOrSlug)
         .maybeSingle();
 
       if (productError) throw productError;
+      if (!product && !isUuid) {
+        // Slug not found — try by id just in case (shouldn't happen, but safe)
+        const fallback = await supabase
+          .from("products")
+          .select(baseSelect)
+          .eq("id", idOrSlug)
+          .maybeSingle();
+        product = fallback.data;
+      }
       if (!product) return null;
 
       const productId = product.id;
