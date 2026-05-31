@@ -152,6 +152,7 @@ export function transformProduct(
   
   return {
     id: p.id,
+    slug: p.slug,
     name: p.title,
     price: p.price,
     oldPrice: p.old_price || undefined,
