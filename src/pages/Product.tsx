@@ -583,7 +583,7 @@ export default function Product() {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Главная", item: "https://locusfood.by" },
       { "@type": "ListItem", position: 2, name: "Каталог", item: "https://locusfood.by/catalog" },
-      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${product.id}` },
+      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${product.slug || product.id}` },
     ],
   } : undefined;
 
