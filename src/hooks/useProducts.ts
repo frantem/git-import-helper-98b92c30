@@ -27,6 +27,7 @@ interface DBProduct {
 
 export interface Product {
   id: string;
+  slug?: string | null;
   name: string;
   price: number;
   oldPrice?: number;
