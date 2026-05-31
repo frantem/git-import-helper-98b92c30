@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface DBProduct {
   id: string;
+  slug: string | null;
   title: string;
   price: number;
   old_price: number | null;
@@ -25,6 +26,8 @@ interface DBProduct {
   farmers?: { id: string; name: string; district: string; village: string | null; photo_url: string | null; city: string | null; street: string | null };
   categories?: { name: string; emoji: string | null };
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface ProductImage {
   id: string;
