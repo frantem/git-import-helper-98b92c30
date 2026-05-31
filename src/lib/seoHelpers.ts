@@ -12,6 +12,7 @@ export const SITE_NAME = "Locus";
 
 export interface ProductSeoInput {
   id: string;
+  slug?: string | null;
   name: string;
   description?: string | null;
   price: number; // in copecks (integer) OR rubles — caller decides; we just format
