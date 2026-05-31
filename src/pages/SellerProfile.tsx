@@ -55,6 +55,7 @@ interface SellerReview {
   images?: string[];
   productTitle: string;
   productId: string;
+  productSlug: string | null;
 }
 
 export default function SellerProfile() {
