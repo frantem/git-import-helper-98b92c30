@@ -80,7 +80,7 @@ export default function Catalog() {
         itemListElement: filteredProducts.slice(0, 30).map((p, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          url: `https://locusfood.by/product/${p.id}`,
+          url: `https://locusfood.by/product/${p.slug || p.id}`,
           name: p.name,
         })),
       };
