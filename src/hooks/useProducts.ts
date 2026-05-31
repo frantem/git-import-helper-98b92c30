@@ -8,6 +8,7 @@ interface DBProductCategory {
 
 interface DBProduct {
   id: string;
+  slug: string | null;
   title: string;
   price: number;
   old_price: number | null;
