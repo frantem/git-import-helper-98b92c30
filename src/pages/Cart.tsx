@@ -156,7 +156,7 @@ export default function Cart() {
                   />
                   
                   <Link
-                    to={`/product/${item.product.id}`}
+                    to={`/product/${item.product.slug || item.product.id}`}
                     className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl"
                   >
                     <img
@@ -169,7 +169,7 @@ export default function Cart() {
                   <div className="flex flex-1 flex-col">
                     <div className="flex items-start justify-between">
                       <Link
-                        to={`/product/${item.product.id}`}
+                        to={`/product/${item.product.slug || item.product.id}`}
                         className="line-clamp-2 text-sm font-medium text-foreground hover:text-primary"
                       >
                         {item.product.name}

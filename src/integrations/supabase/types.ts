@@ -771,6 +771,7 @@ export type Database = {
           price: number
           protein: number | null
           shelf_life: string | null
+          slug: string | null
           stock: number
           title: string
           unit: string
@@ -797,6 +798,7 @@ export type Database = {
           price?: number
           protein?: number | null
           shelf_life?: string | null
+          slug?: string | null
           stock?: number
           title: string
           unit?: string
@@ -823,6 +825,7 @@ export type Database = {
           price?: number
           protein?: number | null
           shelf_life?: string | null
+          slug?: string | null
           stock?: number
           title?: string
           unit?: string
@@ -1073,6 +1076,11 @@ export type Database = {
         Args: { _farmer_id: string; _order_id: string }
         Returns: number
       }
+      ensure_unique_product_slug: {
+        Args: { _base: string; _self_id: string }
+        Returns: string
+      }
+      generate_product_slug: { Args: { _title: string }; Returns: string }
       get_buyer_profiles_for_seller: {
         Args: { _buyer_ids: string[] }
         Returns: {

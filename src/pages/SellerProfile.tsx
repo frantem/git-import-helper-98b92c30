@@ -55,6 +55,7 @@ interface SellerReview {
   images?: string[];
   productTitle: string;
   productId: string;
+  productSlug: string | null;
 }
 
 export default function SellerProfile() {
@@ -75,7 +76,7 @@ export default function SellerProfile() {
     // Get ALL products for this farmer (including deleted ones)
     const { data: allProducts } = await supabase
       .from("products")
-      .select("id, title")
+      .select("id, title, slug")
       .eq("farmer_id", farmerId);
 
     if (!allProducts?.length) {
@@ -86,6 +87,7 @@ export default function SellerProfile() {
 
     const productIds = allProducts.map(p => p.id);
     const productTitleMap = new Map(allProducts.map(p => [p.id, p.title]));
+    const productSlugMap = new Map(allProducts.map(p => [p.id, (p as any).slug as string | null]));
 
     const { data: reviewsData } = await supabase
       .from("reviews")
@@ -126,6 +128,7 @@ export default function SellerProfile() {
       images: imagesMap.get(r.id) || [],
       productTitle: productTitleMap.get(r.product_id) || "Товар",
       productId: r.product_id,
+      productSlug: productSlugMap.get(r.product_id) || null,
     }));
 
     setSellerReviews(mapped);
@@ -405,7 +408,7 @@ export default function SellerProfile() {
                   </div>
 
                   <Link
-                    to={`/product/${review.productId}`}
+                    to={`/product/${review.productSlug || review.productId}`}
                     className="text-xs text-primary hover:underline mb-1 inline-block"
                   >
                     {review.productTitle}

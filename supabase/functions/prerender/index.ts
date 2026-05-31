@@ -184,12 +184,15 @@ function homeMeta(): PageMeta {
 }
 
 async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
-  // products table is identified by UUID only — no slug column exists.
-  const { data: product } = await supabase
+  // Accept either UUID or slug. UUID-shaped → lookup by id; otherwise by slug.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_RE.test(idOrSlug);
+  const baseQuery = supabase
     .from("products")
-    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id")
-    .eq("id", idOrSlug)
-    .maybeSingle();
+    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id");
+  const { data: product } = isUuid
+    ? await baseQuery.eq("id", idOrSlug).maybeSingle()
+    : await baseQuery.eq("slug", idOrSlug).maybeSingle();
 
   // Return null for missing, deleted or inactive products so the handler can
   // respond with 404 + noindex (prevents stale URLs being indexed by Google).
@@ -237,10 +240,10 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
       "@type": "Brand",
       name: sellerName || SITE_NAME,
     },
-    url: `${DOMAIN}/product/${product.id}`,
+    url: `${DOMAIN}/product/${product.slug || product.id}`,
     offers: {
       "@type": "Offer",
-      url: `${DOMAIN}/product/${product.id}`,
+      url: `${DOMAIN}/product/${product.slug || product.id}`,
       priceCurrency: "BYN",
       price: (product.price / 100).toFixed(2),
       availability: product.is_active
@@ -293,7 +296,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Главная", item: DOMAIN },
       { "@type": "ListItem", position: 2, name: "Каталог", item: `${DOMAIN}/catalog` },
-      { "@type": "ListItem", position: 3, name: product.title, item: `${DOMAIN}/product/${product.id}` },
+      { "@type": "ListItem", position: 3, name: product.title, item: `${DOMAIN}/product/${product.slug || product.id}` },
     ],
   };
 
@@ -306,7 +309,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.id}`,
+    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,

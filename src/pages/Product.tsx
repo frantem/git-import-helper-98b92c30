@@ -215,6 +215,7 @@ export default function Product() {
   // Build unified product object from database
   const product = dbProduct ? {
     id: dbProduct.id,
+    slug: (dbProduct as any).slug as string | null,
     name: dbProduct.title,
     price: dbProduct.price,
     oldPrice: dbProduct.old_price,
@@ -236,6 +237,13 @@ export default function Product() {
     prep_time_minutes: dbProduct.prep_time_minutes,
     order_lead_time_hours: (dbProduct as any).order_lead_time_hours || 0
   } as any : null;
+
+  // If user arrived via UUID but the product has a slug, replace URL with slug version (SEO).
+  useEffect(() => {
+    if (product?.slug && id && isUUID && id !== product.slug) {
+      navigate(`/product/${product.slug}`, { replace: true });
+    }
+  }, [product?.slug, id, isUUID, navigate]);
 
   const pickupLabelInput = useMemo(
     () => (product ? [{ id: product.id, farmer_id: product.farmer_id, prep_time_minutes: product.prep_time_minutes, order_lead_time_hours: product.order_lead_time_hours }] : []),
@@ -518,7 +526,7 @@ export default function Product() {
       price: (displayPrice / 100).toFixed(2),
       priceCurrency: "BYN",
       availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: `https://locusfood.by/product/${product.id}`,
+      url: `https://locusfood.by/product/${product.slug || product.id}`,
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       shippingDetails: {
         "@type": "OfferShippingDetails",
@@ -575,7 +583,7 @@ export default function Product() {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Главная", item: "https://locusfood.by" },
       { "@type": "ListItem", position: 2, name: "Каталог", item: "https://locusfood.by/catalog" },
-      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${product.id}` },
+      { "@type": "ListItem", position: 3, name: product.name, item: `https://locusfood.by/product/${product.slug || product.id}` },
     ],
   } : undefined;
 
@@ -596,7 +604,7 @@ export default function Product() {
         description={productSeoDescription}
         image={product?.image}
         ogType="product"
-        canonical={product ? `https://locusfood.by/product/${product.id}` : undefined}
+        canonical={product ? `https://locusfood.by/product/${product.slug || product.id}` : undefined}
         jsonLd={allJsonLd as unknown as Record<string, unknown> | Record<string, unknown>[]}
       />
       <Header />

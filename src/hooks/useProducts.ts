@@ -8,6 +8,7 @@ interface DBProductCategory {
 
 interface DBProduct {
   id: string;
+  slug: string | null;
   title: string;
   price: number;
   old_price: number | null;
@@ -26,6 +27,7 @@ interface DBProduct {
 
 export interface Product {
   id: string;
+  slug?: string | null;
   name: string;
   price: number;
   oldPrice?: number;
@@ -60,6 +62,7 @@ export function useProducts() {
         .from("products")
         .select(`
           id,
+          slug,
           title,
           price,
           old_price,
@@ -149,6 +152,7 @@ export function transformProduct(
   
   return {
     id: p.id,
+    slug: p.slug,
     name: p.title,
     price: p.price,
     oldPrice: p.old_price || undefined,
