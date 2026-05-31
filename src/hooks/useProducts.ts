@@ -62,6 +62,7 @@ export function useProducts() {
         .from("products")
         .select(`
           id,
+          slug,
           title,
           price,
           old_price,
