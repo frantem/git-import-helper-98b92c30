@@ -215,6 +215,7 @@ export default function Product() {
   // Build unified product object from database
   const product = dbProduct ? {
     id: dbProduct.id,
+    slug: (dbProduct as any).slug as string | null,
     name: dbProduct.title,
     price: dbProduct.price,
     oldPrice: dbProduct.old_price,
@@ -236,6 +237,13 @@ export default function Product() {
     prep_time_minutes: dbProduct.prep_time_minutes,
     order_lead_time_hours: (dbProduct as any).order_lead_time_hours || 0
   } as any : null;
+
+  // If user arrived via UUID but the product has a slug, replace URL with slug version (SEO).
+  useEffect(() => {
+    if (product?.slug && id && isUUID && id !== product.slug) {
+      navigate(`/product/${product.slug}`, { replace: true });
+    }
+  }, [product?.slug, id, isUUID, navigate]);
 
   const pickupLabelInput = useMemo(
     () => (product ? [{ id: product.id, farmer_id: product.farmer_id, prep_time_minutes: product.prep_time_minutes, order_lead_time_hours: product.order_lead_time_hours }] : []),
