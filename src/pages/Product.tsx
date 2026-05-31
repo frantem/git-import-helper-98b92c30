@@ -526,7 +526,7 @@ export default function Product() {
       price: (displayPrice / 100).toFixed(2),
       priceCurrency: "BYN",
       availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: `https://locusfood.by/product/${product.id}`,
+      url: `https://locusfood.by/product/${product.slug || product.id}`,
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       shippingDetails: {
         "@type": "OfferShippingDetails",
