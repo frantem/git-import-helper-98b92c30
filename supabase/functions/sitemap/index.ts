@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   const [productsRes, farmersRes, categoriesRes] = await Promise.all([
     supabase
       .from("products")
-      .select("id, updated_at, title, image_url, farmer_id")
+      .select("id, slug, updated_at, title, image_url, farmer_id")
       .eq("is_active", true)
       .eq("is_deleted", false)
       .order("updated_at", { ascending: false }),
