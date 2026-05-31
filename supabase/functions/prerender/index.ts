@@ -184,12 +184,15 @@ function homeMeta(): PageMeta {
 }
 
 async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | null> {
-  // products table is identified by UUID only — no slug column exists.
-  const { data: product } = await supabase
+  // Accept either UUID or slug. UUID-shaped → lookup by id; otherwise by slug.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_RE.test(idOrSlug);
+  const baseQuery = supabase
     .from("products")
-    .select("id, title, description, price, unit, image_url, is_active, is_deleted, farmer_id")
-    .eq("id", idOrSlug)
-    .maybeSingle();
+    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id");
+  const { data: product } = isUuid
+    ? await baseQuery.eq("id", idOrSlug).maybeSingle()
+    : await baseQuery.eq("slug", idOrSlug).maybeSingle();
 
   // Return null for missing, deleted or inactive products so the handler can
   // respond with 404 + noindex (prevents stale URLs being indexed by Google).
