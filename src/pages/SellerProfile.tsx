@@ -76,7 +76,7 @@ export default function SellerProfile() {
     // Get ALL products for this farmer (including deleted ones)
     const { data: allProducts } = await supabase
       .from("products")
-      .select("id, title")
+      .select("id, title, slug")
       .eq("farmer_id", farmerId);
 
     if (!allProducts?.length) {
@@ -87,6 +87,7 @@ export default function SellerProfile() {
 
     const productIds = allProducts.map(p => p.id);
     const productTitleMap = new Map(allProducts.map(p => [p.id, p.title]));
+    const productSlugMap = new Map(allProducts.map(p => [p.id, (p as any).slug as string | null]));
 
     const { data: reviewsData } = await supabase
       .from("reviews")
