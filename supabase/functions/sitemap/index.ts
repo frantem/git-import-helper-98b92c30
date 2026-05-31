@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       .replace(/>/g, "&gt;");
     xml += `
   <url>
-    <loc>${DOMAIN}/product/${p.id}</loc>
+    <loc>${DOMAIN}/product/${p.slug || p.id}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>${img ? `
