@@ -296,7 +296,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Главная", item: DOMAIN },
       { "@type": "ListItem", position: 2, name: "Каталог", item: `${DOMAIN}/catalog` },
-      { "@type": "ListItem", position: 3, name: product.title, item: `${DOMAIN}/product/${product.id}` },
+      { "@type": "ListItem", position: 3, name: product.title, item: `${DOMAIN}/product/${product.slug || product.id}` },
     ],
   };
 
