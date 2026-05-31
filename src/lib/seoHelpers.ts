@@ -137,10 +137,10 @@ export function productJsonLd(p: ProductSeoInput) {
     sku: p.id,
     mpn: p.id,
     brand: { "@type": "Brand", name: p.sellerName || SITE_NAME },
-    url: `${DOMAIN}/product/${p.id}`,
+    url: `${DOMAIN}/product/${p.slug || p.id}`,
     offers: {
       "@type": "Offer",
-      url: `${DOMAIN}/product/${p.id}`,
+      url: `${DOMAIN}/product/${p.slug || p.id}`,
       priceCurrency: "BYN",
       price: (p.price / 100).toFixed(2),
       availability: p.inStock !== false
