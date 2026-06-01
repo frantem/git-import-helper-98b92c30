@@ -106,3 +106,22 @@ export function useSettleItem() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["commission"] }),
   });
 }
+
+export function useSettleItems() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ itemIds }: { itemIds: string[] }) => {
+      if (itemIds.length === 0) return;
+      const { data: auth } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("order_items")
+        .update({
+          settled_at: new Date().toISOString(),
+          settled_by: auth.user?.id ?? null,
+        })
+        .in("id", itemIds);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["commission"] }),
+  });
+}
