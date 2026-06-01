@@ -57,23 +57,25 @@ function ItemRow({ item, mode }: { item: CommissionItem; mode: "payout" | "debt"
       </div>
       <div className="text-right shrink-0">
         <div className="font-bold text-sm whitespace-nowrap">{fmt(value)}</div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 mt-1 text-xs"
-          disabled={settle.isPending}
-          onClick={() =>
-            settle.mutate(
-              { itemId: item.item_id, settled: true },
-              {
-                onSuccess: () => toast({ title: "Отмечено как рассчитано" }),
-                onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
-              }
-            )
-          }
-        >
-          Рассчитано
-        </Button>
+        {mode === "debt" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 mt-1 text-xs"
+            disabled={settle.isPending}
+            onClick={() =>
+              settle.mutate(
+                { itemId: item.item_id, settled: true },
+                {
+                  onSuccess: () => toast({ title: "Отмечено как рассчитано" }),
+                  onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+                }
+              )
+            }
+          >
+            Рассчитано
+          </Button>
+        )}
       </div>
     </div>
   );
