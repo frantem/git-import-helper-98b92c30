@@ -91,6 +91,7 @@ function SellerGroup({
   mode: "payout" | "debt";
 }) {
   const [open, setOpen] = useState(true);
+  const settleAll = useSettleItems();
   const total = items.reduce((s, i) => s + (mode === "payout" ? i.payout : i.commission), 0);
   return (
     <div className="rounded-xl bg-card p-3 mb-2">
@@ -116,6 +117,29 @@ function SellerGroup({
           {items.map((it) => (
             <ItemRow key={it.item_id} item={it} mode={mode} />
           ))}
+          {mode === "payout" && (
+            <div className="flex justify-end pt-2 mt-2 border-t">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={settleAll.isPending}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  settleAll.mutate(
+                    { itemIds: items.map((i) => i.item_id) },
+                    {
+                      onSuccess: () =>
+                        toast({ title: `Рассчитано с ${farmerName}`, description: `Позиций: ${items.length}` }),
+                      onError: (e: any) =>
+                        toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+                    }
+                  );
+                }}
+              >
+                Рассчитано со всеми позициями
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
