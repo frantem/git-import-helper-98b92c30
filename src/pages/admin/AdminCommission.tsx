@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCommission, useSettleItem, type CommissionItem } from "@/hooks/useCommission";
+import { useCommission, useSettleItem, useSettleItems, type CommissionItem } from "@/hooks/useCommission";
 import { formatPriceString } from "@/lib/priceUtils";
 import { Loader2, ChevronDown, ChevronRight, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
