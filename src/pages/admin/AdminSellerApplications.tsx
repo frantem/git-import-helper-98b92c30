@@ -13,7 +13,7 @@ interface SellerApplication {
   user_id: string;
   name: string;
   phone: string;
-  district: string;
+  district: string | null;
   village: string | null;
   description: string | null;
   status: string;
@@ -213,10 +213,12 @@ export default function AdminSellerApplications() {
                         {app.phone}
                       </a>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{app.district}{app.village ? `, ${app.village}` : ""}</span>
-                    </div>
+                    {(app.district || app.village) && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{[app.district, app.village].filter(Boolean).join(", ")}</span>
+                      </div>
+                    )}
                     {app.description && (
                       <div className="flex items-start gap-2 text-muted-foreground">
                         <FileText className="h-4 w-4 mt-0.5" />
@@ -271,7 +273,7 @@ export default function AdminSellerApplications() {
                   <div>
                     <h3 className="font-medium text-foreground">{app.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {app.district} • {new Date(app.created_at).toLocaleDateString("ru-RU")}
+                      {app.district ? `${app.district} • ` : ""}{new Date(app.created_at).toLocaleDateString("ru-RU")}
                     </p>
                   </div>
                   {getStatusBadge(app.status)}

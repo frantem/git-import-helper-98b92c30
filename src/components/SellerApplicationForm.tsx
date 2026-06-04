@@ -5,36 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { formatBYPhone, isValidBYPhone } from "@/lib/phone";
-
-const DISTRICTS = [
-  "Витебский район",
-  "Бешенковичский район",
-  "Браславский район",
-  "Верхнедвинский район",
-  "Глубокский район",
-  "Городокский район",
-  "Докшицкий район",
-  "Дубровенский район",
-  "Лепельский район",
-  "Лиозненский район",
-  "Миорский район",
-  "Оршанский район",
-  "Полоцкий район",
-  "Поставский район",
-  "Россонский район",
-  "Сенненский район",
-  "Толочинский район",
-  "Ушачский район",
-  "Чашникский район",
-  "Шарковщинский район",
-  "Шумилинский район",
-];
 
 interface SellerApplicationFormProps {
   onSuccess?: () => void;
@@ -45,13 +20,33 @@ const DRAFT_KEY = "seller-application-draft";
 interface DraftState {
   name: string;
   phone: string;
-  district: string;
-  village: string;
   description: string;
   email: string;
 }
 
 type PhoneStep = "input" | "code" | "verified";
+
+// Extract human-readable error text from a supabase.functions.invoke error
+async function extractFnError(error: unknown, data: unknown, fallback: string): Promise<string> {
+  const fromData = (data as { error?: string } | null)?.error;
+  if (fromData) return fromData;
+  const ctx = (error as { context?: Response } | null)?.context;
+  if (ctx && typeof ctx.json === "function") {
+    try {
+      const body = await ctx.clone().json();
+      if (body?.error) return String(body.error);
+    } catch {
+      try {
+        const txt = await ctx.clone().text();
+        if (txt) return txt;
+      } catch {
+        // ignore
+      }
+    }
+  }
+  const msg = (error as { message?: string } | null)?.message;
+  return msg || fallback;
+}
 
 export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps) {
   const { user, signUp } = useAuth();
@@ -60,8 +55,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const [draft, setDraft] = useState<DraftState>({
     name: "",
     phone: "+375",
-    district: "",
-    village: "",
     description: "",
     email: "",
   });
@@ -134,10 +127,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         body: { phone: draft.phone },
       });
       if (error) {
-        const msg = (data as { error?: string } | null)?.error
-          || (error as { message?: string }).message
-          || "Не удалось отправить код";
-        toast.error(msg);
+        toast.error(await extractFnError(error, data, "Не удалось отправить код"));
         return;
       }
       const respData = data as { success?: boolean; retry_after?: number; error?: string };
@@ -162,10 +152,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       body: { phone: draft.phone, code: fullCode },
     });
     if (error) {
-      const msg = (data as { error?: string } | null)?.error
-        || (error as { message?: string }).message
-        || "Не удалось привязать телефон";
-      toast.error(msg);
+      toast.error(await extractFnError(error, data, "Не удалось привязать телефон"));
       return false;
     }
     const respData = data as { success?: boolean; error?: string };
@@ -180,7 +167,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     setIsVerifyingCode(true);
     try {
       if (user) {
-        // Logged-in: just bind phone to current account
         const ok = await linkPhoneForUser(fullCode);
         if (!ok) {
           setCode(["", "", "", ""]);
@@ -190,8 +176,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         toast.success("Телефон подтверждён");
         setPhoneStep("verified");
       } else {
-        // Guest: sign up first, then link, then submit
-        if (!draft.email.trim() || password.length < 6 || !draft.name.trim() || !draft.district) {
+        if (!draft.email.trim() || password.length < 6 || !draft.name.trim()) {
           toast.error("Заполните все обязательные поля");
           return;
         }
@@ -205,7 +190,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           setCode(["", "", "", ""]);
           return;
         }
-        // Wait briefly for session to settle
         let userId: string | undefined;
         for (let i = 0; i < 10; i++) {
           const { data: { user: u } } = await supabase.auth.getUser();
@@ -224,7 +208,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         }
         toast.success("Телефон подтверждён");
         setPhoneStep("verified");
-        // Continue automatically to submit
         await submitApplication(userId);
       }
     } finally {
@@ -287,8 +270,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           user_id: userId,
           name: draft.name.trim(),
           phone: draft.phone,
-          district: draft.district,
-          village: draft.village.trim() || null,
+          district: null,
+          village: null,
           description: draft.description.trim() || null,
         })
         .select("id")
@@ -328,7 +311,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
     if (!draft.name.trim()) { toast.error("Введите имя"); return; }
     if (!isValidBYPhone(draft.phone)) { toast.error("Введите корректный номер телефона"); return; }
-    if (!draft.district) { toast.error("Выберите район"); return; }
 
     if (phoneStep !== "verified") {
       toast.error("Подтвердите номер телефона");
@@ -348,7 +330,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     phoneStep !== "verified" ||
     !draft.name.trim() ||
     !isValidBYPhone(draft.phone) ||
-    !draft.district ||
     (!user && (!draft.email.trim() || password.length < 6));
 
   return (
@@ -495,33 +476,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
             </div>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="district">Район *</Label>
-        <Select value={draft.district} onValueChange={(v) => updateField("district", v)} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите район" />
-          </SelectTrigger>
-          <SelectContent>
-            {DISTRICTS.map((d) => (
-              <SelectItem key={d} value={d}>
-                {d}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="village">Населенный пункт</Label>
-        <Input
-          id="village"
-          type="text"
-          value={draft.village}
-          onChange={(e) => updateField("village", e.target.value)}
-          placeholder="Название населённого пункта"
-        />
       </div>
 
       <div className="space-y-2">
