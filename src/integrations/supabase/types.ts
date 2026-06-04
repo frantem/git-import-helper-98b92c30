@@ -169,7 +169,7 @@ export type Database = {
           city: string | null
           created_at: string
           description: string | null
-          district: string
+          district: string | null
           id: string
           is_blocked: boolean | null
           name: string
@@ -185,7 +185,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           description?: string | null
-          district?: string
+          district?: string | null
           id?: string
           is_blocked?: boolean | null
           name: string
@@ -201,7 +201,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           description?: string | null
-          district?: string
+          district?: string | null
           id?: string
           is_blocked?: boolean | null
           name?: string
@@ -977,7 +977,7 @@ export type Database = {
           admin_comment: string | null
           created_at: string
           description: string | null
-          district: string
+          district: string | null
           id: string
           name: string
           phone: string
@@ -990,7 +990,7 @@ export type Database = {
           admin_comment?: string | null
           created_at?: string
           description?: string | null
-          district: string
+          district?: string | null
           id?: string
           name: string
           phone: string
@@ -1003,7 +1003,7 @@ export type Database = {
           admin_comment?: string | null
           created_at?: string
           description?: string | null
-          district?: string
+          district?: string | null
           id?: string
           name?: string
           phone?: string
