@@ -13,7 +13,7 @@ interface SellerApplication {
   user_id: string;
   name: string;
   phone: string;
-  district: string;
+  district: string | null;
   village: string | null;
   description: string | null;
   status: string;
