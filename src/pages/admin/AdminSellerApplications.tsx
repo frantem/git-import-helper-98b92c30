@@ -273,7 +273,7 @@ export default function AdminSellerApplications() {
                   <div>
                     <h3 className="font-medium text-foreground">{app.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {app.district} • {new Date(app.created_at).toLocaleDateString("ru-RU")}
+                      {app.district ? `${app.district} • ` : ""}{new Date(app.created_at).toLocaleDateString("ru-RU")}
                     </p>
                   </div>
                   {getStatusBadge(app.status)}
