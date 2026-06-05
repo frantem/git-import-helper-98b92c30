@@ -518,7 +518,113 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         </>
       )}
 
+      {user && (
+        <div className="space-y-2">
+          <Label htmlFor="real-email">Email *</Label>
+          {emailFromAuth || emailStep === "verified" ? (
+            <>
+              <Input
+                id="real-email"
+                type="email"
+                value={verifiedEmail || ""}
+                readOnly
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                {emailFromAuth ? "Используется Email из вашего аккаунта" : "Email подтверждён"}
+              </p>
+            </>
+          ) : emailStep === "input" ? (
+            <>
+              <Input
+                id="real-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="email@example.com"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Укажите ваш реальный Email — на него мы отправим код подтверждения, и он будет привязан к вашему аккаунту.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={isSendingEmailCode || !newEmail.trim()}
+                onClick={sendEmailCode}
+              >
+                {isSendingEmailCode ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Отправка...
+                  </>
+                ) : (
+                  "Получить код"
+                )}
+              </Button>
+            </>
+          ) : (
+            <div className="space-y-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setEmailStep("input"); setEmailCode(["","","","","",""]); }}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+                disabled={isVerifyingEmailCode}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Изменить Email
+              </button>
+              <div className="text-center text-sm text-muted-foreground">
+                Введите 6-значный код, отправленный на<br />
+                <span className="font-medium text-foreground">{newEmail}</span>
+              </div>
+              <div className="flex justify-center gap-2" onPaste={handleEmailCodePaste}>
+                {emailCode.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => (emailCodeInputs.current[idx] = el)}
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete={idx === 0 ? "one-time-code" : "off"}
+                    value={digit}
+                    onChange={(e) => handleEmailCodeChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleEmailCodeKeyDown(idx, e)}
+                    disabled={isVerifyingEmailCode}
+                    className="h-12 w-10 rounded-md border border-input bg-background text-center text-xl font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                  />
+                ))}
+              </div>
+              {isVerifyingEmailCode && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Проверка кода...
+                </div>
+              )}
+              <div className="text-center">
+                {emailResendCountdown > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Отправить код повторно через {Math.floor(emailResendCountdown / 60)}:{(emailResendCountdown % 60).toString().padStart(2, "0")}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={sendEmailCode}
+                    disabled={isSendingEmailCode}
+                    className="text-sm text-primary hover:underline disabled:opacity-50"
+                  >
+                    {isSendingEmailCode ? "Отправка..." : "Отправить код повторно"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
+
         <Label htmlFor="name">Имя / Название хозяйства *</Label>
         <Input
           id="name"
