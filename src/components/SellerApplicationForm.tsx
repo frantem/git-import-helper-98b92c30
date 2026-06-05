@@ -25,6 +25,10 @@ interface DraftState {
 }
 
 type PhoneStep = "input" | "code" | "verified";
+type EmailStep = "input" | "code" | "verified";
+const PLACEHOLDER_EMAIL_DOMAIN = "@phone.locusfood.by";
+const isPlaceholderEmail = (e?: string | null) =>
+  !e || e.toLowerCase().endsWith(PLACEHOLDER_EMAIL_DOMAIN);
 
 // Extract human-readable error text from a supabase.functions.invoke error
 async function extractFnError(error: unknown, data: unknown, fallback: string): Promise<string> {
@@ -70,6 +74,48 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const codeInputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Email verification state (for logged-in users with placeholder @phone.locusfood.by email)
+  const [emailStep, setEmailStep] = useState<EmailStep>("verified");
+  const [emailFromAuth, setEmailFromAuth] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+  const [emailCode, setEmailCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const [isSendingEmailCode, setIsSendingEmailCode] = useState(false);
+  const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
+  const [emailResendCountdown, setEmailResendCountdown] = useState(0);
+  const emailCodeInputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      setEmailFromAuth(false);
+      setEmailStep("verified"); // guest branch handles its own email field
+      setVerifiedEmail(null);
+      return;
+    }
+    const email = user.email || "";
+    if (!isPlaceholderEmail(email)) {
+      setEmailFromAuth(true);
+      setEmailStep("verified");
+      setVerifiedEmail(email);
+    } else {
+      setEmailFromAuth(false);
+      setEmailStep("input");
+      setVerifiedEmail(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (emailResendCountdown <= 0) return;
+    const t = setTimeout(() => setEmailResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [emailResendCountdown]);
+
+  useEffect(() => {
+    if (emailStep === "code") {
+      setTimeout(() => emailCodeInputs.current[0]?.focus(), 100);
+    }
+  }, [emailStep]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -215,6 +261,108 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
   };
 
+  const sendEmailCode = async () => {
+    const e = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+      toast.error("Введите корректный Email");
+      return;
+    }
+    if (e.endsWith(PLACEHOLDER_EMAIL_DOMAIN)) {
+      toast.error("Введите ваш реальный Email");
+      return;
+    }
+    setIsSendingEmailCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-change-code", {
+        body: { new_email: e },
+      });
+      if (error) {
+        toast.error(await extractFnError(error, data, "Не удалось отправить код"));
+        return;
+      }
+      const r = data as { success?: boolean; error?: string };
+      if (!r?.success) {
+        toast.error(r?.error || "Не удалось отправить код");
+        return;
+      }
+      toast.success("Код отправлен на " + e);
+      setEmailCode(["", "", "", "", "", ""]);
+      setEmailStep("code");
+      setEmailResendCountdown(60);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Ошибка сети: " + msg);
+    } finally {
+      setIsSendingEmailCode(false);
+    }
+  };
+
+  const verifyEmailCode = async (full: string) => {
+    setIsVerifyingEmailCode(true);
+    try {
+      const e = newEmail.trim().toLowerCase();
+      const { data, error } = await supabase.functions.invoke("verify-email-change-code", {
+        body: { new_email: e, code: full },
+      });
+      if (error) {
+        toast.error(await extractFnError(error, data, "Неверный код"));
+        setEmailCode(["", "", "", "", "", ""]);
+        setTimeout(() => emailCodeInputs.current[0]?.focus(), 50);
+        return;
+      }
+      const r = data as { success?: boolean; error?: string };
+      if (!r?.success) {
+        toast.error(r?.error || "Неверный код");
+        setEmailCode(["", "", "", "", "", ""]);
+        setTimeout(() => emailCodeInputs.current[0]?.focus(), 50);
+        return;
+      }
+      toast.success("Email подтверждён");
+      setVerifiedEmail(e);
+      setEmailStep("verified");
+      // Refresh local session so user.email reflects the new email
+      try { await supabase.auth.refreshSession(); } catch { /* non-fatal */ }
+    } finally {
+      setIsVerifyingEmailCode(false);
+    }
+  };
+
+  const handleEmailCodeChange = (idx: number, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) {
+      const n = [...emailCode]; n[idx] = ""; setEmailCode(n); return;
+    }
+    if (digits.length > 1) {
+      const n = ["", "", "", "", "", ""];
+      for (let i = 0; i < idx; i++) n[i] = emailCode[i] || "";
+      for (let i = 0; i < digits.length && idx + i < 6; i++) n[idx + i] = digits[i];
+      setEmailCode(n);
+      const last = Math.min(idx + digits.length - 1, 5);
+      emailCodeInputs.current[last]?.focus();
+      if (n.every((c) => c.length === 1)) void verifyEmailCode(n.join(""));
+      return;
+    }
+    const d = digits.slice(-1);
+    const n = [...emailCode]; n[idx] = d; setEmailCode(n);
+    if (d && idx < 5) emailCodeInputs.current[idx + 1]?.focus();
+    if (n.every((c) => c.length === 1)) void verifyEmailCode(n.join(""));
+  };
+
+  const handleEmailCodeKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !emailCode[idx] && idx > 0) emailCodeInputs.current[idx - 1]?.focus();
+  };
+
+  const handleEmailCodePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 0) return;
+    const n = ["", "", "", "", "", ""];
+    for (let i = 0; i < pasted.length; i++) n[i] = pasted[i];
+    setEmailCode(n);
+    if (pasted.length === 6) void verifyEmailCode(pasted);
+    else emailCodeInputs.current[Math.min(pasted.length, 5)]?.focus();
+  };
+
   const handleCodeChange = (idx: number, value: string) => {
     const digits = value.replace(/\D/g, "");
     if (digits.length === 0) {
@@ -317,6 +465,11 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       return;
     }
 
+    if (user && emailStep !== "verified") {
+      toast.error("Подтвердите Email");
+      return;
+    }
+
     await submitApplication();
   };
 
@@ -327,7 +480,9 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const submitDisabled =
     isLoading ||
     isVerifyingCode ||
+    isVerifyingEmailCode ||
     phoneStep !== "verified" ||
+    (!!user && emailStep !== "verified") ||
     !draft.name.trim() ||
     !isValidBYPhone(draft.phone) ||
     (!user && (!draft.email.trim() || password.length < 6));
@@ -363,7 +518,113 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         </>
       )}
 
+      {user && (
+        <div className="space-y-2">
+          <Label htmlFor="real-email">Email *</Label>
+          {emailFromAuth || emailStep === "verified" ? (
+            <>
+              <Input
+                id="real-email"
+                type="email"
+                value={verifiedEmail || ""}
+                readOnly
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                {emailFromAuth ? "Используется Email из вашего аккаунта" : "Email подтверждён"}
+              </p>
+            </>
+          ) : emailStep === "input" ? (
+            <>
+              <Input
+                id="real-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="email@example.com"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Укажите ваш реальный Email — на него мы отправим код подтверждения, и он будет привязан к вашему аккаунту.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={isSendingEmailCode || !newEmail.trim()}
+                onClick={sendEmailCode}
+              >
+                {isSendingEmailCode ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Отправка...
+                  </>
+                ) : (
+                  "Получить код"
+                )}
+              </Button>
+            </>
+          ) : (
+            <div className="space-y-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setEmailStep("input"); setEmailCode(["","","","","",""]); }}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
+                disabled={isVerifyingEmailCode}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Изменить Email
+              </button>
+              <div className="text-center text-sm text-muted-foreground">
+                Введите 6-значный код, отправленный на<br />
+                <span className="font-medium text-foreground">{newEmail}</span>
+              </div>
+              <div className="flex justify-center gap-2" onPaste={handleEmailCodePaste}>
+                {emailCode.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => (emailCodeInputs.current[idx] = el)}
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete={idx === 0 ? "one-time-code" : "off"}
+                    value={digit}
+                    onChange={(e) => handleEmailCodeChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleEmailCodeKeyDown(idx, e)}
+                    disabled={isVerifyingEmailCode}
+                    className="h-12 w-10 rounded-md border border-input bg-background text-center text-xl font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                  />
+                ))}
+              </div>
+              {isVerifyingEmailCode && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Проверка кода...
+                </div>
+              )}
+              <div className="text-center">
+                {emailResendCountdown > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Отправить код повторно через {Math.floor(emailResendCountdown / 60)}:{(emailResendCountdown % 60).toString().padStart(2, "0")}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={sendEmailCode}
+                    disabled={isSendingEmailCode}
+                    className="text-sm text-primary hover:underline disabled:opacity-50"
+                  >
+                    {isSendingEmailCode ? "Отправка..." : "Отправить код повторно"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
+
         <Label htmlFor="name">Имя / Название хозяйства *</Label>
         <Input
           id="name"
