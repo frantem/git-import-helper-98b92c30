@@ -75,6 +75,48 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const [resendCountdown, setResendCountdown] = useState(0);
   const codeInputs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Email verification state (for logged-in users with placeholder @phone.locusfood.by email)
+  const [emailStep, setEmailStep] = useState<EmailStep>("verified");
+  const [emailFromAuth, setEmailFromAuth] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+  const [emailCode, setEmailCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const [isSendingEmailCode, setIsSendingEmailCode] = useState(false);
+  const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
+  const [emailResendCountdown, setEmailResendCountdown] = useState(0);
+  const emailCodeInputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      setEmailFromAuth(false);
+      setEmailStep("verified"); // guest branch handles its own email field
+      setVerifiedEmail(null);
+      return;
+    }
+    const email = user.email || "";
+    if (!isPlaceholderEmail(email)) {
+      setEmailFromAuth(true);
+      setEmailStep("verified");
+      setVerifiedEmail(email);
+    } else {
+      setEmailFromAuth(false);
+      setEmailStep("input");
+      setVerifiedEmail(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (emailResendCountdown <= 0) return;
+    const t = setTimeout(() => setEmailResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [emailResendCountdown]);
+
+  useEffect(() => {
+    if (emailStep === "code") {
+      setTimeout(() => emailCodeInputs.current[0]?.focus(), 100);
+    }
+  }, [emailStep]);
+
   // Countdown timer for resend
   useEffect(() => {
     if (resendCountdown <= 0) return;
