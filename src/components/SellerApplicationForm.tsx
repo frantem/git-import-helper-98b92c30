@@ -261,6 +261,108 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
   };
 
+  const sendEmailCode = async () => {
+    const e = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+      toast.error("Введите корректный Email");
+      return;
+    }
+    if (e.endsWith(PLACEHOLDER_EMAIL_DOMAIN)) {
+      toast.error("Введите ваш реальный Email");
+      return;
+    }
+    setIsSendingEmailCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-change-code", {
+        body: { new_email: e },
+      });
+      if (error) {
+        toast.error(await extractFnError(error, data, "Не удалось отправить код"));
+        return;
+      }
+      const r = data as { success?: boolean; error?: string };
+      if (!r?.success) {
+        toast.error(r?.error || "Не удалось отправить код");
+        return;
+      }
+      toast.success("Код отправлен на " + e);
+      setEmailCode(["", "", "", "", "", ""]);
+      setEmailStep("code");
+      setEmailResendCountdown(60);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Ошибка сети: " + msg);
+    } finally {
+      setIsSendingEmailCode(false);
+    }
+  };
+
+  const verifyEmailCode = async (full: string) => {
+    setIsVerifyingEmailCode(true);
+    try {
+      const e = newEmail.trim().toLowerCase();
+      const { data, error } = await supabase.functions.invoke("verify-email-change-code", {
+        body: { new_email: e, code: full },
+      });
+      if (error) {
+        toast.error(await extractFnError(error, data, "Неверный код"));
+        setEmailCode(["", "", "", "", "", ""]);
+        setTimeout(() => emailCodeInputs.current[0]?.focus(), 50);
+        return;
+      }
+      const r = data as { success?: boolean; error?: string };
+      if (!r?.success) {
+        toast.error(r?.error || "Неверный код");
+        setEmailCode(["", "", "", "", "", ""]);
+        setTimeout(() => emailCodeInputs.current[0]?.focus(), 50);
+        return;
+      }
+      toast.success("Email подтверждён");
+      setVerifiedEmail(e);
+      setEmailStep("verified");
+      // Refresh local session so user.email reflects the new email
+      try { await supabase.auth.refreshSession(); } catch { /* non-fatal */ }
+    } finally {
+      setIsVerifyingEmailCode(false);
+    }
+  };
+
+  const handleEmailCodeChange = (idx: number, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) {
+      const n = [...emailCode]; n[idx] = ""; setEmailCode(n); return;
+    }
+    if (digits.length > 1) {
+      const n = ["", "", "", "", "", ""];
+      for (let i = 0; i < idx; i++) n[i] = emailCode[i] || "";
+      for (let i = 0; i < digits.length && idx + i < 6; i++) n[idx + i] = digits[i];
+      setEmailCode(n);
+      const last = Math.min(idx + digits.length - 1, 5);
+      emailCodeInputs.current[last]?.focus();
+      if (n.every((c) => c.length === 1)) void verifyEmailCode(n.join(""));
+      return;
+    }
+    const d = digits.slice(-1);
+    const n = [...emailCode]; n[idx] = d; setEmailCode(n);
+    if (d && idx < 5) emailCodeInputs.current[idx + 1]?.focus();
+    if (n.every((c) => c.length === 1)) void verifyEmailCode(n.join(""));
+  };
+
+  const handleEmailCodeKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !emailCode[idx] && idx > 0) emailCodeInputs.current[idx - 1]?.focus();
+  };
+
+  const handleEmailCodePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 0) return;
+    const n = ["", "", "", "", "", ""];
+    for (let i = 0; i < pasted.length; i++) n[i] = pasted[i];
+    setEmailCode(n);
+    if (pasted.length === 6) void verifyEmailCode(pasted);
+    else emailCodeInputs.current[Math.min(pasted.length, 5)]?.focus();
+  };
+
   const handleCodeChange = (idx: number, value: string) => {
     const digits = value.replace(/\D/g, "");
     if (digits.length === 0) {
