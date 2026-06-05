@@ -25,6 +25,10 @@ interface DraftState {
 }
 
 type PhoneStep = "input" | "code" | "verified";
+type EmailStep = "input" | "code" | "verified";
+const PLACEHOLDER_EMAIL_DOMAIN = "@phone.locusfood.by";
+const isPlaceholderEmail = (e?: string | null) =>
+  !e || e.toLowerCase().endsWith(PLACEHOLDER_EMAIL_DOMAIN);
 
 // Extract human-readable error text from a supabase.functions.invoke error
 async function extractFnError(error: unknown, data: unknown, fallback: string): Promise<string> {
