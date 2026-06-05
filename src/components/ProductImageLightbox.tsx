@@ -133,24 +133,6 @@ export function ProductImageLightbox({
             </div>
           </div>
 
-          {/* Tap zones for prev/next — only active when not zoomed and >1 image.
-              25% width on each side; central 50% reserved for double-tap zoom. */}
-          {images.length > 1 && !zoomed && (
-            <>
-              <button
-                type="button"
-                onClick={scrollPrev}
-                aria-label="Предыдущее фото"
-                className="absolute left-0 top-0 z-10 h-full w-1/4 cursor-w-resize bg-transparent"
-              />
-              <button
-                type="button"
-                onClick={scrollNext}
-                aria-label="Следующее фото"
-                className="absolute right-0 top-0 z-10 h-full w-1/4 cursor-e-resize bg-transparent"
-              />
-            </>
-          )}
 
           {/* Prev/Next (desktop) */}
           {images.length > 1 && (
