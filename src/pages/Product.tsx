@@ -260,7 +260,7 @@ export default function Product() {
       toast.error("Войдите, чтобы оставить отзыв");
       return;
     }
-    if (!isUUID) {
+    if (!dbProduct?.id) {
       toast.error("Отзывы доступны только для товаров из каталога");
       return;
     }
@@ -269,7 +269,7 @@ export default function Product() {
       error
     } = await supabase.from("reviews").insert({
       user_id: user.id,
-      product_id: id,
+      product_id: dbProduct.id,
       rating,
       text: text || null
     }).select("id").single();
