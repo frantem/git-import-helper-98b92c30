@@ -73,6 +73,7 @@ export default function AdminProducts() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   // Product form state
   const [showProductForm, setShowProductForm] = useState(false);
