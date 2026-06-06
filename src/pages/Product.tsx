@@ -86,7 +86,7 @@ export default function Product() {
   // Custom fields
   const {
     data: customFields = []
-  } = useProductCustomFields(id);
+  } = useProductCustomFields(dbProduct?.id);
   const { data: seoTemplates } = useSeoTemplates();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
