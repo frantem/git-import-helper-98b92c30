@@ -16,6 +16,7 @@ import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
+import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { Plus, Pencil, Trash2, Upload, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
