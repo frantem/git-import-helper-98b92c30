@@ -86,7 +86,7 @@ export default function Product() {
   // Custom fields
   const {
     data: customFields = []
-  } = useProductCustomFields(id);
+  } = useProductCustomFields(dbProduct?.id);
   const { data: seoTemplates } = useSeoTemplates();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -108,27 +108,27 @@ export default function Product() {
   // Check if product is in favorites
   useEffect(() => {
     const checkFavorite = async () => {
-      if (!user || !id || !isUUID) return;
+      if (!user || !dbProduct?.id) return;
       const {
         data
-      } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("product_id", id).maybeSingle();
+      } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("product_id", dbProduct.id).maybeSingle();
       setIsFavorite(!!data);
     };
     checkFavorite();
-  }, [user, id, isUUID]);
+  }, [user, dbProduct?.id]);
   const toggleFavorite = async () => {
     if (!user) {
       toast.error("Войдите, чтобы добавить в избранное");
       return;
     }
-    if (!id || !isUUID) {
+    if (!dbProduct?.id) {
       toast.error("Избранное доступно только для товаров из каталога");
       return;
     }
     if (isFavorite) {
       const {
         error
-      } = await supabase.from("favorites").delete().eq("user_id", user.id).eq("product_id", id);
+      } = await supabase.from("favorites").delete().eq("user_id", user.id).eq("product_id", dbProduct.id);
       if (!error) {
         setIsFavorite(false);
         toast.success("Удалено из избранного");
@@ -138,7 +138,7 @@ export default function Product() {
         error
       } = await supabase.from("favorites").insert({
         user_id: user.id,
-        product_id: id
+        product_id: dbProduct.id
       });
       if (!error) {
         setIsFavorite(true);
@@ -147,11 +147,12 @@ export default function Product() {
     }
   };
   const fetchReviews = useCallback(async () => {
-    if (!id || !isUUID) return;
+    const productId = dbProduct?.id;
+    if (!productId) return;
     const {
       data: reviewsData,
       error: reviewsError
-    } = await supabase.from("reviews").select("*").eq("product_id", id).order("created_at", {
+    } = await supabase.from("reviews").select("*").eq("product_id", productId).order("created_at", {
       ascending: false
     });
     if (reviewsError) {
@@ -191,7 +192,7 @@ export default function Product() {
     } else {
       setReviews([]);
     }
-  }, [id, isUUID]);
+  }, [dbProduct?.id]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
@@ -259,7 +260,7 @@ export default function Product() {
       toast.error("Войдите, чтобы оставить отзыв");
       return;
     }
-    if (!isUUID) {
+    if (!dbProduct?.id) {
       toast.error("Отзывы доступны только для товаров из каталога");
       return;
     }
@@ -268,7 +269,7 @@ export default function Product() {
       error
     } = await supabase.from("reviews").insert({
       user_id: user.id,
-      product_id: id,
+      product_id: dbProduct.id,
       rating,
       text: text || null
     }).select("id").single();
@@ -871,9 +872,9 @@ export default function Product() {
         </div>
 
         {/* Reviews section */}
-        {isUUID && <section className="mt-8">
+        <section className="mt-8">
             <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} onDeleteReview={handleDeleteReview} />
-          </section>}
+          </section>
       </main>
 
       {/* Mobile action buttons */}

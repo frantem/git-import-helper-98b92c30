@@ -1,55 +1,31 @@
-## Цель
+# Починить отображение отзывов в карточке товара
 
-Любой пользователь, подающий «Заявку на продавца», обязан иметь реальный Email. Если он зашёл по телефону и у него временный `*@phone.locusfood.by`, форма требует ввести настоящий Email и подтвердить его кодом из письма. После подтверждения Email обновляется **одновременно** в `auth.users` и в `profiles.email` — то есть и как «покупатель», и как «продавец» пользователь будет иметь один и тот же реальный Email.
+## Проблема
+URL карточки товара теперь использует slug (`/product/strachatella`), а не UUID. В `src/pages/Product.tsx` много операций завязано на параметр `id` из URL + проверку `isUUID`. Когда `id` — это slug:
 
-## Что уже готово (переиспользуем)
+- `fetchReviews` сразу выходит: `if (!id || !isUUID) return;`
+- Запросы к Supabase делаются по `eq('product_id', id)` со slug — ничего не возвращают
+- Сама секция отзывов скрыта: `{isUUID && <ProductReviews .../>}`
+- Аналогично сломаны «Избранное» и кастомные поля (продукт грузится через `useProduct`, который сам резолвит slug→UUID, но остальной код этого не знает)
 
-Edge-функции уже существуют и делают именно то, что нужно:
+## Решение
+Использовать **реальный UUID товара** (`product.id` из `useProduct`) везде, где идут запросы к таблицам по `product_id`. Параметр URL `id` оставить только для навигации/canonical.
 
-- `send-email-change-code` — принимает новый email, проверяет что текущий заканчивается на `@phone.locusfood.by`, шлёт 6-значный код через Resend, сохраняет хэш в `email_change_codes` (rate-limit 60с / 5 в час).
-- `verify-email-change-code` — принимает email + код, при успехе:
-  - `admin.auth.admin.updateUserById(userId, { email, email_confirm: true })` → реальный email в `auth.users`
-  - `admin.from("profiles").update({ email }).eq("user_id", userId)` → синхронизация в `profiles`
+### Правки в `src/pages/Product.tsx`
 
-Ничего в БД/edge-функциях менять не нужно.
+1. Ввести стабильную переменную `productId = product?.id` после загрузки.
+2. `fetchReviews`: убрать зависимость от `isUUID`/URL-`id`, использовать `productId`. Запускать, когда `productId` появился.
+3. `handleAddReview` / `handleDeleteReview`: вставка/удаление по `productId`.
+4. Эффект проверки избранного и `toggleFavorite`: использовать `productId` вместо URL-`id` (`isUUID`-гард убрать — теперь он бессмыслен, т.к. продукт уже загружен).
+5. Хук `useProductCustomFields(id)` (строка 89): передавать `productId` вместо URL-`id`, чтобы поля грузились и по slug-URL.
+6. В JSX (строка 874): убрать обёртку `{isUUID && ...}` — показывать `<ProductReviews>` всегда, когда `product` загружен.
 
-## Изменения в `src/components/SellerApplicationForm.tsx`
+### Чего НЕ трогаем
+- `useProduct(id)` — он сам корректно резолвит и slug, и UUID.
+- Логику редиректа slug↔id (строки 243–246) и canonical/SEO — там URL-`id` уместен.
+- Никаких изменений в БД, RLS, edge-функциях, других страницах.
 
-1. Добавить новое состояние:
-   ```
-   emailStep: "input" | "code" | "verified"
-   emailFromAuth: boolean         // у юзера уже реальный email
-   emailCode: string[4-or-6]       // 6 цифр, как в edge-функции
-   isSendingEmailCode, isVerifyingEmailCode, emailResendCountdown
-   ```
-
-2. На загрузке (там же где грузится профиль) определить статус Email:
-   - Если `!user` → ничего нового (старая ветка регистрации остаётся).
-   - Если `user.email` **не** заканчивается на `@phone.locusfood.by` → `emailFromAuth = true`, `emailStep = "verified"`, поле readOnly, бейдж «Используется Email из вашего аккаунта».
-   - Иначе → `emailStep = "input"`, показываем обязательное поле «Email *» + кнопку «Получить код».
-
-3. UI блока Email (для залогиненного phone-only):
-   - Поле `<Input type="email">` для нового адреса.
-   - Кнопка «Получить код» → `supabase.functions.invoke("send-email-change-code", { body: { new_email } })`. На успех → `emailStep = "code"`, запускаем таймер 60с.
-   - Экран ввода 6-значного кода (по образцу phone OTP, но 6 ячеек). На полном вводе → `supabase.functions.invoke("verify-email-change-code", { body: { new_email, code } })`. На успех → `emailStep = "verified"`, бейдж «Email подтверждён», поле readOnly.
-   - Ссылка «Изменить Email» возвращает на шаг `input`.
-   - «Отправить код повторно» через countdown.
-
-4. Блокировка отправки заявки (`submitDisabled` и `handleSubmit`):
-   - Добавить условие: для залогиненного пользователя `emailStep !== "verified"` блокирует submit + тост «Подтвердите Email».
-   - Гостевая ветка (`!user`) — без изменений.
-
-5. После успешной отправки заявки никакой доп. синхронизации не нужно: `verify-email-change-code` уже обновил и `auth.users`, и `profiles.email`.
-
-## Пограничные случаи
-
-- Email-плейсхолдер у залогиненного: показываем блок ввода даже если `user.email` пустой (на всякий случай).
-- Если пользователь вводит email, который уже занят другим аккаунтом — edge-функция вернёт `Этот Email уже используется другим аккаунтом`, показываем как тост.
-- Drafts: новый Email не сохраняем в localStorage-черновике (чтобы не утёк), сохраняем только статус ввода.
-- После успешного `verify` локально обновляем отображаемый email в форме; при следующем входе `useAuth` подтянет новый `user.email` сам.
-
-## Файлы
-
-- `src/components/SellerApplicationForm.tsx` — единственный изменяемый файл.
-
-Backend, миграции, политики RLS — не трогаем.
+## Проверка
+- Открыть `/product/strachatella` — должны появиться отзывы и средний рейтинг.
+- Открыть `/product/<uuid>` — поведение не должно измениться.
+- Добавление/удаление отзыва, лайк в избранное — работают по обоим типам URL.
