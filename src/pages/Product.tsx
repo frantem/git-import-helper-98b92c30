@@ -108,27 +108,27 @@ export default function Product() {
   // Check if product is in favorites
   useEffect(() => {
     const checkFavorite = async () => {
-      if (!user || !id || !isUUID) return;
+      if (!user || !dbProduct?.id) return;
       const {
         data
-      } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("product_id", id).maybeSingle();
+      } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("product_id", dbProduct.id).maybeSingle();
       setIsFavorite(!!data);
     };
     checkFavorite();
-  }, [user, id, isUUID]);
+  }, [user, dbProduct?.id]);
   const toggleFavorite = async () => {
     if (!user) {
       toast.error("Войдите, чтобы добавить в избранное");
       return;
     }
-    if (!id || !isUUID) {
+    if (!dbProduct?.id) {
       toast.error("Избранное доступно только для товаров из каталога");
       return;
     }
     if (isFavorite) {
       const {
         error
-      } = await supabase.from("favorites").delete().eq("user_id", user.id).eq("product_id", id);
+      } = await supabase.from("favorites").delete().eq("user_id", user.id).eq("product_id", dbProduct.id);
       if (!error) {
         setIsFavorite(false);
         toast.success("Удалено из избранного");
@@ -138,7 +138,7 @@ export default function Product() {
         error
       } = await supabase.from("favorites").insert({
         user_id: user.id,
-        product_id: id
+        product_id: dbProduct.id
       });
       if (!error) {
         setIsFavorite(true);
