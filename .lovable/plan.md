@@ -1,31 +1,27 @@
-# Починить отображение отзывов в карточке товара
-
 ## Проблема
-URL карточки товара теперь использует slug (`/product/strachatella`), а не UUID. В `src/pages/Product.tsx` много операций завязано на параметр `id` из URL + проверку `isUUID`. Когда `id` — это slug:
 
-- `fetchReviews` сразу выходит: `if (!id || !isUUID) return;`
-- Запросы к Supabase делаются по `eq('product_id', id)` со slug — ничего не возвращают
-- Сама секция отзывов скрыта: `{isUUID && <ProductReviews .../>}`
-- Аналогично сломаны «Избранное» и кастомные поля (продукт грузится через `useProduct`, который сам резолвит slug→UUID, но остальной код этого не знает)
+На странице `/admin/products` (создание/редактирование товара админом) при добавлении фото:
+- не открывается диалог обрезки 1:1
+- файл уходит в Supabase Storage как есть (только лёгкое сжатие через `compressImage`, без кадрирования под квадрат превью)
 
-## Решение
-Использовать **реальный UUID товара** (`product.id` из `useProduct`) везде, где идут запросы к таблицам по `product_id`. Параметр URL `id` оставить только для навигации/canonical.
+Причина — в `src/pages/admin/AdminProducts.tsx` функция `handleImageUpload` (стр. 113-127) грузит файл напрямую. Компонент `ImageCropDialog` там не подключён. В аналогичной странице продавца `src/pages/seller/SellerProducts.tsx` логика обрезки + сжатия присутствует (стр. 123-150 + рендер `<ImageCropDialog>` на стр. 753) и работает корректно — её и переносим.
 
-### Правки в `src/pages/Product.tsx`
+## Что сделаем
 
-1. Ввести стабильную переменную `productId = product?.id` после загрузки.
-2. `fetchReviews`: убрать зависимость от `isUUID`/URL-`id`, использовать `productId`. Запускать, когда `productId` появился.
-3. `handleAddReview` / `handleDeleteReview`: вставка/удаление по `productId`.
-4. Эффект проверки избранного и `toggleFavorite`: использовать `productId` вместо URL-`id` (`isUUID`-гард убрать — теперь он бессмыслен, т.к. продукт уже загружен).
-5. Хук `useProductCustomFields(id)` (строка 89): передавать `productId` вместо URL-`id`, чтобы поля грузились и по slug-URL.
-6. В JSX (строка 874): убрать обёртку `{isUUID && ...}` — показывать `<ProductReviews>` всегда, когда `product` загружен.
+Только фронтенд, один файл — `src/pages/admin/AdminProducts.tsx`:
 
-### Чего НЕ трогаем
-- `useProduct(id)` — он сам корректно резолвит и slug, и UUID.
-- Логику редиректа slug↔id (строки 243–246) и canonical/SEO — там URL-`id` уместен.
-- Никаких изменений в БД, RLS, edge-функциях, других страницах.
+1. Импортировать `ImageCropDialog` из `@/components/ImageCropDialog`.
+2. Добавить состояние `cropSrc: string | null`.
+3. Переписать `handleImageUpload`: вместо немедленной загрузки — читать файл через `FileReader` в `cropSrc`, сбрасывать `e.target.value` (чтобы можно было выбрать тот же файл повторно).
+4. Добавить `handleCroppedUpload(blob)` — создаёт `File` из кропнутого blob, прогоняет через `compressImage(..., "product")` (1000×1000, q=0.8 — пресет уже настроен) и загружает в bucket `product-images`. Логика идентична `SellerProducts.handleCroppedUpload`.
+5. В JSX добавить `<ImageCropDialog open={!!cropSrc} imageSrc={cropSrc} onCancel={() => setCropSrc(null)} onCropped={handleCroppedUpload} />` рядом с формой товара.
+
+## Что НЕ трогаем
+
+- `src/lib/imageUtils.ts` и `ImageCropDialog.tsx` — работают корректно.
+- `SellerProducts.tsx` — там уже всё правильно.
+- Бэкенд, RLS, storage policies — без изменений.
 
 ## Проверка
-- Открыть `/product/strachatella` — должны появиться отзывы и средний рейтинг.
-- Открыть `/product/<uuid>` — поведение не должно измениться.
-- Добавление/удаление отзыва, лайк в избранное — работают по обоим типам URL.
+
+После сборки: на `/admin/products` → создать/редактировать товар → кнопка загрузки фото → должен открыться диалог 1:1 с зумом → после «Применить» картинка сжимается до ≤1000px JPEG q=0.8 и появляется в превью.

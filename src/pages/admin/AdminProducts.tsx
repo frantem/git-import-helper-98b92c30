@@ -16,6 +16,7 @@ import { formatPrice, parseRublesToKopecks, kopecksToRublesString } from "@/lib/
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
+import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { Plus, Pencil, Trash2, Upload, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -72,6 +73,7 @@ export default function AdminProducts() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   // Product form state
   const [showProductForm, setShowProductForm] = useState(false);
@@ -110,20 +112,32 @@ export default function AdminProducts() {
     setIsLoading(false);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    const reader = new FileReader();
+    reader.onload = () => setCropSrc(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleCroppedUpload = async (blob: Blob) => {
+    if (!user) return;
+    setCropSrc(null);
     setUploadingImage(true);
-    const compressed = await compressImage(file, "product");
-    const fileExt = compressed.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    const { error } = await supabase.storage.from('product-images').upload(fileName, compressed);
-    if (error) { toast.error("Ошибка загрузки изображения"); setUploadingImage(false); return; }
-    const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
-    if (!productForm.image_url) setProductForm({ ...productForm, image_url: publicUrl });
-    else setProductImages([...productImages, publicUrl]);
-    setUploadingImage(false);
-    toast.success("Изображение загружено");
+    try {
+      const croppedFile = new File([blob], `crop-${Date.now()}.jpg`, { type: "image/jpeg" });
+      const compressed = await compressImage(croppedFile, "product");
+      const fileName = `${user.id}/${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from('product-images').upload(fileName, compressed);
+      if (error) { toast.error("Ошибка загрузки изображения"); return; }
+      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
+      if (!productForm.image_url) setProductForm({ ...productForm, image_url: publicUrl });
+      else setProductImages([...productImages, publicUrl]);
+      toast.success("Изображение загружено");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const removeAdditionalImage = (index: number) => setProductImages(productImages.filter((_, i) => i !== index));
@@ -700,6 +714,12 @@ export default function AdminProducts() {
           </div>
         </div>
       )}
+      <ImageCropDialog
+        open={!!cropSrc}
+        imageSrc={cropSrc}
+        onCancel={() => setCropSrc(null)}
+        onCropped={handleCroppedUpload}
+      />
     </div>
   );
 }
