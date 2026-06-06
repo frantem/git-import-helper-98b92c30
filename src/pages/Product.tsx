@@ -147,11 +147,12 @@ export default function Product() {
     }
   };
   const fetchReviews = useCallback(async () => {
-    if (!id || !isUUID) return;
+    const productId = dbProduct?.id;
+    if (!productId) return;
     const {
       data: reviewsData,
       error: reviewsError
-    } = await supabase.from("reviews").select("*").eq("product_id", id).order("created_at", {
+    } = await supabase.from("reviews").select("*").eq("product_id", productId).order("created_at", {
       ascending: false
     });
     if (reviewsError) {
@@ -191,7 +192,7 @@ export default function Product() {
     } else {
       setReviews([]);
     }
-  }, [id, isUUID]);
+  }, [dbProduct?.id]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
