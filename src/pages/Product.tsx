@@ -872,9 +872,9 @@ export default function Product() {
         </div>
 
         {/* Reviews section */}
-        {isUUID && <section className="mt-8">
+        <section className="mt-8">
             <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} onDeleteReview={handleDeleteReview} />
-          </section>}
+          </section>
       </main>
 
       {/* Mobile action buttons */}
