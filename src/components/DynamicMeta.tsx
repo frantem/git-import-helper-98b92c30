@@ -8,29 +8,15 @@ export function DynamicMeta() {
       const { data: rows } = await supabase
         .from("app_settings")
         .select("key, value")
-        .in("key", ["favicon_url", "og_image_url", "google_verification"]);
+        .in("key", ["og_image_url", "google_verification"]);
 
       const map = new Map<string, string>();
       rows?.forEach((r: any) => {
         if (r?.key && r?.value) map.set(r.key, r.value);
       });
 
-      const favicon = map.get("favicon_url");
       const ogImage = map.get("og_image_url");
       const verification = map.get("google_verification");
-
-      // Update favicon
-      if (favicon) {
-        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-        if (link) {
-          link.href = favicon;
-        } else {
-          link = document.createElement("link");
-          link.rel = "icon";
-          link.href = favicon;
-          document.head.appendChild(link);
-        }
-      }
 
       // Update OG image (served via CDN at 1200x630 for social previews)
       if (ogImage) {
