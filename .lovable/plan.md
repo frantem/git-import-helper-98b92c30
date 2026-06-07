@@ -1,27 +1,40 @@
 ## Проблема
 
-На странице `/admin/products` (создание/редактирование товара админом) при добавлении фото:
-- не открывается диалог обрезки 1:1
-- файл уходит в Supabase Storage как есть (только лёгкое сжатие через `compressImage`, без кадрирования под квадрат превью)
+В Google и других ботах подтягивается фавиконка Lovable, потому что:
 
-Причина — в `src/pages/admin/AdminProducts.tsx` функция `handleImageUpload` (стр. 113-127) грузит файл напрямую. Компонент `ImageCropDialog` там не подключён. В аналогичной странице продавца `src/pages/seller/SellerProducts.tsx` логика обрезки + сжатия присутствует (стр. 123-150 + рендер `<ImageCropDialog>` на стр. 753) и работает корректно — её и переносим.
+1. **`index.html` не содержит ни одного `<link rel="icon">`** — браузеры и поисковики по умолчанию запрашивают `/favicon.ico`.
+2. **`public/favicon.ico` — это дефолтная иконка Lovable** (20 КБ, осталась от стартового шаблона). Именно её Google и кэширует.
+3. Кастомная фавиконка из админки подставляется через `DynamicMeta.tsx` уже **после загрузки JS** (через `requestIdleCallback`). Googlebot, превью-боты соцсетей, WhatsApp, Telegram и т.п. JS не выполняют — они видят только то, что в `index.html`, и забирают старую `/favicon.ico`.
+4. У части пользователей подтягивается правильная иконка только потому, что Google уже успел один раз отрендерить страницу с JS, у остальных — закэширована Lovable-овская.
 
-## Что сделаем
+## Что сделать
 
-Только фронтенд, один файл — `src/pages/admin/AdminProducts.tsx`:
+### 1. Заменить файл `public/favicon.ico`
+Скачать актуальную фавиконку из `app_settings.favicon_url`
+(`.../site-assets/favicon-1773315477246.jpeg`) и положить её в проект:
+- `public/favicon.png` — основной файл (PNG, корректный формат для иконки)
+- `public/favicon.ico` — перезаписать старую Lovable-овскую, чтобы запросы прямо на `/favicon.ico` тоже отдавали нашу
 
-1. Импортировать `ImageCropDialog` из `@/components/ImageCropDialog`.
-2. Добавить состояние `cropSrc: string | null`.
-3. Переписать `handleImageUpload`: вместо немедленной загрузки — читать файл через `FileReader` в `cropSrc`, сбрасывать `e.target.value` (чтобы можно было выбрать тот же файл повторно).
-4. Добавить `handleCroppedUpload(blob)` — создаёт `File` из кропнутого blob, прогоняет через `compressImage(..., "product")` (1000×1000, q=0.8 — пресет уже настроен) и загружает в bucket `product-images`. Логика идентична `SellerProducts.handleCroppedUpload`.
-5. В JSX добавить `<ImageCropDialog open={!!cropSrc} imageSrc={cropSrc} onCancel={() => setCropSrc(null)} onCropped={handleCroppedUpload} />` рядом с формой товара.
+### 2. Прописать `<link rel="icon">` в `index.html`
+Добавить в `<head>` (до `<title>`):
+```html
+<link rel="icon" type="image/png" href="/favicon.png?v=2" />
+<link rel="shortcut icon" href="/favicon.ico?v=2" />
+<link rel="apple-touch-icon" href="/favicon.png?v=2" />
+```
+`?v=2` — чтобы пробить кэш браузеров и Google, у которых уже сохранён старый файл.
+
+### 3. Упростить `DynamicMeta.tsx`
+Убрать рантайм-подмену `favicon` — она больше не нужна и только мешает (вызывает мигание и сбивает кэш). OG-image и google-verification оставить как есть.
+
+### 4. Деплой и инвалидация кэша Google
+После выкатки:
+- сделать `update-locusfood` на сервере (атомарный своп, который мы недавно настроили);
+- в Google Search Console запросить **переиндексацию** главной страницы — Google перечитает фавиконку в течение нескольких дней (быстрее повлиять нельзя, это политика Google).
 
 ## Что НЕ трогаем
+- Логику админки и поле `favicon_url` в `app_settings` — оставляем как фолбэк / для будущего смены иконки без редеплоя.
+- `prerender` Edge Function — там `logo` в JSON-LD уже ссылается на `/favicon.ico`, после замены файла он автоматически станет правильным.
 
-- `src/lib/imageUtils.ts` и `ImageCropDialog.tsx` — работают корректно.
-- `SellerProducts.tsx` — там уже всё правильно.
-- Бэкенд, RLS, storage policies — без изменений.
-
-## Проверка
-
-После сборки: на `/admin/products` → создать/редактировать товар → кнопка загрузки фото → должен открыться диалог 1:1 с зумом → после «Применить» картинка сжимается до ≤1000px JPEG q=0.8 и появляется в превью.
+## Опционально (спрошу отдельно после плана)
+Если хочется, чтобы смена фавиконки через админку работала **сразу без редеплоя для ботов тоже** — можно научить `prerender` Edge Function подставлять `<link rel="icon" href="{favicon_url из app_settings}">` в HTML, который он отдаёт ботам. Сейчас этого нет.
