@@ -465,11 +465,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       return;
     }
 
-    if (user && emailStep !== "verified") {
-      toast.error("Подтвердите Email");
-      return;
-    }
-
     await submitApplication();
   };
 
@@ -480,12 +475,11 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const submitDisabled =
     isLoading ||
     isVerifyingCode ||
-    isVerifyingEmailCode ||
     phoneStep !== "verified" ||
-    (!!user && emailStep !== "verified") ||
     !draft.name.trim() ||
     !isValidBYPhone(draft.phone) ||
     (!user && (!draft.email.trim() || password.length < 6));
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
