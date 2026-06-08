@@ -541,8 +541,9 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Укажите ваш реальный Email — на него мы отправим код подтверждения, и он будет привязан к вашему аккаунту.
+                Укажите Email, чтобы получать уведомления о заявке и заказах. Можно пропустить и добавить позже в настройках.
               </p>
+
               <Button
                 type="button"
                 variant="secondary"
