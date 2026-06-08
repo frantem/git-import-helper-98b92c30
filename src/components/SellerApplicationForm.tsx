@@ -514,8 +514,9 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
 
       {user && (
         <div className="space-y-2">
-          <Label htmlFor="real-email">Email *</Label>
+          <Label htmlFor="real-email">Email (по желанию)</Label>
           {emailFromAuth || emailStep === "verified" ? (
+
             <>
               <Input
                 id="real-email"
