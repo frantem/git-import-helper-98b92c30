@@ -146,7 +146,7 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
 
       {/* Dots */}
       {banners.length > 1 && (
-        <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2">
+        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
           {banners.map((_, index) => (
             <button
               key={index}
@@ -154,17 +154,13 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
               aria-label={`Слайд ${index + 1} из ${banners.length}`}
               aria-current={currentIndex === index ? "true" : undefined}
               onClick={(e) => { e.preventDefault(); goTo(index); }}
-              className="flex h-11 w-11 items-center justify-center bg-transparent"
-            >
-              <span
-                className={cn(
-                  "h-2 rounded-full transition-all",
-                  currentIndex === index
-                    ? "w-6 bg-primary-foreground"
-                    : "w-2 bg-primary-foreground/60"
-                )}
-              />
-            </button>
+              className={cn(
+                "h-2 rounded-full transition-all",
+                currentIndex === index
+                  ? "w-6 bg-primary-foreground"
+                  : "w-2 bg-primary-foreground/60"
+              )}
+            />
           ))}
         </div>
       )}
