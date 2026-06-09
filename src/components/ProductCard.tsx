@@ -27,6 +27,8 @@ interface ProductCardProps {
   hasRequiredFields?: boolean;
   isLowestPrice?: boolean;
   pickupLabel?: string;
+  /** Mark above-the-fold cards for eager loading + high fetch priority (LCP). */
+  priority?: boolean;
 }
 
 export const ProductCard = memo(function ProductCard({
@@ -37,6 +39,7 @@ export const ProductCard = memo(function ProductCard({
   hasRequiredFields = false,
   isLowestPrice = false,
   pickupLabel,
+  priority = false,
 }: ProductCardProps) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
