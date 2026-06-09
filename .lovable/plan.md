@@ -1,28 +1,39 @@
-## Проблема
+## Цель
 
-User `9dc01f1d-1b58-4127-af5c-d1dd27ea0878` зарегистрирован по телефону (`+375297611515`), его auth-email = placeholder `375297611515@phone.locusfood.by`.
+В `/seller-application` при нажатии «Получить код» (для телефона или Email) сначала проверять в базе, нет ли уже аккаунта с этими данными. Если есть — показать сообщение и не отправлять код.
 
-В `SellerApplicationForm.tsx` для всех залогиненных пользователей с placeholder-email обязательна привязка реального Email до отправки заявки (`emailStep !== "verified"` блокирует кнопку). В таблице `email_change_codes` для этого пользователя нет записей — значит код либо не дошёл, либо ввод не прошёл. В любом случае пользователь застревает и не может отправить заявку.
+## Что добавить
 
-Само поле `email` в таблице `seller_applications` отсутствует — для самой заявки email не нужен, админ всё равно связывается по телефону. Жёсткая привязка email лишь блокирует поток.
+### 1. Новая edge function `check-account-exists`
 
-## Решение
+Публичная (без JWT), вызывается с anon key. Использует `SUPABASE_SERVICE_ROLE_KEY` для проверки.
 
-Сделать привязку реального Email **необязательной** на форме заявки на продавца. Телефон по-прежнему обязателен.
+Вход: `{ phone?: string, email?: string, exclude_user_id?: string }`
+Выход: `{ exists: boolean }`
 
-### Изменения в `src/components/SellerApplicationForm.tsx`
+Логика:
+- Если `phone` — ищем в `profiles.phone` (нормализуя только цифры). Если найден и `user_id !== exclude_user_id` → `exists: true`.
+- Если `email` — через `supabase.auth.admin.listUsers` (с пагинацией или фильтрацией по email через `getUserByEmail`-аналог; используем `listUsers({ page, perPage })` либо прямой SQL по `auth.users` через service role). Сравниваем case-insensitive. Исключаем `exclude_user_id`.
 
-1. **Снять блокировку кнопки** — убрать `(!!user && emailStep !== "verified")` из `submitDisabled` и проверку «Подтвердите Email» из `handleSubmit`.
-2. **Перерисовать секцию Email** для залогиненного пользователя с placeholder:
-  - Подпись под полем: «Укажите Email, чтобы получать уведомления о заявке и заказах.»
-  - Логика отправки/ввода кода остаётся прежней — если пользователь захочет, он может подтвердить Email тут же; но это не блокирует submit.
-  - Если Email подтверждён — показывать зелёную галочку как сейчас.
-3. Для гостя (без аккаунта) поведение не трогаем — там Email/пароль остаются обязательными (это путь регистрации).
+### 2. Изменения в `src/components/SellerApplicationForm.tsx`
 
-### Что НЕ меняем
+**Перед `sendCode` (телефон):**
+- Гость: вызвать `check-account-exists` с `{ phone }`. Если `exists` → `toast.error("Аккаунт с таким номером уже зарегистрирован. Войдите в аккаунт.")` и не отправлять код.
+- Залогиненный: вызвать с `{ phone, exclude_user_id: user.id }`. Если `exists` → `toast.error("Этот номер уже используется другим аккаунтом.")`.
 
-- Таблицу `seller_applications` и edge-функции не трогаем.
-- Поток `verify-email-change-code` / `send-email-change-code` остаётся — он просто становится опциональным шагом.
-- Phone verification остаётся обязательным.
+**Перед `sendEmailCode` (Email, только для залогиненных с placeholder-email):**
+- Вызвать `check-account-exists` с `{ email, exclude_user_id: user.id }`. Если `exists` → `toast.error("Аккаунт с таким Email уже существует. Войдите в этот аккаунт.")`.
 
-После этой правки указанный пользователь сразу сможет отправить заявку (имя + телефон из профиля + описание).
+Состояние загрузки (`isSendingCode`/`isSendingEmailCode`) уже покрывает время проверки.
+
+## Что НЕ меняем
+
+- `send-otp`, `send-email-change-code`, `link-phone-to-account`, `verify-email-change-code` остаются как есть (общие для других потоков логина).
+- Логика регистрации/привязки после ввода кода — без изменений.
+- Сама форма заявки и таблица `seller_applications` — без изменений.
+
+## Технические детали
+
+- Edge function конфигурируется в `supabase/config.toml` как `verify_jwt = false` (анонимный доступ — это просто проверка существования).
+- Чтобы не раскрывать чужие данные, ответ только `{ exists: boolean }`, без `user_id`/`email`.
+- Телефон сравнивается по последним цифрам (через `regexp_replace`), email — `lower()`.

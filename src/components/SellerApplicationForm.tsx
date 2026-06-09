@@ -169,6 +169,25 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
     setIsSendingCode(true);
     try {
+      // Pre-check: phone already linked to an account?
+      {
+        const { data: chk, error: chkErr } = await supabase.functions.invoke("check-account-exists", {
+          body: { phone: draft.phone, exclude_user_id: user?.id },
+        });
+        if (chkErr) {
+          toast.error(await extractFnError(chkErr, chk, "Не удалось проверить номер"));
+          return;
+        }
+        if ((chk as { exists?: boolean })?.exists) {
+          if (user) {
+            toast.error("Этот номер уже используется другим аккаунтом");
+          } else {
+            toast.error("Аккаунт с таким номером уже зарегистрирован. Войдите в аккаунт.");
+          }
+          return;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("send-otp", {
         body: { phone: draft.phone },
       });
@@ -192,6 +211,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       setIsSendingCode(false);
     }
   };
+
 
   const linkPhoneForUser = async (fullCode: string): Promise<boolean> => {
     const { data, error } = await supabase.functions.invoke("link-phone-to-account", {
@@ -273,6 +293,21 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
     setIsSendingEmailCode(true);
     try {
+      // Pre-check: email already used by another account?
+      {
+        const { data: chk, error: chkErr } = await supabase.functions.invoke("check-account-exists", {
+          body: { email: e, exclude_user_id: user?.id },
+        });
+        if (chkErr) {
+          toast.error(await extractFnError(chkErr, chk, "Не удалось проверить Email"));
+          return;
+        }
+        if ((chk as { exists?: boolean })?.exists) {
+          toast.error("Аккаунт с таким Email уже существует. Войдите в этот аккаунт.");
+          return;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("send-email-change-code", {
         body: { new_email: e },
       });
@@ -296,6 +331,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       setIsSendingEmailCode(false);
     }
   };
+
 
   const verifyEmailCode = async (full: string) => {
     setIsVerifyingEmailCode(true);
