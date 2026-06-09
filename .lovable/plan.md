@@ -1,39 +1,72 @@
 ## Цель
 
-В `/seller-application` при нажатии «Получить код» (для телефона или Email) сначала проверять в базе, нет ли уже аккаунта с этими данными. Если есть — показать сообщение и не отправлять код.
+Поднять Performance Score (сейчас 0.69) и устранить главные проблемы из Lighthouse: LCP 7.1s, render-blocking шрифт, перегруз картинок товаров, отложить третьесторонние скрипты, мелкие a11y баги.
 
-## Что добавить
+## Главные находки отчёта
 
-### 1. Новая edge function `check-account-exists`
+| Метрика | Значение | Цель |
+|---|---|---|
+| LCP | 7.1s (0.05) | <2.5s |
+| TTI | 11.2s (0.20) | <5s |
+| FCP | 2.4s | <1.8s |
+| TBT | 220ms | <200ms |
+| CLS | 0.004 ✅ | — |
 
-Публичная (без JWT), вызывается с anon key. Использует `SUPABASE_SERVICE_ROLE_KEY` для проверки.
+Главные виновники: огромные картинки товаров (`w=800` на мобиле, до 245KB wasted на штуку), render-blocking `@import` Google Fonts (894ms), GTM/GA/FB pixel грузятся синхронно при первом рендере, у первой карточки нет `fetchpriority="high"`.
 
-Вход: `{ phone?: string, email?: string, exclude_user_id?: string }`
-Выход: `{ exists: boolean }`
+## Изменения
 
-Логика:
-- Если `phone` — ищем в `profiles.phone` (нормализуя только цифры). Если найден и `user_id !== exclude_user_id` → `exists: true`.
-- Если `email` — через `supabase.auth.admin.listUsers` (с пагинацией или фильтрацией по email через `getUserByEmail`-аналог; используем `listUsers({ page, perPage })` либо прямой SQL по `auth.users` через service role). Сравниваем case-insensitive. Исключаем `exclude_user_id`.
+### 1. Картинки товаров (LCP + image-delivery)
+`src/lib/imageCdn.ts`
+- Снизить preset `card` с `w:400` до `w:240` (реальный размер карточки на мобиле ~180-200px). На 2x всё равно будет 480px вместо текущих 800px.
+- Снизить `q` до 72.
+- `banner` — `w:1080` вместо 1200, `q:72`.
+- `category` — `w:140 h:140` (на экране ~70px).
 
-### 2. Изменения в `src/components/SellerApplicationForm.tsx`
+`src/components/ProductCard.tsx`
+- Принимать prop `priority?: boolean`. Если true → `loading="eager"` + `fetchpriority="high"` + `decoding="async"`. Иначе — текущее `loading="lazy"`.
 
-**Перед `sendCode` (телефон):**
-- Гость: вызвать `check-account-exists` с `{ phone }`. Если `exists` → `toast.error("Аккаунт с таким номером уже зарегистрирован. Войдите в аккаунт.")` и не отправлять код.
-- Залогиненный: вызвать с `{ phone, exclude_user_id: user.id }`. Если `exists` → `toast.error("Этот номер уже используется другим аккаунтом.")`.
+Места использования (Index/блоки) — пометить первые 2 карточки `priority`.
 
-**Перед `sendEmailCode` (Email, только для залогиненных с placeholder-email):**
-- Вызвать `check-account-exists` с `{ email, exclude_user_id: user.id }`. Если `exists` → `toast.error("Аккаунт с таким Email уже существует. Войдите в этот аккаунт.")`.
+### 2. Шрифт Inter (render-blocking 894ms)
+`src/index.css` — убрать `@import url(... fonts.googleapis.com ...)`.
 
-Состояние загрузки (`isSendingCode`/`isSendingEmailCode`) уже покрывает время проверки.
+`index.html` — добавить в `<head>`:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
+```
+Так шрифт грузится неблокирующе с `display=swap`, без удара по FCP.
 
-## Что НЕ меняем
+### 3. Отложить GTM и Google Analytics (TBT/unused-JS ~250KB)
+`index.html`
+- Убрать инлайн-загрузку GTM и `gtag.js` из `<head>`.
+- Загружать их в едином `setTimeout(..., 2000)` после `load`, по аналогии с уже сделанным Meta Pixel блоком. Сохранить `dataLayer.push({'gtm.start': ...})` снаппинг — он останется в очереди, GTM подтянет события при инициализации.
+- `<noscript>` iframe GTM оставить в `<body>`.
 
-- `send-otp`, `send-email-change-code`, `link-phone-to-account`, `verify-email-change-code` остаются как есть (общие для других потоков логина).
-- Логика регистрации/привязки после ввода кода — без изменений.
-- Сама форма заявки и таблица `seller_applications` — без изменений.
+### 4. A11y — кнопки баннер-карусели
+`src/components/BannerCarousel.tsx`
+- На dot-кнопках добавить `aria-label={`Слайд ${i+1}`}` и `aria-current`.
+- Увеличить hit-area до 44×44px: добавить wrapper-padding или `min-w-[44px] min-h-[44px] flex items-center justify-center`, оставив видимый dot прежним.
 
-## Технические детали
+### 5. Контраст текста на карточке товара
+`src/components/ProductCard.tsx`
+- Цена-блок (`span.block` под `mt-auto`) использует `text-secondary-foreground` поверх белого — fail. Поменять на `text-foreground` (либо явный `text-zinc-900`) для самой цены; вспомогательные строки оставить `text-muted-foreground` (он проходит контраст на белом).
 
-- Edge function конфигурируется в `supabase/config.toml` как `verify_jwt = false` (анонимный доступ — это просто проверка существования).
-- Чтобы не раскрывать чужие данные, ответ только `{ exists: boolean }`, без `user_id`/`email`.
-- Телефон сравнивается по последним цифрам (через `regexp_replace`), email — `lower()`.
+### 6. Чистка (по мелочи)
+- В `imageCdn.ts` для preset `card`/`category` `dpr=2` ограничить максимумом 1.5x, чтобы не запрашивать `w=480` на ретина-моб, где экранный размер 180px — этого достаточно. (Опционально, через `Math.min(dpr,1.75)`.)
+
+## Что НЕ трогаем
+- `cumulative-layout-shift` 0.004 — уже отлично.
+- Серверные кэш-заголовки nginx — уже стоят на 1y immutable.
+- Meta Pixel — он уже отложен правильно.
+- `unminified-javascript` — это сторонние GTM/FB, не наш бандл.
+- `third-party-cookies` — фундаментально решается только удалением аналитики; оставляем как есть.
+
+## Ожидаемый эффект
+- LCP: −3-4s (меньшая картинка + fetchpriority + неблокирующий шрифт).
+- TBT: −100-150ms (отложенные GTM/GA).
+- Performance Score: 0.69 → ~0.90.
