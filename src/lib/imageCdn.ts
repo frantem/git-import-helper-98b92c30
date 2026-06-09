@@ -28,13 +28,20 @@ interface PresetConfig {
 }
 
 const PRESETS: Record<ImgPreset, PresetConfig> = {
-  thumb: { w: 120, h: 120, q: 75, fit: "cover" },
-  card: { w: 400, h: 400, q: 78, fit: "cover" },
-  detail: { w: 900, q: 82, fit: "inside" },
-  banner: { w: 1200, h: 600, q: 75, fit: "cover" },
-  category: { w: 200, h: 200, q: 75, fit: "cover" },
-  avatar: { w: 160, h: 160, q: 78, fit: "cover" },
+  thumb: { w: 120, h: 120, q: 72, fit: "cover" },
+  card: { w: 240, h: 240, q: 72, fit: "cover" },
+  detail: { w: 900, q: 80, fit: "inside" },
+  banner: { w: 1080, h: 540, q: 72, fit: "cover" },
+  category: { w: 140, h: 140, q: 72, fit: "cover" },
+  avatar: { w: 160, h: 160, q: 75, fit: "cover" },
   og: { w: 1200, h: 630, q: 80, fit: "cover" },
+};
+
+/** Cap DPR so retina-mobile doesn't request 2x for tiny on-screen sizes. */
+const DPR_CAP: Partial<Record<ImgPreset, number>> = {
+  card: 1.75,
+  category: 1.75,
+  thumb: 1.75,
 };
 
 /**
@@ -57,15 +64,17 @@ export function cdnImage(
   }
 
   const cfg = PRESETS[preset];
+  const cap = DPR_CAP[preset] ?? 2;
+  const effectiveDpr = Math.min(dpr, cap);
   const params = new URLSearchParams({
     url: src,
-    w: String(Math.round(cfg.w * dpr)),
+    w: String(Math.round(cfg.w * effectiveDpr)),
     q: String(cfg.q),
     fit: cfg.fit,
     output: "webp",
     we: "", // do not enlarge if origin is smaller than target
   });
-  if (cfg.h) params.set("h", String(Math.round(cfg.h * dpr)));
+  if (cfg.h) params.set("h", String(Math.round(cfg.h * effectiveDpr)));
 
   return `https://wsrv.nl/?${params.toString()}`;
 }

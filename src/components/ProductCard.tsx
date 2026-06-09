@@ -27,6 +27,8 @@ interface ProductCardProps {
   hasRequiredFields?: boolean;
   isLowestPrice?: boolean;
   pickupLabel?: string;
+  /** Mark above-the-fold cards for eager loading + high fetch priority (LCP). */
+  priority?: boolean;
 }
 
 export const ProductCard = memo(function ProductCard({
@@ -37,6 +39,7 @@ export const ProductCard = memo(function ProductCard({
   hasRequiredFields = false,
   isLowestPrice = false,
   pickupLabel,
+  priority = false,
 }: ProductCardProps) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -91,7 +94,10 @@ export const ProductCard = memo(function ProductCard({
             src={product.image}
             alt={product.name}
             preset="card"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className="h-full w-full" />
+
 
           {product.isNew && !product.discount &&
           <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
@@ -150,7 +156,7 @@ export const ProductCard = memo(function ProductCard({
               return (
                 <span className={cn(
                   "block text-[10px] leading-tight",
-                  isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground",
+                  isUnavailable ? "text-[#d41111]" : isFast ? "text-green-700" : "text-foreground/80",
                 )}>
                   {pickupLabel}
                 </span>
@@ -158,7 +164,7 @@ export const ProductCard = memo(function ProductCard({
             }
             const prep = formatPrepTime(product.prep_time_minutes, (product as any).order_lead_time_hours);
             return (
-              <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
+              <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-700" : "text-foreground/80")}>
                 {prep.label}
               </span>
             );

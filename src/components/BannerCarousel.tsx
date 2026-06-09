@@ -126,12 +126,16 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
       {banners.length > 1 && (
         <>
           <button
+            type="button"
+            aria-label="Предыдущий слайд"
             onClick={(e) => { e.preventDefault(); goPrev(); }}
             className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-card/80 p-2 shadow backdrop-blur-sm transition-colors hover:bg-card md:block"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
+            type="button"
+            aria-label="Следующий слайд"
             onClick={(e) => { e.preventDefault(); goNext(); }}
             className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-card/80 p-2 shadow backdrop-blur-sm transition-colors hover:bg-card md:block"
           >
@@ -142,18 +146,25 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
 
       {/* Dots */}
       {banners.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
+        <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2">
           {banners.map((_, index) => (
             <button
               key={index}
+              type="button"
+              aria-label={`Слайд ${index + 1} из ${banners.length}`}
+              aria-current={currentIndex === index ? "true" : undefined}
               onClick={(e) => { e.preventDefault(); goTo(index); }}
-              className={cn(
-                "h-2 w-2 rounded-full transition-all",
-                currentIndex === index
-                  ? "w-6 bg-primary-foreground"
-                  : "bg-primary-foreground/50"
-              )}
-            />
+              className="flex h-11 w-11 items-center justify-center bg-transparent"
+            >
+              <span
+                className={cn(
+                  "h-2 rounded-full transition-all",
+                  currentIndex === index
+                    ? "w-6 bg-primary-foreground"
+                    : "w-2 bg-primary-foreground/60"
+                )}
+              />
+            </button>
           ))}
         </div>
       )}

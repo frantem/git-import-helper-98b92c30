@@ -1,24 +1,6 @@
 <!doctype html>
 <html lang="ru">
   <head>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-TJRXWX37');</script>
-    <!-- End Google Tag Manager -->
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-697RT52S8Y"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-697RT52S8Y');
-    </script>
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Locus — Маркетплейс локальных продуктов</title>
@@ -46,6 +28,13 @@
     <link rel="preconnect" href="https://wsrv.nl" crossorigin />
     <link rel="dns-prefetch" href="https://wsrv.nl" />
 
+    <!-- Inter font — non-blocking load -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
+
     <!-- LCP image preload: re-use the banner cached from a previous visit -->
     <script>
       (function () {
@@ -62,6 +51,16 @@
         } catch (e) {}
       })();
     </script>
+
+    <!-- dataLayer init (GTM/GA loaded after page ready to keep TBT/LCP low) -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+      function gtag(){ dataLayer.push(arguments); }
+      window.gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', 'G-697RT52S8Y');
+    </script>
   </head>
 
   <body>
@@ -73,10 +72,20 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Meta Pixel Code (deferred to avoid blocking page render) -->
+    <!-- Deferred analytics: GTM, gtag.js, Meta Pixel — loaded 2s after window load -->
     <script>
       (function () {
-        function loadFbq() {
+        function inject(src) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = src;
+          document.head.appendChild(s);
+        }
+        function loadAnalytics() {
+          inject('https://www.googletagmanager.com/gtm.js?id=GTM-TJRXWX37');
+          inject('https://www.googletagmanager.com/gtag/js?id=G-697RT52S8Y');
+
+          // Meta Pixel
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -89,9 +98,9 @@
           fbq('track', 'PageView');
         }
         if (document.readyState === 'complete') {
-          setTimeout(loadFbq, 2000);
+          setTimeout(loadAnalytics, 2000);
         } else {
-          window.addEventListener('load', function () { setTimeout(loadFbq, 2000); });
+          window.addEventListener('load', function () { setTimeout(loadAnalytics, 2000); });
         }
       })();
     </script>
