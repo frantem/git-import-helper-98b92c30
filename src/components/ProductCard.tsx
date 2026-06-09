@@ -156,7 +156,7 @@ export const ProductCard = memo(function ProductCard({
               return (
                 <span className={cn(
                   "block text-[10px] leading-tight",
-                  isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground",
+                  isUnavailable ? "text-[#d41111]" : isFast ? "text-green-700" : "text-foreground/80",
                 )}>
                   {pickupLabel}
                 </span>
@@ -164,7 +164,7 @@ export const ProductCard = memo(function ProductCard({
             }
             const prep = formatPrepTime(product.prep_time_minutes, (product as any).order_lead_time_hours);
             return (
-              <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-600" : "text-muted-foreground")}>
+              <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-700" : "text-foreground/80")}>
                 {prep.label}
               </span>
             );
