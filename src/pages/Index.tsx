@@ -155,7 +155,7 @@ const Index = () => {
           </>
         )}
 
-        {blocks.map((block) => {
+        {blocks.map((block, blockIdx) => {
           const blockProductsList = getBlockProducts(block);
           if (blockProductsList.length === 0) return null;
 
@@ -183,8 +183,8 @@ const Index = () => {
                 </Link>
               </div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                {blockProductsList.map((product) => (
-                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} pickupLabel={pickupLabels.get(product.id)} />
+                {blockProductsList.map((product, productIdx) => (
+                  <ProductCard key={product.id} product={product} isFavorite={favoriteIds.has(product.id)} onToggleFavorite={toggleFavorite} hasRequiredFields={productsWithRequiredFields.has(product.id)} isLowestPrice={lowestPriceIds.has(product.id)} pickupLabel={pickupLabels.get(product.id)} priority={blockIdx === 0 && productIdx < 2} />
                 ))}
               </div>
               {hasMoreInAllBlock && (
