@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.telegram-webhook]
 verify_jwt = false
+
+[functions.check-account-exists]
+verify_jwt = false
