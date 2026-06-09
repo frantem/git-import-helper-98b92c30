@@ -64,15 +64,17 @@ export function cdnImage(
   }
 
   const cfg = PRESETS[preset];
+  const cap = DPR_CAP[preset] ?? 2;
+  const effectiveDpr = Math.min(dpr, cap);
   const params = new URLSearchParams({
     url: src,
-    w: String(Math.round(cfg.w * dpr)),
+    w: String(Math.round(cfg.w * effectiveDpr)),
     q: String(cfg.q),
     fit: cfg.fit,
     output: "webp",
     we: "", // do not enlarge if origin is smaller than target
   });
-  if (cfg.h) params.set("h", String(Math.round(cfg.h * dpr)));
+  if (cfg.h) params.set("h", String(Math.round(cfg.h * effectiveDpr)));
 
   return `https://wsrv.nl/?${params.toString()}`;
 }
