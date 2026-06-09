@@ -293,6 +293,21 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     }
     setIsSendingEmailCode(true);
     try {
+      // Pre-check: email already used by another account?
+      {
+        const { data: chk, error: chkErr } = await supabase.functions.invoke("check-account-exists", {
+          body: { email: e, exclude_user_id: user?.id },
+        });
+        if (chkErr) {
+          toast.error(await extractFnError(chkErr, chk, "Не удалось проверить Email"));
+          return;
+        }
+        if ((chk as { exists?: boolean })?.exists) {
+          toast.error("Аккаунт с таким Email уже существует. Войдите в этот аккаунт.");
+          return;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("send-email-change-code", {
         body: { new_email: e },
       });
@@ -316,6 +331,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       setIsSendingEmailCode(false);
     }
   };
+
 
   const verifyEmailCode = async (full: string) => {
     setIsVerifyingEmailCode(true);
