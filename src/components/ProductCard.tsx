@@ -94,7 +94,10 @@ export const ProductCard = memo(function ProductCard({
             src={product.image}
             alt={product.name}
             preset="card"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className="h-full w-full" />
+
 
           {product.isNew && !product.discount &&
           <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
