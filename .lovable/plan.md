@@ -1,72 +1,82 @@
-## Цель
+# Надёжное восстановление скролла при «Назад»
 
-Поднять Performance Score (сейчас 0.69) и устранить главные проблемы из Lighthouse: LCP 7.1s, render-blocking шрифт, перегруз картинок товаров, отложить третьесторонние скрипты, мелкие a11y баги.
+## Проблема
 
-## Главные находки отчёта
+Сейчас при переходе с главной/каталога в карточку товара и обратно скролл сбрасывается в начало или попадает «не туда». Причины в текущей реализации `src/components/ScrollManager.tsx`:
 
-| Метрика | Значение | Цель |
-|---|---|---|
-| LCP | 7.1s (0.05) | <2.5s |
-| TTI | 11.2s (0.20) | <5s |
-| FCP | 2.4s | <1.8s |
-| TBT | 220ms | <200ms |
-| CLS | 0.004 ✅ | — |
+1. **Жёсткий дедлайн 1.5 с.** Если ленивый чанк страницы (`Catalog` и др. через `React.lazy`) загружается дольше, или данные/изображения подтягиваются медленнее — `restoreWithRetry` сдаётся и оставляет страницу на 0 или на промежуточной высоте.
+2. **Suspense fallback={null}.** Во время загрузки чанка страница пуста (высота 0), поэтому даже сохранённая позиция «недостижима» до тех пор, пока контент не отрисуется. Браузер при этом успевает показать прыжок.
+3. **Позиции хранятся только в памяти** (`Map`). Любая перезагрузка чанка/ошибка/обновление страницы — и позиции потеряны.
+4. **Нет хука на рост высоты документа.** Используется rAF-поллинг, который заканчивается по таймеру, а не по факту, что контент дорисовался.
+5. **На главной** `savedAllBlockLimit` сохраняет число карточек — хорошо. На `/catalog` и `/vitebsk/:slug` ничего подобного нет, но они и так показывают весь список, поэтому проблема в основном по пунктам 1–4.
 
-Главные виновники: огромные картинки товаров (`w=800` на мобиле, до 245KB wasted на штуку), render-blocking `@import` Google Fonts (894ms), GTM/GA/FB pixel грузятся синхронно при первом рендере, у первой карточки нет `fetchpriority="high"`.
+## Решение
 
-## Изменения
+Полностью переписать `ScrollManager` так, чтобы восстановление было детерминированным:
 
-### 1. Картинки товаров (LCP + image-delivery)
-`src/lib/imageCdn.ts`
-- Снизить preset `card` с `w:400` до `w:240` (реальный размер карточки на мобиле ~180-200px). На 2x всё равно будет 480px вместо текущих 800px.
-- Снизить `q` до 72.
-- `banner` — `w:1080` вместо 1200, `q:72`.
-- `category` — `w:140 h:140` (на экране ~70px).
+### 1. Хранилище позиций — `sessionStorage`
+- Сохранять `{ [historyKey]: scrollY }` в `sessionStorage` под ключом `locus:scroll`.
+- Писать на каждом изменении скролла (rAF-throttle) и обязательно перед сменой маршрута.
+- Это переживёт перезагрузку чанка, ошибку Suspense, hard-reload.
 
-`src/components/ProductCard.tsx`
-- Принимать prop `priority?: boolean`. Если true → `loading="eager"` + `fetchpriority="high"` + `decoding="async"`. Иначе — текущее `loading="lazy"`.
+### 2. Резервирование высоты до отрисовки
+- При POP-навигации, сразу после смены `location.key`, выставлять `document.documentElement.style.minHeight = (savedScroll + innerHeight) + 'px'`.
+- Это позволяет немедленно вызвать `window.scrollTo(0, savedScroll)` ещё до того, как ленивый чанк отрисует контент — браузер не «прыгнет» в 0.
+- `minHeight` снимается, как только реальная высота документа превысит цель (через `ResizeObserver`), либо по финальному таймауту.
 
-Места использования (Index/блоки) — пометить первые 2 карточки `priority`.
+### 3. `ResizeObserver` вместо таймера
+- Подписываемся на `ResizeObserver(document.body)`.
+- На каждое изменение высоты: если `scrollY !== target` и `maxScroll >= target` — `scrollTo(target)` и снимаем резерв высоты.
+- Финальный safety-таймер 8 секунд (вместо 1.5 с), после которого наблюдатель отключается.
 
-### 2. Шрифт Inter (render-blocking 894ms)
-`src/index.css` — убрать `@import url(... fonts.googleapis.com ...)`.
+### 4. Корректная фиксация позиции при клике на карточку
+- Сейчас позиция сохраняется в эффекте смены маршрута, но между `click` и сменой `location.key` может проскочить лишний `scroll`-евент. Дополнительно вешаем `pagehide`/`beforeunload` и перехват кликов по `<a>` (через делегирование на `window` с `capture`) — на самом старте навигации делаем синхронный snapshot.
 
-`index.html` — добавить в `<head>`:
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
+### 5. На главной — оставляем `savedAllBlockLimit`
+Уже работает, ничего не трогаем. Список рендерится сразу с прежним размером → высота восстанавливается мгновенно.
+
+### 6. На `/catalog`, `/vitebsk/:slug`, `/favorites` и пр.
+Дополнительных изменений не требуется: данные кэшируются React Query, при возврате список отрисовывается одним кадром после распаковки чанка, а резерв `minHeight` страхует промежуток.
+
+### 7. Native scroll restoration
+Оставляем `history.scrollRestoration = 'manual'` (уже стоит).
+
+## Технические детали
+
+Файлы:
+
+- `src/components/ScrollManager.tsx` — полная переработка по схеме выше.
+- `src/pages/Index.tsx` — без изменений (логика `savedAllBlockLimit` уже корректна).
+- Опционально: убрать `src/hooks/useScrollRestoration.tsx` (уже no-op), оставлю как есть, чтобы не плодить лишних правок.
+
+Псевдо-API нового `ScrollManager`:
+
+```text
+on mount:
+  history.scrollRestoration = 'manual'
+  load positions from sessionStorage
+
+on scroll (rAF):
+  positions[currentKey] = scrollY
+  persist to sessionStorage (debounced 200 ms)
+
+on click capture (a[href] internal) / pagehide:
+  positions[currentKey] = scrollY  (sync)
+
+on location.key change:
+  snapshot prev key scroll
+  if navigationType === POP and savedScroll > 0:
+    documentElement.style.minHeight = savedScroll + innerHeight + 'px'
+    scrollTo(0, savedScroll)
+    observe body resize → when reachable, scrollTo(target), clear minHeight
+    safety timeout 8 s → disconnect observer, clear minHeight
+  else:
+    scrollTo(0, 0)
 ```
-Так шрифт грузится неблокирующе с `display=swap`, без удара по FCP.
 
-### 3. Отложить GTM и Google Analytics (TBT/unused-JS ~250KB)
-`index.html`
-- Убрать инлайн-загрузку GTM и `gtag.js` из `<head>`.
-- Загружать их в едином `setTimeout(..., 2000)` после `load`, по аналогии с уже сделанным Meta Pixel блоком. Сохранить `dataLayer.push({'gtm.start': ...})` снаппинг — он останется в очереди, GTM подтянет события при инициализации.
-- `<noscript>` iframe GTM оставить в `<body>`.
+## Что получит пользователь
 
-### 4. A11y — кнопки баннер-карусели
-`src/components/BannerCarousel.tsx`
-- На dot-кнопках добавить `aria-label={`Слайд ${i+1}`}` и `aria-current`.
-- Увеличить hit-area до 44×44px: добавить wrapper-padding или `min-w-[44px] min-h-[44px] flex items-center justify-center`, оставив видимый dot прежним.
-
-### 5. Контраст текста на карточке товара
-`src/components/ProductCard.tsx`
-- Цена-блок (`span.block` под `mt-auto`) использует `text-secondary-foreground` поверх белого — fail. Поменять на `text-foreground` (либо явный `text-zinc-900`) для самой цены; вспомогательные строки оставить `text-muted-foreground` (он проходит контраст на белом).
-
-### 6. Чистка (по мелочи)
-- В `imageCdn.ts` для preset `card`/`category` `dpr=2` ограничить максимумом 1.5x, чтобы не запрашивать `w=480` на ретина-моб, где экранный размер 180px — этого достаточно. (Опционально, через `Math.min(dpr,1.75)`.)
-
-## Что НЕ трогаем
-- `cumulative-layout-shift` 0.004 — уже отлично.
-- Серверные кэш-заголовки nginx — уже стоят на 1y immutable.
-- Meta Pixel — он уже отложен правильно.
-- `unminified-javascript` — это сторонние GTM/FB, не наш бандл.
-- `third-party-cookies` — фундаментально решается только удалением аналитики; оставляем как есть.
-
-## Ожидаемый эффект
-- LCP: −3-4s (меньшая картинка + fetchpriority + неблокирующий шрифт).
-- TBT: −100-150ms (отложенные GTM/GA).
-- Performance Score: 0.69 → ~0.90.
+- На «Назад» из карточки товара страница открывается ровно на той же позиции, где была карточка — без видимых прыжков.
+- Работает на медленном интернете (ленивый чанк до 8 с).
+- Переживает обновление страницы в той же вкладке (sessionStorage).
+- Не меняет внешний вид и поведение других экранов.
