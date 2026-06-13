@@ -131,12 +131,14 @@ export default function Settings() {
       .maybeSingle();
 
     if (data) {
+      const phoneVal = data.phone || "";
       setProfile({
         full_name: data.full_name || "",
-        phone: data.phone || "",
+        phone: phoneVal,
         avatar_url: data.avatar_url || "",
         delivery_address: (data as any).delivery_address || "",
       });
+      setSavedPhone(phoneVal);
     }
     
     setIsLoading(false);
