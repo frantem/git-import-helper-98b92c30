@@ -13,6 +13,7 @@ import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneAuthForm } from "@/components/PhoneAuthForm";
+import { EmailOtpForm } from "@/components/EmailOtpForm";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 type AuthMethod = "phone" | "email";
