@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (takenBy && takenBy.user_id !== userId) {
-    return jsonResponse({ error: "Этот номер уже привязан к другому аккаунту" }, 409);
+    return jsonResponse({ error: "Этот номер уже привязан к другому аккаунту", code: "phone_taken" });
   }
 
   // Update current user's profile
