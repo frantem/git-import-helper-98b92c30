@@ -23,7 +23,7 @@ interface DBProduct {
   fat: number | null;
   carbs: number | null;
   shelf_life: string | null;
-  farmers?: { id: string; name: string; district: string; village: string | null; photo_url: string | null; city: string | null; street: string | null };
+  farmers?: { id: string; name: string; district: string; village: string | null; photo_url: string | null; city: string | null };
   categories?: { name: string; emoji: string | null };
 }
 
