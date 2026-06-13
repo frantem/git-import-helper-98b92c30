@@ -55,6 +55,9 @@ export default function Settings() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [removeSellerOpen, setRemoveSellerOpen] = useState(false);
   const [isRemovingSeller, setIsRemovingSeller] = useState(false);
+  const [savedPhone, setSavedPhone] = useState<string>("");
+  const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState<string>("");
 
   const handleRemoveSeller = async () => {
     if (!user) return;
