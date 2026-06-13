@@ -282,13 +282,18 @@ export default function Auth() {
                   </p>
                 </TabsContent>
                 <TabsContent value="email" className="mt-4">
-                  {/* Email/password form rendered below via existing markup */}
+                  {mode === "register" ? (
+                    <>
+                      <EmailOtpForm onSuccess={handlePhoneAuthSuccess} />
+                    </>
+                  ) : null}
                 </TabsContent>
               </Tabs>
             )}
 
-            {/* Hide email/password form when user is on phone tab in login/register modes */}
-            {!((mode === "login" || mode === "register") && authMethod === "phone") && (
+            {/* Hide email form when on phone tab, or when registering via email (handled by EmailOtpForm) */}
+            {!((mode === "login" || mode === "register") && authMethod === "phone") &&
+             !(mode === "register" && authMethod === "email") && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (
                 <>
