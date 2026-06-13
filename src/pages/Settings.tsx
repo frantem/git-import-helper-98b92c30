@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { compressImage } from "@/lib/imageUtils";
+import { formatBYPhone, isValidBYPhone } from "@/lib/phone";
+import { PhoneVerifyDialog } from "@/components/PhoneVerifyDialog";
 import {
   AlertDialog,
   AlertDialogAction,
