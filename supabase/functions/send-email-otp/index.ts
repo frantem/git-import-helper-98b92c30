@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
   if (!resendRes.ok) {
     const errText = await resendRes.text();
     console.error("Resend error:", resendRes.status, errText);
-    return jsonResponse({ success: false, error: "Не удалось отправить письмо" }, 502);
+    return jsonResponse({ success: false, error: "Не удалось отправить письмо. Попробуйте позже." });
   }
 
   return jsonResponse({
