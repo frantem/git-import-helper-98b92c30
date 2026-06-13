@@ -62,9 +62,11 @@ export const ProductCard = memo(function ProductCard({
     e.stopPropagation();
 
     if (hasRequiredFields) {
+      saveAnchor();
       navigate(`/product/${product.slug || product.id}?fill_required=true`);
       return;
     }
+
 
     if (product.defaultVariant) {
       addToCart(product, product.defaultVariant);
