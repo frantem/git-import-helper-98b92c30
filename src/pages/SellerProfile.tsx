@@ -166,14 +166,18 @@ export default function SellerProfile() {
       let farmerData: any = null;
       let farmerError: any = null;
 
+      // Only request columns visible to anonymous visitors. street/address_details
+      // are restricted to authenticated users by column-level grants.
+      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id";
+
       if (!isUUID) {
-        const res = await supabase.from("farmers").select("*").eq("slug", id).single();
+        const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
         farmerData = res.data;
         farmerError = res.error;
       }
-      
+
       if (!farmerData) {
-        const res = await supabase.from("farmers").select("*").eq("id", id).single();
+        const res = await supabase.from("farmers").select(safeCols).eq("id", id).single();
         farmerData = res.data;
         farmerError = res.error;
       }
