@@ -25,6 +25,28 @@ const transformBanner = (b: DBBanner): Banner => ({
   linkCategory: b.link_category || undefined,
 });
 
+const LS_BANNERS_KEY = "locus-banners-cache-v1";
+
+// Read the last-known banner list from localStorage so the first paint can
+// render the LCP image immediately, without waiting for the Supabase round-trip.
+// This pairs with the LCP preload hint in index.html (which uses the cached URL).
+function readCachedBanners(): Banner[] | undefined {
+  try {
+    const raw = localStorage.getItem(LS_BANNERS_KEY);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as Banner[];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeCachedBanners(banners: Banner[]) {
+  try {
+    localStorage.setItem(LS_BANNERS_KEY, JSON.stringify(banners));
+  } catch {}
+}
+
 export function useBanners() {
   return useQuery({
     queryKey: ["banners"],
@@ -36,8 +58,11 @@ export function useBanners() {
         .order("sort_order");
 
       if (error) throw error;
-      return (data as DBBanner[])?.map(transformBanner) || [];
+      const banners = (data as DBBanner[])?.map(transformBanner) || [];
+      writeCachedBanners(banners);
+      return banners;
     },
+    placeholderData: readCachedBanners,
     staleTime: 10 * 60 * 1000, // 10 minutes - banners change rarely
   });
 }
