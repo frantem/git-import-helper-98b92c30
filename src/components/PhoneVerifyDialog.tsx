@@ -47,6 +47,24 @@ export function PhoneVerifyDialog({ open, phone, onOpenChange, onVerified }: Pho
   const sendCode = async () => {
     setIsSending(true);
     try {
+      // 1. Check if phone already belongs to another account BEFORE sending SMS
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: checkData, error: checkError } = await supabase.functions.invoke(
+        "check-account-exists",
+        { body: { phone, exclude_user_id: user?.id } },
+      );
+      if (checkError) {
+        toast.error("Не удалось проверить номер. Попробуйте позже.");
+        onOpenChange(false);
+        return;
+      }
+      if ((checkData as { exists?: boolean } | null)?.exists) {
+        toast.error("Этот номер уже привязан к другому аккаунту");
+        onOpenChange(false);
+        return;
+      }
+
+      // 2. Send OTP only if phone is free
       const { data, error } = await supabase.functions.invoke("send-otp", {
         body: { phone },
       });
@@ -64,6 +82,7 @@ export function PhoneVerifyDialog({ open, phone, onOpenChange, onVerified }: Pho
       setIsSending(false);
     }
   };
+
 
   const handleDigit = (idx: number, v: string) => {
     const digit = v.replace(/\D/g, "").slice(-1);
