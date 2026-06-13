@@ -838,9 +838,9 @@ export default function Product() {
                     <span className="text-xs text-primary font-medium">Все товары →</span>
                   </div>
                 </div>
-                {farmerCity && farmerStreet && (
+                {farmerCity && (
                   <div className="mt-2 px-[10px]">
-                    <p className="text-sm text-foreground">📍 Доступен самовывоз: г.{farmerCity} ул.{farmerStreet}</p>
+                    <p className="text-sm text-foreground">📍 Доступен самовывоз: г.{farmerCity}</p>
                     <p className="text-xs text-muted-foreground mt-0.5 ml-5">Точный адрес станет доступен после оформления заказа</p>
                   </div>
                 )}
