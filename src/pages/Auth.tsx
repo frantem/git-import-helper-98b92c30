@@ -295,33 +295,7 @@ export default function Auth() {
             {!((mode === "login" || mode === "register") && authMethod === "phone") &&
              !(mode === "register" && authMethod === "email") && (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "register" && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Имя *</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Введите ваше имя"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Телефон *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={handlePhoneChange}
-                      placeholder="+375 (XX) XXX-XX-XX"
-                      required
-                    />
-                  </div>
-                </>
-              )}
+              {/* Registration via email is handled by <EmailOtpForm /> above */}
 
               {mode !== "reset" && (
                 <div className="space-y-2">
