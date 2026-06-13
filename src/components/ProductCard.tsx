@@ -62,9 +62,11 @@ export const ProductCard = memo(function ProductCard({
     e.stopPropagation();
 
     if (hasRequiredFields) {
+      saveAnchor();
       navigate(`/product/${product.slug || product.id}?fill_required=true`);
       return;
     }
+
 
     if (product.defaultVariant) {
       addToCart(product, product.defaultVariant);
@@ -79,14 +81,36 @@ export const ProductCard = memo(function ProductCard({
 
   const showRating = product.rating !== null && product.rating !== undefined && product.rating > 0 && product.reviews > 0;
 
+  const saveAnchor = (e?: React.MouseEvent | React.TouchEvent) => {
+    try {
+      const listUrl = window.location.pathname + window.location.search;
+      const el = (e?.currentTarget as HTMLElement) ?? document.querySelector(`[data-product-id="${product.id}"]`);
+      const rect = el?.getBoundingClientRect();
+      const anchor = {
+        productId: product.id,
+        scrollY: window.scrollY,
+        viewportOffset: rect ? rect.top : 0,
+        ts: Date.now(),
+      };
+      const raw = sessionStorage.getItem("locus:scroll:anchor");
+      const all = raw ? JSON.parse(raw) : {};
+      all[listUrl] = anchor;
+      sessionStorage.setItem("locus:scroll:anchor", JSON.stringify(all));
+    } catch {/* ignore */}
+  };
+
   return (
     <Link
       to={`/product/${product.slug || product.id}`}
+      data-product-id={product.id}
       onMouseEnter={handlePrefetch}
+      onClick={saveAnchor}
+      onTouchStart={saveAnchor}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md",
         className
       )}>
+
 
       <div className="relative">
         <div className="aspect-square overflow-hidden bg-secondary rounded-t-2xl">

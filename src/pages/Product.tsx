@@ -193,9 +193,7 @@ export default function Product() {
       setReviews([]);
     }
   }, [dbProduct?.id]);
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
+  // Scroll-to-top on navigation is handled centrally by <ScrollManager />.
   useEffect(() => {
     fetchReviews();
   }, [fetchReviews]);
