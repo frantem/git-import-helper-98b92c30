@@ -173,16 +173,13 @@ export default function Settings() {
     toast.success("Фото загружено");
   };
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    
+  // Saves all non-phone profile fields. Returns true on success.
+  const saveProfileFields = async (): Promise<boolean> => {
+    if (!user) return false;
     const { error } = await supabase
       .from("profiles")
       .update({
         full_name: profile.full_name || null,
-        phone: profile.phone || null,
         avatar_url: profile.avatar_url || null,
         delivery_address: profile.delivery_address || null,
         email: email || null,
@@ -190,17 +187,61 @@ export default function Settings() {
       .eq("user_id", user.id);
 
     if (error) {
-      toast.error("Ошибка сохранения");
-    } else {
-      toast.success("Профиль сохранён");
-      
-      // If came from cart and required fields are filled, redirect back
-      if (fromCart && profile.full_name && profile.phone) {
-        navigate("/cart");
+      const msg = (error as { message?: string })?.message || "";
+      if (msg.includes("idx_profiles_phone_unique") || (error as { code?: string }).code === "23505") {
+        toast.error("Этот номер уже привязан к другому аккаунту");
+      } else {
+        toast.error(msg || "Ошибка сохранения");
       }
+      return false;
     }
-    
+    return true;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    const currentPhone = (profile.phone || "").trim();
+    const phoneChanged = currentPhone !== (savedPhone || "");
+
+    // If user typed a phone but it's invalid → stop.
+    if (currentPhone && currentPhone !== "+375" && !isValidBYPhone(currentPhone)) {
+      toast.error("Введите корректный номер: +375 (25/29/33/44) XXX-XX-XX");
+      return;
+    }
+
+    // If phone changed and is non-empty → require OTP verification first.
+    if (phoneChanged && currentPhone && currentPhone !== "+375") {
+      setPendingPhone(currentPhone);
+      setPhoneVerifyOpen(true);
+      return;
+    }
+
+    setIsSaving(true);
+    const ok = await saveProfileFields();
     setIsSaving(false);
+    if (!ok) return;
+
+    toast.success("Профиль сохранён");
+    if (fromCart && profile.full_name && savedPhone) {
+      navigate("/cart");
+    }
+  };
+
+  const handlePhoneVerified = async (verifiedPhone: string) => {
+    setPhoneVerifyOpen(false);
+    setSavedPhone(verifiedPhone);
+    setProfile((p) => ({ ...p, phone: verifiedPhone }));
+
+    setIsSaving(true);
+    const ok = await saveProfileFields();
+    setIsSaving(false);
+    if (!ok) return;
+
+    toast.success("Профиль сохранён");
+    if (fromCart && profile.full_name) {
+      navigate("/cart");
+    }
   };
 
   const handleUpdateEmail = async () => {
