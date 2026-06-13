@@ -511,6 +511,13 @@ export default function Settings() {
         )}
       </main>
 
+      <PhoneVerifyDialog
+        open={phoneVerifyOpen}
+        phone={pendingPhone}
+        onOpenChange={setPhoneVerifyOpen}
+        onVerified={handlePhoneVerified}
+      />
+
       <BottomNavigation />
     </div>
   );
