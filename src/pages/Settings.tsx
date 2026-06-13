@@ -366,10 +366,20 @@ export default function Settings() {
               <Label>Телефон</Label>
               <Input
                 value={profile.phone || ""}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                placeholder="+375..."
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setProfile({ ...profile, phone: v.length < 4 ? "+375" : formatBYPhone(v) });
+                }}
+                placeholder="+375 (29) XXX-XX-XX"
+                inputMode="tel"
               />
+              {profile.phone && profile.phone !== savedPhone && profile.phone !== "+375" && (
+                <p className="text-xs text-muted-foreground">
+                  При сохранении мы отправим код для подтверждения номера.
+                </p>
+              )}
             </div>
+
 
             <div className="space-y-2">
               <Label>Адрес доставки</Label>
