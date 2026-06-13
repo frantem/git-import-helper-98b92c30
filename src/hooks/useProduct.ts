@@ -23,7 +23,7 @@ interface DBProduct {
   fat: number | null;
   carbs: number | null;
   shelf_life: string | null;
-  farmers?: { id: string; name: string; district: string; village: string | null; photo_url: string | null; city: string | null; street: string | null };
+  farmers?: { id: string; name: string; district: string; village: string | null; photo_url: string | null; city: string | null };
   categories?: { name: string; emoji: string | null };
 }
 
@@ -62,7 +62,9 @@ export function useProduct(idOrSlug: string | undefined) {
       // Lookup by UUID or slug. UUID-shaped string goes to id.eq; otherwise treat as slug.
       // If lookup by slug returns nothing, fall back to id.eq for safety.
       const isUuid = UUID_RE.test(idOrSlug);
-      const baseSelect = `*, farmers(id, name, district, village, photo_url, city, street), categories(name, emoji)`;
+      // Note: farmers.street is restricted to authenticated users (anon cannot SELECT it).
+      // Product pages are public — we only request non-sensitive farmer columns here.
+      const baseSelect = `*, farmers(id, name, district, village, photo_url, city), categories(name, emoji)`;
       let { data: product, error: productError } = await supabase
         .from("products")
         .select(baseSelect)
@@ -150,7 +152,7 @@ export function usePrefetchProduct() {
         const [productRes, imagesRes, variantsRes, addonsRes] = await Promise.all([
           supabase
             .from("products")
-            .select(`*, farmers(id, name, district, village, photo_url, city, street), categories(name, emoji)`)
+            .select(`*, farmers(id, name, district, village, photo_url, city), categories(name, emoji)`)
             .eq("id", productId)
             .single(),
           supabase.from("product_images").select("*").eq("product_id", productId).order("sort_order"),

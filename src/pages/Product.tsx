@@ -91,10 +91,10 @@ export default function Product() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
 
-  // Build farmer location string
+  // Build farmer location string. Street/address_details are private and only
+  // shared with authenticated buyers at checkout; the public product page shows city only.
   const farmerCity = dbProduct?.farmers?.city;
-  const farmerStreet = dbProduct?.farmers?.street;
-  const farmerLocation = farmerCity && farmerStreet ? `г. ${farmerCity} ${farmerStreet}` : farmerCity ? `г. ${farmerCity}` : "Уточняйте у продавца";
+  const farmerLocation = farmerCity ? `г. ${farmerCity}` : "Уточняйте у продавца";
 
   // Set default variant when data loads
   useEffect(() => {
@@ -838,9 +838,9 @@ export default function Product() {
                     <span className="text-xs text-primary font-medium">Все товары →</span>
                   </div>
                 </div>
-                {farmerCity && farmerStreet && (
+                {farmerCity && (
                   <div className="mt-2 px-[10px]">
-                    <p className="text-sm text-foreground">📍 Доступен самовывоз: г.{farmerCity} ул.{farmerStreet}</p>
+                    <p className="text-sm text-foreground">📍 Доступен самовывоз: г.{farmerCity}</p>
                     <p className="text-xs text-muted-foreground mt-0.5 ml-5">Точный адрес станет доступен после оформления заказа</p>
                   </div>
                 )}
