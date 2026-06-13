@@ -68,9 +68,17 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Deferred analytics: GTM, gtag.js, Meta Pixel — loaded 2s after window load -->
+    <!--
+      Deferred analytics: GTM, gtag.js, Meta Pixel.
+      Loaded on first user interaction (pointerdown / keydown / scroll / touchstart)
+      OR via requestIdleCallback, with a 7s safety fallback. This keeps ~300 KiB of
+      third-party JS out of the LCP/TTI window for users who haven't interacted yet.
+      Meta Pixel PageView is duplicated by the CAPI Edge function, so a small delay
+      is safe for attribution.
+    -->
     <script>
       (function () {
+        var loaded = false;
         function inject(src) {
           var s = document.createElement('script');
           s.async = true;
@@ -78,6 +86,9 @@
           document.head.appendChild(s);
         }
         function loadAnalytics() {
+          if (loaded) return;
+          loaded = true;
+          cleanup();
           inject('https://www.googletagmanager.com/gtm.js?id=GTM-TJRXWX37');
           inject('https://www.googletagmanager.com/gtag/js?id=G-697RT52S8Y');
 
@@ -93,10 +104,28 @@
           fbq('init', '1214375087525107');
           fbq('track', 'PageView');
         }
+        var events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+        function cleanup() {
+          events.forEach(function (ev) {
+            window.removeEventListener(ev, loadAnalytics, { passive: true, capture: true });
+          });
+        }
+        events.forEach(function (ev) {
+          window.addEventListener(ev, loadAnalytics, { passive: true, capture: true, once: true });
+        });
+        // Idle fallback (Chromium/Firefox) so bots and passive visitors still fire analytics.
+        var idleHandle;
+        function scheduleIdle() {
+          if ('requestIdleCallback' in window) {
+            idleHandle = window.requestIdleCallback(loadAnalytics, { timeout: 7000 });
+          } else {
+            idleHandle = setTimeout(loadAnalytics, 5000);
+          }
+        }
         if (document.readyState === 'complete') {
-          setTimeout(loadAnalytics, 2000);
+          scheduleIdle();
         } else {
-          window.addEventListener('load', function () { setTimeout(loadAnalytics, 2000); });
+          window.addEventListener('load', scheduleIdle, { once: true });
         }
       })();
     </script>
