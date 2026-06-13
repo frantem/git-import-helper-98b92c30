@@ -61,10 +61,10 @@ Deno.serve(async (req) => {
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!isValidEmail(email)) {
-    return jsonResponse({ success: false, error: "Некорректный Email" }, 400);
+    return jsonResponse({ success: false, error: "Некорректный Email" });
   }
   if (email.endsWith("@phone.locusfood.by")) {
-    return jsonResponse({ success: false, error: "Введите ваш реальный Email" }, 400);
+    return jsonResponse({ success: false, error: "Введите ваш реальный Email" });
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     if (!list?.users || list.users.length === 0) break;
     const found = list.users.find((u) => u.email?.toLowerCase() === email);
     if (found) {
-      return jsonResponse({ success: false, error: "Этот Email уже зарегистрирован. Войдите или восстановите пароль." }, 409);
+      return jsonResponse({ success: false, error: "Этот Email уже зарегистрирован. Войдите или восстановите пароль.", code: "email_taken" });
     }
     if (list.users.length < 200) break;
   }
@@ -92,12 +92,12 @@ Deno.serve(async (req) => {
   if (recent && recent.length > 0) {
     const lastMs = new Date(recent[0].created_at).getTime();
     if (nowMs - lastMs < RATE_LIMIT_SECONDS * 1000) {
-      return jsonResponse({ success: false, error: "Подождите минуту перед повторной отправкой" }, 429);
+      return jsonResponse({ success: false, error: "Подождите минуту перед повторной отправкой", retry_after: RATE_LIMIT_SECONDS });
     }
     const hourAgo = nowMs - 3600 * 1000;
     const inHour = recent.filter((r) => new Date(r.created_at).getTime() > hourAgo);
     if (inHour.length >= HOURLY_LIMIT) {
-      return jsonResponse({ success: false, error: "Слишком много попыток. Попробуйте позже." }, 429);
+      return jsonResponse({ success: false, error: "Слишком много попыток. Попробуйте позже." });
     }
   }
 
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
   if (!resendRes.ok) {
     const errText = await resendRes.text();
     console.error("Resend error:", resendRes.status, errText);
-    return jsonResponse({ success: false, error: "Не удалось отправить письмо" }, 502);
+    return jsonResponse({ success: false, error: "Не удалось отправить письмо. Попробуйте позже." });
   }
 
   return jsonResponse({
