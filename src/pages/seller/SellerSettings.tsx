@@ -226,13 +226,13 @@ export default function SellerSettings() {
   };
 
   const handleGenerateLinkCode = async () => {
-    if (!user) return;
+    if (!user || !farmerId) return;
     setTgBusy(true);
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
     const { error } = await supabase
-      .from("profiles")
+      .from("farmers")
       .update({ telegram_link_code: code } as any)
-      .eq("user_id", user.id);
+      .eq("id", farmerId);
     if (error) {
       toast.error("Не удалось сгенерировать код");
     } else {
@@ -242,12 +242,12 @@ export default function SellerSettings() {
   };
 
   const handleUnlinkTelegram = async () => {
-    if (!user) return;
+    if (!user || !farmerId) return;
     setTgBusy(true);
     const { error } = await supabase
-      .from("profiles")
+      .from("farmers")
       .update({ telegram_chat_id: null } as any)
-      .eq("user_id", user.id);
+      .eq("id", farmerId);
     if (error) toast.error("Не удалось отвязать");
     else {
       setTelegramChatId(null);
