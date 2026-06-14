@@ -10,9 +10,18 @@ import { formatBYPhone, isValidBYPhone } from "@/lib/phone";
 
 interface PhoneAuthFormProps {
   onSuccess: () => void;
+  /**
+   * login    — обычный вход/регистрация (текущее поведение, по умолчанию)
+   * register — перед отправкой кода проверяем check-account-exists;
+   *            если номер занят — вызываем onAccountExists вместо отправки SMS
+   * recovery — отправляем код на существующий номер; после verify-otp вызываем onSuccess
+   */
+  mode?: "login" | "register" | "recovery";
+  /** Вызывается, если в режиме register номер уже занят (вместо отправки SMS) */
+  onAccountExists?: (phone: string) => void;
 }
 
-export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
+export function PhoneAuthForm({ onSuccess, mode = "login", onAccountExists }: PhoneAuthFormProps) {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("+375");
   const [code, setCode] = useState(["", "", "", ""]);
@@ -48,6 +57,28 @@ export function PhoneAuthForm({ onSuccess }: PhoneAuthFormProps) {
     if (!isValidBYPhone(phone)) {
       toast.error("Введите корректный номер: +375 (25/29/33/44) XXX-XX-XX");
       return;
+    }
+    // В режиме регистрации сначала проверяем, не занят ли номер
+    if (mode === "register" && onAccountExists) {
+      setIsSending(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("check-account-exists", {
+          body: { phone },
+        });
+        if (error) {
+          toast.error("Не удалось проверить номер. Попробуйте позже.");
+          return;
+        }
+        if ((data as { exists?: boolean } | null)?.exists) {
+          onAccountExists(phone);
+          return;
+        }
+      } catch (e) {
+        toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
+        return;
+      } finally {
+        setIsSending(false);
+      }
     }
     setIsSending(true);
     try {

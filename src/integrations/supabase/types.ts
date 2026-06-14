@@ -904,6 +904,7 @@ export type Database = {
           delivery_address: string | null
           email: string | null
           full_name: string | null
+          has_password: boolean
           id: string
           max_orders_per_day: number | null
           phone: string | null
@@ -922,6 +923,7 @@ export type Database = {
           delivery_address?: string | null
           email?: string | null
           full_name?: string | null
+          has_password?: boolean
           id?: string
           max_orders_per_day?: number | null
           phone?: string | null
@@ -940,6 +942,7 @@ export type Database = {
           delivery_address?: string | null
           email?: string | null
           full_name?: string | null
+          has_password?: boolean
           id?: string
           max_orders_per_day?: number | null
           phone?: string | null

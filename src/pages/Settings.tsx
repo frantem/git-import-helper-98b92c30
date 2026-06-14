@@ -32,23 +32,27 @@ interface Profile {
   delivery_address: string | null;
 }
 
+const VIRTUAL_EMAIL_SUFFIX = "@phone.locusfood.by";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Settings() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromCart = searchParams.get("from") === "cart";
-  
+  const forceReset = searchParams.get("reset") === "password";
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  
+
   const [profile, setProfile] = useState<Profile>({
     full_name: "",
     phone: "",
     avatar_url: "",
     delivery_address: "",
   });
-  
+
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,6 +62,19 @@ export default function Settings() {
   const [savedPhone, setSavedPhone] = useState<string>("");
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
   const [pendingPhone, setPendingPhone] = useState<string>("");
+
+  // ---- cart-completion / password-reset flow ----
+  const [hasPassword, setHasPassword] = useState<boolean>(true);
+  const [emailStep, setEmailStep] = useState<"idle" | "sent" | "verified">("idle");
+  const [emailCode, setEmailCode] = useState<string>("");
+  const [isSendingEmailCode, setIsSendingEmailCode] = useState(false);
+  const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // Real (non-virtual) confirmed email currently in auth.users
+  const authEmail = user?.email || "";
+  const isVirtualEmail = authEmail.toLowerCase().endsWith(VIRTUAL_EMAIL_SUFFIX);
+  const hasRealEmail = !!authEmail && !isVirtualEmail;
 
   const handleRemoveSeller = async () => {
     if (!user) return;
@@ -112,21 +129,24 @@ export default function Settings() {
       navigate("/auth");
       return;
     }
-    
-    setEmail(user.email || "");
+
+    // If user has virtual phone email — leave field blank so they enter a real one
+    setEmail(isVirtualEmail ? "" : (user.email || ""));
     fetchProfile();
 
     if (fromCart) {
-      toast.info("Заполните имя и телефон для оформления заказа");
+      toast.info("Заполните имя, телефон, Email и пароль для оформления заказа");
+    } else if (forceReset) {
+      toast.info("Задайте новый пароль для входа");
     }
   }, [user]);
 
   const fetchProfile = async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, phone, avatar_url, delivery_address")
+      .select("full_name, phone, avatar_url, delivery_address, has_password")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -139,8 +159,13 @@ export default function Settings() {
         delivery_address: (data as any).delivery_address || "",
       });
       setSavedPhone(phoneVal);
+      setHasPassword(!!(data as any).has_password);
+      // If real email already set in auth, mark email step as already verified
+      if (!isVirtualEmail && user.email) {
+        setEmailStep("verified");
+      }
     }
-    
+
     setIsLoading(false);
   };
 
@@ -198,6 +223,16 @@ export default function Settings() {
     return true;
   };
 
+  // Когда checkout-данные полностью готовы — возвращаемся в корзину
+  const tryNavigateAfterCart = (latestPhone: string) => {
+    if (!fromCart) return;
+    const passwordOk = hasPassword || newPassword.length >= 6;
+    const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
+    if (profile.full_name && latestPhone && emailOk && passwordOk) {
+      navigate("/cart");
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -210,6 +245,31 @@ export default function Settings() {
       return;
     }
 
+    // Cart-completion required fields
+    if (fromCart) {
+      if (!profile.full_name?.trim()) {
+        toast.error("Введите имя");
+        return;
+      }
+      if (!currentPhone || currentPhone === "+375") {
+        toast.error("Введите номер телефона");
+        return;
+      }
+      const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
+      if (!emailOk) {
+        toast.error("Подтвердите Email кодом перед сохранением");
+        return;
+      }
+      if (!hasPassword && newPassword.length < 6) {
+        toast.error("Задайте пароль (минимум 6 символов)");
+        return;
+      }
+      if (newPassword && newPassword !== confirmPassword) {
+        toast.error("Пароли не совпадают");
+        return;
+      }
+    }
+
     // If phone changed and is non-empty → require OTP verification first.
     if (phoneChanged && currentPhone && currentPhone !== "+375") {
       setPendingPhone(currentPhone);
@@ -219,13 +279,25 @@ export default function Settings() {
 
     setIsSaving(true);
     const ok = await saveProfileFields();
+    if (!ok) { setIsSaving(false); return; }
+
+    // Если в этой же форме (cart-completion) пользователь задал пароль — сохраняем
+    if (fromCart && !hasPassword && newPassword.length >= 6) {
+      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (pwErr) {
+        toast.error("Ошибка сохранения пароля: " + pwErr.message);
+        setIsSaving(false);
+        return;
+      }
+      await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user.id);
+      setHasPassword(true);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
     setIsSaving(false);
-    if (!ok) return;
 
     toast.success("Профиль сохранён");
-    if (fromCart && profile.full_name && savedPhone) {
-      navigate("/cart");
-    }
+    tryNavigateAfterCart(savedPhone || currentPhone);
   };
 
   const handlePhoneVerified = async (verifiedPhone: string) => {
@@ -235,63 +307,115 @@ export default function Settings() {
 
     setIsSaving(true);
     const ok = await saveProfileFields();
+    if (!ok) { setIsSaving(false); return; }
+
+    if (fromCart && !hasPassword && newPassword.length >= 6) {
+      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (!pwErr) {
+        await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user!.id);
+        setHasPassword(true);
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    }
     setIsSaving(false);
-    if (!ok) return;
 
     toast.success("Профиль сохранён");
-    if (fromCart && profile.full_name) {
-      navigate("/cart");
-    }
+    tryNavigateAfterCart(verifiedPhone);
   };
 
-  const handleUpdateEmail = async () => {
-    if (!email) {
-      toast.error("Введите email");
+  // ---- Email OTP (для cart-completion и для смены email с виртуального) ----
+  const handleSendEmailCode = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(trimmed)) {
+      toast.error("Введите корректный Email");
       return;
     }
-
-    if (email.trim().toLowerCase() === user?.email?.toLowerCase()) {
+    if (trimmed === authEmail.toLowerCase()) {
       toast.info("Этот email уже используется");
       return;
     }
-
-    const { error } = await supabase.auth.updateUser({ email });
-
-    if (error) {
-      if (error.message?.includes("already been registered")) {
-        toast.error("Этот email уже зарегистрирован в системе");
-      } else {
-        toast.error("Ошибка изменения email");
+    setIsSendingEmailCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-change-code", {
+        body: { new_email: trimmed },
+      });
+      if (error || !(data as any)?.success) {
+        toast.error((data as any)?.error || "Не удалось отправить код");
+        return;
       }
-    } else {
-      toast.success(`Письмо для подтверждения отправлено на ${email}. Проверьте папку «Спам».`);
+      toast.success("Код отправлен на " + trimmed);
+      setEmail(trimmed);
+      setEmailStep("sent");
+    } catch (e) {
+      toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setIsSendingEmailCode(false);
     }
   };
+
+  const handleVerifyEmailCode = async () => {
+    if (!/^\d{6}$/.test(emailCode.trim())) {
+      toast.error("Код должен состоять из 6 цифр");
+      return;
+    }
+    setIsVerifyingEmailCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-email-change-code", {
+        body: { new_email: email, code: emailCode.trim() },
+      });
+      if (error || !(data as any)?.success) {
+        toast.error((data as any)?.error || "Неверный код");
+        return;
+      }
+      toast.success("Email подтверждён");
+      await supabase.auth.refreshSession();
+      setEmailStep("verified");
+      setEmailCode("");
+    } catch (e) {
+      toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setIsVerifyingEmailCode(false);
+    }
+  };
+
+  // Legacy: standalone email change (вне cart-flow) — оставляем для обычного использования
+  const handleUpdateEmail = handleSendEmailCode;
 
   const handleUpdatePassword = async () => {
     if (!newPassword) {
       toast.error("Введите новый пароль");
       return;
     }
-    
     if (newPassword !== confirmPassword) {
       toast.error("Пароли не совпадают");
       return;
     }
-    
     if (newPassword.length < 6) {
       toast.error("Пароль должен быть минимум 6 символов");
       return;
     }
-
+    setIsSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-
     if (error) {
       toast.error("Ошибка изменения пароля");
-    } else {
-      toast.success("Пароль изменён");
-      setNewPassword("");
-      setConfirmPassword("");
+      setIsSavingPassword(false);
+      return;
+    }
+    if (user) {
+      await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user.id);
+    }
+    setHasPassword(true);
+    toast.success("Пароль изменён");
+    setNewPassword("");
+    setConfirmPassword("");
+    setIsSavingPassword(false);
+
+    if (forceReset) {
+      // После сброса пароля (вход по SMS) → редирект в профиль / returnTo
+      const returnTo = localStorage.getItem("locus-return-to");
+      localStorage.removeItem("locus-return-to");
+      navigate(returnTo || "/profile");
     }
   };
 
@@ -315,6 +439,27 @@ export default function Settings() {
         <PageHeader title="Настройки" backPath="/profile" />
 
         <div className="max-w-md mx-auto space-y-6">
+          {(fromCart || forceReset) && (
+            <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 text-sm text-foreground">
+              {fromCart ? (
+                <>
+                  <p className="font-medium mb-1">Завершите профиль, чтобы оформить заказ</p>
+                  <p className="text-muted-foreground">
+                    Заполните: Имя, Телефон, Email (с подтверждением кодом) и Пароль —
+                    после сохранения вернёмся в корзину.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium mb-1">Задайте новый пароль для входа</p>
+                  <p className="text-muted-foreground">
+                    Вы вошли по SMS-коду. Чтобы дальше входить с паролем, задайте его в блоке «Пароль» ниже.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Avatar section */}
           <div className="flex flex-col items-center rounded-xl bg-card p-6">
             <div className="relative mb-4">
@@ -397,37 +542,89 @@ export default function Settings() {
 
           {/* Email */}
           <div className="rounded-xl bg-card p-4 space-y-4">
-            <h3 className="font-medium text-foreground">Email</h3>
-            
+            <h3 className="font-medium text-foreground">
+              Email {fromCart && !hasRealEmail && emailStep !== "verified" && (
+                <span className="text-destructive">*</span>
+              )}
+            </h3>
+
+            {hasRealEmail && emailStep === "verified" ? (
+              <p className="text-sm text-muted-foreground">
+                Текущий email: <span className="text-foreground font-medium">{authEmail}</span>
+              </p>
+            ) : null}
+
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{hasRealEmail ? "Новый email" : "Email"}</Label>
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (emailStep === "verified") setEmailStep("idle"); }}
                 placeholder="email@example.com"
+                disabled={emailStep === "sent"}
               />
             </div>
-            
-            <Button onClick={handleUpdateEmail} variant="outline" className="w-full">
-              Изменить email
-            </Button>
+
+            {emailStep === "sent" && (
+              <div className="space-y-2">
+                <Label>Код подтверждения</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="6-значный код"
+                  autoComplete="one-time-code"
+                />
+                <div className="flex gap-2">
+                  <Button onClick={handleVerifyEmailCode} disabled={isVerifyingEmailCode} className="flex-1">
+                    {isVerifyingEmailCode ? "Проверка..." : "Подтвердить код"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => { setEmailStep("idle"); setEmailCode(""); }}
+                    disabled={isVerifyingEmailCode}
+                  >
+                    Назад
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {emailStep !== "sent" && (
+              <Button onClick={handleSendEmailCode} variant="outline" className="w-full" disabled={isSendingEmailCode}>
+                {isSendingEmailCode
+                  ? "Отправка..."
+                  : hasRealEmail ? "Изменить email" : "Получить код подтверждения"}
+              </Button>
+            )}
           </div>
 
           {/* Password */}
           <div className="rounded-xl bg-card p-4 space-y-4">
-            <h3 className="font-medium text-foreground">Пароль</h3>
-            
+            <h3 className="font-medium text-foreground">
+              Пароль {fromCart && !hasPassword && <span className="text-destructive">*</span>}
+            </h3>
+
+            {!hasPassword && (
+              <p className="text-sm text-muted-foreground">
+                У вас ещё не задан пароль. Задайте его, чтобы входить по Email/телефону + паролю.
+              </p>
+            )}
+
             <div className="space-y-2">
-              <Label>Новый пароль</Label>
+              <Label>{hasPassword ? "Новый пароль" : "Пароль"}</Label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Минимум 6 символов"
+                autoFocus={forceReset}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Подтвердите пароль</Label>
               <Input
@@ -437,9 +634,9 @@ export default function Settings() {
                 placeholder="Повторите пароль"
               />
             </div>
-            
-            <Button onClick={handleUpdatePassword} variant="outline" className="w-full">
-              Изменить пароль
+
+            <Button onClick={handleUpdatePassword} variant="outline" className="w-full" disabled={isSavingPassword}>
+              {isSavingPassword ? "Сохранение..." : hasPassword ? "Изменить пароль" : "Сохранить пароль"}
             </Button>
           </div>
 
