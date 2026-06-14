@@ -129,21 +129,24 @@ export default function Settings() {
       navigate("/auth");
       return;
     }
-    
-    setEmail(user.email || "");
+
+    // If user has virtual phone email — leave field blank so they enter a real one
+    setEmail(isVirtualEmail ? "" : (user.email || ""));
     fetchProfile();
 
     if (fromCart) {
-      toast.info("Заполните имя и телефон для оформления заказа");
+      toast.info("Заполните имя, телефон, Email и пароль для оформления заказа");
+    } else if (forceReset) {
+      toast.info("Задайте новый пароль для входа");
     }
   }, [user]);
 
   const fetchProfile = async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, phone, avatar_url, delivery_address")
+      .select("full_name, phone, avatar_url, delivery_address, has_password")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -156,8 +159,13 @@ export default function Settings() {
         delivery_address: (data as any).delivery_address || "",
       });
       setSavedPhone(phoneVal);
+      setHasPassword(!!(data as any).has_password);
+      // If real email already set in auth, mark email step as already verified
+      if (!isVirtualEmail && user.email) {
+        setEmailStep("verified");
+      }
     }
-    
+
     setIsLoading(false);
   };
 
