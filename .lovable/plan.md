@@ -1,49 +1,113 @@
-# Перенос продавческих полей из `profiles` в `farmers`
-
 ## Цель
-Сделать структуру БД логичной: поля, относящиеся к продавцу (расписание выдачи, лимиты заказов, занятые/отпускные даты, привязка Telegram), должны жить в таблице `farmers`, а не в общей `profiles`.
 
-Перенос будет безопасным: данные копируются, код переключается, и только потом старые колонки удаляются (в отдельной финальной миграции — после проверки).
+Сделать вход и регистрацию более простыми и логичными:
 
-## Что переезжает
-Из `profiles` → в `farmers`:
-- `pickup_slots` (jsonb)
-- `max_orders_per_day` (integer, default 5)
-- `busy_dates` (jsonb массив дат)
-- `vacation_dates` (jsonb массив дат)
-- `telegram_chat_id` (text)
-- `telegram_link_code` (text, уникальный когда не null)
+1. На `/auth` — одна форма входа: поле «Email или телефон» + Пароль + Google + «Забыли пароль» + «Нет аккаунта? Зарегистрируйтесь».
+2. Регистрация — один экран ввода номера телефона + SMS-код (без пароля сейчас).
+3. Восстановление доступа по телефону — SMS-код → автологин → редирект в `/settings`, где **обязательно** задать новый пароль.
+4. Перед оформлением заказа (`/settings?from=cart`) теперь требуем **4 поля**: Имя, Телефон, Email (с кодом подтверждения), Пароль. После сохранения — возврат в `/cart`.
 
-## План работ
+---
 
-### Этап 1 — Миграция (структура + копирование)
-1. `ALTER TABLE public.farmers ADD COLUMN ...` — добавить все 6 колонок с теми же типами и дефолтами, что сейчас в `profiles`.
-2. Скопировать данные: `UPDATE farmers f SET ... FROM profiles p WHERE p.user_id = f.user_id`.
-3. Создать уникальный индекс на `farmers.telegram_link_code WHERE telegram_link_code IS NOT NULL`.
-4. Обновить SQL-функцию `public.get_seller_pickup_settings(farmer_ids uuid[])` — читать из `farmers` напрямую (без JOIN на profiles).
-5. RLS на новых колонках наследуется существующими политиками `farmers` (продавец видит/правит свою запись, публичное чтение для каталога). Менять политики не нужно.
-6. Старые колонки в `profiles` пока **оставляем** — на случай отката.
+## Что меняем
 
-### Этап 2 — Код
-Заменить чтение/запись с `profiles` на `farmers` в:
+### A) `src/pages/Auth.tsx` — упрощённая форма входа
 
-- `src/pages/seller/SellerSettings.tsx` — `select(... pickup_slots, ... telegram_link_code)` и оба `.update({...})` переключить с `profiles` (`.eq("user_id", user.id)`) на `farmers` (`.eq("id", farmerId)`).
-- `src/pages/Checkout.tsx` — типы и запросы `pickup_slots/max_orders_per_day/busy_dates/vacation_dates` берутся через RPC `get_seller_pickup_settings`, которая уже будет читать из `farmers`. Прямых SELECT по `profiles` для этих полей в Checkout нет — менять не придётся (проверим при имплементации).
-- `src/hooks/usePickupLabels.ts` — то же, читается через RPC, изменений в коде нет.
-- `supabase/functions/send-new-order-telegram/index.ts` — заменить `from("profiles").select("user_id, telegram_chat_id").in("user_id", ...)` на `from("farmers").select("id, telegram_chat_id").in("id", farmerIds)` и обновить маппинг `chatByFarmer`.
-- `supabase/functions/telegram-webhook/index.ts` — все три обращения (`eq telegram_link_code`, `update telegram_chat_id`, `select by telegram_chat_id`) переключить с `profiles` на `farmers`. Связь с пользователем — через `farmers.user_id`.
+- Убрать вкладки «Телефон / Email» в режиме `login`. Оставить **одно** поле «Email или телефон» + Пароль.
+- Автоопределение: если ввод начинается с `+` или цифры — обращаемся с ним как с телефоном (нормализуем через `formatBYPhone`/`isValidBYPhone`); иначе — email.
+- Под полем мелкая подсказка: «Email или номер телефона в формате +375…».
+- Кнопка «Войти»:
+  - email → `supabase.auth.signInWithPassword({ email, password })` (как сейчас);
+  - phone → вызов новой edge-функции `phone-password-login` (см. ниже), которая возвращает `{ access_token, refresh_token }`, далее `supabase.auth.setSession(...)`.
+  - Ошибка «пароль не задан» → toast «У этого номера нет пароля. Восстановите доступ» + кнопка «Восстановить».
+- Внизу: «Забыли пароль?», «Нет аккаунта? Зарегистрируйтесь», «Войти через Google» (как сейчас).
+- В режиме `register` показываем **только** `PhoneAuthForm` (один экран: ввод номера → SMS-код). Сначала вызываем `check-account-exists`:
+  - если номер уже занят → показать алерт «Аккаунт с этим номером уже есть. Восстановить доступ?» → «Да» переключает state в режим «recovery» — отправляет OTP на тот же номер, после успешного `verify-otp` (автологин) делает `navigate("/settings?reset=password")`.
+  - если свободен → текущий flow `send-otp` → `verify-otp` → автологин → `navigate(returnTo || "/profile")`.
+- Режим `forgot` оставляем для email; для телефона восстановление идёт через сценарий выше.
 
-### Этап 3 — Финальная миграция (после визуальной проверки, отдельным шагом)
-После того как мы убедимся, что всё работает (продавец сохраняет настройки выдачи, чекаут показывает слоты, Telegram-привязка и уведомления работают), выпустим вторую миграцию: `ALTER TABLE profiles DROP COLUMN ...` для шести колонок и удалим устаревший уникальный индекс.
+### B) Новая Edge-функция `supabase/functions/phone-password-login/index.ts`
 
-Этот этап не выполняется автоматически — я попрошу подтверждения отдельно.
+Зачем: вход по телефону+паролю без раскрытия фронту виртуального email.
+
+Логика:
+1. Принимает `{ phone, password }`, нормализует BY-номер (как в `check-account-exists`).
+2. Service-role клиент: ищет `profiles.user_id` по нормализованному телефону (последние 9 цифр).
+3. `admin.auth.admin.getUserById(user_id)` → берёт `user.email`.
+4. Создаёт обычный клиент с `SUPABASE_ANON_KEY`, вызывает `signInWithPassword({ email, password })`.
+5. Возвращает `{ success, access_token, refresh_token }` или `{ error: "Неверный пароль" | "Пароль не задан" | "Аккаунт не найден" }`.
+6. CORS + 4xx/5xx коды.
+
+Различение «пароль не задан» vs «неверный пароль»:
+- Перед `signInWithPassword` проверяем `profiles.has_password` (новое поле, см. ниже). Если false → `{ error: "no_password" }`.
+
+### C) Миграция БД
+
+- `ALTER TABLE public.profiles ADD COLUMN has_password boolean NOT NULL DEFAULT false;`
+- Бэкфилл: `UPDATE profiles SET has_password = true WHERE user_id IN (SELECT id FROM auth.users WHERE encrypted_password IS NOT NULL AND length(encrypted_password) > 0);` — выполняется через service-role SQL внутри миграции.
+- RLS на колонку не нужна отдельно (наследует существующие политики `profiles`).
+
+### D) `src/pages/Settings.tsx` — обязательные поля при `?from=cart`
+
+- При `fromCart === true`:
+  - Поле Email становится обязательным. Если `user.email` похож на виртуальный (`*@phone.locus` или текущий email не подтверждён) — требуем ввести реальный и подтвердить кодом (используем готовые `send-email-change-code` / `verify-email-change-code`, как в `EmailChangePrompt`).
+  - Добавляем поле **«Пароль»** (минимум 6 символов) + повтор. Если `profiles.has_password === false` — поле обязательное. Сохраняется через `supabase.auth.updateUser({ password })`; после успеха `update profiles set has_password=true`.
+  - Кнопка «Сохранить» неактивна, пока не заполнены: имя, телефон (верифицирован), email (верифицирован), пароль (если нужен).
+  - После успешного сохранения всех 4 полей → `navigate("/cart")`.
+- Параметр `?reset=password` (из сценария восстановления по телефону): показываем поверх формы баннер «Задайте новый пароль для входа» и автоматически фокусируем поле пароля; после сохранения — `navigate("/profile")` (или `returnTo` из localStorage).
+
+### E) Мелочи
+
+- `src/components/PhoneAuthForm.tsx`: добавить опциональный пропс `mode: "login" | "register" | "recovery"` для разных текстов кнопок/тостов; в режиме `register` перед `sendCode` вызывать `check-account-exists` и показывать диалог «номер занят → восстановить».
+- `src/pages/Cart.tsx`: проверка профиля расширяется — кроме `full_name` и `phone` дополнительно проверяем `has_password` и наличие подтверждённого email; если чего-то нет → `navigate("/settings?from=cart")` (как сейчас).
+- `EmailChangePrompt` на странице успеха заказа оставляем как fallback (не критично).
+
+---
+
+## Технические детали
+
+```text
+Auth flow (новый):
+
+[/auth login]
+  ├─ input: "email или телефон" + пароль
+  ├─ detect: phone? → phone-password-login EF → setSession
+  │           email? → signInWithPassword
+  └─ links: Forgot · Register · Google
+
+[/auth register]
+  └─ PhoneAuthForm(register)
+       ├─ check-account-exists(phone)
+       │    ├─ exists  → confirm dialog "Восстановить?" → PhoneAuthForm(recovery)
+       │    └─ free    → send-otp → verify-otp → autologin → /profile
+       └─ recovery → send-otp → verify-otp → autologin → /settings?reset=password
+
+[/cart → Оформить заказ]
+  └─ if !user → /auth (+ returnTo)
+     elif профиль неполный → /settings?from=cart
+                                 (имя + телефон + email-OTP + пароль)
+     else → /checkout
+```
+
+Edge-функции:
+- **новая** `phone-password-login` (verify_jwt=false).
+- существующие `check-account-exists`, `send-otp`, `verify-otp`, `send-email-change-code`, `verify-email-change-code` — без правок.
+
+БД:
+- `profiles.has_password boolean default false` + бэкфилл.
+
+UI:
+- Auth.tsx — переписать `login`-секцию и `register`-секцию.
+- PhoneAuthForm.tsx — добавить `mode` + проверку занятости.
+- Settings.tsx — добавить блок пароля и обязательность Email при `from=cart`; обработка `?reset=password`.
+
+---
 
 ## Что НЕ трогаем
-- Структуру `profiles` для покупательских полей (`full_name`, `phone`, `email`, `delivery_address` и т.д.).
-- RLS политики `farmers` (уже корректны).
-- `app_settings.admin_telegram_chat_id` — это глобальная настройка, не относится к продавцу.
 
-## Риски и как они закрыты
-- **Расхождение данных в момент миграции:** копируем атомарно одним UPDATE до того, как код начнёт писать в новое место.
-- **Откат:** старые колонки сохранены до Этапа 3; при проблеме код возвращается к чтению из `profiles` без потери данных.
-- **Telegram-вебхук в момент деплоя:** обе версии edge-функций (старая в проде, новая после деплоя) будут работать корректно, потому что после Этапа 1 данные продублированы.
+- Логику виртуальных email в `verify-otp` (она уже корректна).
+- Существующие edge-функции, кроме добавления одной новой.
+- Дизайн/токены, footer, банеры, RLS других таблиц.
+- Email-восстановление (`forgot`) для email-аккаунтов — остаётся как сейчас.
+
+После твоего «ок» начну с миграции (`has_password`), затем edge-функция, затем правки `Auth.tsx` / `PhoneAuthForm.tsx` / `Settings.tsx` / `Cart.tsx`.
