@@ -58,6 +58,28 @@ export function PhoneAuthForm({ onSuccess, mode = "login", onAccountExists }: Ph
       toast.error("Введите корректный номер: +375 (25/29/33/44) XXX-XX-XX");
       return;
     }
+    // В режиме регистрации сначала проверяем, не занят ли номер
+    if (mode === "register" && onAccountExists) {
+      setIsSending(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("check-account-exists", {
+          body: { phone },
+        });
+        if (error) {
+          toast.error("Не удалось проверить номер. Попробуйте позже.");
+          return;
+        }
+        if ((data as { exists?: boolean } | null)?.exists) {
+          onAccountExists(phone);
+          return;
+        }
+      } catch (e) {
+        toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
+        return;
+      } finally {
+        setIsSending(false);
+      }
+    }
     setIsSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-otp", {
