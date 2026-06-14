@@ -79,21 +79,14 @@ Deno.serve(async (req) => {
     const farmerIds = [...new Set(allItems.map(i => i.farmer_id))];
     const { data: farmers } = await supabase
       .from("farmers")
-      .select("id, name, user_id, city, street, address_details")
+      .select("id, name, user_id, city, street, address_details, telegram_chat_id")
       .in("id", farmerIds);
-
-    const farmerUserIds = (farmers || []).map(f => f.user_id).filter(Boolean) as string[];
-    const { data: farmerProfiles } = await supabase
-      .from("profiles")
-      .select("user_id, telegram_chat_id")
-      .in("user_id", farmerUserIds);
 
     const chatByFarmer = new Map<string, string>();
     const farmerById = new Map<string, any>();
     (farmers || []).forEach(f => {
       farmerById.set(f.id, f);
-      const p = farmerProfiles?.find(pp => pp.user_id === f.user_id);
-      if (p?.telegram_chat_id) chatByFarmer.set(f.id, p.telegram_chat_id);
+      if (f.telegram_chat_id) chatByFarmer.set(f.id, f.telegram_chat_id);
     });
 
     // Admin chat ids
