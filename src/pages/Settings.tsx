@@ -418,7 +418,6 @@ export default function Settings() {
       navigate(returnTo || "/profile");
     }
   };
-  };
 
   if (isLoading) {
     return (
