@@ -112,20 +112,13 @@ export default function SellerSettings() {
       let busy: Date[] = [];
       let vacation: Date[] = [];
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("pickup_slots, max_orders_per_day, busy_dates, vacation_dates, telegram_chat_id, telegram_link_code")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (profile) {
-        if (profile.pickup_slots) slots = profile.pickup_slots as unknown as PickupSlots;
-        if (profile.max_orders_per_day != null) maxOrders = profile.max_orders_per_day as number;
-        if (profile.busy_dates) busy = (profile.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
-        if (profile.vacation_dates) vacation = (profile.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
-        setTelegramChatId((profile as any).telegram_chat_id || null);
-        setTelegramLinkCode((profile as any).telegram_link_code || null);
-      }
+      const fFull = farmer as any;
+      if (fFull.pickup_slots) slots = fFull.pickup_slots as unknown as PickupSlots;
+      if (fFull.max_orders_per_day != null) maxOrders = fFull.max_orders_per_day as number;
+      if (fFull.busy_dates) busy = (fFull.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
+      if (fFull.vacation_dates) vacation = (fFull.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
+      setTelegramChatId(fFull.telegram_chat_id || null);
+      setTelegramLinkCode(fFull.telegram_link_code || null);
 
       // Load bot username (public app_setting)
       const { data: botSetting } = await supabase
@@ -210,14 +203,14 @@ export default function SellerSettings() {
       const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
 
       const { error: profileError } = await supabase
-        .from("profiles")
+        .from("farmers")
         .update({
           pickup_slots: pickupSlots as any,
           max_orders_per_day: maxOrdersPerDay,
           busy_dates: validBusy.map(formatDate),
           vacation_dates: validVacation.map(formatDate),
         } as any)
-        .eq("user_id", user!.id);
+        .eq("id", farmerId);
 
       if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
 
@@ -233,13 +226,13 @@ export default function SellerSettings() {
   };
 
   const handleGenerateLinkCode = async () => {
-    if (!user) return;
+    if (!user || !farmerId) return;
     setTgBusy(true);
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
     const { error } = await supabase
-      .from("profiles")
+      .from("farmers")
       .update({ telegram_link_code: code } as any)
-      .eq("user_id", user.id);
+      .eq("id", farmerId);
     if (error) {
       toast.error("Не удалось сгенерировать код");
     } else {
@@ -249,12 +242,12 @@ export default function SellerSettings() {
   };
 
   const handleUnlinkTelegram = async () => {
-    if (!user) return;
+    if (!user || !farmerId) return;
     setTgBusy(true);
     const { error } = await supabase
-      .from("profiles")
+      .from("farmers")
       .update({ telegram_chat_id: null } as any)
-      .eq("user_id", user.id);
+      .eq("id", farmerId);
     if (error) toast.error("Не удалось отвязать");
     else {
       setTelegramChatId(null);

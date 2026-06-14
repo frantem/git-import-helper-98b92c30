@@ -196,50 +196,68 @@ export type Database = {
       farmers: {
         Row: {
           address_details: string | null
+          busy_dates: Json | null
           city: string | null
           created_at: string
           description: string | null
           district: string | null
           id: string
           is_blocked: boolean | null
+          max_orders_per_day: number | null
           name: string
           photo_url: string | null
+          pickup_slots: Json | null
           rating: number | null
           slug: string | null
           street: string | null
+          telegram_chat_id: string | null
+          telegram_link_code: string | null
           user_id: string | null
+          vacation_dates: Json | null
           village: string | null
         }
         Insert: {
           address_details?: string | null
+          busy_dates?: Json | null
           city?: string | null
           created_at?: string
           description?: string | null
           district?: string | null
           id?: string
           is_blocked?: boolean | null
+          max_orders_per_day?: number | null
           name: string
           photo_url?: string | null
+          pickup_slots?: Json | null
           rating?: number | null
           slug?: string | null
           street?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
           user_id?: string | null
+          vacation_dates?: Json | null
           village?: string | null
         }
         Update: {
           address_details?: string | null
+          busy_dates?: Json | null
           city?: string | null
           created_at?: string
           description?: string | null
           district?: string | null
           id?: string
           is_blocked?: boolean | null
+          max_orders_per_day?: number | null
           name?: string
           photo_url?: string | null
+          pickup_slots?: Json | null
           rating?: number | null
           slug?: string | null
           street?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
           user_id?: string | null
+          vacation_dates?: Json | null
           village?: string | null
         }
         Relationships: []

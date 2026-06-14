@@ -1,35 +1,49 @@
-## Проблема
+# Перенос продавческих полей из `profiles` в `farmers`
 
-В `SellerApplicationForm.tsx` (ветка для залогиненного пользователя с placeholder-email `@phone.locusfood.by`) поле Email отмечено «по желанию», и текущий `submitDisabled` его игнорирует. Если пользователь ввёл реальный Email, но не нажал «Получить код» / не ввёл код, форма всё равно отправляется. Введённый email никуда не сохраняется — `submitApplication` пишет только `name`, `phone`, `description`. Поэтому после одобрения заявки в настройках остаётся старая заглушка `xxx@phone.locusfood.by`.
+## Цель
+Сделать структуру БД логичной: поля, относящиеся к продавцу (расписание выдачи, лимиты заказов, занятые/отпускные даты, привязка Telegram), должны жить в таблице `farmers`, а не в общей `profiles`.
 
-Email на самом деле сохраняется только если пройти полный путь `sendEmailCode` → `verifyEmailCode` → `verify-email-change-code` (этот edge function уже обновляет `auth.users.email` и `profiles.email`). Сейчас этот путь можно пропустить.
+Перенос будет безопасным: данные копируются, код переключается, и только потом старые колонки удаляются (в отдельной финальной миграции — после проверки).
 
-## Решение
+## Что переезжает
+Из `profiles` → в `farmers`:
+- `pickup_slots` (jsonb)
+- `max_orders_per_day` (integer, default 5)
+- `busy_dates` (jsonb массив дат)
+- `vacation_dates` (jsonb массив дат)
+- `telegram_chat_id` (text)
+- `telegram_link_code` (text, уникальный когда не null)
 
-Сделать подтверждение Email обязательным шагом для пользователей с placeholder-email, прежде чем разрешить отправку заявки.
+## План работ
 
-### Изменения в `src/components/SellerApplicationForm.tsx`
+### Этап 1 — Миграция (структура + копирование)
+1. `ALTER TABLE public.farmers ADD COLUMN ...` — добавить все 6 колонок с теми же типами и дефолтами, что сейчас в `profiles`.
+2. Скопировать данные: `UPDATE farmers f SET ... FROM profiles p WHERE p.user_id = f.user_id`.
+3. Создать уникальный индекс на `farmers.telegram_link_code WHERE telegram_link_code IS NOT NULL`.
+4. Обновить SQL-функцию `public.get_seller_pickup_settings(farmer_ids uuid[])` — читать из `farmers` напрямую (без JOIN на profiles).
+5. RLS на новых колонках наследуется существующими политиками `farmers` (продавец видит/правит свою запись, публичное чтение для каталога). Менять политики не нужно.
+6. Старые колонки в `profiles` пока **оставляем** — на случай отката.
 
-1. Label «Email (по желанию)» → «Email *» для пользователей с placeholder-email (`!emailFromAuth`). Для пользователей, у которых уже есть реальный email из аккаунта, оставить readonly как сейчас.
+### Этап 2 — Код
+Заменить чтение/запись с `profiles` на `farmers` в:
 
-2. Подсказка под полем: «Email обязателен — на него придут уведомления о статусе заявки и заказах».
+- `src/pages/seller/SellerSettings.tsx` — `select(... pickup_slots, ... telegram_link_code)` и оба `.update({...})` переключить с `profiles` (`.eq("user_id", user.id)`) на `farmers` (`.eq("id", farmerId)`).
+- `src/pages/Checkout.tsx` — типы и запросы `pickup_slots/max_orders_per_day/busy_dates/vacation_dates` берутся через RPC `get_seller_pickup_settings`, которая уже будет читать из `farmers`. Прямых SELECT по `profiles` для этих полей в Checkout нет — менять не придётся (проверим при имплементации).
+- `src/hooks/usePickupLabels.ts` — то же, читается через RPC, изменений в коде нет.
+- `supabase/functions/send-new-order-telegram/index.ts` — заменить `from("profiles").select("user_id, telegram_chat_id").in("user_id", ...)` на `from("farmers").select("id, telegram_chat_id").in("id", farmerIds)` и обновить маппинг `chatByFarmer`.
+- `supabase/functions/telegram-webhook/index.ts` — все три обращения (`eq telegram_link_code`, `update telegram_chat_id`, `select by telegram_chat_id`) переключить с `profiles` на `farmers`. Связь с пользователем — через `farmers.user_id`.
 
-3. `submitDisabled` дополнить условием:
-   ```
-   (user && !emailFromAuth && emailStep !== "verified")
-   ```
-   То есть кнопка «Отправить заявку» неактивна, пока email не подтверждён через код.
+### Этап 3 — Финальная миграция (после визуальной проверки, отдельным шагом)
+После того как мы убедимся, что всё работает (продавец сохраняет настройки выдачи, чекаут показывает слоты, Telegram-привязка и уведомления работают), выпустим вторую миграцию: `ALTER TABLE profiles DROP COLUMN ...` для шести колонок и удалим устаревший уникальный индекс.
 
-4. В `handleSubmit` добавить явную проверку: если `user && !emailFromAuth && emailStep !== "verified"` → toast «Подтвердите Email» и `return`.
+Этот этап не выполняется автоматически — я попрошу подтверждения отдельно.
 
-5. Убрать формулировку «Можно пропустить и добавить позже в настройках» из текста-подсказки.
+## Что НЕ трогаем
+- Структуру `profiles` для покупательских полей (`full_name`, `phone`, `email`, `delivery_address` и т.д.).
+- RLS политики `farmers` (уже корректны).
+- `app_settings.admin_telegram_chat_id` — это глобальная настройка, не относится к продавцу.
 
-### Что НЕ меняем
-
-- Edge-функции `send-email-change-code` / `verify-email-change-code` уже работают корректно: при успешной верификации обновляют `auth.users.email` и `profiles.email`. Логика сохранения email не требует изменений.
-- Ветка для незалогиненных гостей не трогается — там email обязателен через signUp.
-- Проверка телефона остаётся прежней.
-
-## Результат
-
-Пользователь, регистрировавшийся по телефону, не сможет отправить заявку на продавца, пока не подтвердит реальный Email кодом. После подтверждения email автоматически сохраняется в `auth.users` и `profiles`, и в настройках больше не будет видна заглушка `@phone.locusfood.by`.
+## Риски и как они закрыты
+- **Расхождение данных в момент миграции:** копируем атомарно одним UPDATE до того, как код начнёт писать в новое место.
+- **Откат:** старые колонки сохранены до Этапа 3; при проблеме код возвращается к чтению из `profiles` без потери данных.
+- **Telegram-вебхук в момент деплоя:** обе версии edge-функций (старая в проде, новая после деплоя) будут работать корректно, потому что после Этапа 1 данные продублированы.

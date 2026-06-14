@@ -57,24 +57,24 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: true }));
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
+      const { data: farmer } = await supabase
+        .from("farmers")
+        .select("id, user_id, name")
         .eq("telegram_link_code", code)
         .maybeSingle();
 
-      if (!profile) {
+      if (!farmer) {
         await tg("sendMessage", { chat_id: chatId, text: "Код недействителен или устарел. Сгенерируйте новый в личном кабинете." });
         return new Response(JSON.stringify({ ok: true }));
       }
 
-      await supabase.from("profiles")
+      await supabase.from("farmers")
         .update({ telegram_chat_id: chatId, telegram_link_code: null })
-        .eq("user_id", profile.user_id);
+        .eq("id", farmer.id);
 
       await tg("sendMessage", {
         chat_id: chatId,
-        text: `✅ Telegram привязан${profile.full_name ? `, ${profile.full_name}` : ""}! Теперь вы будете получать уведомления о новых заказах.`,
+        text: `✅ Telegram привязан${farmer.name ? `, ${farmer.name}` : ""}! Теперь вы будете получать уведомления о новых заказах.`,
       });
       return new Response(JSON.stringify({ ok: true }));
     }
@@ -111,12 +111,10 @@ Deno.serve(async (req) => {
       }
 
       // Verify that chat owner is the farmer's owner
-      const { data: profile } = await supabase
-        .from("profiles").select("user_id, full_name").eq("telegram_chat_id", chatId).maybeSingle();
       const { data: farmer } = await supabase
-        .from("farmers").select("id, user_id, name").eq("id", farmerId).maybeSingle();
+        .from("farmers").select("id, user_id, name, telegram_chat_id").eq("id", farmerId).maybeSingle();
 
-      if (!profile || !farmer || farmer.user_id !== profile.user_id) {
+      if (!farmer || farmer.telegram_chat_id !== chatId) {
         await tg("answerCallbackQuery", { callback_query_id: cb.id, text: "Нет доступа", show_alert: true });
         return new Response(JSON.stringify({ ok: true }));
       }
