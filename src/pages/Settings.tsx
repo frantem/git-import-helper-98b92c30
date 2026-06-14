@@ -439,6 +439,27 @@ export default function Settings() {
         <PageHeader title="Настройки" backPath="/profile" />
 
         <div className="max-w-md mx-auto space-y-6">
+          {(fromCart || forceReset) && (
+            <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 text-sm text-foreground">
+              {fromCart ? (
+                <>
+                  <p className="font-medium mb-1">Завершите профиль, чтобы оформить заказ</p>
+                  <p className="text-muted-foreground">
+                    Заполните: Имя, Телефон, Email (с подтверждением кодом) и Пароль —
+                    после сохранения вернёмся в корзину.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium mb-1">Задайте новый пароль для входа</p>
+                  <p className="text-muted-foreground">
+                    Вы вошли по SMS-коду. Чтобы дальше входить с паролем, задайте его в блоке «Пароль» ниже.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Avatar section */}
           <div className="flex flex-col items-center rounded-xl bg-card p-6">
             <div className="relative mb-4">
