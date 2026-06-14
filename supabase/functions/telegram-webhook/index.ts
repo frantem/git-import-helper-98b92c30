@@ -111,12 +111,10 @@ Deno.serve(async (req) => {
       }
 
       // Verify that chat owner is the farmer's owner
-      const { data: profile } = await supabase
-        .from("profiles").select("user_id, full_name").eq("telegram_chat_id", chatId).maybeSingle();
       const { data: farmer } = await supabase
-        .from("farmers").select("id, user_id, name").eq("id", farmerId).maybeSingle();
+        .from("farmers").select("id, user_id, name, telegram_chat_id").eq("id", farmerId).maybeSingle();
 
-      if (!profile || !farmer || farmer.user_id !== profile.user_id) {
+      if (!farmer || farmer.telegram_chat_id !== chatId) {
         await tg("answerCallbackQuery", { callback_query_id: cb.id, text: "Нет доступа", show_alert: true });
         return new Response(JSON.stringify({ ok: true }));
       }
