@@ -76,11 +76,21 @@ export default function Cart() {
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, phone")
+        .select("full_name, phone, has_password")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!profile?.full_name || !profile?.phone) {
+      const userEmail = user.email || "";
+      const isVirtualEmail = userEmail.toLowerCase().endsWith("@phone.locusfood.by");
+      const hasRealEmail = !!userEmail && !isVirtualEmail;
+      const hasPassword = !!(profile as any)?.has_password;
+
+      if (
+        !profile?.full_name ||
+        !profile?.phone ||
+        !hasRealEmail ||
+        !hasPassword
+      ) {
         navigate("/settings?from=cart");
         return;
       }
