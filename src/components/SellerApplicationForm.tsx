@@ -501,6 +501,11 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       return;
     }
 
+    if (user && !emailFromAuth && emailStep !== "verified") {
+      toast.error("Подтвердите Email");
+      return;
+    }
+
     await submitApplication();
   };
 
@@ -512,9 +517,11 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     isLoading ||
     isVerifyingCode ||
     phoneStep !== "verified" ||
+    (user && !emailFromAuth && emailStep !== "verified") ||
     !draft.name.trim() ||
     !isValidBYPhone(draft.phone) ||
     (!user && (!draft.email.trim() || password.length < 6));
+
 
 
   return (
@@ -550,7 +557,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
 
       {user && (
         <div className="space-y-2">
-          <Label htmlFor="real-email">Email (по желанию)</Label>
+          <Label htmlFor="real-email">Email {emailFromAuth ? "" : "*"}</Label>
           {emailFromAuth || emailStep === "verified" ? (
 
             <>
@@ -577,8 +584,9 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Укажите Email, чтобы получать уведомления о заявке и заказах. Можно пропустить и добавить позже в настройках.
+                Email обязателен — на него придут уведомления о статусе заявки и заказах.
               </p>
+
 
               <Button
                 type="button"
