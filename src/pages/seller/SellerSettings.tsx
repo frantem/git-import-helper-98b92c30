@@ -203,14 +203,14 @@ export default function SellerSettings() {
       const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
 
       const { error: profileError } = await supabase
-        .from("profiles")
+        .from("farmers")
         .update({
           pickup_slots: pickupSlots as any,
           max_orders_per_day: maxOrdersPerDay,
           busy_dates: validBusy.map(formatDate),
           vacation_dates: validVacation.map(formatDate),
         } as any)
-        .eq("user_id", user!.id);
+        .eq("id", farmerId);
 
       if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
 
