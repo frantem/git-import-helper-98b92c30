@@ -542,37 +542,89 @@ export default function Settings() {
 
           {/* Email */}
           <div className="rounded-xl bg-card p-4 space-y-4">
-            <h3 className="font-medium text-foreground">Email</h3>
-            
+            <h3 className="font-medium text-foreground">
+              Email {fromCart && !hasRealEmail && emailStep !== "verified" && (
+                <span className="text-destructive">*</span>
+              )}
+            </h3>
+
+            {hasRealEmail && emailStep === "verified" ? (
+              <p className="text-sm text-muted-foreground">
+                Текущий email: <span className="text-foreground font-medium">{authEmail}</span>
+              </p>
+            ) : null}
+
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{hasRealEmail ? "Новый email" : "Email"}</Label>
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (emailStep === "verified") setEmailStep("idle"); }}
                 placeholder="email@example.com"
+                disabled={emailStep === "sent"}
               />
             </div>
-            
-            <Button onClick={handleUpdateEmail} variant="outline" className="w-full">
-              Изменить email
-            </Button>
+
+            {emailStep === "sent" && (
+              <div className="space-y-2">
+                <Label>Код подтверждения</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="6-значный код"
+                  autoComplete="one-time-code"
+                />
+                <div className="flex gap-2">
+                  <Button onClick={handleVerifyEmailCode} disabled={isVerifyingEmailCode} className="flex-1">
+                    {isVerifyingEmailCode ? "Проверка..." : "Подтвердить код"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => { setEmailStep("idle"); setEmailCode(""); }}
+                    disabled={isVerifyingEmailCode}
+                  >
+                    Назад
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {emailStep !== "sent" && (
+              <Button onClick={handleSendEmailCode} variant="outline" className="w-full" disabled={isSendingEmailCode}>
+                {isSendingEmailCode
+                  ? "Отправка..."
+                  : hasRealEmail ? "Изменить email" : "Получить код подтверждения"}
+              </Button>
+            )}
           </div>
 
           {/* Password */}
           <div className="rounded-xl bg-card p-4 space-y-4">
-            <h3 className="font-medium text-foreground">Пароль</h3>
-            
+            <h3 className="font-medium text-foreground">
+              Пароль {fromCart && !hasPassword && <span className="text-destructive">*</span>}
+            </h3>
+
+            {!hasPassword && (
+              <p className="text-sm text-muted-foreground">
+                У вас ещё не задан пароль. Задайте его, чтобы входить по Email/телефону + паролю.
+              </p>
+            )}
+
             <div className="space-y-2">
-              <Label>Новый пароль</Label>
+              <Label>{hasPassword ? "Новый пароль" : "Пароль"}</Label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Минимум 6 символов"
+                autoFocus={forceReset}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Подтвердите пароль</Label>
               <Input
@@ -582,9 +634,9 @@ export default function Settings() {
                 placeholder="Повторите пароль"
               />
             </div>
-            
-            <Button onClick={handleUpdatePassword} variant="outline" className="w-full">
-              Изменить пароль
+
+            <Button onClick={handleUpdatePassword} variant="outline" className="w-full" disabled={isSavingPassword}>
+              {isSavingPassword ? "Сохранение..." : hasPassword ? "Изменить пароль" : "Сохранить пароль"}
             </Button>
           </div>
 
