@@ -32,23 +32,27 @@ interface Profile {
   delivery_address: string | null;
 }
 
+const VIRTUAL_EMAIL_SUFFIX = "@phone.locusfood.by";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Settings() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromCart = searchParams.get("from") === "cart";
-  
+  const forceReset = searchParams.get("reset") === "password";
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  
+
   const [profile, setProfile] = useState<Profile>({
     full_name: "",
     phone: "",
     avatar_url: "",
     delivery_address: "",
   });
-  
+
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,6 +62,19 @@ export default function Settings() {
   const [savedPhone, setSavedPhone] = useState<string>("");
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
   const [pendingPhone, setPendingPhone] = useState<string>("");
+
+  // ---- cart-completion / password-reset flow ----
+  const [hasPassword, setHasPassword] = useState<boolean>(true);
+  const [emailStep, setEmailStep] = useState<"idle" | "sent" | "verified">("idle");
+  const [emailCode, setEmailCode] = useState<string>("");
+  const [isSendingEmailCode, setIsSendingEmailCode] = useState(false);
+  const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // Real (non-virtual) confirmed email currently in auth.users
+  const authEmail = user?.email || "";
+  const isVirtualEmail = authEmail.toLowerCase().endsWith(VIRTUAL_EMAIL_SUFFIX);
+  const hasRealEmail = !!authEmail && !isVirtualEmail;
 
   const handleRemoveSeller = async () => {
     if (!user) return;
