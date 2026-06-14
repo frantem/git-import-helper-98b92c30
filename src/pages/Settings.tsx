@@ -223,6 +223,16 @@ export default function Settings() {
     return true;
   };
 
+  // Когда checkout-данные полностью готовы — возвращаемся в корзину
+  const tryNavigateAfterCart = (latestPhone: string) => {
+    if (!fromCart) return;
+    const passwordOk = hasPassword || newPassword.length >= 6;
+    const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
+    if (profile.full_name && latestPhone && emailOk && passwordOk) {
+      navigate("/cart");
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -235,6 +245,31 @@ export default function Settings() {
       return;
     }
 
+    // Cart-completion required fields
+    if (fromCart) {
+      if (!profile.full_name?.trim()) {
+        toast.error("Введите имя");
+        return;
+      }
+      if (!currentPhone || currentPhone === "+375") {
+        toast.error("Введите номер телефона");
+        return;
+      }
+      const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
+      if (!emailOk) {
+        toast.error("Подтвердите Email кодом перед сохранением");
+        return;
+      }
+      if (!hasPassword && newPassword.length < 6) {
+        toast.error("Задайте пароль (минимум 6 символов)");
+        return;
+      }
+      if (newPassword && newPassword !== confirmPassword) {
+        toast.error("Пароли не совпадают");
+        return;
+      }
+    }
+
     // If phone changed and is non-empty → require OTP verification first.
     if (phoneChanged && currentPhone && currentPhone !== "+375") {
       setPendingPhone(currentPhone);
@@ -244,13 +279,25 @@ export default function Settings() {
 
     setIsSaving(true);
     const ok = await saveProfileFields();
+    if (!ok) { setIsSaving(false); return; }
+
+    // Если в этой же форме (cart-completion) пользователь задал пароль — сохраняем
+    if (fromCart && !hasPassword && newPassword.length >= 6) {
+      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (pwErr) {
+        toast.error("Ошибка сохранения пароля: " + pwErr.message);
+        setIsSaving(false);
+        return;
+      }
+      await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user.id);
+      setHasPassword(true);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
     setIsSaving(false);
-    if (!ok) return;
 
     toast.success("Профиль сохранён");
-    if (fromCart && profile.full_name && savedPhone) {
-      navigate("/cart");
-    }
+    tryNavigateAfterCart(savedPhone || currentPhone);
   };
 
   const handlePhoneVerified = async (verifiedPhone: string) => {
@@ -260,64 +307,117 @@ export default function Settings() {
 
     setIsSaving(true);
     const ok = await saveProfileFields();
+    if (!ok) { setIsSaving(false); return; }
+
+    if (fromCart && !hasPassword && newPassword.length >= 6) {
+      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (!pwErr) {
+        await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user!.id);
+        setHasPassword(true);
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    }
     setIsSaving(false);
-    if (!ok) return;
 
     toast.success("Профиль сохранён");
-    if (fromCart && profile.full_name) {
-      navigate("/cart");
-    }
+    tryNavigateAfterCart(verifiedPhone);
   };
 
-  const handleUpdateEmail = async () => {
-    if (!email) {
-      toast.error("Введите email");
+  // ---- Email OTP (для cart-completion и для смены email с виртуального) ----
+  const handleSendEmailCode = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(trimmed)) {
+      toast.error("Введите корректный Email");
       return;
     }
-
-    if (email.trim().toLowerCase() === user?.email?.toLowerCase()) {
+    if (trimmed === authEmail.toLowerCase()) {
       toast.info("Этот email уже используется");
       return;
     }
-
-    const { error } = await supabase.auth.updateUser({ email });
-
-    if (error) {
-      if (error.message?.includes("already been registered")) {
-        toast.error("Этот email уже зарегистрирован в системе");
-      } else {
-        toast.error("Ошибка изменения email");
+    setIsSendingEmailCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-change-code", {
+        body: { new_email: trimmed },
+      });
+      if (error || !(data as any)?.success) {
+        toast.error((data as any)?.error || "Не удалось отправить код");
+        return;
       }
-    } else {
-      toast.success(`Письмо для подтверждения отправлено на ${email}. Проверьте папку «Спам».`);
+      toast.success("Код отправлен на " + trimmed);
+      setEmail(trimmed);
+      setEmailStep("sent");
+    } catch (e) {
+      toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setIsSendingEmailCode(false);
     }
   };
+
+  const handleVerifyEmailCode = async () => {
+    if (!/^\d{6}$/.test(emailCode.trim())) {
+      toast.error("Код должен состоять из 6 цифр");
+      return;
+    }
+    setIsVerifyingEmailCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-email-change-code", {
+        body: { new_email: email, code: emailCode.trim() },
+      });
+      if (error || !(data as any)?.success) {
+        toast.error((data as any)?.error || "Неверный код");
+        return;
+      }
+      toast.success("Email подтверждён");
+      await supabase.auth.refreshSession();
+      setEmailStep("verified");
+      setEmailCode("");
+    } catch (e) {
+      toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setIsVerifyingEmailCode(false);
+    }
+  };
+
+  // Legacy: standalone email change (вне cart-flow) — оставляем для обычного использования
+  const handleUpdateEmail = handleSendEmailCode;
 
   const handleUpdatePassword = async () => {
     if (!newPassword) {
       toast.error("Введите новый пароль");
       return;
     }
-    
     if (newPassword !== confirmPassword) {
       toast.error("Пароли не совпадают");
       return;
     }
-    
     if (newPassword.length < 6) {
       toast.error("Пароль должен быть минимум 6 символов");
       return;
     }
-
+    setIsSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-
     if (error) {
       toast.error("Ошибка изменения пароля");
-    } else {
-      toast.success("Пароль изменён");
-      setNewPassword("");
-      setConfirmPassword("");
+      setIsSavingPassword(false);
+      return;
     }
+    if (user) {
+      await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user.id);
+    }
+    setHasPassword(true);
+    toast.success("Пароль изменён");
+    setNewPassword("");
+    setConfirmPassword("");
+    setIsSavingPassword(false);
+
+    if (forceReset) {
+      // После сброса пароля (вход по SMS) → редирект в профиль / returnTo
+      const returnTo = localStorage.getItem("locus-return-to");
+      localStorage.removeItem("locus-return-to");
+      navigate(returnTo || "/profile");
+    }
+  };
   };
 
   if (isLoading) {
