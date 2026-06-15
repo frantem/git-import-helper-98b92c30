@@ -670,15 +670,13 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       )}
 
       <div className="space-y-2">
-
-        <Label htmlFor="name">Имя / Название хозяйства *</Label>
-        <Input
-          id="name"
-          type="text"
-          value={draft.name}
-          onChange={(e) => updateField("name", e.target.value)}
-          placeholder="Введите ваше имя"
-          required
+        <Label htmlFor="description">Описание деятельности</Label>
+        <Textarea
+          id="description"
+          value={draft.description}
+          onChange={(e) => updateField("description", e.target.value)}
+          placeholder="Расскажите, что вы производите или продаёте"
+          rows={3}
         />
       </div>
 
@@ -706,24 +704,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
             <CheckCircle2 className="h-3 w-3 text-green-600" />
             Номер подтверждён
           </p>
-        )}
-        {!phoneFromProfile && phoneStep === "input" && (
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            disabled={isSendingCode || !isValidBYPhone(draft.phone)}
-            onClick={sendCode}
-          >
-            {isSendingCode ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Отправка...
-              </>
-            ) : (
-              "Получить код"
-            )}
-          </Button>
         )}
         {phoneStep === "code" && (
           <div className="space-y-3 pt-2">
@@ -783,17 +763,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
             </div>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Описание деятельности</Label>
-        <Textarea
-          id="description"
-          value={draft.description}
-          onChange={(e) => updateField("description", e.target.value)}
-          placeholder="Расскажите, что вы производите или продаёте"
-          rows={3}
-        />
       </div>
 
       <Button type="submit" className="w-full" disabled={submitDisabled}>
