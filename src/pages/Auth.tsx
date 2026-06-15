@@ -62,10 +62,14 @@ export default function Auth() {
   const { signIn, resetPassword, updatePassword, user } = useAuth();
   const navigate = useNavigate();
 
-  // Auto-format identifier as phone when user is clearly typing a phone
+  // Auto-format identifier as phone when user is clearly typing a phone.
+  // Не форматируем короткие строки, чтобы пользователь мог полностью стереть
+  // "+375" и начать вводить Email.
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
-    if (v.startsWith("+") || /^[\d\s()\-]+$/.test(v)) {
+    const digits = v.replace(/\D/g, "");
+    const looksLikePhone = v.startsWith("+") || /^[\d\s()\-]+$/.test(v);
+    if (looksLikePhone && digits.length >= 3) {
       setIdentifier(formatBYPhone(v));
     } else {
       setIdentifier(v);
