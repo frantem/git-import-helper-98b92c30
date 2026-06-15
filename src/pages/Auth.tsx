@@ -452,7 +452,14 @@ export default function Auth() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Введите email, на который зарегистрирован ваш аккаунт. Мы отправим ссылку для восстановления пароля.
-                  Если вы регистрировались по номеру телефона — Нажмите сюда → «Нет аккаунта? Зарегистрируйтесь»
+                  Если вы регистрировались по номеру телефона — Нажмите сюда →{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("register")}
+                    className="text-primary underline"
+                  >
+                    «Нет аккаунта? Зарегистрируйтесь»
+                  </button>{" "}
                   и введите свой номер, мы предложим восстановить доступ по SMS.
                 </p>
                 <Button type="submit" className="w-full" disabled={isLoading}>
