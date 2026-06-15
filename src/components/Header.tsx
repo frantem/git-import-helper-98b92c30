@@ -38,36 +38,29 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
       )}
     >
       <div className="container flex items-center py-[4px] px-[4px] mx-0 gap-[4px]">
-        <form onSubmit={handleSearch} className="relative flex-1">
-          <Search className={cn(
-            "pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2",
-            isOverlay ? "text-white" : "text-muted-foreground"
-          )} />
-          <Input
-            type="text"
-            placeholder="Поиск продуктов..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={cn(
-              "h-8 w-full rounded-2xl pl-9 pr-9 text-sm focus-visible:ring-primary",
-              isOverlay
-                ? "bg-black/45 backdrop-blur-md border-white/10 text-white placeholder:text-white/80 shadow-md"
-                : "bg-primary-foreground placeholder:text-muted-foreground"
+        {isOverlay ? (
+          <form onSubmit={handleSearch} className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white" />
+            <Input
+              type="text"
+              placeholder="Поиск продуктов..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 w-full rounded-2xl pl-9 pr-9 text-sm focus-visible:ring-primary bg-black/45 backdrop-blur-md border-white/10 text-white placeholder:text-white/80 shadow-md"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={clearSearch}
-              className={cn(
-                "absolute right-3 top-1/2 -translate-y-1/2",
-                isOverlay ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </form>
+          </form>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         {/* Cart - desktop only */}
         <Link
