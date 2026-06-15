@@ -241,6 +241,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         }
         toast.success("Телефон подтверждён");
         setPhoneStep("verified");
+        await submitApplication();
       } else {
         if (!draft.email.trim() || password.length < 6 || !draft.name.trim()) {
           toast.error("Заполните все обязательные поля");
@@ -496,17 +497,21 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     if (!draft.name.trim()) { toast.error("Введите имя"); return; }
     if (!isValidBYPhone(draft.phone)) { toast.error("Введите корректный номер телефона"); return; }
 
-    if (phoneStep !== "verified") {
-      toast.error("Подтвердите номер телефона");
-      return;
-    }
-
     if (user && !emailFromAuth && emailStep !== "verified") {
       toast.error("Подтвердите Email");
       return;
     }
 
-    await submitApplication();
+    if (phoneStep === "verified") {
+      await submitApplication();
+      return;
+    }
+
+    if (phoneStep === "input") {
+      await sendCode();
+      return;
+    }
+    // phoneStep === "code": auto-verification handles submission
   };
 
   const updateField = (field: keyof DraftState, value: string) => {
@@ -516,7 +521,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const submitDisabled =
     isLoading ||
     isVerifyingCode ||
-    phoneStep !== "verified" ||
+    isSendingCode ||
+    phoneStep === "code" ||
     (user && !emailFromAuth && emailStep !== "verified") ||
     !draft.name.trim() ||
     !isValidBYPhone(draft.phone) ||
@@ -664,7 +670,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       )}
 
       <div className="space-y-2">
-
         <Label htmlFor="name">Имя / Название хозяйства *</Label>
         <Input
           id="name"
@@ -673,6 +678,17 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
           onChange={(e) => updateField("name", e.target.value)}
           placeholder="Введите ваше имя"
           required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Описание деятельности</Label>
+        <Textarea
+          id="description"
+          value={draft.description}
+          onChange={(e) => updateField("description", e.target.value)}
+          placeholder="Расскажите, что вы производите или продаёте"
+          rows={3}
         />
       </div>
 
@@ -700,24 +716,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
             <CheckCircle2 className="h-3 w-3 text-green-600" />
             Номер подтверждён
           </p>
-        )}
-        {!phoneFromProfile && phoneStep === "input" && (
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            disabled={isSendingCode || !isValidBYPhone(draft.phone)}
-            onClick={sendCode}
-          >
-            {isSendingCode ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Отправка...
-              </>
-            ) : (
-              "Получить код"
-            )}
-          </Button>
         )}
         {phoneStep === "code" && (
           <div className="space-y-3 pt-2">
@@ -777,17 +775,6 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
             </div>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Описание деятельности</Label>
-        <Textarea
-          id="description"
-          value={draft.description}
-          onChange={(e) => updateField("description", e.target.value)}
-          placeholder="Расскажите, что вы производите или продаёте"
-          rows={3}
-        />
       </div>
 
       <Button type="submit" className="w-full" disabled={submitDisabled}>
