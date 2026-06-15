@@ -670,6 +670,18 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
       )}
 
       <div className="space-y-2">
+        <Label htmlFor="name">Имя / Название хозяйства *</Label>
+        <Input
+          id="name"
+          type="text"
+          value={draft.name}
+          onChange={(e) => updateField("name", e.target.value)}
+          placeholder="Введите ваше имя"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="description">Описание деятельности</Label>
         <Textarea
           id="description"
