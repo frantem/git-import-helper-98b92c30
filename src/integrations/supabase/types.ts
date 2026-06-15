@@ -899,60 +899,42 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          busy_dates: Json | null
           created_at: string
           delivery_address: string | null
           email: string | null
           full_name: string | null
           has_password: boolean
           id: string
-          max_orders_per_day: number | null
           phone: string | null
           phone_verified: boolean
-          pickup_slots: Json | null
-          telegram_chat_id: string | null
-          telegram_link_code: string | null
           updated_at: string
           user_id: string
-          vacation_dates: Json | null
         }
         Insert: {
           avatar_url?: string | null
-          busy_dates?: Json | null
           created_at?: string
           delivery_address?: string | null
           email?: string | null
           full_name?: string | null
           has_password?: boolean
           id?: string
-          max_orders_per_day?: number | null
           phone?: string | null
           phone_verified?: boolean
-          pickup_slots?: Json | null
-          telegram_chat_id?: string | null
-          telegram_link_code?: string | null
           updated_at?: string
           user_id: string
-          vacation_dates?: Json | null
         }
         Update: {
           avatar_url?: string | null
-          busy_dates?: Json | null
           created_at?: string
           delivery_address?: string | null
           email?: string | null
           full_name?: string | null
           has_password?: boolean
           id?: string
-          max_orders_per_day?: number | null
           phone?: string | null
           phone_verified?: boolean
-          pickup_slots?: Json | null
-          telegram_chat_id?: string | null
-          telegram_link_code?: string | null
           updated_at?: string
           user_id?: string
-          vacation_dates?: Json | null
         }
         Relationships: []
       }
