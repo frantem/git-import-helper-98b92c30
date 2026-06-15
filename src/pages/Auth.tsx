@@ -337,7 +337,7 @@ export default function Auth() {
                     type="text"
                     value={identifier}
                     onChange={handleIdentifierChange}
-                    placeholder="example@mail.com или +375 (XX) XXX-XX-XX"
+                    placeholder="example@mail.com или +375XXXXXXXXX"
                     autoComplete="username"
                     required
                   />
