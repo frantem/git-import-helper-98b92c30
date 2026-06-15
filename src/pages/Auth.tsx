@@ -364,6 +364,14 @@ export default function Auth() {
                   {isLoading ? "Загрузка..." : "Войти"}
                 </Button>
 
+                <button
+                  type="button"
+                  onClick={() => setMode("register")}
+                  className="block w-full text-sm text-primary hover:underline"
+                >
+                  Нет аккаунта? Зарегистрируйтесь
+                </button>
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
@@ -391,14 +399,8 @@ export default function Auth() {
                   >
                     Забыли пароль?
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("register")}
-                    className="block w-full text-sm text-primary hover:underline"
-                  >
-                    Нет аккаунта? Зарегистрируйтесь
-                  </button>
                 </div>
+
               </form>
             )}
 
