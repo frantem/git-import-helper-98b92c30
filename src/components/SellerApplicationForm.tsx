@@ -497,17 +497,21 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
     if (!draft.name.trim()) { toast.error("Введите имя"); return; }
     if (!isValidBYPhone(draft.phone)) { toast.error("Введите корректный номер телефона"); return; }
 
-    if (phoneStep !== "verified") {
-      toast.error("Подтвердите номер телефона");
-      return;
-    }
-
     if (user && !emailFromAuth && emailStep !== "verified") {
       toast.error("Подтвердите Email");
       return;
     }
 
-    await submitApplication();
+    if (phoneStep === "verified") {
+      await submitApplication();
+      return;
+    }
+
+    if (phoneStep === "input") {
+      await sendCode();
+      return;
+    }
+    // phoneStep === "code": auto-verification handles submission
   };
 
   const updateField = (field: keyof DraftState, value: string) => {
@@ -517,7 +521,8 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
   const submitDisabled =
     isLoading ||
     isVerifyingCode ||
-    phoneStep !== "verified" ||
+    isSendingCode ||
+    phoneStep === "code" ||
     (user && !emailFromAuth && emailStep !== "verified") ||
     !draft.name.trim() ||
     !isValidBYPhone(draft.phone) ||
