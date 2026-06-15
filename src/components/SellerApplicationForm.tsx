@@ -241,6 +241,7 @@ export function SellerApplicationForm({ onSuccess }: SellerApplicationFormProps)
         }
         toast.success("Телефон подтверждён");
         setPhoneStep("verified");
+        await submitApplication();
       } else {
         if (!draft.email.trim() || password.length < 6 || !draft.name.trim()) {
           toast.error("Заполните все обязательные поля");
