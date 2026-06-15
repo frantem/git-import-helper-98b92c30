@@ -27,16 +27,14 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
 
   const isOverlay = variant === "overlay";
 
+  if (!isOverlay) return null;
+
   return (
     <header
       ref={ref}
-      className={cn(
-        "z-50",
-        isOverlay
-          ? "absolute top-0 left-0 right-0 bg-transparent"
-          : "sticky top-0 bg-card border-b border-border shadow-sm"
-      )}
+      className="z-50 absolute top-0 left-0 right-0 bg-transparent"
     >
+
       <div className="container flex items-center py-[4px] px-[4px] mx-0 gap-[4px]">
         {isOverlay ? (
           <form onSubmit={handleSearch} className="relative flex-1">
