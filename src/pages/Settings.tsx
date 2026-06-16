@@ -226,9 +226,7 @@ export default function Settings() {
   // Когда checkout-данные полностью готовы — возвращаемся в корзину
   const tryNavigateAfterCart = (latestPhone: string) => {
     if (!fromCart) return;
-    const passwordOk = hasPassword || newPassword.length >= 6;
-    const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
-    if (profile.full_name && latestPhone && emailOk && passwordOk) {
+    if (profile.full_name && latestPhone && profile.delivery_address) {
       navigate("/cart");
     }
   };
