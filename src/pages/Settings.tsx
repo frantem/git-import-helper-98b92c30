@@ -568,7 +568,7 @@ export default function Settings() {
           {/* Password */}
           <div className="rounded-xl bg-card p-4 space-y-4">
             <h3 className="font-medium text-foreground">
-              Пароль {fromCart && !hasPassword && <span className="text-destructive">*</span>}
+              Пароль <span className="text-muted-foreground font-normal text-xs">(по желанию)</span>
             </h3>
 
             {!hasPassword && (
