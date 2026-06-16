@@ -46,18 +46,25 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Server configuration error" }, 500);
   }
 
-  let body: { email?: unknown; code?: unknown; password?: unknown; full_name?: unknown };
+  let body: { email?: unknown; code?: unknown; password?: unknown; full_name?: unknown; purpose?: unknown; new_password?: unknown };
   try { body = await req.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const code = typeof body.code === "string" ? body.code.trim() : "";
+  const purpose = body.purpose === "password_reset" ? "password_reset" : "register";
   const password = typeof body.password === "string" ? body.password : "";
+  const newPassword = typeof body.new_password === "string" ? body.new_password : "";
   const fullName = typeof body.full_name === "string" ? body.full_name.trim() : "";
 
   if (!isValidEmail(email)) return jsonResponse({ success: false, error: "Некорректный Email" });
   if (!/^\d{6}$/.test(code)) return jsonResponse({ success: false, error: "Код должен состоять из 6 цифр" });
-  if (password.length < 6) return jsonResponse({ success: false, error: "Пароль должен быть минимум 6 символов" });
-  if (!fullName) return jsonResponse({ success: false, error: "Введите имя" });
+
+  if (purpose === "register") {
+    if (password.length < 6) return jsonResponse({ success: false, error: "Пароль должен быть минимум 6 символов" });
+    if (!fullName) return jsonResponse({ success: false, error: "Введите имя" });
+  } else {
+    if (newPassword.length < 6) return jsonResponse({ success: false, error: "Новый пароль минимум 6 символов" });
+  }
 
   const admin = createClient(supabaseUrl, serviceKey);
 
