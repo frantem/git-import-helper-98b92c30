@@ -243,7 +243,7 @@ export default function Settings() {
       return;
     }
 
-    // Cart-completion required fields
+    // Cart-completion required fields: name + phone + delivery address
     if (fromCart) {
       if (!profile.full_name?.trim()) {
         toast.error("Введите имя");
@@ -253,17 +253,8 @@ export default function Settings() {
         toast.error("Введите номер телефона");
         return;
       }
-      const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
-      if (!emailOk) {
-        toast.error("Подтвердите Email кодом перед сохранением");
-        return;
-      }
-      if (!hasPassword && newPassword.length < 6) {
-        toast.error("Задайте пароль (минимум 6 символов)");
-        return;
-      }
-      if (newPassword && newPassword !== confirmPassword) {
-        toast.error("Пароли не совпадают");
+      if (!profile.delivery_address?.trim()) {
+        toast.error("Введите адрес доставки");
         return;
       }
     }
