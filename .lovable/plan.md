@@ -1,23 +1,54 @@
-## Удаление старых колонок из `profiles`
+## Что исправляем
 
-Все 6 колонок уже перенесены в `farmers` и код везде читает/пишет в `farmers`. Можно безопасно удалить их из `profiles`.
+Три проблемы, замеченные при тесте регистрации через телефон → оформление заказа:
 
-### Миграция (одна)
+1. Номер телефона, по которому пользователь только что зарегистрировался, не отображается в `/settings` (профиль "пустой").
+2. После заполнения профиля и нажатия "Сохранено" возврат в корзину → "К оформлению" снова кидает в `/settings`, требуя Email и пароль.
+3. Email и пароль обязательны для оформления заказа — должно быть необязательно. Достаточно: **Имя + Телефон + Адрес доставки**.
 
-```sql
-ALTER TABLE public.profiles
-  DROP COLUMN IF EXISTS pickup_slots,
-  DROP COLUMN IF EXISTS max_orders_per_day,
-  DROP COLUMN IF EXISTS busy_dates,
-  DROP COLUMN IF EXISTS vacation_dates,
-  DROP COLUMN IF EXISTS telegram_chat_id,
-  DROP COLUMN IF EXISTS telegram_link_code;
-```
+## Причины (по коду)
 
-### Проверка перед миграцией
-Поиск по `src/` и `supabase/functions/` показывает, что упоминания этих колонок остались только в контексте таблицы `farmers` (SellerSettings, Checkout, usePickupLabels, telegram-webhook, send-new-order-telegram) и `app_settings.admin_telegram_chat_id` — к `profiles` обращений нет. Типы `src/integrations/supabase/types.ts` Supabase пересоберёт автоматически после применения миграции.
+- `supabase/functions/verify-otp/index.ts` (создание нового пользователя по телефону): после `auth.admin.createUser` делает `profiles.update({ phone, phone_verified })`. Триггер `handle_new_user` создаёт строку профиля автоматически, но из-за гонки `update` иногда выполняется до триггера → 0 строк изменено → телефон в `profiles.phone` не записан. Поэтому в `/settings` поле "Телефон" пустое.
+- `src/pages/Cart.tsx` (`handleCheckout`, строки 75–97): условие редиректа в `/settings?from=cart` требует `hasRealEmail` **и** `hasPassword`. Поэтому даже после сохранения профиля без e-mail/пароля корзина снова уводит в настройки.
+- `src/pages/Settings.tsx` (cart-completion блок, строки 248–270 и 442–460, плюс `tryNavigateAfterCart`): при `?from=cart` блок требует подтверждённый Email и пароль ≥ 6 символов. Это и подсветка "введите Email и пароль".
+- "Три поля пустые при повторном заходе" — следствие проблемы #1: телефон не сохранён в БД, поэтому `fetchProfile` отдаёт пустую строку. Имя/адрес сохраняются и должны подтягиваться; на втором заходе они появятся, если первый save прошёл (а он не проходил, т.к. требовал email/пароль).
 
-### Что НЕ трогаем
-- Колонки в `farmers` — это новый источник правды.
-- `app_settings.admin_telegram_chat_id` — отдельная настройка.
-- Код и RLS — без изменений.
+## План правок
+
+### 1. `supabase/functions/verify-otp/index.ts` — гарантированно сохранять телефон новому пользователю
+
+- Заменить `profiles.update({ phone, phone_verified })` на `profiles.upsert({ user_id, phone, phone_verified: true }, { onConflict: 'user_id' })`, чтобы строка точно появилась независимо от состояния триггера.
+- Убрать дублирующий повторный `update({ phone_verified: true })` после блока (он уже учтён в upsert).
+
+### 2. `src/pages/Cart.tsx` — для оформления нужны только Имя + Телефон + Адрес
+
+- В `handleCheckout` убрать проверки `hasRealEmail` и `hasPassword`.
+- Выбирать из профиля `full_name, phone, delivery_address`.
+- Если чего-то из этих трёх нет → `navigate("/settings?from=cart")`, иначе → `/checkout`.
+
+### 3. `src/pages/Settings.tsx` — cart-completion без обязательных Email/Пароля
+
+- В `useEffect`: тост `"Заполните имя, телефон, Email и пароль..."` поменять на `"Заполните имя, телефон и адрес доставки для оформления заказа"`.
+- В `handleSaveProfile` (cart-completion ветка):
+  - оставить обязательными: `full_name`, валидный `phone`, `delivery_address`;
+  - удалить блоки проверки Email (`emailOk`) и пароля (`hasPassword`/`newPassword`).
+- В `handleSaveProfile` и `handlePhoneVerified`: убрать ветку `if (fromCart && !hasPassword && newPassword.length >= 6)` (пароль больше не часть cart-flow; обычное изменение пароля ниже на странице остаётся).
+- `tryNavigateAfterCart`: условием возврата в `/cart` сделать наличие `full_name`, `phone`, `delivery_address`.
+- Шапка-подсказка при `fromCart`: текст про "Имя, Телефон, Email (код), Пароль" → "Имя, Телефон, Адрес доставки".
+- Блок ввода Email/кода и блок задания пароля при `fromCart` **не удалять со страницы**, но сделать их необязательными (визуально пометить "по желанию"), либо просто перестать требовать. Решим в реализации — самый безопасный вариант: оставить как есть, но не блокировать сохранение. *(подтвердить вопросом ниже)*
+
+### 4. Поведение, которое не трогаем
+
+- Логика смены/привязки телефона через OTP (`PhoneVerifyDialog` + `link-phone-to-account`) — без изменений.
+- Обычная страница настроек (без `?from=cart`) — Email/Пароль остаются как сейчас.
+- Корзина для незалогиненного пользователя — по-прежнему ведёт в `/auth`.
+
+## Технические детали
+
+- `verify-otp` upsert: использует `service_role`, обходит RLS; конфликт по `user_id` (есть UNIQUE на `profiles.user_id`).
+- Поле `delivery_address` уже есть в `profiles` (используется в `Settings.tsx`).
+- После правок Cart→Checkout пускает пользователя без email/пароля; checkout уже умеет работать с такими профилями (использует phone/имя/адрес из профиля).
+
+## Уточняющий вопрос
+
+В cart-completion форме оставить блоки Email и Пароля как опциональные (пользователь может задать, если хочет, но это не блокирует сохранение и переход в чекаут)

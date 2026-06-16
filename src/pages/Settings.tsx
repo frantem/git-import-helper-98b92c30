@@ -135,7 +135,7 @@ export default function Settings() {
     fetchProfile();
 
     if (fromCart) {
-      toast.info("Заполните имя, телефон, Email и пароль для оформления заказа");
+      toast.info("Заполните имя, телефон и адрес доставки для оформления заказа");
     } else if (forceReset) {
       toast.info("Задайте новый пароль для входа");
     }
@@ -226,9 +226,7 @@ export default function Settings() {
   // Когда checkout-данные полностью готовы — возвращаемся в корзину
   const tryNavigateAfterCart = (latestPhone: string) => {
     if (!fromCart) return;
-    const passwordOk = hasPassword || newPassword.length >= 6;
-    const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
-    if (profile.full_name && latestPhone && emailOk && passwordOk) {
+    if (profile.full_name && latestPhone && profile.delivery_address) {
       navigate("/cart");
     }
   };
@@ -245,7 +243,7 @@ export default function Settings() {
       return;
     }
 
-    // Cart-completion required fields
+    // Cart-completion required fields: name + phone + delivery address
     if (fromCart) {
       if (!profile.full_name?.trim()) {
         toast.error("Введите имя");
@@ -255,17 +253,8 @@ export default function Settings() {
         toast.error("Введите номер телефона");
         return;
       }
-      const emailOk = (!isVirtualEmail && !!authEmail) || emailStep === "verified";
-      if (!emailOk) {
-        toast.error("Подтвердите Email кодом перед сохранением");
-        return;
-      }
-      if (!hasPassword && newPassword.length < 6) {
-        toast.error("Задайте пароль (минимум 6 символов)");
-        return;
-      }
-      if (newPassword && newPassword !== confirmPassword) {
-        toast.error("Пароли не совпадают");
+      if (!profile.delivery_address?.trim()) {
+        toast.error("Введите адрес доставки");
         return;
       }
     }
@@ -280,20 +269,6 @@ export default function Settings() {
     setIsSaving(true);
     const ok = await saveProfileFields();
     if (!ok) { setIsSaving(false); return; }
-
-    // Если в этой же форме (cart-completion) пользователь задал пароль — сохраняем
-    if (fromCart && !hasPassword && newPassword.length >= 6) {
-      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
-      if (pwErr) {
-        toast.error("Ошибка сохранения пароля: " + pwErr.message);
-        setIsSaving(false);
-        return;
-      }
-      await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user.id);
-      setHasPassword(true);
-      setNewPassword("");
-      setConfirmPassword("");
-    }
     setIsSaving(false);
 
     toast.success("Профиль сохранён");
@@ -308,16 +283,6 @@ export default function Settings() {
     setIsSaving(true);
     const ok = await saveProfileFields();
     if (!ok) { setIsSaving(false); return; }
-
-    if (fromCart && !hasPassword && newPassword.length >= 6) {
-      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
-      if (!pwErr) {
-        await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user!.id);
-        setHasPassword(true);
-        setNewPassword("");
-        setConfirmPassword("");
-      }
-    }
     setIsSaving(false);
 
     toast.success("Профиль сохранён");
@@ -445,8 +410,8 @@ export default function Settings() {
                 <>
                   <p className="font-medium mb-1">Завершите профиль, чтобы оформить заказ</p>
                   <p className="text-muted-foreground">
-                    Заполните: Имя, Телефон, Email (с подтверждением кодом) и Пароль —
-                    после сохранения вернёмся в корзину.
+                    Заполните: Имя, Телефон и Адрес доставки — после сохранения
+                    вернёмся в корзину. Email и пароль можно задать позже.
                   </p>
                 </>
               ) : (
@@ -543,9 +508,7 @@ export default function Settings() {
           {/* Email */}
           <div className="rounded-xl bg-card p-4 space-y-4">
             <h3 className="font-medium text-foreground">
-              Email {fromCart && !hasRealEmail && emailStep !== "verified" && (
-                <span className="text-destructive">*</span>
-              )}
+              Email <span className="text-muted-foreground font-normal text-xs">(по желанию)</span>
             </h3>
 
             {hasRealEmail && emailStep === "verified" ? (
@@ -605,7 +568,7 @@ export default function Settings() {
           {/* Password */}
           <div className="rounded-xl bg-card p-4 space-y-4">
             <h3 className="font-medium text-foreground">
-              Пароль {fromCart && !hasPassword && <span className="text-destructive">*</span>}
+              Пароль <span className="text-muted-foreground font-normal text-xs">(по желанию)</span>
             </h3>
 
             {!hasPassword && (

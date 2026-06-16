@@ -193,10 +193,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: false, error: "Ошибка сервера" });
     }
 
+    // Upsert to guarantee phone is saved even if handle_new_user trigger
+    // hasn't inserted the profile row yet (race condition).
     await admin
       .from("profiles")
-      .update({ phone, phone_verified: true })
-      .eq("user_id", userId);
+      .upsert(
+        { user_id: userId, phone, phone_verified: true, email: virtualEmail },
+        { onConflict: "user_id" },
+      );
 
     const { data: existingRoles } = await admin
       .from("user_roles")
@@ -205,12 +209,13 @@ Deno.serve(async (req) => {
     if (!existingRoles || existingRoles.length === 0) {
       await admin.from("user_roles").insert({ user_id: userId, role: "buyer" });
     }
+  } else {
+    // Existing profile — just ensure phone_verified flag is set.
+    await admin
+      .from("profiles")
+      .update({ phone_verified: true })
+      .eq("user_id", userId);
   }
-
-  await admin
-    .from("profiles")
-    .update({ phone_verified: true })
-    .eq("user_id", userId);
 
   // Generate a magic link for the actual auth user email, then verify it server-side to get a session token pair.
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
