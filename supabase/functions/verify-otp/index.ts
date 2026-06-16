@@ -148,9 +148,8 @@ Deno.serve(async (req) => {
   }
 
   if (existingProfile?.user_id) {
-    const existingUserId = existingProfile.user_id;
-    userId = existingUserId;
-    const { data: authUserData, error: authUserError } = await admin.auth.admin.getUserById(existingUserId);
+    userId = existingProfile.user_id;
+    const { data: authUserData, error: authUserError } = await admin.auth.admin.getUserById(userId);
 
     if (authUserError || !authUserData?.user?.email) {
       console.error("getUserById error:", authUserError);
@@ -158,6 +157,12 @@ Deno.serve(async (req) => {
     }
 
     signInEmail = authUserData.user.email;
+
+    // Ensure phone_verified flag is set on the existing profile row.
+    await admin
+      .from("profiles")
+      .update({ phone_verified: true })
+      .eq("user_id", userId);
   } else {
     const createResult = await admin.auth.admin.createUser({
       email: virtualEmail,
@@ -194,13 +199,16 @@ Deno.serve(async (req) => {
     }
 
     // Upsert to guarantee phone is saved even if handle_new_user trigger
-    // hasn't inserted the profile row yet (race condition).
-    await admin
+    // hasn't inserted the profile row yet (race condition), or if it failed.
+    const { error: upsertError } = await admin
       .from("profiles")
       .upsert(
         { user_id: userId, phone, phone_verified: true, email: virtualEmail },
         { onConflict: "user_id" },
       );
+    if (upsertError) {
+      console.error("Profile upsert error:", upsertError);
+    }
 
     const { data: existingRoles } = await admin
       .from("user_roles")
@@ -209,13 +217,8 @@ Deno.serve(async (req) => {
     if (!existingRoles || existingRoles.length === 0) {
       await admin.from("user_roles").insert({ user_id: userId, role: "buyer" });
     }
-  } else {
-    // Existing profile — just ensure phone_verified flag is set.
-    await admin
-      .from("profiles")
-      .update({ phone_verified: true })
-      .eq("user_id", userId);
   }
+
 
   // Generate a magic link for the actual auth user email, then verify it server-side to get a session token pair.
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({

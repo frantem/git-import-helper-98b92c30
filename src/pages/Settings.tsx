@@ -203,13 +203,17 @@ export default function Settings() {
     if (!user) return false;
     const { error } = await supabase
       .from("profiles")
-      .update({
-        full_name: profile.full_name || null,
-        avatar_url: profile.avatar_url || null,
-        delivery_address: profile.delivery_address || null,
-        email: email || null,
-      } as any)
-      .eq("user_id", user.id);
+      .upsert(
+        {
+          user_id: user.id,
+          full_name: profile.full_name || null,
+          avatar_url: profile.avatar_url || null,
+          delivery_address: profile.delivery_address || null,
+          phone: profile.phone && profile.phone !== "+375" ? profile.phone : null,
+          email: email || (user.email || null),
+        } as any,
+        { onConflict: "user_id" },
+      );
 
     if (error) {
       const msg = (error as { message?: string })?.message || "";
@@ -222,6 +226,7 @@ export default function Settings() {
     }
     return true;
   };
+
 
   // Когда checkout-данные полностью готовы — возвращаемся в корзину
   const tryNavigateAfterCart = (latestPhone: string) => {
