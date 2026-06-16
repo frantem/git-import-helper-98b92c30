@@ -508,9 +508,7 @@ export default function Settings() {
           {/* Email */}
           <div className="rounded-xl bg-card p-4 space-y-4">
             <h3 className="font-medium text-foreground">
-              Email {fromCart && !hasRealEmail && emailStep !== "verified" && (
-                <span className="text-destructive">*</span>
-              )}
+              Email <span className="text-muted-foreground font-normal text-xs">(по желанию)</span>
             </h3>
 
             {hasRealEmail && emailStep === "verified" ? (
