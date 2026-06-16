@@ -269,20 +269,25 @@ export default function Settings() {
     setIsSaving(true);
     const ok = await saveProfileFields();
     if (!ok) { setIsSaving(false); return; }
+    setIsSaving(false);
 
-    // Если в этой же форме (cart-completion) пользователь задал пароль — сохраняем
-    if (fromCart && !hasPassword && newPassword.length >= 6) {
-      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
-      if (pwErr) {
-        toast.error("Ошибка сохранения пароля: " + pwErr.message);
-        setIsSaving(false);
-        return;
-      }
-      await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user.id);
-      setHasPassword(true);
-      setNewPassword("");
-      setConfirmPassword("");
-    }
+    toast.success("Профиль сохранён");
+    tryNavigateAfterCart(savedPhone || currentPhone);
+  };
+
+  const handlePhoneVerified = async (verifiedPhone: string) => {
+    setPhoneVerifyOpen(false);
+    setSavedPhone(verifiedPhone);
+    setProfile((p) => ({ ...p, phone: verifiedPhone }));
+
+    setIsSaving(true);
+    const ok = await saveProfileFields();
+    if (!ok) { setIsSaving(false); return; }
+    setIsSaving(false);
+
+    toast.success("Профиль сохранён");
+    tryNavigateAfterCart(verifiedPhone);
+  };
     setIsSaving(false);
 
     toast.success("Профиль сохранён");
