@@ -288,35 +288,6 @@ export default function Settings() {
     toast.success("Профиль сохранён");
     tryNavigateAfterCart(verifiedPhone);
   };
-    setIsSaving(false);
-
-    toast.success("Профиль сохранён");
-    tryNavigateAfterCart(savedPhone || currentPhone);
-  };
-
-  const handlePhoneVerified = async (verifiedPhone: string) => {
-    setPhoneVerifyOpen(false);
-    setSavedPhone(verifiedPhone);
-    setProfile((p) => ({ ...p, phone: verifiedPhone }));
-
-    setIsSaving(true);
-    const ok = await saveProfileFields();
-    if (!ok) { setIsSaving(false); return; }
-
-    if (fromCart && !hasPassword && newPassword.length >= 6) {
-      const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
-      if (!pwErr) {
-        await supabase.from("profiles").update({ has_password: true } as any).eq("user_id", user!.id);
-        setHasPassword(true);
-        setNewPassword("");
-        setConfirmPassword("");
-      }
-    }
-    setIsSaving(false);
-
-    toast.success("Профиль сохранён");
-    tryNavigateAfterCart(verifiedPhone);
-  };
 
   // ---- Email OTP (для cart-completion и для смены email с виртуального) ----
   const handleSendEmailCode = async () => {
