@@ -111,6 +111,49 @@ Deno.serve(async (req) => {
 
   await admin.from("email_otp_codes").update({ verified: true }).eq("id", otpRow.id);
 
+  // ===== PASSWORD RESET BRANCH =====
+  if (purpose === "password_reset") {
+    // Find existing user by email
+    let foundUserId: string | null = null;
+    for (let page = 1; page <= 50 && !foundUserId; page++) {
+      const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      if (!list?.users || list.users.length === 0) break;
+      const found = list.users.find((u) => u.email?.toLowerCase() === email);
+      if (found) foundUserId = found.id;
+      if (list.users.length < 200) break;
+    }
+    if (!foundUserId) {
+      return jsonResponse({ success: false, error: "Аккаунт не найден" });
+    }
+    const { error: updErr } = await admin.auth.admin.updateUserById(foundUserId, { password: newPassword });
+    if (updErr) {
+      console.error("updateUserById error:", updErr);
+      return jsonResponse({ success: false, error: "Не удалось обновить пароль" });
+    }
+    await admin.from("profiles").update({ has_password: true } as never).eq("user_id", foundUserId);
+
+    // Sign in via magic link
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "magiclink", email,
+    });
+    if (linkError || !linkData?.properties?.hashed_token) {
+      return jsonResponse({ success: true });
+    }
+    const anonClient = createClient(supabaseUrl, anonKey);
+    const { data: verifyData } = await anonClient.auth.verifyOtp({
+      type: "magiclink", token_hash: linkData.properties.hashed_token,
+    });
+    if (verifyData?.session) {
+      return jsonResponse({
+        success: true,
+        access_token: verifyData.session.access_token,
+        refresh_token: verifyData.session.refresh_token,
+      });
+    }
+    return jsonResponse({ success: true });
+  }
+
+  // ===== REGISTER BRANCH =====
   // Double-check email isn't taken (race protection)
   for (let page = 1; page <= 50; page++) {
     const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
