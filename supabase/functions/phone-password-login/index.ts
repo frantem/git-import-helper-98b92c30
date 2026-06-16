@@ -67,16 +67,16 @@ Deno.serve(async (req) => {
   const match = (rows || []).find(
     (r) => (r.phone || "").replace(/\D/g, "").slice(-9) === last9,
   );
-  if (!match) return jsonResponse({ error: "Аккаунт не найден" }, 404);
+  if (!match) return jsonResponse({ success: false, error: "Аккаунт не найден" });
 
   if (!match.has_password) {
-    return jsonResponse({ error: "no_password" }, 409);
+    return jsonResponse({ success: false, error: "no_password" });
   }
 
   // Get the auth user's email (could be a virtual phone email or real email).
   const { data: authData, error: authErr } = await admin.auth.admin.getUserById(match.user_id);
   if (authErr || !authData?.user?.email) {
-    return jsonResponse({ error: "Аккаунт не найден" }, 404);
+    return jsonResponse({ success: false, error: "Аккаунт не найден" });
   }
   const email = authData.user.email;
 
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     password: body.password,
   });
   if (signInErr || !signInData?.session) {
-    return jsonResponse({ error: "Неверный пароль" }, 401);
+    return jsonResponse({ success: false, error: "Неверный пароль" });
   }
 
   return jsonResponse({
