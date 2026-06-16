@@ -46,18 +46,25 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Server configuration error" }, 500);
   }
 
-  let body: { email?: unknown; code?: unknown; password?: unknown; full_name?: unknown };
+  let body: { email?: unknown; code?: unknown; password?: unknown; full_name?: unknown; purpose?: unknown; new_password?: unknown };
   try { body = await req.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const code = typeof body.code === "string" ? body.code.trim() : "";
+  const purpose = body.purpose === "password_reset" ? "password_reset" : "register";
   const password = typeof body.password === "string" ? body.password : "";
+  const newPassword = typeof body.new_password === "string" ? body.new_password : "";
   const fullName = typeof body.full_name === "string" ? body.full_name.trim() : "";
 
   if (!isValidEmail(email)) return jsonResponse({ success: false, error: "Некорректный Email" });
   if (!/^\d{6}$/.test(code)) return jsonResponse({ success: false, error: "Код должен состоять из 6 цифр" });
-  if (password.length < 6) return jsonResponse({ success: false, error: "Пароль должен быть минимум 6 символов" });
-  if (!fullName) return jsonResponse({ success: false, error: "Введите имя" });
+
+  if (purpose === "register") {
+    if (password.length < 6) return jsonResponse({ success: false, error: "Пароль должен быть минимум 6 символов" });
+    if (!fullName) return jsonResponse({ success: false, error: "Введите имя" });
+  } else {
+    if (newPassword.length < 6) return jsonResponse({ success: false, error: "Новый пароль минимум 6 символов" });
+  }
 
   const admin = createClient(supabaseUrl, serviceKey);
 
@@ -104,6 +111,49 @@ Deno.serve(async (req) => {
 
   await admin.from("email_otp_codes").update({ verified: true }).eq("id", otpRow.id);
 
+  // ===== PASSWORD RESET BRANCH =====
+  if (purpose === "password_reset") {
+    // Find existing user by email
+    let foundUserId: string | null = null;
+    for (let page = 1; page <= 50 && !foundUserId; page++) {
+      const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      if (!list?.users || list.users.length === 0) break;
+      const found = list.users.find((u) => u.email?.toLowerCase() === email);
+      if (found) foundUserId = found.id;
+      if (list.users.length < 200) break;
+    }
+    if (!foundUserId) {
+      return jsonResponse({ success: false, error: "Аккаунт не найден" });
+    }
+    const { error: updErr } = await admin.auth.admin.updateUserById(foundUserId, { password: newPassword });
+    if (updErr) {
+      console.error("updateUserById error:", updErr);
+      return jsonResponse({ success: false, error: "Не удалось обновить пароль" });
+    }
+    await admin.from("profiles").update({ has_password: true } as never).eq("user_id", foundUserId);
+
+    // Sign in via magic link
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "magiclink", email,
+    });
+    if (linkError || !linkData?.properties?.hashed_token) {
+      return jsonResponse({ success: true });
+    }
+    const anonClient = createClient(supabaseUrl, anonKey);
+    const { data: verifyData } = await anonClient.auth.verifyOtp({
+      type: "magiclink", token_hash: linkData.properties.hashed_token,
+    });
+    if (verifyData?.session) {
+      return jsonResponse({
+        success: true,
+        access_token: verifyData.session.access_token,
+        refresh_token: verifyData.session.refresh_token,
+      });
+    }
+    return jsonResponse({ success: true });
+  }
+
+  // ===== REGISTER BRANCH =====
   // Double-check email isn't taken (race protection)
   for (let page = 1; page <= 50; page++) {
     const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });

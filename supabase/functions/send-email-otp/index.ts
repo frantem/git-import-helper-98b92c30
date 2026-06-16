@@ -56,10 +56,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Server configuration error" }, 500);
   }
 
-  let body: { email?: unknown };
+  let body: { email?: unknown; purpose?: unknown };
   try { body = await req.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const purpose = body.purpose === "password_reset" ? "password_reset" : "register";
   if (!isValidEmail(email)) {
     return jsonResponse({ success: false, error: "Некорректный Email" });
   }
@@ -69,15 +70,21 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey);
 
-  // Check email isn't already registered
+  // Для регистрации — Email не должен быть занят. Для сброса пароля — наоборот, должен существовать.
+  let emailExists = false;
   for (let page = 1; page <= 50; page++) {
     const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (!list?.users || list.users.length === 0) break;
     const found = list.users.find((u) => u.email?.toLowerCase() === email);
-    if (found) {
-      return jsonResponse({ success: false, error: "Этот Email уже зарегистрирован. Войдите или восстановите пароль.", code: "email_taken" });
-    }
+    if (found) { emailExists = true; break; }
     if (list.users.length < 200) break;
+  }
+
+  if (purpose === "register" && emailExists) {
+    return jsonResponse({ success: false, error: "Этот Email уже зарегистрирован. Войдите или восстановите пароль.", code: "email_taken" });
+  }
+  if (purpose === "password_reset" && !emailExists) {
+    return jsonResponse({ success: false, error: "Аккаунт с таким Email не найден" });
   }
 
   // Rate limit
@@ -121,10 +128,18 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: "Ошибка сервера" }, 500);
   }
 
+  const title = purpose === "password_reset" ? "Восстановление пароля" : "Подтверждение Email";
+  const intro = purpose === "password_reset"
+    ? "Ваш код для восстановления пароля на Locus:"
+    : "Ваш код для регистрации на Locus:";
+  const subject = purpose === "password_reset"
+    ? "Код восстановления пароля — Locus"
+    : "Код подтверждения — Locus";
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
-      <h2 style="margin: 0 0 16px;">Подтверждение Email</h2>
-      <p style="margin: 0 0 16px;">Ваш код для регистрации на Locus:</p>
+      <h2 style="margin: 0 0 16px;">${title}</h2>
+      <p style="margin: 0 0 16px;">${intro}</p>
       <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; padding: 16px; background: #f5f5f5; text-align: center; border-radius: 8px; margin: 16px 0; color: #1a1a1a;">${code}</div>
       <p style="margin: 0 0 8px; color: #666; font-size: 14px;">Код действителен 10 минут.</p>
       <p style="margin: 0; color: #999; font-size: 12px;">Если вы не запрашивали этот код, проигнорируйте письмо.</p>
@@ -133,12 +148,7 @@ Deno.serve(async (req) => {
   const resendRes = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-    body: JSON.stringify({
-      from: senderEmail,
-      to: [email],
-      subject: "Код подтверждения — Locus",
-      html,
-    }),
+    body: JSON.stringify({ from: senderEmail, to: [email], subject, html }),
   });
 
   if (!resendRes.ok) {
