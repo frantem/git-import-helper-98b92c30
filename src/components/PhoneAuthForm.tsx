@@ -11,19 +11,30 @@ import { formatBYPhone, isValidBYPhone } from "@/lib/phone";
 interface PhoneAuthFormProps {
   onSuccess: () => void;
   /**
-   * login    — обычный вход/регистрация (текущее поведение, по умолчанию)
-   * register — перед отправкой кода проверяем check-account-exists;
-   *            если номер занят — вызываем onAccountExists вместо отправки SMS
-   * recovery — отправляем код на существующий номер; после verify-otp вызываем onSuccess
+   * login    — вход существующего пользователя. Если профиля нет — onAccountNotFound.
+   * register — регистрация нового. Если профиль есть — onAccountExists.
    */
-  mode?: "login" | "register" | "recovery";
-  /** Вызывается, если в режиме register номер уже занят (вместо отправки SMS) */
+  mode?: "login" | "register";
+  /** В режиме register: номер уже зарегистрирован */
   onAccountExists?: (phone: string) => void;
+  /** В режиме login: номер не зарегистрирован */
+  onAccountNotFound?: (phone: string) => void;
+  /** Предзаполненный номер (после подтверждения регистрации из login) */
+  initialPhone?: string;
+  /** Сразу отправить код при монтировании (без шага ввода номера) */
+  autoSend?: boolean;
 }
 
-export function PhoneAuthForm({ onSuccess, mode = "login", onAccountExists }: PhoneAuthFormProps) {
+export function PhoneAuthForm({
+  onSuccess,
+  mode = "login",
+  onAccountExists,
+  onAccountNotFound,
+  initialPhone,
+  autoSend = false,
+}: PhoneAuthFormProps) {
   const [step, setStep] = useState<"phone" | "code">("phone");
-  const [phone, setPhone] = useState("+375");
+  const [phone, setPhone] = useState(initialPhone || "+375");
   const [code, setCode] = useState(["", "", "", ""]);
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
