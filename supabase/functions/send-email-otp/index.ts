@@ -56,10 +56,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Server configuration error" }, 500);
   }
 
-  let body: { email?: unknown };
+  let body: { email?: unknown; purpose?: unknown };
   try { body = await req.json(); } catch { return jsonResponse({ error: "Invalid JSON" }, 400); }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const purpose = body.purpose === "password_reset" ? "password_reset" : "register";
   if (!isValidEmail(email)) {
     return jsonResponse({ success: false, error: "Некорректный Email" });
   }
@@ -69,15 +70,21 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey);
 
-  // Check email isn't already registered
+  // Для регистрации — Email не должен быть занят. Для сброса пароля — наоборот, должен существовать.
+  let emailExists = false;
   for (let page = 1; page <= 50; page++) {
     const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (!list?.users || list.users.length === 0) break;
     const found = list.users.find((u) => u.email?.toLowerCase() === email);
-    if (found) {
-      return jsonResponse({ success: false, error: "Этот Email уже зарегистрирован. Войдите или восстановите пароль.", code: "email_taken" });
-    }
+    if (found) { emailExists = true; break; }
     if (list.users.length < 200) break;
+  }
+
+  if (purpose === "register" && emailExists) {
+    return jsonResponse({ success: false, error: "Этот Email уже зарегистрирован. Войдите или восстановите пароль.", code: "email_taken" });
+  }
+  if (purpose === "password_reset" && !emailExists) {
+    return jsonResponse({ success: false, error: "Аккаунт с таким Email не найден" });
   }
 
   // Rate limit
