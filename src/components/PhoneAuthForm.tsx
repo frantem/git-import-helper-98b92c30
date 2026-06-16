@@ -55,6 +55,16 @@ export function PhoneAuthForm({
     }
   }, [step]);
 
+  // Авто-отправка кода при autoSend (после подтверждения регистрации)
+  const autoSentRef = useRef(false);
+  useEffect(() => {
+    if (autoSend && !autoSentRef.current && isValidBYPhone(phone)) {
+      autoSentRef.current = true;
+      void sendCode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSend]);
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     if (v.length < 4) {
