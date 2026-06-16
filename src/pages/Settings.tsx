@@ -135,7 +135,7 @@ export default function Settings() {
     fetchProfile();
 
     if (fromCart) {
-      toast.info("Заполните имя, телефон, Email и пароль для оформления заказа");
+      toast.info("Заполните имя, телефон и адрес доставки для оформления заказа");
     } else if (forceReset) {
       toast.info("Задайте новый пароль для входа");
     }
