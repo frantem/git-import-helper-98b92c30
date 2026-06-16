@@ -128,10 +128,18 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: "Ошибка сервера" }, 500);
   }
 
+  const title = purpose === "password_reset" ? "Восстановление пароля" : "Подтверждение Email";
+  const intro = purpose === "password_reset"
+    ? "Ваш код для восстановления пароля на Locus:"
+    : "Ваш код для регистрации на Locus:";
+  const subject = purpose === "password_reset"
+    ? "Код восстановления пароля — Locus"
+    : "Код подтверждения — Locus";
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
-      <h2 style="margin: 0 0 16px;">Подтверждение Email</h2>
-      <p style="margin: 0 0 16px;">Ваш код для регистрации на Locus:</p>
+      <h2 style="margin: 0 0 16px;">${title}</h2>
+      <p style="margin: 0 0 16px;">${intro}</p>
       <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; padding: 16px; background: #f5f5f5; text-align: center; border-radius: 8px; margin: 16px 0; color: #1a1a1a;">${code}</div>
       <p style="margin: 0 0 8px; color: #666; font-size: 14px;">Код действителен 10 минут.</p>
       <p style="margin: 0; color: #999; font-size: 12px;">Если вы не запрашивали этот код, проигнорируйте письмо.</p>
@@ -140,12 +148,7 @@ Deno.serve(async (req) => {
   const resendRes = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-    body: JSON.stringify({
-      from: senderEmail,
-      to: [email],
-      subject: "Код подтверждения — Locus",
-      html,
-    }),
+    body: JSON.stringify({ from: senderEmail, to: [email], subject, html }),
   });
 
   if (!resendRes.ok) {
