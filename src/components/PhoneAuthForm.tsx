@@ -69,30 +69,28 @@ export function PhoneAuthForm({
       toast.error("Введите корректный номер: +375 (25/29/33/44) XXX-XX-XX");
       return;
     }
-    // В режиме регистрации сначала проверяем, не занят ли номер
-    if (mode === "register" && onAccountExists) {
-      setIsSending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("check-account-exists", {
-          body: { phone },
-        });
-        if (error) {
+    setIsSending(true);
+    try {
+      // Проверка существования аккаунта (для обоих режимов)
+      if (mode === "register" || mode === "login") {
+        const { data: checkData, error: checkError } = await supabase.functions.invoke(
+          "check-account-exists",
+          { body: { phone } },
+        );
+        if (checkError) {
           toast.error("Не удалось проверить номер. Попробуйте позже.");
           return;
         }
-        if ((data as { exists?: boolean } | null)?.exists) {
+        const exists = !!(checkData as { exists?: boolean } | null)?.exists;
+        if (mode === "register" && exists && onAccountExists) {
           onAccountExists(phone);
           return;
         }
-      } catch (e) {
-        toast.error("Ошибка сети: " + (e instanceof Error ? e.message : String(e)));
-        return;
-      } finally {
-        setIsSending(false);
+        if (mode === "login" && !exists && onAccountNotFound) {
+          onAccountNotFound(phone);
+          return;
+        }
       }
-    }
-    setIsSending(true);
-    try {
       const { data, error } = await supabase.functions.invoke("send-otp", {
         body: { phone },
       });
