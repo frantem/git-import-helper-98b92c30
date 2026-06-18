@@ -83,7 +83,11 @@ export default function Checkout() {
   const [loadError, setLoadError] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [emailPromptDismissed, setEmailPromptDismissed] = useState(false);
-  const showEmailPrompt = !emailPromptDismissed && !!user?.email?.toLowerCase().endsWith("@phone.locusfood.by");
+  const [profileEmail, setProfileEmail] = useState<string | null>(null);
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [lastSellerTimes, setLastSellerTimes] = useState<Record<string, string>>({});
+  const hasRealEmail = !!profileEmail && !profileEmail.toLowerCase().endsWith("@phone.locusfood.by");
+  const showEmailPrompt = !emailPromptDismissed && !hasRealEmail;
 
   // Delivery type state
   const [deliveryType, setDeliveryType] = useState<"pickup" | "courier" | "self" | "">("");
@@ -232,7 +236,7 @@ export default function Checkout() {
     if (!user) return;
     const { data } = await supabase.
     from("profiles").
-    select("delivery_address").
+    select("delivery_address, email").
     eq("user_id", user.id).
     maybeSingle();
     if (data) {
@@ -241,6 +245,7 @@ export default function Checkout() {
       if (addr && !deliveryAddress) {
         setDeliveryAddress(addr);
       }
+      setProfileEmail((data as any).email || null);
     }
   };
 
@@ -538,6 +543,19 @@ export default function Checkout() {
         }).catch((err) => console.error("Failed to send self-pickup notification:", err));
       }
 
+      // Send buyer order email if profile already has a real email.
+      // If not — EmailChangePrompt will trigger this after saving email.
+      if (hasRealEmail) {
+        supabase.functions.invoke("send-buyer-order-email", {
+          body: { order_id: order.id, seller_times: sellerTimesMap },
+        }).catch((err) => console.error("Failed to send buyer order email:", err));
+      }
+
+      // Remember order context so EmailChangePrompt can send the email after save
+      setLastOrderId(order.id);
+      setLastSellerTimes(sellerTimesMap);
+
+
       // Meta Pixel + Conversions API: Purchase (via shared helper for dedup)
       const totalRubles = Math.floor(finalTotalPrice / 100);
       trackMetaEvent("Purchase", {
@@ -576,7 +594,11 @@ export default function Checkout() {
           Менеджер свяжется с Вами для подтверждения заказа. Номер поддержки: +375(29)7399485
         </p>
         {showEmailPrompt && (
-          <EmailChangePrompt onDone={() => setEmailPromptDismissed(true)} />
+          <EmailChangePrompt
+            onDone={() => setEmailPromptDismissed(true)}
+            orderId={lastOrderId || undefined}
+            sellerTimes={lastSellerTimes}
+          />
         )}
         <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={() => navigate("/orders")}>

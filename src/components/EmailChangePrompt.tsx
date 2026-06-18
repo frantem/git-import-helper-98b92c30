@@ -8,15 +8,15 @@ import { toast } from "sonner";
 
 interface Props {
   onDone: () => void;
+  orderId?: string;
+  sellerTimes?: Record<string, string>;
 }
 
-export function EmailChangePrompt({ onDone }: Props) {
-  const [step, setStep] = useState<"email" | "code">("email");
+export function EmailChangePrompt({ onDone, orderId, sellerTimes }: Props) {
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendCode = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -25,45 +25,29 @@ export function EmailChangePrompt({ onDone }: Props) {
     }
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-email-change-code", {
-        body: { new_email: trimmed },
+      const { data, error } = await supabase.functions.invoke("save-buyer-email", {
+        body: { email: trimmed },
       });
       if (error) throw error;
       if (!data?.success) {
-        toast.error(data?.error || "Не удалось отправить код");
+        toast.error(data?.error || "Не удалось сохранить Email");
         return;
       }
-      toast.success("Код отправлен на " + trimmed);
-      setEmail(trimmed);
-      setStep("code");
-    } catch (err: any) {
-      toast.error(err?.message || "Ошибка отправки");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      // Refresh session so user.email-derived UI stays consistent (best-effort)
+      await supabase.auth.refreshSession().catch(() => {});
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^\d{6}$/.test(code.trim())) {
-      toast.error("Код должен состоять из 6 цифр");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-email-change-code", {
-        body: { new_email: email, code: code.trim() },
-      });
-      if (error) throw error;
-      if (!data?.success) {
-        toast.error(data?.error || "Неверный код");
-        return;
+      // Send order notification email if we have an order context
+      if (orderId) {
+        supabase.functions.invoke("send-buyer-order-email", {
+          body: { order_id: orderId, seller_times: sellerTimes || {} },
+        }).catch((err) => console.error("send-buyer-order-email failed:", err));
+        toast.success("Email сохранён — уведомление отправлено");
+      } else {
+        toast.success("Email сохранён");
       }
-      toast.success("Email подтверждён");
-      await supabase.auth.refreshSession();
       onDone();
     } catch (err: any) {
-      toast.error(err?.message || "Ошибка проверки");
+      toast.error(err?.message || "Ошибка сохранения");
     } finally {
       setIsLoading(false);
     }
@@ -80,65 +64,34 @@ export function EmailChangePrompt({ onDone }: Props) {
             Хотите получать уведомления о заказах на почту?
           </h3>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {step === "email"
-              ? "Введите ваш Email — мы пришлём код подтверждения."
-              : `Введите код, отправленный на ${email}`}
+            Укажите ваш Email — пришлём подтверждение заказа и попросим оставить отзыв после доставки.
           </p>
         </div>
       </div>
 
-      {step === "email" ? (
-        <form onSubmit={handleSendCode} className="space-y-3">
-          <div>
-            <Label htmlFor="email-prompt" className="sr-only">Email</Label>
-            <Input
-              id="email-prompt"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Получить код
-            </Button>
-            <Button type="button" variant="ghost" onClick={onDone} disabled={isLoading}>
-              Пропустить
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <form onSubmit={handleVerify} className="space-y-3">
-          <div>
-            <Label htmlFor="code-prompt" className="sr-only">Код</Label>
-            <Input
-              id="code-prompt"
-              type="text"
-              inputMode="numeric"
-              pattern="\d{6}"
-              maxLength={6}
-              placeholder="6-значный код"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              autoComplete="one-time-code"
-              required
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Подтвердить
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => { setStep("email"); setCode(""); }} disabled={isLoading}>
-              Назад
-            </Button>
-          </div>
-        </form>
-      )}
+      <form onSubmit={handleSave} className="space-y-3">
+        <div>
+          <Label htmlFor="email-prompt" className="sr-only">Email</Label>
+          <Input
+            id="email-prompt"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button type="submit" disabled={isLoading} className="flex-1">
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Сохранить
+          </Button>
+          <Button type="button" variant="ghost" onClick={onDone} disabled={isLoading}>
+            Пропустить
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
