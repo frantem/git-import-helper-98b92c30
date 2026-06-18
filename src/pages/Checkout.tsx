@@ -543,6 +543,19 @@ export default function Checkout() {
         }).catch((err) => console.error("Failed to send self-pickup notification:", err));
       }
 
+      // Send buyer order email if profile already has a real email.
+      // If not — EmailChangePrompt will trigger this after saving email.
+      if (hasRealEmail) {
+        supabase.functions.invoke("send-buyer-order-email", {
+          body: { order_id: order.id, seller_times: sellerTimesMap },
+        }).catch((err) => console.error("Failed to send buyer order email:", err));
+      }
+
+      // Remember order context so EmailChangePrompt can send the email after save
+      setLastOrderId(order.id);
+      setLastSellerTimes(sellerTimesMap);
+
+
       // Meta Pixel + Conversions API: Purchase (via shared helper for dedup)
       const totalRubles = Math.floor(finalTotalPrice / 100);
       trackMetaEvent("Purchase", {
