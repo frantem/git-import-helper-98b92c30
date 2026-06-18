@@ -83,7 +83,11 @@ export default function Checkout() {
   const [loadError, setLoadError] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [emailPromptDismissed, setEmailPromptDismissed] = useState(false);
-  const showEmailPrompt = !emailPromptDismissed && !!user?.email?.toLowerCase().endsWith("@phone.locusfood.by");
+  const [profileEmail, setProfileEmail] = useState<string | null>(null);
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [lastSellerTimes, setLastSellerTimes] = useState<Record<string, string>>({});
+  const hasRealEmail = !!profileEmail && !profileEmail.toLowerCase().endsWith("@phone.locusfood.by");
+  const showEmailPrompt = !emailPromptDismissed && !hasRealEmail;
 
   // Delivery type state
   const [deliveryType, setDeliveryType] = useState<"pickup" | "courier" | "self" | "">("");
