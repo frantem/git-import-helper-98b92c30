@@ -236,7 +236,7 @@ export default function Checkout() {
     if (!user) return;
     const { data } = await supabase.
     from("profiles").
-    select("delivery_address").
+    select("delivery_address, email").
     eq("user_id", user.id).
     maybeSingle();
     if (data) {
@@ -245,6 +245,7 @@ export default function Checkout() {
       if (addr && !deliveryAddress) {
         setDeliveryAddress(addr);
       }
+      setProfileEmail((data as any).email || null);
     }
   };
 
