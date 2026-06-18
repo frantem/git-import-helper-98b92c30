@@ -594,7 +594,11 @@ export default function Checkout() {
           Менеджер свяжется с Вами для подтверждения заказа. Номер поддержки: +375(29)7399485
         </p>
         {showEmailPrompt && (
-          <EmailChangePrompt onDone={() => setEmailPromptDismissed(true)} />
+          <EmailChangePrompt
+            onDone={() => setEmailPromptDismissed(true)}
+            orderId={lastOrderId || undefined}
+            sellerTimes={lastSellerTimes}
+          />
         )}
         <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={() => navigate("/orders")}>
