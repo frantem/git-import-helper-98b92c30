@@ -124,43 +124,61 @@ const handler = async (req: Request): Promise<Response> => {
 
     const greetingName = (buyerName && buyerName.trim()) || "уважаемый клиент";
 
+    const linkStyle = "color: #1a1a1a; text-decoration: underline;";
+
     const productLinksHtml = products
-      .map((p: any, i: number) => {
+      .map((p: any) => {
         const url = `https://locusfood.by/product/${p.id}`;
-        return `<li style="margin-bottom: 8px;"><strong>${p.title}</strong> — <a href="${url}" style="color: #22c55e;">оставить отзыв</a></li>`;
+        return `<li style="margin-bottom: 8px;"><strong>${p.title}</strong> — <a href="${url}" style="${linkStyle}">оставить отзыв</a></li>`;
       })
       .join("");
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
-        <p style="font-size: 16px; line-height: 1.6; color: #333;">
-          ${greetingName}, большое спасибо, что выбрали натуральные продукты наших мастеров!
-          Ваша обратная связь помогает мастерам становиться лучше, а другим жителям Витебска —
-          выбирать самое вкусное.
-        </p>
-        <p style="font-size: 16px; line-height: 1.6; color: #333; margin-top: 20px;">
-          Будем очень благодарны, если Вы оставите отзыв о каждом товаре по ссылкам ниже:
-        </p>
-        <ol style="font-size: 16px; line-height: 1.6; color: #333; padding-left: 20px;">
-          ${productLinksHtml}
-        </ol>
-        <p style="font-size: 16px; line-height: 1.6; color: #333; margin-top: 20px;">
-          Если что-то в доставке или качестве продуктов было не так — пожалуйста, напишите или позвоните:
-          <br />
-          <a href="tel:+375297399485" style="color: #22c55e;">+375 29 739-94-85</a>
-          (Артём, <a href="https://t.me/+375297399485" style="color: #22c55e;">Telegram</a>,
-          <a href="viber://chat?number=%2B375297399485" style="color: #22c55e;">Viber</a>)
-        </p>
-        <p style="font-size: 16px; line-height: 1.6; color: #333; margin-top: 20px;">
-          Мы за честный сервис и всегда готовы исправить ошибки.
-        </p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-        <p style="font-size: 14px; color: #666;">
-          С уважением и благодарностью,<br />
-          <a href="https://locusfood.by" style="color: #22c55e;">locusfood.by</a>
-        </p>
-      </div>
-    `;
+    const productLinksText = products
+      .map((p: any, i: number) => `${i + 1}. ${p.title}: https://locusfood.by/product/${p.id}`)
+      .join("\n");
+
+    const preheader = "Поделитесь впечатлениями о заказе — это поможет другим покупателям.";
+
+    const html = `<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Ваш заказ на LocusFood</title></head>
+<body style="margin:0;padding:0;background-color:#ffffff;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${preheader}</div>
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; color:#1a1a1a;">
+    <p style="font-size: 16px; line-height: 1.6;">
+      ${greetingName}, вы недавно оформили заказ на locusfood.by.
+      Расскажите, как всё прошло — ваша обратная связь помогает мастерам и другим покупателям.
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; margin-top: 20px;">
+      Оставьте, пожалуйста, короткий отзыв о каждом товаре:
+    </p>
+    <ol style="font-size: 16px; line-height: 1.6; padding-left: 20px;">
+      ${productLinksHtml}
+    </ol>
+    <p style="font-size: 16px; line-height: 1.6; margin-top: 20px;">
+      Если что-то было не так, просто ответьте на это письмо или позвоните:
+      <a href="tel:+375297399485" style="${linkStyle}">+375 29 739-94-85</a> (Артём).
+    </p>
+    <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+    <p style="font-size: 12px; color: #666; line-height: 1.5;">
+      Вы получили это письмо, потому что оформили заказ на
+      <a href="https://locusfood.by" style="${linkStyle}">locusfood.by</a>.<br />
+      Чтобы отписаться, напишите на
+      <a href="mailto:info@locusfood.by?subject=unsubscribe" style="${linkStyle}">info@locusfood.by</a>.
+    </p>
+  </div>
+</body></html>`;
+
+    const text = `${greetingName}, вы недавно оформили заказ на locusfood.by.
+Расскажите, как всё прошло — ваша обратная связь помогает мастерам и другим покупателям.
+
+Оставьте, пожалуйста, короткий отзыв о каждом товаре:
+${productLinksText}
+
+Если что-то было не так, просто ответьте на это письмо или позвоните: +375 29 739-94-85 (Артём).
+
+---
+Вы получили это письмо, потому что оформили заказ на locusfood.by.
+Чтобы отписаться, напишите на info@locusfood.by.`;
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -171,8 +189,14 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: Deno.env.get("SENDER_EMAIL") || "Locus <info@locusfood.by>",
         to: [buyerEmail],
-        subject: "Спасибо за заказ! Поделитесь впечатлениями",
+        reply_to: "info@locusfood.by",
+        subject: "Ваш заказ на LocusFood — как всё прошло?",
         html,
+        text,
+        headers: {
+          "List-Unsubscribe": "<mailto:info@locusfood.by?subject=unsubscribe>, <https://locusfood.by/settings>",
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
       }),
     });
 
