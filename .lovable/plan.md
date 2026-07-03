@@ -1,20 +1,23 @@
 ## Проблема
+В карточке товара описание рендерится через `<p>...{product.description}...</p>` (src/pages/Product.tsx:823). React схлопывает переносы строк `\n` в пробелы, поэтому текст выглядит сплошным блоком, хотя продавец разделял его на абзацы.
 
-Письмо `send-review-request` попадает в спам: subject с эмоцией, нет plain-text альтернативы, нет `Reply-To` и `List-Unsubscribe`, много цветных ссылок и рекламный тон.
+## Решение
+Сохранить пользовательские переносы строк при выводе, не меняя формат хранения в БД и форму редактирования.
 
-## Что сделать
+В `src/pages/Product.tsx` заменить строку 823 так, чтобы:
+- Метка «Описание:» осталась как есть.
+- Значение описания выводилось в отдельном контейнере с `whitespace-pre-wrap` и `break-words`, чтобы `\n` превращались в реальные переносы, а длинные слова корректно переносились.
 
-Только правки в `supabase/functions/send-review-request/index.ts` (дублирование в Telegram админу НЕ делаем):
+Примерно:
+```tsx
+<div className="mb-2 text-muted-foreground">
+  <span className="font-medium text-foreground">Описание: </span>
+  <span className="whitespace-pre-wrap break-words">{product.description}</span>
+</div>
+```
+(`<p>` меняем на `<div>`, т.к. внутри блочное поведение с сохранением пробелов; визуально идентично.)
 
-- Subject: `Ваш заказ на LocusFood — как всё прошло?` (нейтральный, без «Спасибо!»).
-- Добавить скрытый preheader.
-- Полноценный `<!DOCTYPE html>` с `<head>`, `lang="ru"`, viewport.
-- Добавить plain-text версию (`text`) с теми же ссылками — сильно снижает spam score.
-- В теле POST к Resend добавить:
-  - `reply_to: "info@locusfood.by"`
-  - `headers: { "List-Unsubscribe": "<mailto:info@locusfood.by?subject=unsubscribe>, <https://locusfood.by/settings>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }`
-- Убрать зелёный `#22c55e` у ссылок → нейтральный `#1a1a1a` с подчёркиванием.
-- Сократить контактный блок (убрать Telegram/Viber, оставить телефон + предложение ответить на письмо → повышает engagement).
-- В футер добавить: «Вы получили это письмо, потому что оформили заказ на locusfood.by. Отписаться: info@locusfood.by».
-
-Задеплоить `send-review-request`. Никаких изменений в других функциях, конфиге, БД или клиенте.
+## Что не меняем
+- `Textarea` в форме продавца — уже сохраняет `\n`.
+- SEO-описание (строка 597) остаётся однострочным — там переносы не нужны.
+- Никаких изменений БД, edge-функций, других страниц.
