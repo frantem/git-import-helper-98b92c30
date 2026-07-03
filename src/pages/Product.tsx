@@ -820,7 +820,7 @@ export default function Product() {
             )}
 
             {/* Description */}
-            <p className="mb-2 text-muted-foreground"><span className="font-medium text-foreground">Описание: </span>{product.description}</p>
+            <div className="mb-2 text-muted-foreground"><span className="font-medium text-foreground">Описание: </span><span className="whitespace-pre-wrap break-words">{product.description}</span></div>
 
             {/* Seller - compact */}
             <Link to={`/seller/${product.farmer_id}`} className="block mb-2">
