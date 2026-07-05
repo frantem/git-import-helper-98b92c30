@@ -598,7 +598,8 @@ Deno.serve(async (req) => {
       ...corsHeaders,
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=300, s-maxage=600",
-      "X-Robots-Tag": "all",
+      "X-Robots-Tag": meta.noindex ? "noindex, follow" : "all",
     },
   });
 });
+
