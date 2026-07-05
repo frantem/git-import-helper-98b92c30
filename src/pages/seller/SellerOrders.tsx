@@ -357,10 +357,16 @@ export default function SellerOrders() {
                             <span className={isCollected ? "text-success" : "text-muted-foreground"}>
                               {isCollected ? "✓" : "○"}
                             </span>
-                            <span className="text-foreground truncate">
+                            <Link
+                              to={`/product/${item.product?.slug || item.product?.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-foreground truncate hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {item.product?.title}
                               {item.variant_label && <span className="text-muted-foreground"> ({item.variant_label})</span>}
-                            </span>
+                            </Link>
                             <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
