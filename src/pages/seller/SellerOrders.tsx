@@ -21,7 +21,7 @@ interface SellerOrderItem {
     fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
     addons?: Array<{ addonId: string; name: string; price: number }>;
   } | null;
-  product: { title: string } | null;
+  product: { id: string; title: string; slug: string | null } | null;
 }
 
 interface SellerOrder {
