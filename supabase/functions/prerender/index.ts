@@ -470,69 +470,6 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   };
 }
 
-// ----- Dynamic Sitemap Generator -----
-
-async function generateSitemap(supabase: any): Promise<string> {
-  const urls: { loc: string; priority: string; lastmod?: string }[] = [
-    { loc: `${DOMAIN}/`, priority: "1.0" },
-    { loc: `${DOMAIN}/catalog`, priority: "0.8" },
-  ];
-
-  // Fetch Categories
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("slug, updated_at");
-
-  if (categories) {
-    categories.forEach((cat: any) => {
-      urls.push({
-        loc: `${DOMAIN}/catalog?category=${cat.slug}`,
-        priority: "0.8",
-        lastmod: cat.updated_at ? new Date(cat.updated_at).toISOString().split('T')[0] : undefined
-      });
-      urls.push({
-        loc: `${DOMAIN}/vitebsk/${cat.slug}`,
-        priority: "0.8"
-      });
-    });
-  }
-
-  // Fetch Products
-  const { data: products } = await supabase
-    .from("products")
-    .select("id, updated_at, slug, image_url")
-    .eq("is_active", true)
-    .eq("is_deleted", false);
-
-  const productUrls: any[] = [];
-  if (products) {
-    products.forEach((prod: any) => {
-      productUrls.push({
-        loc: `${DOMAIN}/product/${prod.slug || prod.id}`,
-        priority: "0.6",
-        lastmod: prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : undefined,
-        image: prod.image_url ? ogImageUrl(prod.image_url) : undefined
-      });
-    });
-  }
-
-  const allUrls = [...urls, ...productUrls];
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${allUrls.map(u => `  <url>
-    <loc>${u.loc}</loc>
-    <priority>${u.priority}</priority>
-    ${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}
-    ${u.image ? `    <image:image>
-      <image:loc>${u.image}</image:loc>
-    </image:image>` : ''}
-  </url>`).join('\n')}
-</urlset>`;
-
-  return xml;
-}
-
 // ----- Main handler -----
 
 Deno.serve(async (req) => {
@@ -553,23 +490,11 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Dynamic Sitemap
-  if (pathname === "/sitemap.xml") {
-    try {
-      const sitemap = await generateSitemap(supabase);
-      return new Response(sitemap, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/xml; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, s-maxage=7200",
-        },
-      });
-    } catch (err) {
-      console.error("Sitemap generation error:", err);
-      return new Response("Error generating sitemap", { status: 500, headers: corsHeaders });
-    }
-  }
+  // Sitemap generation lives in a separate edge function (`sitemap`) —
+  // nginx proxies /sitemap.xml directly to it. The old duplicate generator
+  // here was dead code and included /catalog?category=X URLs which we
+  // intentionally omit to avoid duplicate-content issues.
+
 
   // Static file passthrough: verification files, robots, sitemap, assets, etc.
   // Without this, prerender returns the homepage HTML for any unknown path,
