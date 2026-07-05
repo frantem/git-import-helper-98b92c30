@@ -35,13 +35,13 @@ Deno.serve(async (req) => {
   const [productsRes, farmersRes, categoriesRes] = await Promise.all([
     supabase
       .from("products")
-      .select("id, slug, updated_at, title, image_url, farmer_id")
+      .select("id, slug, updated_at, title, description, image_url, farmer_id")
       .eq("is_active", true)
       .eq("is_deleted", false)
       .order("updated_at", { ascending: false }),
     supabase
       .from("farmers")
-      .select("id, slug, created_at, is_blocked")
+      .select("id, slug, created_at, description, is_blocked")
       .eq("is_blocked", false)
       .order("created_at", { ascending: false }),
     supabase
@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
       .select("slug, created_at")
       .order("sort_order"),
   ]);
+
 
   const allowedFarmerIds = new Set((farmersRes.data || []).map((f: any) => f.id));
   const products = (productsRes.data || []).filter(
