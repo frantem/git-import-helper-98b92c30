@@ -156,7 +156,7 @@ export default function AdminOrders() {
           variant_label,
           custom_fields,
           farmer_id,
-          product:products(title),
+          product:products(id, title, slug),
           farmer:farmers(name, user_id)
         )
       `)
