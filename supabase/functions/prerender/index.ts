@@ -531,7 +531,18 @@ Deno.serve(async (req) => {
     if (pathname === "/" || pathname === "") {
       meta = homeMeta();
     } else if (pathname === "/catalog") {
-      meta = await catalogMeta(supabase, searchParams.get("category"));
+      const categoryParam = searchParams.get("category");
+      meta = await catalogMeta(supabase, categoryParam);
+      // Фильтрационные URL (discount/new/search) — noindex + canonical на /catalog,
+      // чтобы Google не считал их дублями каталога.
+      const hasFilterParam =
+        searchParams.has("discount") ||
+        searchParams.has("new") ||
+        searchParams.has("search");
+      if (hasFilterParam && !categoryParam) {
+        meta.canonical = `${DOMAIN}/catalog`;
+        meta.noindex = true;
+      }
     } else if (pathname.startsWith("/product/")) {
       dynamicRoute = true;
       const id = pathname.replace("/product/", "").split("/")[0];
@@ -548,6 +559,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("prerender error:", err);
   }
+
 
   const assets = await getBundleAssets();
 
