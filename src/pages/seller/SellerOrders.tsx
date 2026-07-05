@@ -82,7 +82,7 @@ export default function SellerOrders() {
       .from("order_items")
       .select(`
         id, quantity, unit_price, status, confirmed_at, variant_label, custom_fields,
-        product:products(title),
+        product:products(id, title, slug),
         order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id, referrer_farmer_id,
           pickup_point:pickup_points(name, address, working_hours)
         )
