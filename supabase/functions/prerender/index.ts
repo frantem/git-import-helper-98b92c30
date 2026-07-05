@@ -189,7 +189,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   const isUuid = UUID_RE.test(idOrSlug);
   const baseQuery = supabase
     .from("products")
-    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id");
+    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, category");
   const { data: product } = isUuid
     ? await baseQuery.eq("id", idOrSlug).maybeSingle()
     : await baseQuery.eq("slug", idOrSlug).maybeSingle();
@@ -209,6 +209,17 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     sellerName = farmer?.name || null;
   }
 
+  // Category (for body content freshness)
+  let categoryName: string | null = null;
+  if (product.category) {
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("slug", product.category)
+      .maybeSingle();
+    categoryName = cat?.name || null;
+  }
+
   // Reviews aggregate
   const { data: reviews } = await supabase
     .from("reviews")
@@ -221,11 +232,19 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   const priceFormatted = (product.price / 100).toFixed(2).replace(".", ",");
 
-  const title = `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
+  // Title: включаем имя продавца для уникализации при одинаковых названиях товаров
+  const title = sellerName
+    ? `${product.title} от ${sellerName} — купить в ${CITY} | ${SITE_NAME}`
+    : `${product.title} — купить в ${CITY} | ${SITE_NAME}`;
 
-  const description = truncateMeta(
-    `Заказать ${product.title} от локальных мастеров в ${CITY}. 100% натуральный состав, единая доставка. Цена: ${priceFormatted} руб.`
-  );
+  // Description: приоритет — реальному описанию продавца, шаблон — фолбэк
+  const hasRealDescription = product.description && product.description.trim().length >= 40;
+  const description = hasRealDescription
+    ? truncateMeta(product.description)
+    : truncateMeta(
+        `${product.title}${sellerName ? ` от фермера ${sellerName}` : ""} с доставкой в ${CITY}. Натуральный состав, единая доставка по городу. Цена: ${priceFormatted} BYN${product.unit ? ` за ${product.unit}` : ""}.`
+      );
+
 
 
   const productLd: Record<string, unknown> = {
@@ -302,9 +321,15 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   const bodyParts: string[] = [];
   if (product.description) bodyParts.push(`<p>${escapeHtml(product.description)}</p>`);
-  bodyParts.push(`<p><strong>Цена:</strong> ${priceFormatted} BYN${product.unit ? ` за ${escapeHtml(product.unit)}` : ""}</p>`);
-  if (sellerName) bodyParts.push(`<p><strong>Фермер:</strong> ${escapeHtml(sellerName)}</p>`);
-  bodyParts.push(`<p><strong>Доставка:</strong> по ${CITY_NOM}у, оплата при получении</p>`);
+  bodyParts.push(`<h2>Характеристики</h2>`);
+  bodyParts.push(`<ul>`);
+  bodyParts.push(`<li><strong>Цена:</strong> ${priceFormatted} BYN${product.unit ? ` за ${escapeHtml(product.unit)}` : ""}</li>`);
+  if (categoryName) bodyParts.push(`<li><strong>Категория:</strong> ${escapeHtml(categoryName)}</li>`);
+  if (sellerName) bodyParts.push(`<li><strong>Фермер:</strong> ${escapeHtml(sellerName)}</li>`);
+  bodyParts.push(`<li><strong>Город:</strong> ${CITY_NOM}</li>`);
+  bodyParts.push(`<li><strong>Доставка:</strong> курьером по ${CITY_NOM}у или самовывоз, оплата при получении</li>`);
+  bodyParts.push(`</ul>`);
+
 
   return {
     title,
