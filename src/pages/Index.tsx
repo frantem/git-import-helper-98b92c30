@@ -131,10 +131,12 @@ const Index = () => {
       <SEO jsonLd={homepageJsonLd} />
 
       <main className="container mx-auto px-3 pb-3 bg-[#faf5ea]">
+        <h1 className="sr-only">Locus — маркетплейс натуральных фермерских продуктов с доставкой в Витебске</h1>
         <section className="relative mb-4 overflow-hidden rounded-2xl">
           <Header variant="overlay" />
           {showBannerSkeleton ? (
             <Skeleton className="h-36 w-full rounded-2xl" />
+
           ) : (
             <BannerCarousel banners={banners} />
           )}
