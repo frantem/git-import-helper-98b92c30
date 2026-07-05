@@ -65,7 +65,9 @@ interface PageMeta {
   jsonLd?: unknown[];
   h1?: string;
   bodyContent?: string; // additional crawlable content
+  noindex?: boolean; // если true — добавляется <meta name="robots" content="noindex, follow">
 }
+
 
 // ----- Bundle asset discovery (so prerendered HTML still hydrates correctly) -----
 
@@ -107,7 +109,9 @@ function renderHtml(meta: PageMeta, assets: { js: string; css: string }): string
     <meta name="description" content="${safeDesc}" />
     <meta name="author" content="${SITE_NAME}" />
     <meta name="theme-color" content="#ffffff" />
+    ${meta.noindex ? `<meta name="robots" content="noindex, follow" />` : ""}
     <link rel="canonical" href="${escapeHtml(meta.canonical)}" />
+
 
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDesc}" />
