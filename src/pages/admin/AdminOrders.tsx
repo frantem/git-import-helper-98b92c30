@@ -43,7 +43,7 @@ interface OrderItem {
     addons?: Array<{ addonId: string; name: string; price: number }>;
   } | null;
   farmer_id: string;
-  product: { title: string } | null;
+  product: { id: string; title: string; slug: string | null } | null;
   farmer: { name: string; user_id: string | null } | null;
 }
 
