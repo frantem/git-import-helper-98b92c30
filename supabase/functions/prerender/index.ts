@@ -65,7 +65,9 @@ interface PageMeta {
   jsonLd?: unknown[];
   h1?: string;
   bodyContent?: string; // additional crawlable content
+  noindex?: boolean; // если true — добавляется <meta name="robots" content="noindex, follow">
 }
+
 
 // ----- Bundle asset discovery (so prerendered HTML still hydrates correctly) -----
 
@@ -107,7 +109,9 @@ function renderHtml(meta: PageMeta, assets: { js: string; css: string }): string
     <meta name="description" content="${safeDesc}" />
     <meta name="author" content="${SITE_NAME}" />
     <meta name="theme-color" content="#ffffff" />
+    ${meta.noindex ? `<meta name="robots" content="noindex, follow" />` : ""}
     <link rel="canonical" href="${escapeHtml(meta.canonical)}" />
+
 
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDesc}" />
@@ -189,7 +193,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   const isUuid = UUID_RE.test(idOrSlug);
   const baseQuery = supabase
     .from("products")
-    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id");
+    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, category");
   const { data: product } = isUuid
     ? await baseQuery.eq("id", idOrSlug).maybeSingle()
     : await baseQuery.eq("slug", idOrSlug).maybeSingle();
@@ -209,6 +213,17 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
     sellerName = farmer?.name || null;
   }
 
+  // Category (for body content freshness)
+  let categoryName: string | null = null;
+  if (product.category) {
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("slug", product.category)
+      .maybeSingle();
+    categoryName = cat?.name || null;
+  }
+
   // Reviews aggregate
   const { data: reviews } = await supabase
     .from("reviews")
@@ -221,11 +236,19 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   const priceFormatted = (product.price / 100).toFixed(2).replace(".", ",");
 
-  const title = `${product.title} купить в ${CITY} | Натуральные продукты ${SITE_NAME}`;
+  // Title: включаем имя продавца для уникализации при одинаковых названиях товаров
+  const title = sellerName
+    ? `${product.title} от ${sellerName} — купить в ${CITY} | ${SITE_NAME}`
+    : `${product.title} — купить в ${CITY} | ${SITE_NAME}`;
 
-  const description = truncateMeta(
-    `Заказать ${product.title} от локальных мастеров в ${CITY}. 100% натуральный состав, единая доставка. Цена: ${priceFormatted} руб.`
-  );
+  // Description: приоритет — реальному описанию продавца, шаблон — фолбэк
+  const hasRealDescription = product.description && product.description.trim().length >= 40;
+  const description = hasRealDescription
+    ? truncateMeta(product.description)
+    : truncateMeta(
+        `${product.title}${sellerName ? ` от фермера ${sellerName}` : ""} с доставкой в ${CITY}. Натуральный состав, единая доставка по городу. Цена: ${priceFormatted} BYN${product.unit ? ` за ${product.unit}` : ""}.`
+      );
+
 
 
   const productLd: Record<string, unknown> = {
@@ -302,9 +325,15 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
 
   const bodyParts: string[] = [];
   if (product.description) bodyParts.push(`<p>${escapeHtml(product.description)}</p>`);
-  bodyParts.push(`<p><strong>Цена:</strong> ${priceFormatted} BYN${product.unit ? ` за ${escapeHtml(product.unit)}` : ""}</p>`);
-  if (sellerName) bodyParts.push(`<p><strong>Фермер:</strong> ${escapeHtml(sellerName)}</p>`);
-  bodyParts.push(`<p><strong>Доставка:</strong> по ${CITY_NOM}у, оплата при получении</p>`);
+  bodyParts.push(`<h2>Характеристики</h2>`);
+  bodyParts.push(`<ul>`);
+  bodyParts.push(`<li><strong>Цена:</strong> ${priceFormatted} BYN${product.unit ? ` за ${escapeHtml(product.unit)}` : ""}</li>`);
+  if (categoryName) bodyParts.push(`<li><strong>Категория:</strong> ${escapeHtml(categoryName)}</li>`);
+  if (sellerName) bodyParts.push(`<li><strong>Фермер:</strong> ${escapeHtml(sellerName)}</li>`);
+  bodyParts.push(`<li><strong>Город:</strong> ${CITY_NOM}</li>`);
+  bodyParts.push(`<li><strong>Доставка:</strong> курьером по ${CITY_NOM}у или самовывоз, оплата при получении</li>`);
+  bodyParts.push(`</ul>`);
+
 
   return {
     title,
@@ -441,69 +470,6 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   };
 }
 
-// ----- Dynamic Sitemap Generator -----
-
-async function generateSitemap(supabase: any): Promise<string> {
-  const urls: { loc: string; priority: string; lastmod?: string }[] = [
-    { loc: `${DOMAIN}/`, priority: "1.0" },
-    { loc: `${DOMAIN}/catalog`, priority: "0.8" },
-  ];
-
-  // Fetch Categories
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("slug, updated_at");
-
-  if (categories) {
-    categories.forEach((cat: any) => {
-      urls.push({
-        loc: `${DOMAIN}/catalog?category=${cat.slug}`,
-        priority: "0.8",
-        lastmod: cat.updated_at ? new Date(cat.updated_at).toISOString().split('T')[0] : undefined
-      });
-      urls.push({
-        loc: `${DOMAIN}/vitebsk/${cat.slug}`,
-        priority: "0.8"
-      });
-    });
-  }
-
-  // Fetch Products
-  const { data: products } = await supabase
-    .from("products")
-    .select("id, updated_at, slug, image_url")
-    .eq("is_active", true)
-    .eq("is_deleted", false);
-
-  const productUrls: any[] = [];
-  if (products) {
-    products.forEach((prod: any) => {
-      productUrls.push({
-        loc: `${DOMAIN}/product/${prod.slug || prod.id}`,
-        priority: "0.6",
-        lastmod: prod.updated_at ? new Date(prod.updated_at).toISOString().split('T')[0] : undefined,
-        image: prod.image_url ? ogImageUrl(prod.image_url) : undefined
-      });
-    });
-  }
-
-  const allUrls = [...urls, ...productUrls];
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${allUrls.map(u => `  <url>
-    <loc>${u.loc}</loc>
-    <priority>${u.priority}</priority>
-    ${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ''}
-    ${u.image ? `    <image:image>
-      <image:loc>${u.image}</image:loc>
-    </image:image>` : ''}
-  </url>`).join('\n')}
-</urlset>`;
-
-  return xml;
-}
-
 // ----- Main handler -----
 
 Deno.serve(async (req) => {
@@ -524,23 +490,11 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Dynamic Sitemap
-  if (pathname === "/sitemap.xml") {
-    try {
-      const sitemap = await generateSitemap(supabase);
-      return new Response(sitemap, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/xml; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, s-maxage=7200",
-        },
-      });
-    } catch (err) {
-      console.error("Sitemap generation error:", err);
-      return new Response("Error generating sitemap", { status: 500, headers: corsHeaders });
-    }
-  }
+  // Sitemap generation lives in a separate edge function (`sitemap`) —
+  // nginx proxies /sitemap.xml directly to it. The old duplicate generator
+  // here was dead code and included /catalog?category=X URLs which we
+  // intentionally omit to avoid duplicate-content issues.
+
 
   // Static file passthrough: verification files, robots, sitemap, assets, etc.
   // Without this, prerender returns the homepage HTML for any unknown path,
@@ -577,7 +531,18 @@ Deno.serve(async (req) => {
     if (pathname === "/" || pathname === "") {
       meta = homeMeta();
     } else if (pathname === "/catalog") {
-      meta = await catalogMeta(supabase, searchParams.get("category"));
+      const categoryParam = searchParams.get("category");
+      meta = await catalogMeta(supabase, categoryParam);
+      // Фильтрационные URL (discount/new/search) — noindex + canonical на /catalog,
+      // чтобы Google не считал их дублями каталога.
+      const hasFilterParam =
+        searchParams.has("discount") ||
+        searchParams.has("new") ||
+        searchParams.has("search");
+      if (hasFilterParam && !categoryParam) {
+        meta.canonical = `${DOMAIN}/catalog`;
+        meta.noindex = true;
+      }
     } else if (pathname.startsWith("/product/")) {
       dynamicRoute = true;
       const id = pathname.replace("/product/", "").split("/")[0];
@@ -594,6 +559,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("prerender error:", err);
   }
+
 
   const assets = await getBundleAssets();
 
@@ -632,7 +598,8 @@ Deno.serve(async (req) => {
       ...corsHeaders,
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=300, s-maxage=600",
-      "X-Robots-Tag": "all",
+      "X-Robots-Tag": meta.noindex ? "noindex, follow" : "all",
     },
   });
 });
+
