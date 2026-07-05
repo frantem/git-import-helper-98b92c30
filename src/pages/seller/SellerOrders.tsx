@@ -21,7 +21,7 @@ interface SellerOrderItem {
     fields?: Array<{ fieldId: string; label: string; value: string; fieldType: string }>;
     addons?: Array<{ addonId: string; name: string; price: number }>;
   } | null;
-  product: { title: string } | null;
+  product: { id: string; title: string; slug: string | null } | null;
 }
 
 interface SellerOrder {
@@ -82,7 +82,7 @@ export default function SellerOrders() {
       .from("order_items")
       .select(`
         id, quantity, unit_price, status, confirmed_at, variant_label, custom_fields,
-        product:products(title),
+        product:products(id, title, slug),
         order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, delivery_cost, notes, estimated_delivery_time, payment_method, buyer_id, referrer_farmer_id,
           pickup_point:pickup_points(name, address, working_hours)
         )
@@ -357,10 +357,16 @@ export default function SellerOrders() {
                             <span className={isCollected ? "text-success" : "text-muted-foreground"}>
                               {isCollected ? "✓" : "○"}
                             </span>
-                            <span className="text-foreground truncate">
+                            <Link
+                              to={`/product/${item.product?.slug || item.product?.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-foreground truncate hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {item.product?.title}
                               {item.variant_label && <span className="text-muted-foreground"> ({item.variant_label})</span>}
-                            </span>
+                            </Link>
                             <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">

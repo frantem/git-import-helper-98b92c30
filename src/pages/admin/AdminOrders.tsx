@@ -43,7 +43,7 @@ interface OrderItem {
     addons?: Array<{ addonId: string; name: string; price: number }>;
   } | null;
   farmer_id: string;
-  product: { title: string } | null;
+  product: { id: string; title: string; slug: string | null } | null;
   farmer: { name: string; user_id: string | null } | null;
 }
 
@@ -156,7 +156,7 @@ export default function AdminOrders() {
           variant_label,
           custom_fields,
           farmer_id,
-          product:products(title),
+          product:products(id, title, slug),
           farmer:farmers(name, user_id)
         )
       `)
@@ -728,10 +728,16 @@ export default function AdminOrders() {
                                       >
                                         {item.status === "collected" ? "✓" : item.confirmed_at ? "●" : "○"}
                                       </span>
-                                      <span className="text-foreground truncate">
+                                      <Link
+                                        to={`/product/${item.product?.slug || item.product?.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-foreground truncate hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
                                         {item.product?.title}
                                         {item.variant_label && <span className="text-muted-foreground">({item.variant_label})</span>}
-                                      </span>
+                                      </Link>
                                     </div>
                                     <span className="text-muted-foreground whitespace-nowrap text-xs">
                                       = {itemTotal.formatted}<BynSymbol />
