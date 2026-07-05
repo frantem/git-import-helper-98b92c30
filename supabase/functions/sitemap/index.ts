@@ -112,7 +112,8 @@ Deno.serve(async (req) => {
   </url>`;
   }
 
-  // Products with image tags
+  // Products with image tags. Priority снижен для товаров без изображения или
+  // без описания (Google расходует бюджет на "тонкий" контент — понижаем сигнал).
   for (const p of uniqueProducts) {
     const lastmod = p.updated_at ? p.updated_at.split("T")[0] : now;
     const img = ogImageUrl(p.image_url);
@@ -121,12 +122,15 @@ Deno.serve(async (req) => {
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+    const hasImage = !!img;
+    const hasDescription = p.description && p.description.trim().length >= 40;
+    const priority = hasImage && hasDescription ? "0.9" : hasImage || hasDescription ? "0.6" : "0.4";
     xml += `
   <url>
     <loc>${DOMAIN}/product/${p.slug || p.id}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>${img ? `
+    <priority>${priority}</priority>${img ? `
     <image:image>
       <image:loc>${escapedImg}</image:loc>
       <image:title>${escapedTitle}</image:title>
@@ -135,17 +139,20 @@ Deno.serve(async (req) => {
   </url>`;
   }
 
-  // Sellers
+  // Sellers — понижаем приоритет для продавцов без описания
   for (const f of uniqueFarmers) {
     const lastmod = f.created_at ? f.created_at.split("T")[0] : now;
+    const hasDescription = f.description && f.description.trim().length >= 40;
+    const priority = hasDescription ? "0.6" : "0.4";
     xml += `
   <url>
     <loc>${DOMAIN}/seller/${f.slug || f.id}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>${priority}</priority>
   </url>`;
   }
+
 
 
   xml += `
