@@ -12,7 +12,7 @@ interface SEOProps {
 }
 
 const DOMAIN = "https://locusfood.by";
-const DEFAULT_TITLE = "Locus — Маркетплейс натуральных продуктов с единой доставкой в Беларуси";
+const DEFAULT_TITLE = "Locus — Натуральные продукты с доставкой в Витебске";
 const DEFAULT_DESCRIPTION = "Свежие фермерские продукты с доставкой в Витебске. Овощи, фрукты, мёд, молочные продукты напрямую от производителей.";
 
 function setMeta(property: string, content: string, isName = false) {

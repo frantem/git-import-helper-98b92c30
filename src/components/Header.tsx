@@ -50,6 +50,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
               <button
                 type="button"
                 onClick={clearSearch}
+                aria-label="Очистить поиск"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
               >
                 <X className="h-4 w-4" />

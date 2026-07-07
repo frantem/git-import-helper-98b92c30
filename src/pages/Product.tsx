@@ -655,14 +655,14 @@ export default function Product() {
 
             {/* Actions */}
             <div className="absolute right-4 top-4 flex gap-2 z-10">
-              <button onClick={toggleFavorite} className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
+              <button onClick={toggleFavorite} aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
                 <Heart className={cn("h-5 w-5", isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} />
               </button>
               <button onClick={e => {
               e.preventDefault();
               e.stopPropagation();
               handleShare();
-            }} className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
+            }} aria-label="Поделиться" className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
                 <Share2 className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>

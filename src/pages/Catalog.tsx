@@ -152,6 +152,7 @@ export default function Catalog() {
       <main className="container mx-auto px-4 py-4 md:py-6 bg-[#faf5ea]">
         {showCategories ? (
           <>
+            <h1 className="sr-only">Каталог фермерских продуктов в Витебске</h1>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Link
                 to="/catalog?discount=true"
