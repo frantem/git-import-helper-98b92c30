@@ -181,6 +181,12 @@ export default function SellerTerms() {
             </ul>
           </section>
 
+          <section className="space-y-2">
+            <h2 className="text-base font-bold">14. Вес товара</h2>
+            <p>⚠️ Вес товара может незначительно отличаться от выбранного Покупателем (в пределах ±10%). Итоговая стоимость заказа пересчитывается исходя из фактического веса. Подробнее — в <a href="/oferta" className="text-primary hover:underline">Публичной оферте</a>.</p>
+          </section>
+
+
           <section className="space-y-2 pt-4 border-t border-border">
             <h2 className="text-base font-bold">Важное примечание для Продавцов</h2>
             <p>Настоящий Договор применяется ко всем Продавцам независимо от их правового статуса: самозанятым, индивидуальным предпринимателям, ООО и иным организациям.</p>

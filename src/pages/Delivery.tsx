@@ -126,6 +126,12 @@ export default function Delivery() {
             <p>Время ответа на обращение — не более 24 часов в рабочие дни.</p>
           </section>
 
+          <section className="space-y-2">
+            <h2 className="text-base font-bold">10. Вес товара</h2>
+            <p>⚠️ Вес товара может незначительно отличаться от выбранного (в пределах ±10%). Итоговая стоимость будет пересчитана исходя из фактического веса. Подробнее — в <a href="/oferta" className="text-primary hover:underline">Публичной оферте</a>.</p>
+          </section>
+
+
           <p className="text-xs text-muted-foreground pt-4 border-t border-border">
             Котович Артём Владимирович, самозанятый, УНП CE6154534 • locusfood.by
           </p>
