@@ -1059,7 +1059,7 @@ export default function Checkout() {
             })()}
               </div>
               <p className="text-[10px] text-muted-foreground/70 text-center mt-3">
-                Точный адрес самовывоза отправим на телефон после оплаты
+                Точный адрес самовывоза отправим после заказа.
               </p>
             </div>}
         </div>
