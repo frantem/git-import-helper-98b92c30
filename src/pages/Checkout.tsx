@@ -364,7 +364,7 @@ export default function Checkout() {
     const parts: string[] = [];
     if (farmer.city) parts.push(farmer.city);
     if (farmer.street) parts.push(`ул. ${farmer.street}`);
-    if (farmer.address_details) parts.push(farmer.address_details);
+    // address_details намеренно не показываем — отправляется покупателю после оформления заказа
 
     return parts.length > 0 ? parts.join(", ") : "Адрес уточняйте у продавца";
   };
