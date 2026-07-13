@@ -1151,6 +1151,11 @@ export default function Checkout() {
             и{" "}
             <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Политикой конфиденциальности</a>
           </p>
+
+          <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed rounded-lg border border-border bg-muted/40 p-2">
+            ⚠️ Вес товара может незначительно отличаться от выбранного (в пределах ±10%). Итоговая стоимость будет пересчитана исходя из фактического веса. Подробнее — в{" "}
+            <a href="/oferta" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Публичной оферте</a>.
+          </p>
         </div>
       </main>
 
