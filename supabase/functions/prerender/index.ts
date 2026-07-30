@@ -193,10 +193,15 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   const isUuid = UUID_RE.test(idOrSlug);
   const baseQuery = supabase
     .from("products")
-    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, category");
-  const { data: product } = isUuid
+    .select("id, slug, title, description, price, unit, image_url, is_active, is_deleted, farmer_id, category_id, categories(name)");
+  const { data: product, error: productError } = isUuid
     ? await baseQuery.eq("id", idOrSlug).maybeSingle()
     : await baseQuery.eq("slug", idOrSlug).maybeSingle();
+
+  if (productError) {
+    console.error("product prerender lookup error:", productError);
+    return null;
+  }
 
   // Return null for missing, deleted or inactive products so the handler can
   // respond with 404 + noindex (prevents stale URLs being indexed by Google).
@@ -214,15 +219,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   }
 
   // Category (for body content freshness)
-  let categoryName: string | null = null;
-  if (product.category) {
-    const { data: cat } = await supabase
-      .from("categories")
-      .select("name")
-      .eq("slug", product.category)
-      .maybeSingle();
-    categoryName = cat?.name || null;
-  }
+  const categoryName = product.categories?.name || null;
 
   // Reviews aggregate
   const { data: reviews } = await supabase
