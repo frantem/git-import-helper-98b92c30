@@ -8,6 +8,19 @@ const corsHeaders = {
 
 const DOMAIN = "https://locusfood.by";
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function encodePathSegment(value: string): string {
+  return encodeURIComponent(value).replace(/%2F/gi, "-");
+}
+
 function ogImageUrl(src: string | null): string | null {
   if (!src) return null;
   if (src.startsWith("/") || src.startsWith("data:") || src.startsWith("blob:")) return null;
@@ -41,12 +54,12 @@ Deno.serve(async (req) => {
       .order("updated_at", { ascending: false }),
     supabase
       .from("farmers")
-      .select("id, slug, created_at, description, is_blocked")
+      .select("id, slug, description, is_blocked")
       .eq("is_blocked", false)
       .order("created_at", { ascending: false }),
     supabase
       .from("categories")
-      .select("slug, created_at")
+      .select("slug")
       .order("sort_order"),
   ]);
 
@@ -80,23 +93,37 @@ Deno.serve(async (req) => {
     seenProductIds.add(p.id);
     return true;
   });
-  const now = new Date().toISOString().split("T")[0];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>${DOMAIN}/</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>${DOMAIN}/catalog</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>`;
+
+  const staticEntries = [
+    { path: "/delivery", changefreq: "monthly", priority: "0.6" },
+    { path: "/privacy-policy", changefreq: "yearly", priority: "0.3" },
+    { path: "/oferta", changefreq: "yearly", priority: "0.3" },
+    { path: "/seller-terms", changefreq: "yearly", priority: "0.3" },
+    { path: "/cookies", changefreq: "yearly", priority: "0.2" },
+  ];
+
+  for (const entry of staticEntries) {
+    xml += `
+  <url>
+    <loc>${DOMAIN}${entry.path}</loc>
+    <changefreq>${entry.changefreq}</changefreq>
+    <priority>${entry.priority}</priority>
+  </url>`;
+  }
 
   // Note: /catalog?category=<slug> URLs are intentionally omitted.
   // They canonicalize to /vitebsk/<slug> landing pages to avoid duplicates.
@@ -105,8 +132,7 @@ Deno.serve(async (req) => {
   for (const c of categories) {
     xml += `
   <url>
-    <loc>${DOMAIN}/vitebsk/${c.slug}</loc>
-    <lastmod>${now}</lastmod>
+    <loc>${DOMAIN}/vitebsk/${encodePathSegment(String(c.slug))}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>`;
@@ -115,20 +141,18 @@ Deno.serve(async (req) => {
   // Products with image tags. Priority снижен для товаров без изображения или
   // без описания (Google расходует бюджет на "тонкий" контент — понижаем сигнал).
   for (const p of uniqueProducts) {
-    const lastmod = p.updated_at ? p.updated_at.split("T")[0] : now;
+    const lastmod = p.updated_at ? String(p.updated_at).split("T")[0] : null;
     const img = ogImageUrl(p.image_url);
-    const escapedImg = (img || "").replace(/&/g, "&amp;");
-    const escapedTitle = (p.title || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    const escapedImg = img ? escapeXml(img) : "";
+    const escapedTitle = escapeXml(p.title || "");
     const hasImage = !!img;
     const hasDescription = p.description && p.description.trim().length >= 40;
     const priority = hasImage && hasDescription ? "0.9" : hasImage || hasDescription ? "0.6" : "0.4";
+    const productKey = encodePathSegment(String(p.slug || p.id));
     xml += `
   <url>
-    <loc>${DOMAIN}/product/${p.slug || p.id}</loc>
-    <lastmod>${lastmod}</lastmod>
+    <loc>${DOMAIN}/product/${productKey}</loc>${lastmod ? `
+    <lastmod>${lastmod}</lastmod>` : ""}
     <changefreq>weekly</changefreq>
     <priority>${priority}</priority>${img ? `
     <image:image>
@@ -141,13 +165,12 @@ Deno.serve(async (req) => {
 
   // Sellers — понижаем приоритет для продавцов без описания
   for (const f of uniqueFarmers) {
-    const lastmod = f.created_at ? f.created_at.split("T")[0] : now;
     const hasDescription = f.description && f.description.trim().length >= 40;
     const priority = hasDescription ? "0.6" : "0.4";
+    const sellerKey = encodePathSegment(String(f.slug || f.id));
     xml += `
   <url>
-    <loc>${DOMAIN}/seller/${f.slug || f.id}</loc>
-    <lastmod>${lastmod}</lastmod>
+    <loc>${DOMAIN}/seller/${sellerKey}</loc>
     <changefreq>monthly</changefreq>
     <priority>${priority}</priority>
   </url>`;
