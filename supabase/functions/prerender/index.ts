@@ -607,38 +607,46 @@ Deno.serve(async (req) => {
   }
 
   let meta: PageMeta | null = null;
-  // For dynamic routes we must distinguish "entity not found" (return 404 +
-  // noindex so Google deindexes the URL) from "static page" (return home meta).
-  let dynamicRoute = false;
+  // Неизвестный путь или отсутствующая сущность → честный 404 + noindex,
+  // чтобы Google удалял такие URL, а не считал их дублями главной.
+  let notFound = false;
 
   try {
     if (pathname === "/" || pathname === "") {
       meta = homeMeta();
+    } else if (isPrivatePath(pathname)) {
+      meta = privateMeta(pathname);
+    } else if (STATIC_PAGES[pathname]) {
+      meta = staticPageMeta(pathname);
     } else if (pathname === "/catalog") {
       const categoryParam = searchParams.get("category");
       meta = await catalogMeta(supabase, categoryParam);
-      // Фильтрационные URL (discount/new/search) — noindex + canonical на /catalog,
-      // чтобы Google не считал их дублями каталога.
+      // Фильтрационные URL (discount/new/search) и неизвестные категории —
+      // noindex + canonical на /catalog, чтобы не создавать дубли каталога.
       const hasFilterParam =
         searchParams.has("discount") ||
         searchParams.has("new") ||
         searchParams.has("search");
-      if (hasFilterParam && !categoryParam) {
+      const unknownCategory = !!categoryParam && meta.canonical === `${DOMAIN}/catalog`;
+      if ((hasFilterParam && !categoryParam) || unknownCategory) {
         meta.canonical = `${DOMAIN}/catalog`;
         meta.noindex = true;
       }
     } else if (pathname.startsWith("/product/")) {
-      dynamicRoute = true;
       const id = pathname.replace("/product/", "").split("/")[0];
       meta = await productMeta(supabase, id);
+      if (!meta) notFound = true;
     } else if (pathname.startsWith("/vitebsk/")) {
-      dynamicRoute = true;
       const slug = pathname.replace("/vitebsk/", "").split("/")[0];
       meta = await localLandingMeta(supabase, slug);
+      if (!meta) notFound = true;
     } else if (pathname.startsWith("/seller/")) {
-      dynamicRoute = true;
       const idOrSlug = pathname.replace("/seller/", "").split("/")[0];
       meta = await sellerMeta(supabase, idOrSlug);
+      if (!meta) notFound = true;
+    } else {
+      // Любой другой путь (опечатки, устаревшие URL, /produkt/... и т.п.)
+      notFound = true;
     }
   } catch (err) {
     console.error("prerender error:", err);
@@ -647,19 +655,18 @@ Deno.serve(async (req) => {
 
   const assets = await getBundleAssets();
 
-  // Dynamic route with no matching entity → 404 + noindex so Google drops the URL.
-  if (dynamicRoute && !meta) {
+  // 404: без canonical (канонизировать несуществующий URL некорректно) + noindex.
+  if (notFound || !meta) {
     const notFoundMeta: PageMeta = {
       title: `Страница не найдена — ${SITE_NAME}`,
-      description: `Запрошенная страница не найдена или была удалена. Перейдите в каталог Locus.`,
-      canonical: `${DOMAIN}${pathname}`,
+      description: `Запрошенная страница не найдена или была удалена. Перейдите в каталог ${SITE_NAME}.`,
+      canonical: "",
       h1: "Страница не найдена",
-      bodyContent: `<p>К сожалению, эта страница больше не существует.</p>`,
+      bodyContent: `<p>К сожалению, эта страница больше не существует.</p>
+        <p><a href="${DOMAIN}/catalog">Перейти в каталог</a></p>`,
+      noindex: true,
     };
-    const notFoundHtml = renderHtml(notFoundMeta, assets).replace(
-      "</head>",
-      `    <meta name="robots" content="noindex, follow" />\n  </head>`
-    );
+    const notFoundHtml = renderHtml(notFoundMeta, assets);
     return new Response(notFoundHtml, {
       status: 404,
       headers: {
@@ -671,8 +678,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Fallback to home meta for unknown static-ish pages (e.g. /favorites)
-  if (!meta) meta = homeMeta();
 
   const html = renderHtml(meta, assets);
 
