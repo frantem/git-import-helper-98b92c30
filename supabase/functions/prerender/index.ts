@@ -467,6 +467,82 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   };
 }
 
+// ----- Static informational pages -----
+// Раньше эти страницы падали в fallback homeMeta() и получали canonical
+// на главную → Google исключал их как «страница-дубль».
+
+const STATIC_PAGES: Record<string, { title: string; description: string; h1: string }> = {
+  "/delivery": {
+    title: `Доставка и возврат — ${SITE_NAME}`,
+    description: `Условия доставки фермерских продуктов по ${CITY_NOM}у: курьер или самовывоз, оплата при получении, порядок возврата и обмена товара.`,
+    h1: `Доставка и возврат`,
+  },
+  "/privacy-policy": {
+    title: `Политика конфиденциальности — ${SITE_NAME}`,
+    description: `Политика конфиденциальности маркетплейса ${SITE_NAME} (locusfood.by): порядок обработки, хранения и защиты персональных данных пользователей.`,
+    h1: `Политика конфиденциальности`,
+  },
+  "/oferta": {
+    title: `Публичная оферта — ${SITE_NAME}`,
+    description: `Публичная оферта маркетплейса ${SITE_NAME} (locusfood.by) на оказание услуг покупателям: порядок заказа, оплаты, доставки и расчёта по фактическому весу.`,
+    h1: `Публичная оферта`,
+  },
+  "/seller-terms": {
+    title: `Условия для продавцов — ${SITE_NAME}`,
+    description: `Договор-оферта на размещение товаров на маркетплейсе ${SITE_NAME} (locusfood.by): требования к продавцам, комиссия, порядок расчётов.`,
+    h1: `Условия для продавцов`,
+  },
+  "/cookies": {
+    title: `Политика использования cookie — ${SITE_NAME}`,
+    description: `Какие cookie использует ${SITE_NAME} (locusfood.by), для чего они нужны и как управлять согласием на их использование.`,
+    h1: `Политика использования cookie`,
+  },
+};
+
+function staticPageMeta(pathname: string): PageMeta | null {
+  const page = STATIC_PAGES[pathname];
+  if (!page) return null;
+  return {
+    title: page.title,
+    description: page.description,
+    canonical: `${DOMAIN}${pathname}`,
+    h1: page.h1,
+    bodyContent: `<p>${escapeHtml(page.description)}</p>`,
+  };
+}
+
+// Приватные/служебные маршруты: реальные страницы приложения, но индексировать
+// их не нужно. Отдаём noindex и НЕ канонизируем на главную.
+const PRIVATE_PATHS = new Set([
+  "/auth",
+  "/cart",
+  "/checkout",
+  "/profile",
+  "/settings",
+  "/favorites",
+  "/orders",
+  "/seller",
+  "/seller/products",
+  "/seller/orders",
+  "/seller/settings",
+  "/seller-application",
+]);
+
+function isPrivatePath(pathname: string): boolean {
+  return PRIVATE_PATHS.has(pathname) || pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
+function privateMeta(pathname: string): PageMeta {
+  return {
+    title: `${SITE_NAME} — натуральные продукты с доставкой в ${CITY}`,
+    description: `Служебная страница сайта ${SITE_NAME}. Перейдите в каталог фермерских продуктов с доставкой по ${CITY_NOM}у.`,
+    canonical: "",
+    h1: SITE_NAME,
+    bodyContent: `<p><a href="${DOMAIN}/catalog">Каталог продуктов</a></p>`,
+    noindex: true,
+  };
+}
+
 // ----- Main handler -----
 
 Deno.serve(async (req) => {
