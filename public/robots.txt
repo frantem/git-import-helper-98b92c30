@@ -9,6 +9,12 @@ Disallow: /profile
 Disallow: /favorites
 Disallow: /orders
 Disallow: /settings
-Disallow: /seller/dashboard
+Disallow: /seller$
+Disallow: /seller/products
+Disallow: /seller/orders
+Disallow: /seller/settings
+Disallow: /seller-application
+Disallow: /*?utm_
+Disallow: /*?search=
 
 Sitemap: https://locusfood.by/sitemap.xml

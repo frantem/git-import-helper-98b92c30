@@ -57,6 +57,10 @@ function ogImageUrl(src: string | null | undefined): string {
   return `https://wsrv.nl/?${params.toString()}`;
 }
 
+function encodeSeg(value: string): string {
+  return encodeURIComponent(value).replace(/%2F/gi, "-");
+}
+
 interface PageMeta {
   title: string;
   description: string;
@@ -110,13 +114,13 @@ function renderHtml(meta: PageMeta, assets: { js: string; css: string }): string
     <meta name="author" content="${SITE_NAME}" />
     <meta name="theme-color" content="#ffffff" />
     ${meta.noindex ? `<meta name="robots" content="noindex, follow" />` : ""}
-    <link rel="canonical" href="${escapeHtml(meta.canonical)}" />
+    ${meta.canonical ? `<link rel="canonical" href="${escapeHtml(meta.canonical)}" />` : ""}
 
 
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDesc}" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="${escapeHtml(meta.canonical)}" />
+    ${meta.canonical ? `<meta property="og:url" content="${escapeHtml(meta.canonical)}" />` : ""}
     <meta property="og:image" content="${escapeHtml(ogImg)}" />
     <meta property="og:locale" content="ru_BY" />
     <meta property="og:site_name" content="${SITE_NAME}" />
@@ -335,7 +339,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
+    canonical: `${DOMAIN}/product/${encodeSeg(String(product.slug || product.id))}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,
@@ -360,7 +364,7 @@ async function catalogMeta(supabase: any, categorySlug?: string | null): Promise
         description,
         // Canonical points at the dedicated /vitebsk/<slug> landing page to
         // consolidate signals and avoid duplicate-content indexing issues.
-        canonical: `${DOMAIN}/vitebsk/${cat.slug}`,
+        canonical: `${DOMAIN}/vitebsk/${encodeSeg(String(cat.slug))}`,
         h1: `${cat.name} в ${CITY_NOM}е`,
         bodyContent: `<p>${escapeHtml(description)}</p>`,
       };
@@ -416,7 +420,7 @@ async function localLandingMeta(supabase: any, slug: string): Promise<PageMeta |
   return {
     title,
     description,
-    canonical: `${DOMAIN}/vitebsk/${cat.slug}`,
+    canonical: `${DOMAIN}/vitebsk/${encodeSeg(String(cat.slug))}`,
     jsonLd: [faqLd],
     h1: `${cat.name} в ${CITY_NOM}е с доставкой`,
     bodyContent: `<p>${escapeHtml(description)}</p>
@@ -445,7 +449,7 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   return {
     title,
     description,
-    canonical: `${DOMAIN}/seller/${farmer.slug || farmer.id}`,
+    canonical: `${DOMAIN}/seller/${encodeSeg(String(farmer.slug || farmer.id))}`,
     ogImage: ogImageUrl(farmer.photo_url),
     jsonLd: [
       {
@@ -467,6 +471,82 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   };
 }
 
+// ----- Static informational pages -----
+// Раньше эти страницы падали в fallback homeMeta() и получали canonical
+// на главную → Google исключал их как «страница-дубль».
+
+const STATIC_PAGES: Record<string, { title: string; description: string; h1: string }> = {
+  "/delivery": {
+    title: `Доставка и возврат — ${SITE_NAME}`,
+    description: `Условия доставки фермерских продуктов по ${CITY_NOM}у: курьер или самовывоз, оплата при получении, порядок возврата и обмена товара.`,
+    h1: `Доставка и возврат`,
+  },
+  "/privacy-policy": {
+    title: `Политика конфиденциальности — ${SITE_NAME}`,
+    description: `Политика конфиденциальности маркетплейса ${SITE_NAME} (locusfood.by): порядок обработки, хранения и защиты персональных данных пользователей.`,
+    h1: `Политика конфиденциальности`,
+  },
+  "/oferta": {
+    title: `Публичная оферта — ${SITE_NAME}`,
+    description: `Публичная оферта маркетплейса ${SITE_NAME} (locusfood.by) на оказание услуг покупателям: порядок заказа, оплаты, доставки и расчёта по фактическому весу.`,
+    h1: `Публичная оферта`,
+  },
+  "/seller-terms": {
+    title: `Условия для продавцов — ${SITE_NAME}`,
+    description: `Договор-оферта на размещение товаров на маркетплейсе ${SITE_NAME} (locusfood.by): требования к продавцам, комиссия, порядок расчётов.`,
+    h1: `Условия для продавцов`,
+  },
+  "/cookies": {
+    title: `Политика использования cookie — ${SITE_NAME}`,
+    description: `Какие cookie использует ${SITE_NAME} (locusfood.by), для чего они нужны и как управлять согласием на их использование.`,
+    h1: `Политика использования cookie`,
+  },
+};
+
+function staticPageMeta(pathname: string): PageMeta | null {
+  const page = STATIC_PAGES[pathname];
+  if (!page) return null;
+  return {
+    title: page.title,
+    description: page.description,
+    canonical: `${DOMAIN}${pathname}`,
+    h1: page.h1,
+    bodyContent: `<p>${escapeHtml(page.description)}</p>`,
+  };
+}
+
+// Приватные/служебные маршруты: реальные страницы приложения, но индексировать
+// их не нужно. Отдаём noindex и НЕ канонизируем на главную.
+const PRIVATE_PATHS = new Set([
+  "/auth",
+  "/cart",
+  "/checkout",
+  "/profile",
+  "/settings",
+  "/favorites",
+  "/orders",
+  "/seller",
+  "/seller/products",
+  "/seller/orders",
+  "/seller/settings",
+  "/seller-application",
+]);
+
+function isPrivatePath(pathname: string): boolean {
+  return PRIVATE_PATHS.has(pathname) || pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
+function privateMeta(pathname: string): PageMeta {
+  return {
+    title: `${SITE_NAME} — натуральные продукты с доставкой в ${CITY}`,
+    description: `Служебная страница сайта ${SITE_NAME}. Перейдите в каталог фермерских продуктов с доставкой по ${CITY_NOM}у.`,
+    canonical: "",
+    h1: SITE_NAME,
+    bodyContent: `<p><a href="${DOMAIN}/catalog">Каталог продуктов</a></p>`,
+    noindex: true,
+  };
+}
+
 // ----- Main handler -----
 
 Deno.serve(async (req) => {
@@ -479,8 +559,19 @@ Deno.serve(async (req) => {
   const rawPath = url.searchParams.get("path") || url.pathname;
   // Strip /functions/v1/prerender prefix if present
   const cleanPath = rawPath.replace(/^\/functions\/v1\/prerender/, "") || "/";
-  const [pathname, search] = cleanPath.split("?");
+  const [rawPathname, search] = cleanPath.split("?");
+  // Нормализация пути: /index.html → /, срез завершающего слэша (кроме корня),
+  // чтобы /oferta/ и /oferta не были двумя разными URL с разными канониклами.
+  let pathname = decodeURI(rawPathname || "/");
+  if (pathname === "/index.html") pathname = "/";
+  if (pathname.length > 1) pathname = pathname.replace(/\/+$/, "") || "/";
   const searchParams = new URLSearchParams(search || "");
+  // Трекинговые параметры не участвуют в канониклах.
+  for (const key of [...searchParams.keys()]) {
+    if (/^utm_/i.test(key) || ["fbclid", "gclid", "yclid", "ref", "from"].includes(key.toLowerCase())) {
+      searchParams.delete(key);
+    }
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -520,38 +611,46 @@ Deno.serve(async (req) => {
   }
 
   let meta: PageMeta | null = null;
-  // For dynamic routes we must distinguish "entity not found" (return 404 +
-  // noindex so Google deindexes the URL) from "static page" (return home meta).
-  let dynamicRoute = false;
+  // Неизвестный путь или отсутствующая сущность → честный 404 + noindex,
+  // чтобы Google удалял такие URL, а не считал их дублями главной.
+  let notFound = false;
 
   try {
     if (pathname === "/" || pathname === "") {
       meta = homeMeta();
+    } else if (isPrivatePath(pathname)) {
+      meta = privateMeta(pathname);
+    } else if (STATIC_PAGES[pathname]) {
+      meta = staticPageMeta(pathname);
     } else if (pathname === "/catalog") {
       const categoryParam = searchParams.get("category");
       meta = await catalogMeta(supabase, categoryParam);
-      // Фильтрационные URL (discount/new/search) — noindex + canonical на /catalog,
-      // чтобы Google не считал их дублями каталога.
+      // Фильтрационные URL (discount/new/search) и неизвестные категории —
+      // noindex + canonical на /catalog, чтобы не создавать дубли каталога.
       const hasFilterParam =
         searchParams.has("discount") ||
         searchParams.has("new") ||
         searchParams.has("search");
-      if (hasFilterParam && !categoryParam) {
+      const unknownCategory = !!categoryParam && meta.canonical === `${DOMAIN}/catalog`;
+      if ((hasFilterParam && !categoryParam) || unknownCategory) {
         meta.canonical = `${DOMAIN}/catalog`;
         meta.noindex = true;
       }
     } else if (pathname.startsWith("/product/")) {
-      dynamicRoute = true;
       const id = pathname.replace("/product/", "").split("/")[0];
       meta = await productMeta(supabase, id);
+      if (!meta) notFound = true;
     } else if (pathname.startsWith("/vitebsk/")) {
-      dynamicRoute = true;
       const slug = pathname.replace("/vitebsk/", "").split("/")[0];
       meta = await localLandingMeta(supabase, slug);
+      if (!meta) notFound = true;
     } else if (pathname.startsWith("/seller/")) {
-      dynamicRoute = true;
       const idOrSlug = pathname.replace("/seller/", "").split("/")[0];
       meta = await sellerMeta(supabase, idOrSlug);
+      if (!meta) notFound = true;
+    } else {
+      // Любой другой путь (опечатки, устаревшие URL, /produkt/... и т.п.)
+      notFound = true;
     }
   } catch (err) {
     console.error("prerender error:", err);
@@ -560,19 +659,18 @@ Deno.serve(async (req) => {
 
   const assets = await getBundleAssets();
 
-  // Dynamic route with no matching entity → 404 + noindex so Google drops the URL.
-  if (dynamicRoute && !meta) {
+  // 404: без canonical (канонизировать несуществующий URL некорректно) + noindex.
+  if (notFound || !meta) {
     const notFoundMeta: PageMeta = {
       title: `Страница не найдена — ${SITE_NAME}`,
-      description: `Запрошенная страница не найдена или была удалена. Перейдите в каталог Locus.`,
-      canonical: `${DOMAIN}${pathname}`,
+      description: `Запрошенная страница не найдена или была удалена. Перейдите в каталог ${SITE_NAME}.`,
+      canonical: "",
       h1: "Страница не найдена",
-      bodyContent: `<p>К сожалению, эта страница больше не существует.</p>`,
+      bodyContent: `<p>К сожалению, эта страница больше не существует.</p>
+        <p><a href="${DOMAIN}/catalog">Перейти в каталог</a></p>`,
+      noindex: true,
     };
-    const notFoundHtml = renderHtml(notFoundMeta, assets).replace(
-      "</head>",
-      `    <meta name="robots" content="noindex, follow" />\n  </head>`
-    );
+    const notFoundHtml = renderHtml(notFoundMeta, assets);
     return new Response(notFoundHtml, {
       status: 404,
       headers: {
@@ -584,8 +682,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Fallback to home meta for unknown static-ish pages (e.g. /favorites)
-  if (!meta) meta = homeMeta();
 
   const html = renderHtml(meta, assets);
 

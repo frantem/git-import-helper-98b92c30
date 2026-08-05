@@ -94,7 +94,14 @@ export function SEO({
   useEffect(() => {
     const pageTitle = title || DEFAULT_TITLE;
     const pageDescription = description || DEFAULT_DESCRIPTION;
-    const pageCanonical = canonical || `${DOMAIN}${window.location.pathname}`;
+    // Каноникал всегда нормализован: без query-параметров и без завершающего
+    // слэша (кроме корня) — чтобы совпадать с prerender-версией для ботов.
+    const normalizedPath =
+      window.location.pathname.length > 1
+        ? window.location.pathname.replace(/\/+$/, "") || "/"
+        : "/";
+    const pageCanonical = canonical || `${DOMAIN}${normalizedPath}`;
+
 
     document.title = pageTitle;
 
