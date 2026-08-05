@@ -555,8 +555,19 @@ Deno.serve(async (req) => {
   const rawPath = url.searchParams.get("path") || url.pathname;
   // Strip /functions/v1/prerender prefix if present
   const cleanPath = rawPath.replace(/^\/functions\/v1\/prerender/, "") || "/";
-  const [pathname, search] = cleanPath.split("?");
+  const [rawPathname, search] = cleanPath.split("?");
+  // Нормализация пути: /index.html → /, срез завершающего слэша (кроме корня),
+  // чтобы /oferta/ и /oferta не были двумя разными URL с разными канониклами.
+  let pathname = decodeURI(rawPathname || "/");
+  if (pathname === "/index.html") pathname = "/";
+  if (pathname.length > 1) pathname = pathname.replace(/\/+$/, "") || "/";
   const searchParams = new URLSearchParams(search || "");
+  // Трекинговые параметры не участвуют в канониклах.
+  for (const key of [...searchParams.keys()]) {
+    if (/^utm_/i.test(key) || ["fbclid", "gclid", "yclid", "ref", "from"].includes(key.toLowerCase())) {
+      searchParams.delete(key);
+    }
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
