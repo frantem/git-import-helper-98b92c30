@@ -110,13 +110,13 @@ function renderHtml(meta: PageMeta, assets: { js: string; css: string }): string
     <meta name="author" content="${SITE_NAME}" />
     <meta name="theme-color" content="#ffffff" />
     ${meta.noindex ? `<meta name="robots" content="noindex, follow" />` : ""}
-    <link rel="canonical" href="${escapeHtml(meta.canonical)}" />
+    ${meta.canonical ? `<link rel="canonical" href="${escapeHtml(meta.canonical)}" />` : ""}
 
 
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDesc}" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="${escapeHtml(meta.canonical)}" />
+    ${meta.canonical ? `<meta property="og:url" content="${escapeHtml(meta.canonical)}" />` : ""}
     <meta property="og:image" content="${escapeHtml(ogImg)}" />
     <meta property="og:locale" content="ru_BY" />
     <meta property="og:site_name" content="${SITE_NAME}" />
