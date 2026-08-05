@@ -57,6 +57,10 @@ function ogImageUrl(src: string | null | undefined): string {
   return `https://wsrv.nl/?${params.toString()}`;
 }
 
+function encodeSeg(value: string): string {
+  return encodeURIComponent(value).replace(/%2F/gi, "-");
+}
+
 interface PageMeta {
   title: string;
   description: string;
@@ -335,7 +339,7 @@ async function productMeta(supabase: any, idOrSlug: string): Promise<PageMeta | 
   return {
     title,
     description,
-    canonical: `${DOMAIN}/product/${product.slug || product.id}`,
+    canonical: `${DOMAIN}/product/${encodeSeg(String(product.slug || product.id))}`,
     ogImage: ogImageUrl(product.image_url),
     jsonLd: [productLd, breadcrumbLd],
     h1: product.title,
@@ -360,7 +364,7 @@ async function catalogMeta(supabase: any, categorySlug?: string | null): Promise
         description,
         // Canonical points at the dedicated /vitebsk/<slug> landing page to
         // consolidate signals and avoid duplicate-content indexing issues.
-        canonical: `${DOMAIN}/vitebsk/${cat.slug}`,
+        canonical: `${DOMAIN}/vitebsk/${encodeSeg(String(cat.slug))}`,
         h1: `${cat.name} в ${CITY_NOM}е`,
         bodyContent: `<p>${escapeHtml(description)}</p>`,
       };
@@ -416,7 +420,7 @@ async function localLandingMeta(supabase: any, slug: string): Promise<PageMeta |
   return {
     title,
     description,
-    canonical: `${DOMAIN}/vitebsk/${cat.slug}`,
+    canonical: `${DOMAIN}/vitebsk/${encodeSeg(String(cat.slug))}`,
     jsonLd: [faqLd],
     h1: `${cat.name} в ${CITY_NOM}е с доставкой`,
     bodyContent: `<p>${escapeHtml(description)}</p>
@@ -445,7 +449,7 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<PageMeta | n
   return {
     title,
     description,
-    canonical: `${DOMAIN}/seller/${farmer.slug || farmer.id}`,
+    canonical: `${DOMAIN}/seller/${encodeSeg(String(farmer.slug || farmer.id))}`,
     ogImage: ogImageUrl(farmer.photo_url),
     jsonLd: [
       {
