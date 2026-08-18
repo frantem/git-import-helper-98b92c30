@@ -42,6 +42,17 @@
 
     --radius: 0.75rem;
 
+    /* Brand deep green (product pill, accents) */
+    --brand-deep: 149 35% 21%;
+    --brand-deep-foreground: 0 0% 100%;
+
+    /* Nutrition capsules (КБЖУ) */
+    --nutrition: 78 52% 82%;
+    --nutrition-value: 87 38% 54%;
+    --nutrition-value-foreground: 0 0% 100%;
+    --nutrition-label: 88 35% 38%;
+
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 10%;
     --sidebar-primary: 142 71% 45%;
