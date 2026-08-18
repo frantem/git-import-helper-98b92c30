@@ -51,6 +51,17 @@ export default {
   				DEFAULT: 'hsl(var(--success))',
   				foreground: 'hsl(var(--success-foreground))'
   			},
+  			'brand-deep': {
+  				DEFAULT: 'hsl(var(--brand-deep))',
+  				foreground: 'hsl(var(--brand-deep-foreground))'
+  			},
+  			nutrition: {
+  				DEFAULT: 'hsl(var(--nutrition))',
+  				value: 'hsl(var(--nutrition-value))',
+  				'value-foreground': 'hsl(var(--nutrition-value-foreground))',
+  				label: 'hsl(var(--nutrition-label))'
+  			},
+
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

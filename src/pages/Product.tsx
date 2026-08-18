@@ -597,7 +597,15 @@ export default function Product() {
     ? `Купить ${product.name.toLowerCase()} в Витебске. Цена ${(displayPrice / 100).toFixed(2).replace(".", ",")} BYN${product.unit ? ` за ${product.unit}` : ""}. ${product.seller ? `Фермер: ${product.seller}. ` : ""}Доставка по Витебску, оплата при получении.${product.description ? ` ${product.description}` : ""}`.slice(0, 160)
     : undefined;
 
-  return <div className="min-h-screen bg-background pb-32 md:pb-0">
+  const nutrition = [
+    { label: "К", value: dbProduct?.calories, unit: "ккал" },
+    { label: "Б", value: dbProduct?.protein, unit: "г" },
+    { label: "Ж", value: dbProduct?.fat, unit: "г" },
+    { label: "У", value: dbProduct?.carbs, unit: "г" },
+  ];
+  const hasNutrition = nutrition.some(n => n.value != null);
+
+  return <div className="min-h-screen bg-background pb-20 md:pb-0">
       <SEO
         title={productSeoTitle}
         description={productSeoDescription}
@@ -608,14 +616,14 @@ export default function Product() {
       />
       <Header />
 
-      <main className="container mx-auto px-4 py-4 md:py-6 bg-[#faf5ea]">
+      <main className="container mx-auto px-0 pb-6 md:px-4 md:py-6 bg-[#faf5ea]">
         {/* Mobile back button */}
-        <button onClick={handleGoBack} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary md:hidden">
+        <button onClick={handleGoBack} className="mx-4 mb-3 mt-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary md:hidden">
           <ArrowLeft className="h-4 w-4" />
           Назад
         </button>
 
-        <div className="flex flex-col lg:flex-row lg:gap-10 gap-[10px]">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
           {/* Product image(s) */}
           <div className="relative lg:flex-1">
             {allImages.length > 1 ? <Carousel className="w-full">
@@ -624,7 +632,7 @@ export default function Product() {
                       <button
                         type="button"
                         onClick={() => setLightboxIndex(index)}
-                        className="relative aspect-square w-full overflow-hidden rounded-xl bg-card cursor-zoom-in"
+                        className="relative aspect-square w-full overflow-hidden rounded-b-[28px] bg-card cursor-zoom-in lg:rounded-2xl"
                         aria-label="Открыть фото"
                       >
                         <OptimizedImage src={img} alt={`${product.name} - фото ${index + 1}`} preset="detail" className="h-full w-full" loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} />
@@ -636,7 +644,7 @@ export default function Product() {
               </Carousel> : <button
                 type="button"
                 onClick={() => setLightboxIndex(0)}
-                className="relative aspect-square w-full overflow-hidden rounded-xl bg-card cursor-zoom-in"
+                className="relative aspect-square w-full overflow-hidden rounded-b-[28px] bg-card cursor-zoom-in lg:rounded-2xl"
                 aria-label="Открыть фото"
               >
                 <OptimizedImage src={product.image} alt={product.name} preset="detail" className="h-full w-full" loading="eager" fetchPriority="high" />
@@ -668,163 +676,185 @@ export default function Product() {
             </div>
           </div>
 
-          {/* Title - right after image */}
-          <h1 className="mt-2 text-xl font-bold text-foreground md:text-2xl">{product.name}</h1>
-          {(() => {
-            if (pickupLabel) {
-              const isUnavailable = pickupLabel === "Нет в наличии";
-              const isFast = pickupLabel === "Сегодня" || pickupLabel === "Завтра";
-              return (
-                <p className={cn("mt-1 text-sm", isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground")}>
-                  {isUnavailable ? pickupLabel : `Самовывоз: ${pickupLabel}`}
-                </p>
-              );
-            }
-            const totalMin = (product.prep_time_minutes || 0) + ((product as any).order_lead_time_hours || 0) * 60;
-            const isInStock = totalMin === 0;
-            return (
-              <p className={cn("mt-1 text-sm", isInStock ? "text-green-600" : "text-muted-foreground")}>
-                {isInStock ? "В наличии" : `Время приготовления: ${formatRelativeTime(totalMin).replace("~", "")}`}
-              </p>
-            );
-          })()}
-
-          {/* Rating - compact, only show if there are reviews */}
-          {displayRating !== null && displayReviewCount > 0 && <div className="mt-1 flex items-center gap-3 rounded-md p-1">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span className="text-base font-bold text-foreground">
-                  {displayRating.toFixed(1)}
+          {/* Info card */}
+          <div className="relative -mt-7 rounded-t-[28px] bg-[#faf5ea] px-4 pt-10 lg:mt-0 lg:w-96 lg:flex-shrink-0 lg:rounded-2xl lg:px-0 lg:pt-0">
+            {/* Floating price + add to cart pill */}
+            {!isArchived && (
+              <div className="absolute -top-6 left-1/2 z-20 flex -translate-x-1/2 items-center rounded-full bg-card shadow-lg lg:static lg:left-auto lg:top-auto lg:mb-4 lg:translate-x-0">
+                <span className="flex h-12 items-center rounded-full bg-brand-deep px-5 text-base font-bold text-brand-deep-foreground">
+                  {currentPrice.formatted}<BynSymbol />
                 </span>
+                <button
+                  onClick={handleAddToCart}
+                  className="flex h-12 items-center gap-2 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground"
+                >
+                  В корзину
+                  <ShoppingCart className="h-5 w-5" />
+                </button>
               </div>
-              <span className="text-xs text-muted-foreground">{displayReviewCount} оценок</span>
-            </div>}
+            )}
 
-          {/* Price block - compact format */}
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-base font-bold text-foreground">
-              {currentPrice.formatted}<BynSymbol />
-              <span className="text-sm font-normal text-muted-foreground">/{displayUnit}</span>
-            </span>
-            {oldPriceFormatted && <span className="text-sm text-muted-foreground line-through">
-                {oldPriceFormatted.formatted}<BynSymbol />
-              </span>}
-          </div>
-
-          {/* Product Variants selector - only show if more than 1 variant */}
-          {variants.length > 1 && <div className="mt-3 flex flex-wrap gap-2">
-              {variants.map(variant => <button key={variant.id} onClick={() => setSelectedVariantId(variant.id)} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", selectedVariant?.id === variant.id ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-foreground border-border hover:bg-secondary/80 hover:border-primary/50")}>
-                  {variant.label}
-                </button>)}
-            </div>}
-
-          {/* Custom fields - between variants and product info */}
-          {customFields.length > 0 && <div className="mt-3 space-y-3">
-              {customFields.map(field => <div key={field.id}>
-                  <label className="text-sm font-medium text-foreground">
-                    {field.label} <span className="text-destructive">*</span>
-                  </label>
-                  {field.field_type === "text" ? <Input value={customFieldValues[field.id] || ""} onChange={e => setCustomFieldValues(prev => ({
-              ...prev,
-              [field.id]: e.target.value
-            }))} placeholder={field.placeholder || ""} maxLength={field.max_length || 50} className="mt-1" /> : <div className="mt-1 flex flex-wrap gap-2">
-                      {field.options.map(option => <button key={option.id} onClick={() => setCustomFieldValues(prev => ({
-                ...prev,
-                [field.id]: option.label
-              }))} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", customFieldValues[field.id] === option.label ? "bg-primary text-primary-foreground border-primary" : "text-foreground border-border hover:border-primary/50 bg-primary-foreground")}>
-                          {option.label}
-                        </button>)}
-                    </div>}
-                </div>)}
-            </div>}
-
-          {/* Add-ons block */}
-          {addons.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <span className="text-sm font-medium text-foreground">Добавки:</span>
-              
-              {/* Checkbox add-ons */}
-              {checkboxAddons.map(addon => {
-                const addonPrice = formatPrice(addon.price);
-                return (
-                  <label key={addon.id} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={selectedCheckboxAddons.has(addon.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedCheckboxAddons(prev => {
-                          const next = new Set(prev);
-                          if (checked) next.add(addon.id);
-                          else next.delete(addon.id);
-                          return next;
-                        });
-                      }}
-                    />
-                    <span className="text-sm text-foreground">{addon.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      +{addonPrice.formatted}<BynSymbol />
+            {/* Meta row: rating + availability */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              {displayRating !== null && displayReviewCount > 0 && <span className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <span className="font-bold text-foreground">{displayRating.toFixed(1)}</span>
+                  <span className="text-xs text-muted-foreground">({displayReviewCount})</span>
+                  <span className="text-muted-foreground">·</span>
+                </span>}
+              {(() => {
+                if (pickupLabel) {
+                  const isUnavailable = pickupLabel === "Нет в наличии";
+                  const isFast = pickupLabel === "Сегодня" || pickupLabel === "Завтра";
+                  return (
+                    <span className={cn(isUnavailable ? "text-[#d41111]" : isFast ? "text-green-600" : "text-muted-foreground")}>
+                      {isUnavailable ? pickupLabel : `Самовывоз: ${pickupLabel}`}
                     </span>
-                  </label>
+                  );
+                }
+                const totalMin = (product.prep_time_minutes || 0) + ((product as any).order_lead_time_hours || 0) * 60;
+                const isInStock = totalMin === 0;
+                return (
+                  <span className={cn(isInStock ? "text-green-600" : "text-muted-foreground")}>
+                    {isInStock ? "В наличии" : `Время приготовления: ${formatRelativeTime(totalMin).replace("~", "")}`}
+                  </span>
                 );
-              })}
-
-              {/* Radio add-ons */}
-              {radioAddons.length > 0 && (
-                <div className="space-y-1">
-                  {radioAddons.map(addon => {
-                    const addonPrice = formatPrice(addon.price);
-                    return (
-                      <label key={addon.id} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="product-addon-radio"
-                          checked={selectedRadioAddon === addon.id}
-                          onChange={() => setSelectedRadioAddon(prev => prev === addon.id ? null : addon.id)}
-                          className="h-4 w-4 accent-primary"
-                        />
-                        <span className="text-sm text-foreground">{addon.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          +{addonPrice.formatted}<BynSymbol />
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              })()}
             </div>
-          )}
 
-          {/* Product info */}
-          <div className="lg:w-96 lg:flex-shrink-0">
-            {/* Rating moved above price */}
+            {/* Title */}
+            <h1 className="mt-1 text-2xl font-bold leading-tight text-foreground">{product.name}</h1>
 
-            {/* Composition, KBZU, Shelf life */}
+            {/* Price details (unit + old price) */}
+            <div className="mt-1 flex items-baseline gap-2 text-sm">
+              <span className="text-muted-foreground">за {displayUnit}</span>
+              {oldPriceFormatted && <span className="text-muted-foreground line-through">
+                  {oldPriceFormatted.formatted}<BynSymbol />
+                </span>}
+            </div>
+
+            {/* Description */}
+            {product.description && (
+              <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+                {product.description}
+              </p>
+            )}
+
+            {/* Nutrition capsules */}
+            {hasNutrition && (
+              <div className="mt-5">
+                <h2 className="text-base font-bold text-nutrition-label">КБЖУ на 100 г</h2>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {nutrition.map(n => (
+                    <div key={n.label} className="flex flex-col items-center rounded-full bg-nutrition px-1 py-3">
+                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-nutrition-value text-lg font-bold text-nutrition-value-foreground">
+                        {n.value ?? 0}
+                      </span>
+                      <span className="mt-1 text-sm font-bold text-foreground">{n.label}</span>
+                      <span className="text-[10px] text-muted-foreground">{n.unit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Composition & shelf life */}
             {dbProduct?.composition && (
-              <p className="mb-2 text-muted-foreground">
+              <p className="mt-4 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Состав: </span>
                 {dbProduct.composition}
               </p>
             )}
-            {(dbProduct?.calories != null || dbProduct?.protein != null || dbProduct?.fat != null || dbProduct?.carbs != null) && (
-              <p className="mb-2 flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">На 100гр</span>
-                <span className="font-medium text-foreground">
-                  К: {dbProduct.calories ?? 0}, Б: {dbProduct.protein ?? 0}, Ж: {dbProduct.fat ?? 0}, У: {dbProduct.carbs ?? 0}
-                </span>
-              </p>
-            )}
             {dbProduct?.shelf_life && (
-              <p className="mb-2 text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Срок хранения: </span>
                 {dbProduct.shelf_life}
               </p>
             )}
 
-            {/* Description */}
-            <div className="mb-2 text-muted-foreground"><span className="font-medium text-foreground">Описание: </span><span className="whitespace-pre-wrap break-words">{product.description}</span></div>
+            {/* Product Variants selector - only show if more than 1 variant */}
+            {variants.length > 1 && <div className="mt-4 flex flex-wrap gap-2">
+                {variants.map(variant => <button key={variant.id} onClick={() => setSelectedVariantId(variant.id)} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", selectedVariant?.id === variant.id ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-foreground border-border hover:bg-secondary/80 hover:border-primary/50")}>
+                    {variant.label}
+                  </button>)}
+              </div>}
+
+            {/* Custom fields */}
+            {customFields.length > 0 && <div className="mt-4 space-y-3">
+                {customFields.map(field => <div key={field.id}>
+                    <label className="text-sm font-medium text-foreground">
+                      {field.label} <span className="text-destructive">*</span>
+                    </label>
+                    {field.field_type === "text" ? <Input value={customFieldValues[field.id] || ""} onChange={e => setCustomFieldValues(prev => ({
+                ...prev,
+                [field.id]: e.target.value
+              }))} placeholder={field.placeholder || ""} maxLength={field.max_length || 50} className="mt-1" /> : <div className="mt-1 flex flex-wrap gap-2">
+                        {field.options.map(option => <button key={option.id} onClick={() => setCustomFieldValues(prev => ({
+                  ...prev,
+                  [field.id]: option.label
+                }))} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", customFieldValues[field.id] === option.label ? "bg-primary text-primary-foreground border-primary" : "text-foreground border-border hover:border-primary/50 bg-primary-foreground")}>
+                            {option.label}
+                          </button>)}
+                      </div>}
+                  </div>)}
+              </div>}
+
+            {/* Add-ons block */}
+            {addons.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <span className="text-sm font-medium text-foreground">Добавки:</span>
+
+                {checkboxAddons.map(addon => {
+                  const addonPrice = formatPrice(addon.price);
+                  return (
+                    <label key={addon.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedCheckboxAddons.has(addon.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedCheckboxAddons(prev => {
+                            const next = new Set(prev);
+                            if (checked) next.add(addon.id);
+                            else next.delete(addon.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="text-sm text-foreground">{addon.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        +{addonPrice.formatted}<BynSymbol />
+                      </span>
+                    </label>
+                  );
+                })}
+
+                {radioAddons.length > 0 && (
+                  <div className="space-y-1">
+                    {radioAddons.map(addon => {
+                      const addonPrice = formatPrice(addon.price);
+                      return (
+                        <label key={addon.id} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="product-addon-radio"
+                            checked={selectedRadioAddon === addon.id}
+                            onChange={() => setSelectedRadioAddon(prev => prev === addon.id ? null : addon.id)}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          <span className="text-sm text-foreground">{addon.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            +{addonPrice.formatted}<BynSymbol />
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Seller - compact */}
-            <Link to={`/seller/${product.farmer_id}`} className="block mb-2">
-              <div className="rounded-md bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
+            <Link to={`/seller/${product.farmer_id}`} className="mt-4 block">
+              <div className="rounded-xl bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
                 <div className="flex items-center justify-between px-[10px]">
                   <div className="flex items-center gap-1.5">
                     {dbProduct?.farmers?.photo_url ? <img src={dbProduct.farmers.photo_url} alt={product.seller} className="h-9 w-9 rounded-full object-cover" /> : <span className="text-lg">🧑‍🌾</span>}
@@ -847,48 +877,25 @@ export default function Product() {
               </div>
             </Link>
 
-            {/* Features */}
-            <div className="mb-6 space-y-2 text-sm">
-              
-            </div>
-
-            {/* Action buttons - desktop */}
-            {isArchived ? <div className="hidden md:block rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
+            {/* Action buttons */}
+            {isArchived ? <div className="mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
                 <p className="font-medium text-destructive">Товар снят с продажи</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Этот товар больше недоступен для заказа
                 </p>
-              </div> : <div className="hidden gap-3 md:flex">
-                <Button variant="buy" size="lg" className="flex-1" onClick={handleBuyNow}>
-                  Купить сейчас
-                </Button>
-                <Button variant="cart" size="lg" className="flex-1" onClick={handleAddToCart}>
-                  <ShoppingCart className="mr-2 h-5 w-5" />В корзину
-                </Button>
-              </div>}
+              </div> : <Button variant="buy" size="lg" className="mt-4 w-full" onClick={handleBuyNow}>
+                Купить сейчас
+              </Button>}
           </div>
         </div>
 
         {/* Reviews section */}
-        <section className="mt-8">
+        <section className="mt-8 px-4 lg:px-0">
             <ProductReviews productId={product.id} reviews={reviews} averageRating={displayRating || 0} totalReviews={displayReviewCount} onAddReview={handleAddReview} onDeleteReview={handleDeleteReview} />
           </section>
       </main>
 
-      {/* Mobile action buttons */}
-      {isArchived ? <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-card p-4 shadow-lg md:hidden">
-          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-center">
-            <p className="font-medium text-destructive">Товар снят с продажи</p>
-          </div>
-        </div> : <div className="fixed bottom-16 left-0 right-0 z-40 flex gap-2 border-t border-border bg-card p-4 shadow-lg md:hidden">
-          <Button variant="buy" size="lg" className="flex-1" onClick={handleBuyNow}>
-            Купить сейчас
-          </Button>
-          <Button variant="cart" size="lg" className="flex-1" onClick={handleAddToCart}>
-            В корзину
-          </Button>
-        </div>}
-
       <BottomNavigation />
     </div>;
 }
+
