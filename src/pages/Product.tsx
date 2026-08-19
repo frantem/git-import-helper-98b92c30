@@ -48,7 +48,11 @@ export default function Product() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const {
-    addToCart
+    addToCart,
+    items,
+    updateQuantity,
+    removeFromCart,
+    getItemKey
   } = useCart();
   const {
     user
