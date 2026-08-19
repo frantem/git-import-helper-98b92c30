@@ -358,42 +358,6 @@ export default function Product() {
     return total;
   }, [selectedCheckboxAddons, selectedRadioAddon, checkboxAddons, radioAddons]);
 
-  if (isLoadingProduct) {
-    return <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <Header />
-        <main className="container mx-auto flex items-center justify-center px-4 py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </main>
-        <BottomNavigation />
-      </div>;
-  }
-  if (!product) {
-    return <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <Header />
-        <main className="container mx-auto flex flex-col items-center justify-center px-4 py-16">
-          <h1 className="mb-2 text-xl font-bold text-foreground">Товар не найден</h1>
-          <Link to="/catalog">
-            <Button variant="default">Вернуться в каталог</Button>
-          </Link>
-        </main>
-        <BottomNavigation />
-      </div>;
-  }
-
-  // Check if product is archived/inactive
-  const isArchived = dbProduct && !dbProduct.is_active;
-
-  // Price logic - use selected variant if available
-  const displayPrice = selectedVariant ? selectedVariant.price : product.price;
-  const displayUnit = selectedVariant ? selectedVariant.unit : product.unit;
-  const variantDiscount = selectedVariant?.discount_percent || 0;
-  const currentPrice = formatPrice(displayPrice + addonsTotal);
-  // Calculate old price from variant discount or product discount
-  const effectiveDiscount = variantDiscount > 0 ? variantDiscount : product.discount || 0;
-  const calculatedOldPrice = effectiveDiscount > 0 ? calculateOldPrice(displayPrice, effectiveDiscount) : null;
-  const oldPriceFormatted = calculatedOldPrice ? formatPrice(calculatedOldPrice + addonsTotal) : null;
-  const displayRating = reviews.length > 0 ? averageRating : product.rating || null;
-  const displayReviewCount = reviews.length > 0 ? reviews.length : product.reviews || 0;
   const buildCustomFieldsData = (): CartItemCustomField[] => {
     return customFields.map(field => ({
       fieldId: field.id,
@@ -432,6 +396,42 @@ export default function Product() {
     const item = items.find(i => getItemKey(i) === currentItemKey);
     return item ? item.quantity : 0;
   }, [items, currentItemKey, getItemKey]);
+  if (isLoadingProduct) {
+    return <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <Header />
+        <main className="container mx-auto flex items-center justify-center px-4 py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <BottomNavigation />
+      </div>;
+  }
+  if (!product) {
+    return <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <Header />
+        <main className="container mx-auto flex flex-col items-center justify-center px-4 py-16">
+          <h1 className="mb-2 text-xl font-bold text-foreground">Товар не найден</h1>
+          <Link to="/catalog">
+            <Button variant="default">Вернуться в каталог</Button>
+          </Link>
+        </main>
+        <BottomNavigation />
+      </div>;
+  }
+
+  // Check if product is archived/inactive
+  const isArchived = dbProduct && !dbProduct.is_active;
+
+  // Price logic - use selected variant if available
+  const displayPrice = selectedVariant ? selectedVariant.price : product.price;
+  const displayUnit = selectedVariant ? selectedVariant.unit : product.unit;
+  const variantDiscount = selectedVariant?.discount_percent || 0;
+  const currentPrice = formatPrice(displayPrice + addonsTotal);
+  // Calculate old price from variant discount or product discount
+  const effectiveDiscount = variantDiscount > 0 ? variantDiscount : product.discount || 0;
+  const calculatedOldPrice = effectiveDiscount > 0 ? calculateOldPrice(displayPrice, effectiveDiscount) : null;
+  const oldPriceFormatted = calculatedOldPrice ? formatPrice(calculatedOldPrice + addonsTotal) : null;
+  const displayRating = reviews.length > 0 ? averageRating : product.rating || null;
+  const displayReviewCount = reviews.length > 0 ? reviews.length : product.reviews || 0;
 
   const handleBuyNow = () => {
     if (!allCustomFieldsFilled) {
