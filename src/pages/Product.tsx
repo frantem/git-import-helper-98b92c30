@@ -48,7 +48,11 @@ export default function Product() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const {
-    addToCart
+    addToCart,
+    items,
+    updateQuantity,
+    removeFromCart,
+    getItemKey
   } = useCart();
   const {
     user
@@ -411,21 +415,31 @@ export default function Product() {
     }
     return selected;
   };
+  const cartVariantData = useMemo(() => selectedVariant ? {
+    id: selectedVariant.id,
+    label: selectedVariant.label,
+    price: selectedVariant.price,
+    unit: selectedVariant.unit
+  } : undefined, [selectedVariant]);
+  const cartCustomFields = useMemo(() => customFields.length > 0 ? buildCustomFieldsData() : undefined, [customFields, customFieldValues]);
+  const cartAddons = useMemo(() => addons.length > 0 ? buildAddonsData() : undefined, [addons, selectedCheckboxAddons, selectedRadioAddon]);
+  const currentItemKey = useMemo(() => {
+    if (!product) return null;
+    return getItemKey({ product: product as any, quantity: 1, variant: cartVariantData, customFields: cartCustomFields, addons: cartAddons });
+  }, [product, cartVariantData, cartCustomFields, cartAddons, getItemKey]);
+  const currentQuantity = useMemo(() => {
+    if (!currentItemKey) return 0;
+    const item = items.find(i => getItemKey(i) === currentItemKey);
+    return item ? item.quantity : 0;
+  }, [items, currentItemKey, getItemKey]);
+
   const handleBuyNow = () => {
     if (!allCustomFieldsFilled) {
       toast.error("Заполните все обязательные поля");
       return;
     }
     if (product) {
-      const variantData = selectedVariant ? {
-        id: selectedVariant.id,
-        label: selectedVariant.label,
-        price: selectedVariant.price,
-        unit: selectedVariant.unit
-      } : undefined;
-      const cf = customFields.length > 0 ? buildCustomFieldsData() : undefined;
-      const adns = addons.length > 0 ? buildAddonsData() : undefined;
-      addToCart(product as any, variantData, cf, adns);
+      addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
     }
     navigate("/cart");
   };
@@ -435,16 +449,24 @@ export default function Product() {
       return;
     }
     if (product) {
-      const variantData = selectedVariant ? {
-        id: selectedVariant.id,
-        label: selectedVariant.label,
-        price: selectedVariant.price,
-        unit: selectedVariant.unit
-      } : undefined;
-      const cf = customFields.length > 0 ? buildCustomFieldsData() : undefined;
-      const adns = addons.length > 0 ? buildAddonsData() : undefined;
-      addToCart(product as any, variantData, cf, adns);
+      addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
       toast.success("Добавлено в корзину");
+    }
+  };
+  const handleIncrement = () => {
+    if (!product) return;
+    if (currentQuantity > 0) {
+      updateQuantity(currentItemKey!, currentQuantity + 1);
+    } else {
+      addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
+    }
+  };
+  const handleDecrement = () => {
+    if (!currentItemKey || currentQuantity <= 0) return;
+    if (currentQuantity > 1) {
+      updateQuantity(currentItemKey, currentQuantity - 1);
+    } else {
+      removeFromCart(currentItemKey);
     }
   };
   const handleGoBack = () => {
@@ -684,13 +706,33 @@ export default function Product() {
                 <span className="flex h-12 items-center rounded-full bg-brand-deep px-5 text-base font-bold text-brand-deep-foreground">
                   {currentPrice.formatted}<BynSymbol />
                 </span>
-                <button
-                  onClick={handleAddToCart}
-                  className="flex h-12 items-center gap-2 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground"
-                >
-                  В корзину
-                  <ShoppingCart className="h-5 w-5" />
-                </button>
+                {currentQuantity > 0 ? (
+                  <div className="flex h-12 items-center gap-1 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground">
+                    <button
+                      onClick={handleDecrement}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary"
+                      aria-label="Уменьшить количество"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[1.5rem] text-center">{currentQuantity}</span>
+                    <button
+                      onClick={handleIncrement}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary"
+                      aria-label="Увеличить количество"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex h-12 items-center gap-2 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground"
+                  >
+                    В корзину
+                    <ShoppingCart className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             )}
 
