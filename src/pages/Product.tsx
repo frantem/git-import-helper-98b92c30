@@ -706,13 +706,33 @@ export default function Product() {
                 <span className="flex h-12 items-center rounded-full bg-brand-deep px-5 text-base font-bold text-brand-deep-foreground">
                   {currentPrice.formatted}<BynSymbol />
                 </span>
-                <button
-                  onClick={handleAddToCart}
-                  className="flex h-12 items-center gap-2 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground"
-                >
-                  В корзину
-                  <ShoppingCart className="h-5 w-5" />
-                </button>
+                {currentQuantity > 0 ? (
+                  <div className="flex h-12 items-center gap-1 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground">
+                    <button
+                      onClick={handleDecrement}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary"
+                      aria-label="Уменьшить количество"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[1.5rem] text-center">{currentQuantity}</span>
+                    <button
+                      onClick={handleIncrement}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary"
+                      aria-label="Увеличить количество"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex h-12 items-center gap-2 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground"
+                  >
+                    В корзину
+                    <ShoppingCart className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             )}
 
