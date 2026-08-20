@@ -195,14 +195,18 @@ export type Database = {
       }
       farmers: {
         Row: {
+          about_text: string | null
           address_details: string | null
           busy_dates: Json | null
           city: string | null
           created_at: string
           description: string | null
           district: string | null
+          hero_media_type: string | null
+          hero_media_url: string | null
           id: string
           is_blocked: boolean | null
+          location_label: string | null
           max_orders_per_day: number | null
           name: string
           photo_url: string | null
@@ -210,6 +214,7 @@ export type Database = {
           rating: number | null
           slug: string | null
           street: string | null
+          tagline: string | null
           telegram_chat_id: string | null
           telegram_link_code: string | null
           user_id: string | null
@@ -217,14 +222,18 @@ export type Database = {
           village: string | null
         }
         Insert: {
+          about_text?: string | null
           address_details?: string | null
           busy_dates?: Json | null
           city?: string | null
           created_at?: string
           description?: string | null
           district?: string | null
+          hero_media_type?: string | null
+          hero_media_url?: string | null
           id?: string
           is_blocked?: boolean | null
+          location_label?: string | null
           max_orders_per_day?: number | null
           name: string
           photo_url?: string | null
@@ -232,6 +241,7 @@ export type Database = {
           rating?: number | null
           slug?: string | null
           street?: string | null
+          tagline?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           user_id?: string | null
@@ -239,14 +249,18 @@ export type Database = {
           village?: string | null
         }
         Update: {
+          about_text?: string | null
           address_details?: string | null
           busy_dates?: Json | null
           city?: string | null
           created_at?: string
           description?: string | null
           district?: string | null
+          hero_media_type?: string | null
+          hero_media_url?: string | null
           id?: string
           is_blocked?: boolean | null
+          location_label?: string | null
           max_orders_per_day?: number | null
           name?: string
           photo_url?: string | null
@@ -254,6 +268,7 @@ export type Database = {
           rating?: number | null
           slug?: string | null
           street?: string | null
+          tagline?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           user_id?: string | null
@@ -1046,6 +1061,91 @@ export type Database = {
           village?: string | null
         }
         Relationships: []
+      }
+      seller_posts: {
+        Row: {
+          body: string | null
+          created_at: string
+          farmer_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          farmer_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          farmer_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_posts_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_promos: {
+        Row: {
+          created_at: string
+          description: string | null
+          farmer_id: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_url: string | null
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          farmer_id: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          farmer_id?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_promos_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_visits: {
         Row: {
