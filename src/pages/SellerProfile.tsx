@@ -4,7 +4,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { Star, Loader2, Trash2 } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { SEO } from "@/components/SEO";
@@ -14,6 +14,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { cdnImage } from "@/lib/imageCdn";
 import { usePickupLabels } from "@/hooks/usePickupLabels";
+import { useSellerPage } from "@/hooks/useSellerPage";
+import { SellerHero } from "@/components/seller/SellerHero";
+import { SellerPosts } from "@/components/seller/SellerPosts";
+import { SellerPromos } from "@/components/seller/SellerPromos";
 
 interface Farmer {
   id: string;
@@ -22,6 +26,11 @@ interface Farmer {
   district: string;
   village: string | null;
   photo_url: string | null;
+  tagline?: string | null;
+  about_text?: string | null;
+  hero_media_url?: string | null;
+  hero_media_type?: string | null;
+  location_label?: string | null;
 }
 
 interface Product {
@@ -32,6 +41,9 @@ interface Product {
   discount?: number;
   image: string;
   category: string;
+  categoryName?: string;
+  categoryEmoji?: string | null;
+  categorySort?: number;
   rating: number | null;
   reviews: number;
   seller: string;
@@ -57,6 +69,7 @@ interface SellerReview {
   productId: string;
   productSlug: string | null;
 }
+
 
 export default function SellerProfile() {
   const { id } = useParams();
