@@ -31,6 +31,8 @@ interface Farmer {
   hero_media_url?: string | null;
   hero_media_type?: string | null;
   location_label?: string | null;
+  posts_block_title?: string | null;
+
 }
 
 interface Product {
