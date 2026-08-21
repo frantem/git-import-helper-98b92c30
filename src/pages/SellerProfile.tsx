@@ -205,7 +205,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors. street/address_details
       // are restricted to authenticated users by column-level grants.
-      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id";
+      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -238,7 +238,7 @@ export default function SellerProfile() {
         .from("products")
         .select(`
           id, title, price, old_price, image_url, unit, is_new, farmer_id,
-          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug)
+          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug, emoji, sort_order)
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
@@ -271,6 +271,10 @@ export default function SellerProfile() {
             discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
             image: p.image_url || "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
             category: p.categories?.slug || "",
+            categoryName: p.categories?.name || "Другое",
+            categoryEmoji: (p.categories as any)?.emoji ?? null,
+            categorySort: (p.categories as any)?.sort_order ?? 999,
+
             rating: ratings ? ratings.sum / ratings.count : null,
             reviews: ratings?.count || 0,
             seller: farmerData.name,
