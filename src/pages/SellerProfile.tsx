@@ -378,7 +378,12 @@ export default function SellerProfile() {
         )}
 
         {/* 2. Посты про продукты */}
-        <SellerPosts posts={pageContent?.posts || []} sellerSlug={farmer.slug || farmer.id} />
+        <SellerPosts
+          posts={pageContent?.posts || []}
+          sellerSlug={farmer.slug || farmer.id}
+          blockTitle={farmer.posts_block_title}
+        />
+
 
         {/* 3. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
