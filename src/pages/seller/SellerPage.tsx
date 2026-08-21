@@ -18,6 +18,7 @@ const MAX_VIDEO_MB = 15;
 
 interface PostRow {
   id: string;
+  slug: string | null;
   title: string;
   body: string | null;
   image_url: string | null;
@@ -82,7 +83,7 @@ export default function SellerPage() {
     const [postsRes, promosRes] = await Promise.all([
       supabase
         .from("seller_posts")
-        .select("id, title, body, image_url, sort_order, is_active")
+        .select("id, slug, title, body, image_url, sort_order, is_active")
         .eq("farmer_id", farmer.id)
         .order("sort_order"),
       supabase
@@ -161,7 +162,7 @@ export default function SellerPage() {
     const { data, error } = await supabase
       .from("seller_posts")
       .insert({ farmer_id: farmerId, title: "Новый пост", sort_order: posts.length })
-      .select("id, title, body, image_url, sort_order, is_active")
+      .select("id, slug, title, body, image_url, sort_order, is_active")
       .single();
     if (error || !data) { toast.error("Не удалось добавить пост"); return; }
     setPosts((prev) => [...prev, data as PostRow]);
@@ -391,13 +392,23 @@ export default function SellerPage() {
                 />
                 <Textarea
                   className="mb-2"
-                  rows={3}
+                  rows={6}
                   value={post.body || ""}
-                  placeholder="Текст поста"
+                  placeholder="Полный текст статьи — он откроется на отдельной странице"
                   onChange={(e) =>
                     setPosts((prev) => prev.map((p, i) => (i === idx ? { ...p, body: e.target.value } : p)))
                   }
                 />
+                {post.slug && (
+                  <a
+                    href={`/seller/${farmerSlug}/post/${post.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mb-2 inline-block text-xs text-primary hover:underline"
+                  >
+                    Открыть страницу статьи: /seller/{farmerSlug}/post/{post.slug}
+                  </a>
+                )}
                 <div className="mb-2 flex flex-wrap items-center gap-3">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm">
                     <Upload className="h-4 w-4" /> Фото

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface SellerPost {
   id: string;
+  slug: string | null;
   title: string;
   body: string | null;
   image_url: string | null;
@@ -38,7 +39,7 @@ export function useSellerPage(farmerId: string | null | undefined) {
       const [postsRes, promosRes] = await Promise.all([
         supabase
           .from("seller_posts")
-          .select("id, title, body, image_url, sort_order, is_active")
+          .select("id, slug, title, body, image_url, sort_order, is_active")
           .eq("farmer_id", farmerId!)
           .eq("is_active", true)
           .order("sort_order"),
@@ -54,6 +55,47 @@ export function useSellerPage(farmerId: string | null | undefined) {
         posts: (postsRes.data as SellerPost[]) || [],
         promos: (promosRes.data as SellerPromo[]) || [],
       };
+    },
+  });
+}
+
+export interface SellerPostPage {
+  post: SellerPost;
+  farmer: { id: string; name: string; slug: string | null; photo_url: string | null };
+}
+
+/** Одна статья продавца по slug продавца + slug поста. */
+export function useSellerPost(sellerSlug?: string, postSlug?: string) {
+  return useQuery<SellerPostPage | null>({
+    queryKey: ["seller-post", sellerSlug, postSlug],
+    enabled: !!sellerSlug && !!postSlug,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const isUUID =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sellerSlug!);
+
+      let farmer: SellerPostPage["farmer"] | null = null;
+      const cols = "id, name, slug, photo_url";
+      if (!isUUID) {
+        const res = await supabase.from("farmers").select(cols).eq("slug", sellerSlug!).maybeSingle();
+        farmer = (res.data as SellerPostPage["farmer"]) || null;
+      }
+      if (!farmer) {
+        const res = await supabase.from("farmers").select(cols).eq("id", sellerSlug!).maybeSingle();
+        farmer = (res.data as SellerPostPage["farmer"]) || null;
+      }
+      if (!farmer) return null;
+
+      const { data } = await supabase
+        .from("seller_posts")
+        .select("id, slug, title, body, image_url, sort_order, is_active")
+        .eq("farmer_id", farmer.id)
+        .eq("is_active", true)
+        .eq("slug", postSlug!)
+        .maybeSingle();
+
+      if (!data) return null;
+      return { post: data as SellerPost, farmer };
     },
   });
 }

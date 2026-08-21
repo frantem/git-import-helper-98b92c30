@@ -1,4 +1,6 @@
 import { memo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { cdnImage } from "@/lib/imageCdn";
 
 interface SellerHeroProps {
@@ -29,8 +31,10 @@ export const SellerHero = memo(function SellerHero({
   const isVideo = mediaType === "video" && !!mediaUrl && !videoFailed;
   const imageSrc = mediaType === "image" && mediaUrl ? mediaUrl : fallbackImage || null;
 
+  const navigate = useNavigate();
+
   return (
-    <section className="relative mb-5 overflow-hidden rounded-3xl bg-brand-deep">
+    <section className="relative overflow-hidden rounded-b-3xl bg-brand-deep">
       {/* Медиа-фон */}
       <div className="absolute inset-0">
         {isVideo ? (
@@ -57,6 +61,17 @@ export const SellerHero = memo(function SellerHero({
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-black/80" />
       </div>
+
+      {/* Кнопка «назад» поверх медиа */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        aria-label="Назад"
+        className="absolute left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-md transition-colors hover:bg-black/50 md:left-6"
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
 
       {/* Контент */}
       <div className="relative flex min-h-[380px] flex-col justify-end p-4 pt-16 md:min-h-[460px] md:p-8">

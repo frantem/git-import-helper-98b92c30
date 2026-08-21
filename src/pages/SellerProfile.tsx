@@ -1,7 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { Star, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -21,6 +20,7 @@ import { SellerPromos } from "@/components/seller/SellerPromos";
 
 interface Farmer {
   id: string;
+  slug?: string | null;
   name: string;
   description: string | null;
   district: string;
@@ -350,23 +350,21 @@ export default function SellerProfile() {
       />
       <Header />
 
+      {/* 1. Обложка: название, девиз, о продавце, локация */}
+      <SellerHero
+        name={farmer.name}
+        tagline={farmer.tagline}
+        aboutText={farmer.about_text || farmer.description}
+        locationLabel={
+          farmer.location_label ||
+          `📍 ${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`
+        }
+        mediaUrl={farmer.hero_media_url}
+        mediaType={farmer.hero_media_type}
+        fallbackImage={farmer.photo_url}
+      />
+
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
-        <PageHeader title="Продавец" />
-
-        {/* 1. Обложка: название, девиз, о продавце, локация */}
-        <SellerHero
-          name={farmer.name}
-          tagline={farmer.tagline}
-          aboutText={farmer.about_text || farmer.description}
-          locationLabel={
-            farmer.location_label ||
-            `📍 ${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`
-          }
-          mediaUrl={farmer.hero_media_url}
-          mediaType={farmer.hero_media_type}
-          fallbackImage={farmer.photo_url}
-        />
-
         {averageRating !== null && (
           <div className="mb-5 flex items-center gap-1">
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -378,7 +376,7 @@ export default function SellerProfile() {
         )}
 
         {/* 2. Посты про продукты */}
-        <SellerPosts posts={pageContent?.posts || []} />
+        <SellerPosts posts={pageContent?.posts || []} sellerSlug={farmer.slug || farmer.id} />
 
         {/* 3. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
