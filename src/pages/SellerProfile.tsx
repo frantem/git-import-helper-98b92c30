@@ -1,7 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { Star, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -21,6 +20,7 @@ import { SellerPromos } from "@/components/seller/SellerPromos";
 
 interface Farmer {
   id: string;
+  slug?: string | null;
   name: string;
   description: string | null;
   district: string;
@@ -376,7 +376,7 @@ export default function SellerProfile() {
         )}
 
         {/* 2. Посты про продукты */}
-        <SellerPosts posts={pageContent?.posts || []} />
+        <SellerPosts posts={pageContent?.posts || []} sellerSlug={farmer.slug || farmer.id} />
 
         {/* 3. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
