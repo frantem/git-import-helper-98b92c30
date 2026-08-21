@@ -54,7 +54,9 @@ export default function SellerPage() {
     location_label: "",
   });
 
+  const [postsBlockTitle, setPostsBlockTitle] = useState("");
   const [posts, setPosts] = useState<PostRow[]>([]);
+
   const [promos, setPromos] = useState<PromoRow[]>([]);
 
   const load = useCallback(async () => {
