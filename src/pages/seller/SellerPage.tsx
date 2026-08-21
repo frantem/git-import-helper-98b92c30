@@ -161,6 +161,17 @@ export default function SellerPage() {
   };
 
   // ---- Посты ----
+  const savePostsBlockTitle = async () => {
+    if (!farmerId) return;
+    const { error } = await supabase
+      .from("farmers")
+      .update({ posts_block_title: postsBlockTitle.trim() || null })
+      .eq("id", farmerId);
+    if (error) { toast.error("Ошибка сохранения названия блока"); return; }
+    toast.success("Название блока сохранено");
+  };
+
+
   const addPost = async () => {
     if (!farmerId) return;
     const { data, error } = await supabase
