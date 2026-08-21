@@ -82,6 +82,14 @@ export default function SellerDashboard() {
             )}
           </Link>
 
+          <Link to="/seller/page" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <Package className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Моя страница</h3>
+              <p className="text-sm text-muted-foreground">Обложка, посты, акции</p>
+            </div>
+          </Link>
+
           <Link to="/seller/settings" className="flex items-center gap-4 rounded-xl bg-card p-6">
             <Settings className="h-8 w-8 text-primary" />
             <div>
@@ -89,6 +97,7 @@ export default function SellerDashboard() {
               <p className="text-sm text-muted-foreground">Профиль и самовывоз</p>
             </div>
           </Link>
+
         </div>
       </main>
       <BottomNavigation />
