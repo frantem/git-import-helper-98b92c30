@@ -350,23 +350,21 @@ export default function SellerProfile() {
       />
       <Header />
 
+      {/* 1. Обложка: название, девиз, о продавце, локация */}
+      <SellerHero
+        name={farmer.name}
+        tagline={farmer.tagline}
+        aboutText={farmer.about_text || farmer.description}
+        locationLabel={
+          farmer.location_label ||
+          `📍 ${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`
+        }
+        mediaUrl={farmer.hero_media_url}
+        mediaType={farmer.hero_media_type}
+        fallbackImage={farmer.photo_url}
+      />
+
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
-        <PageHeader title="Продавец" />
-
-        {/* 1. Обложка: название, девиз, о продавце, локация */}
-        <SellerHero
-          name={farmer.name}
-          tagline={farmer.tagline}
-          aboutText={farmer.about_text || farmer.description}
-          locationLabel={
-            farmer.location_label ||
-            `📍 ${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`
-          }
-          mediaUrl={farmer.hero_media_url}
-          mediaType={farmer.hero_media_type}
-          fallbackImage={farmer.photo_url}
-        />
-
         {averageRating !== null && (
           <div className="mb-5 flex items-center gap-1">
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
