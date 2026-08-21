@@ -1,4 +1,6 @@
 import { memo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { cdnImage } from "@/lib/imageCdn";
 
 interface SellerHeroProps {
