@@ -383,9 +383,25 @@ export default function SellerPage() {
             </Button>
           </div>
 
+          <div className="mb-4">
+            <Label className="mb-1 block">Название блока на странице</Label>
+            <div className="flex gap-2">
+              <Input
+                value={postsBlockTitle}
+                placeholder="О нас"
+                onChange={(e) => setPostsBlockTitle(e.target.value)}
+              />
+              <Button variant="outline" onClick={savePostsBlockTitle}>Сохранить</Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Если оставить пустым, на странице будет «О нас».
+            </p>
+          </div>
+
           {posts.length === 0 && (
             <p className="text-sm text-muted-foreground">Пока нет постов</p>
           )}
+
 
           <div className="space-y-4">
             {posts.map((post, idx) => (
