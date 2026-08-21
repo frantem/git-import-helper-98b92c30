@@ -1,0 +1,1 @@
+GRANT SELECT (tagline, about_text, hero_media_url, hero_media_type, location_label) ON public.farmers TO anon, authenticated;
