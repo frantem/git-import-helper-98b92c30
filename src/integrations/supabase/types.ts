@@ -1070,6 +1070,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          slug: string | null
           sort_order: number
           title: string
         }
@@ -1080,6 +1081,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          slug?: string | null
           sort_order?: number
           title?: string
         }
@@ -1090,6 +1092,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          slug?: string | null
           sort_order?: number
           title?: string
         }
@@ -1211,6 +1214,10 @@ export type Database = {
       }
       ensure_unique_product_slug: {
         Args: { _base: string; _self_id: string }
+        Returns: string
+      }
+      ensure_unique_seller_post_slug: {
+        Args: { _base: string; _farmer_id: string; _self_id: string }
         Returns: string
       }
       generate_product_slug: { Args: { _title: string }; Returns: string }
