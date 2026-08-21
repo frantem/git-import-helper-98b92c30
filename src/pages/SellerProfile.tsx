@@ -207,7 +207,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors. street/address_details
       // are restricted to authenticated users by column-level grants.
-      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label";
+      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
