@@ -1,13 +1,17 @@
 import { memo } from "react";
+import { Link } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import type { SellerPost } from "@/hooks/useSellerPage";
 
 interface SellerPostsProps {
   posts: SellerPost[];
+  /** slug (или id) продавца для ссылок на статьи. */
+  sellerSlug: string;
 }
 
-/** Второй блок: посты продавца о своих продуктах. Свайп-лента на мобиле, сетка на ПК. */
-export const SellerPosts = memo(function SellerPosts({ posts }: SellerPostsProps) {
+/** Второй блок: компактные карточки-статьи продавца со ссылкой на полную страницу. */
+export const SellerPosts = memo(function SellerPosts({ posts, sellerSlug }: SellerPostsProps) {
   if (posts.length === 0) return null;
 
   return (
@@ -16,31 +20,35 @@ export const SellerPosts = memo(function SellerPosts({ posts }: SellerPostsProps
         О наших продуктах
       </h2>
 
-      <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-1 scrollbar-hide md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
+      <div className="grid gap-2 md:grid-cols-2">
         {posts.map((post) => (
-          <article
+          <Link
             key={post.id}
-            className="w-[80%] flex-shrink-0 snap-start overflow-hidden rounded-2xl bg-card md:w-auto"
+            to={`/seller/${sellerSlug}/post/${post.slug || post.id}`}
+            className="flex items-center gap-3 rounded-2xl bg-card p-2.5 transition-colors hover:bg-accent/40"
           >
-            {post.image_url && (
-              <OptimizedImage
-                src={post.image_url}
-                alt={post.title}
-                preset="detail"
-                className="aspect-[4/3] w-full"
-              />
-            )}
-            <div className="p-4">
-              <h3 className="mb-1.5 font-serif text-base font-bold text-foreground">
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate font-serif text-[15px] font-bold text-foreground">
                 {post.title}
               </h3>
               {post.body && (
-                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-muted-foreground">
                   {post.body}
                 </p>
               )}
             </div>
-          </article>
+
+            {post.image_url ? (
+              <OptimizedImage
+                src={post.image_url}
+                alt={post.title}
+                preset="thumb"
+                className="h-16 w-16 flex-shrink-0 rounded-xl"
+              />
+            ) : (
+              <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+            )}
+          </Link>
         ))}
       </div>
     </section>
