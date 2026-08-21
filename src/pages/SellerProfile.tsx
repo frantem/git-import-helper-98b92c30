@@ -82,8 +82,32 @@ export default function SellerProfile() {
   const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  
+  const { data: pageContent } = useSellerPage(farmer?.id);
+
+  /** Группировка товаров по категориям (порядок — как в каталоге). */
+  const groupedProducts = useMemo(() => {
+    const map = new Map<
+      string,
+      { slug: string; name: string; emoji: string | null; sort: number; items: Product[] }
+    >();
+    products.forEach((p) => {
+      const slug = p.category || "other";
+      if (!map.has(slug)) {
+        map.set(slug, {
+          slug,
+          name: p.categoryName || "Другое",
+          emoji: p.categoryEmoji || null,
+          sort: p.categorySort ?? 999,
+          items: [],
+        });
+      }
+      map.get(slug)!.items.push(p);
+    });
+    return Array.from(map.values()).sort((a, b) => a.sort - b.sort);
+  }, [products]);
+
   useScrollRestoration();
+
 
   const fetchSellerReviews = useCallback(async (farmerId: string) => {
     // Get ALL products for this farmer (including deleted ones)
@@ -181,7 +205,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors. street/address_details
       // are restricted to authenticated users by column-level grants.
-      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id";
+      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -214,7 +238,7 @@ export default function SellerProfile() {
         .from("products")
         .select(`
           id, title, price, old_price, image_url, unit, is_new, farmer_id,
-          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug)
+          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug, emoji, sort_order)
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
@@ -247,6 +271,10 @@ export default function SellerProfile() {
             discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
             image: p.image_url || "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
             category: p.categories?.slug || "",
+            categoryName: p.categories?.name || "Другое",
+            categoryEmoji: (p.categories as any)?.emoji ?? null,
+            categorySort: (p.categories as any)?.sort_order ?? 999,
+
             rating: ratings ? ratings.sum / ratings.count : null,
             reviews: ratings?.count || 0,
             seller: farmerData.name,
@@ -325,68 +353,61 @@ export default function SellerProfile() {
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <PageHeader title="Продавец" />
 
-        {/* Seller profile header */}
-        <div className="mb-6 rounded-2xl bg-card p-4">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              {farmer.photo_url ? (
-                <img
-                  src={farmer.photo_url}
-                  alt={farmer.name}
-                  className="h-20 w-20 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="text-4xl">🧑‍🌾</span>
-                </div>
-              )}
-            </div>
+        {/* 1. Обложка: название, девиз, о продавце, локация */}
+        <SellerHero
+          name={farmer.name}
+          tagline={farmer.tagline}
+          aboutText={farmer.about_text || farmer.description}
+          locationLabel={
+            farmer.location_label ||
+            `📍 ${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`
+          }
+          mediaUrl={farmer.hero_media_url}
+          mediaType={farmer.hero_media_type}
+          fallbackImage={farmer.photo_url}
+        />
 
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-foreground mb-1">{farmer.name}</h1>
-              
-              {averageRating !== null && (
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-medium text-foreground">{averageRating.toFixed(1)}</span>
-                  <button
-                    onClick={scrollToReviews}
-                    className="text-sm text-primary hover:underline ml-1"
-                  >
-                    ({totalReviewCount} отзывов)
-                  </button>
-                </div>
-              )}
-              
-              <p className="text-sm text-muted-foreground">
-                📍 {farmer.district}{farmer.village ? `, ${farmer.village}` : ""}
-              </p>
-            </div>
+        {averageRating !== null && (
+          <div className="mb-5 flex items-center gap-1">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+            <span className="font-medium text-foreground">{averageRating.toFixed(1)}</span>
+            <button onClick={scrollToReviews} className="ml-1 text-sm text-primary hover:underline">
+              ({totalReviewCount} отзывов)
+            </button>
           </div>
+        )}
 
-          {farmer.description && (
-            <p className="mt-4 text-sm text-muted-foreground">{farmer.description}</p>
-          )}
-        </div>
+        {/* 2. Посты про продукты */}
+        <SellerPosts posts={pageContent?.posts || []} />
 
-        {/* Products */}
-        <div className="mb-4">
-          <h2 className="text-lg font-bold text-foreground mb-3">
-            Товары ({products.length})
-          </h2>
-          
-          {products.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              У продавца пока нет товаров
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} pickupLabel={pickupLabels.get(product.id)} />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* 3. Акции и наборы */}
+        <SellerPromos promos={pageContent?.promos || []} />
+
+        {/* 4. Товары по категориям */}
+        {products.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground">
+            У продавца пока нет товаров
+          </div>
+        ) : (
+          groupedProducts.map((group) => (
+            <section key={group.slug} className="mb-6">
+              <h2 className="mb-3 font-serif text-lg font-bold text-foreground md:text-2xl">
+                {group.emoji ? `${group.emoji} ` : ""}
+                {group.name}
+              </h2>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                {group.items.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    pickupLabel={pickupLabels.get(product.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+
 
         {/* Seller Reviews */}
         <div id="seller-reviews" className="mb-4">
