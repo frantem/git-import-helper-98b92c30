@@ -81,6 +81,8 @@ export default function SellerPage() {
       hero_media_type: farmer.hero_media_type || "",
       location_label: farmer.location_label || "",
     });
+    setPostsBlockTitle(farmer.posts_block_title || "");
+
 
     const [postsRes, promosRes] = await Promise.all([
       supabase
