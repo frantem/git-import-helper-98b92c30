@@ -325,68 +325,61 @@ export default function SellerProfile() {
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <PageHeader title="Продавец" />
 
-        {/* Seller profile header */}
-        <div className="mb-6 rounded-2xl bg-card p-4">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              {farmer.photo_url ? (
-                <img
-                  src={farmer.photo_url}
-                  alt={farmer.name}
-                  className="h-20 w-20 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="text-4xl">🧑‍🌾</span>
-                </div>
-              )}
-            </div>
+        {/* 1. Обложка: название, девиз, о продавце, локация */}
+        <SellerHero
+          name={farmer.name}
+          tagline={farmer.tagline}
+          aboutText={farmer.about_text || farmer.description}
+          locationLabel={
+            farmer.location_label ||
+            `📍 ${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`
+          }
+          mediaUrl={farmer.hero_media_url}
+          mediaType={farmer.hero_media_type}
+          fallbackImage={farmer.photo_url}
+        />
 
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-foreground mb-1">{farmer.name}</h1>
-              
-              {averageRating !== null && (
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-medium text-foreground">{averageRating.toFixed(1)}</span>
-                  <button
-                    onClick={scrollToReviews}
-                    className="text-sm text-primary hover:underline ml-1"
-                  >
-                    ({totalReviewCount} отзывов)
-                  </button>
-                </div>
-              )}
-              
-              <p className="text-sm text-muted-foreground">
-                📍 {farmer.district}{farmer.village ? `, ${farmer.village}` : ""}
-              </p>
-            </div>
+        {averageRating !== null && (
+          <div className="mb-5 flex items-center gap-1">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+            <span className="font-medium text-foreground">{averageRating.toFixed(1)}</span>
+            <button onClick={scrollToReviews} className="ml-1 text-sm text-primary hover:underline">
+              ({totalReviewCount} отзывов)
+            </button>
           </div>
+        )}
 
-          {farmer.description && (
-            <p className="mt-4 text-sm text-muted-foreground">{farmer.description}</p>
-          )}
-        </div>
+        {/* 2. Посты про продукты */}
+        <SellerPosts posts={pageContent?.posts || []} />
 
-        {/* Products */}
-        <div className="mb-4">
-          <h2 className="text-lg font-bold text-foreground mb-3">
-            Товары ({products.length})
-          </h2>
-          
-          {products.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              У продавца пока нет товаров
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} pickupLabel={pickupLabels.get(product.id)} />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* 3. Акции и наборы */}
+        <SellerPromos promos={pageContent?.promos || []} />
+
+        {/* 4. Товары по категориям */}
+        {products.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground">
+            У продавца пока нет товаров
+          </div>
+        ) : (
+          groupedProducts.map((group) => (
+            <section key={group.slug} className="mb-6">
+              <h2 className="mb-3 font-serif text-lg font-bold text-foreground md:text-2xl">
+                {group.emoji ? `${group.emoji} ` : ""}
+                {group.name}
+              </h2>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                {group.items.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    pickupLabel={pickupLabels.get(product.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+
 
         {/* Seller Reviews */}
         <div id="seller-reviews" className="mb-4">
