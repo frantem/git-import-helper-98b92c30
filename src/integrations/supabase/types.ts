@@ -211,6 +211,7 @@ export type Database = {
           name: string
           photo_url: string | null
           pickup_slots: Json | null
+          posts_block_title: string | null
           rating: number | null
           slug: string | null
           street: string | null
@@ -238,6 +239,7 @@ export type Database = {
           name: string
           photo_url?: string | null
           pickup_slots?: Json | null
+          posts_block_title?: string | null
           rating?: number | null
           slug?: string | null
           street?: string | null
@@ -265,6 +267,7 @@ export type Database = {
           name?: string
           photo_url?: string | null
           pickup_slots?: Json | null
+          posts_block_title?: string | null
           rating?: number | null
           slug?: string | null
           street?: string | null

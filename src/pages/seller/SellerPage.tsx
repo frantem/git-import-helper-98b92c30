@@ -54,14 +54,16 @@ export default function SellerPage() {
     location_label: "",
   });
 
+  const [postsBlockTitle, setPostsBlockTitle] = useState("");
   const [posts, setPosts] = useState<PostRow[]>([]);
+
   const [promos, setPromos] = useState<PromoRow[]>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
     const { data: farmer } = await supabase
       .from("farmers")
-      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label")
+      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -79,6 +81,8 @@ export default function SellerPage() {
       hero_media_type: farmer.hero_media_type || "",
       location_label: farmer.location_label || "",
     });
+    setPostsBlockTitle(farmer.posts_block_title || "");
+
 
     const [postsRes, promosRes] = await Promise.all([
       supabase
@@ -157,6 +161,17 @@ export default function SellerPage() {
   };
 
   // ---- Посты ----
+  const savePostsBlockTitle = async () => {
+    if (!farmerId) return;
+    const { error } = await supabase
+      .from("farmers")
+      .update({ posts_block_title: postsBlockTitle.trim() || null })
+      .eq("id", farmerId);
+    if (error) { toast.error("Ошибка сохранения названия блока"); return; }
+    toast.success("Название блока сохранено");
+  };
+
+
   const addPost = async () => {
     if (!farmerId) return;
     const { data, error } = await supabase
@@ -368,9 +383,25 @@ export default function SellerPage() {
             </Button>
           </div>
 
+          <div className="mb-4">
+            <Label className="mb-1 block">Название блока на странице</Label>
+            <div className="flex gap-2">
+              <Input
+                value={postsBlockTitle}
+                placeholder="О нас"
+                onChange={(e) => setPostsBlockTitle(e.target.value)}
+              />
+              <Button variant="outline" onClick={savePostsBlockTitle}>Сохранить</Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Если оставить пустым, на странице будет «О нас».
+            </p>
+          </div>
+
           {posts.length === 0 && (
             <p className="text-sm text-muted-foreground">Пока нет постов</p>
           )}
+
 
           <div className="space-y-4">
             {posts.map((post, idx) => (

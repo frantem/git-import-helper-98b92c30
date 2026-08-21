@@ -31,6 +31,8 @@ interface Farmer {
   hero_media_url?: string | null;
   hero_media_type?: string | null;
   location_label?: string | null;
+  posts_block_title?: string | null;
+
 }
 
 interface Product {
@@ -205,7 +207,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors. street/address_details
       // are restricted to authenticated users by column-level grants.
-      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label";
+      const safeCols = "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -376,7 +378,12 @@ export default function SellerProfile() {
         )}
 
         {/* 2. Посты про продукты */}
-        <SellerPosts posts={pageContent?.posts || []} sellerSlug={farmer.slug || farmer.id} />
+        <SellerPosts
+          posts={pageContent?.posts || []}
+          sellerSlug={farmer.slug || farmer.id}
+          blockTitle={farmer.posts_block_title}
+        />
+
 
         {/* 3. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />

@@ -1,0 +1,1 @@
+ALTER TABLE public.farmers ADD COLUMN IF NOT EXISTS posts_block_title text;
