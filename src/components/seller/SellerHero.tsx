@@ -29,8 +29,10 @@ export const SellerHero = memo(function SellerHero({
   const isVideo = mediaType === "video" && !!mediaUrl && !videoFailed;
   const imageSrc = mediaType === "image" && mediaUrl ? mediaUrl : fallbackImage || null;
 
+  const navigate = useNavigate();
+
   return (
-    <section className="relative mb-5 overflow-hidden rounded-3xl bg-brand-deep">
+    <section className="relative overflow-hidden rounded-b-3xl bg-brand-deep">
       {/* Медиа-фон */}
       <div className="absolute inset-0">
         {isVideo ? (
