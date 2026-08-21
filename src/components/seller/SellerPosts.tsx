@@ -22,19 +22,19 @@ export const SellerPosts = memo(function SellerPosts({ posts, sellerSlug, blockT
         {blockTitle?.trim() || "О нас"}
       </h2>
 
-      <div className="-mx-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {posts.map((post) => (
           <Link
             key={post.id}
             to={`/seller/${sellerSlug}/post/${post.slug || post.id}`}
-            className="flex w-[62%] max-w-[240px] flex-shrink-0 snap-start items-center gap-2 rounded-2xl bg-card p-2 transition-colors hover:bg-accent/40"
+            className="flex w-[72%] max-w-[300px] flex-shrink-0 snap-start items-center gap-3 rounded-2xl bg-card p-3 transition-colors hover:bg-accent/40"
           >
             <div className="min-w-0 flex-1">
-              <h3 className="truncate font-serif text-[14px] font-bold text-foreground">
+              <h3 className="truncate font-serif text-[16px] font-bold text-foreground">
                 {post.title}
               </h3>
               {post.body && (
-                <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                <p className="mt-0.5 line-clamp-3 text-[13px] leading-snug text-muted-foreground">
                   {post.body}
                 </p>
               )}
@@ -45,10 +45,10 @@ export const SellerPosts = memo(function SellerPosts({ posts, sellerSlug, blockT
                 src={post.image_url}
                 alt={post.title}
                 preset="thumb"
-                className="h-14 w-14 flex-shrink-0 rounded-xl"
+                className="h-20 w-20 flex-shrink-0 rounded-xl"
               />
             ) : (
-              <ChevronRight className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-6 w-6 flex-shrink-0 text-muted-foreground" />
             )}
           </Link>
         ))}
