@@ -63,7 +63,7 @@ export default function SellerPage() {
     if (!user) return;
     const { data: farmer } = await supabase
       .from("farmers")
-      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label")
+      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title")
       .eq("user_id", user.id)
       .maybeSingle();
 
