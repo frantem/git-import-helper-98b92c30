@@ -82,8 +82,32 @@ export default function SellerProfile() {
   const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  
+  const { data: pageContent } = useSellerPage(farmer?.id);
+
+  /** Группировка товаров по категориям (порядок — как в каталоге). */
+  const groupedProducts = useMemo(() => {
+    const map = new Map<
+      string,
+      { slug: string; name: string; emoji: string | null; sort: number; items: Product[] }
+    >();
+    products.forEach((p) => {
+      const slug = p.category || "other";
+      if (!map.has(slug)) {
+        map.set(slug, {
+          slug,
+          name: p.categoryName || "Другое",
+          emoji: p.categoryEmoji || null,
+          sort: p.categorySort ?? 999,
+          items: [],
+        });
+      }
+      map.get(slug)!.items.push(p);
+    });
+    return Array.from(map.values()).sort((a, b) => a.sort - b.sort);
+  }, [products]);
+
   useScrollRestoration();
+
 
   const fetchSellerReviews = useCallback(async (farmerId: string) => {
     // Get ALL products for this farmer (including deleted ones)
