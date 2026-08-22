@@ -9,6 +9,8 @@ import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useProducts, useProductRatings, transformProduct } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -28,6 +30,20 @@ export default function Catalog() {
   const discountFilter = searchParams.get("discount") === "true";
   const newFilter = searchParams.get("new") === "true";
   const searchQuery = searchParams.get("search");
+  const sellerFilter = searchParams.get("seller");
+
+  const { data: sellerFarmer } = useQuery({
+    queryKey: ["catalog-seller", sellerFilter],
+    enabled: !!sellerFilter,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const cols = "id, name, slug";
+      const bySlug = await supabase.from("farmers").select(cols).eq("slug", sellerFilter!).maybeSingle();
+      if (bySlug.data) return bySlug.data;
+      const byId = await supabase.from("farmers").select(cols).eq("id", sellerFilter!).maybeSingle();
+      return byId.data;
+    },
+  });
 
   const { data: rawProducts = [], isLoading: isLoadingProducts } = useProducts();
   const { data: categories = [], isLoading: isLoadingCategories } = useCategories();
@@ -47,7 +63,12 @@ export default function Catalog() {
     let title = "Каталог";
     let cat = categories.find((c) => c.slug === categoryFilter) || null;
 
-    if (searchQuery) {
+    if (sellerFilter) {
+      filtered = sellerFarmer
+        ? products.filter((p) => p.farmer_id === sellerFarmer.id)
+        : [];
+      title = sellerFarmer ? sellerFarmer.name : "Продавец";
+    } else if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = products.filter((p) =>
         p.name.toLowerCase().includes(query) ||
@@ -66,7 +87,7 @@ export default function Catalog() {
     }
 
     return { filteredProducts: filtered, pageTitle: title, category: cat };
-  }, [products, categories, categoryFilter, discountFilter, newFilter, searchQuery]);
+  }, [products, categories, categoryFilter, discountFilter, newFilter, searchQuery, sellerFilter, sellerFarmer]);
 
   // Build SEO props
   const seoData = useMemo(() => {
@@ -106,6 +127,14 @@ export default function Catalog() {
         canonical: "https://locusfood.by/catalog?new=true",
       };
     }
+    if (sellerFilter) {
+      return {
+        title: `${sellerFarmer?.name || "Продавец"} — товары и отзывы на Locus`,
+        description: `Товары и отзывы покупателей о продавце ${sellerFarmer?.name || ""} на площадке Locus.`,
+        canonical: "https://locusfood.by/catalog",
+        noindex: true,
+      };
+    }
     if (searchQuery) {
       return {
         title: `Поиск: ${searchQuery} — Locus`,
@@ -119,9 +148,9 @@ export default function Catalog() {
       description: "Каталог натуральных фермерских продуктов с доставкой в Витебске.",
       canonical: "https://locusfood.by/catalog",
     };
-  }, [categoryFilter, category, discountFilter, newFilter, searchQuery, filteredProducts]);
+  }, [categoryFilter, category, discountFilter, newFilter, searchQuery, filteredProducts, sellerFilter, sellerFarmer]);
 
-  const showCategories = !categoryFilter && !discountFilter && !newFilter && !searchQuery;
+  const showCategories = !categoryFilter && !discountFilter && !newFilter && !searchQuery && !sellerFilter;
   const isLoading = isLoadingProducts || isLoadingCategories;
 
   if (isLoading) {

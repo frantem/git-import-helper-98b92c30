@@ -52,6 +52,14 @@
     --nutrition-value-foreground: 0 0% 100%;
     --nutrition-label: 88 35% 38%;
 
+    /* Seller page theme (default: forest). Overridden by .seller-theme-* */
+    --seller-bg: 44 60% 95%;
+    --seller-deep: 149 35% 21%;
+    --seller-accent: 74 92% 45%;
+    --seller-accent-foreground: 149 40% 12%;
+
+
+
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 10%;
@@ -158,4 +166,29 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+}
+/* Цветовые темы личной страницы продавца (готовые пресеты, без свободного выбора) */
+.seller-theme-forest {
+  --seller-bg: 44 60% 95%;
+  --seller-deep: 149 35% 21%;
+  --seller-accent: 74 92% 45%;
+  --seller-accent-foreground: 149 40% 12%;
+}
+.seller-theme-terracotta {
+  --seller-bg: 40 55% 95%;
+  --seller-deep: 14 46% 24%;
+  --seller-accent: 14 49% 50%;
+  --seller-accent-foreground: 0 0% 100%;
+}
+.seller-theme-night {
+  --seller-bg: 210 20% 96%;
+  --seller-deep: 209 37% 17%;
+  --seller-accent: 205 62% 58%;
+  --seller-accent-foreground: 0 0% 100%;
+}
+.seller-theme-sand {
+  --seller-bg: 42 60% 97%;
+  --seller-deep: 42 30% 22%;
+  --seller-accent: 45 70% 47%;
+  --seller-accent-foreground: 0 0% 100%;
 }
