@@ -241,6 +241,10 @@ export default function SellerPage() {
   };
 
   const savePost = async (post: PostRow) => {
+    if (!post.image_url) {
+      toast.error("Добавьте фото — без него пост не публикуется");
+      return;
+    }
     const { error } = await supabase
       .from("seller_posts")
       .update({
@@ -600,7 +604,7 @@ export default function SellerPage() {
                 )}
                 <div className="mb-2 flex flex-wrap items-center gap-3">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm">
-                    <Upload className="h-4 w-4" /> Фото
+                    <Upload className="h-4 w-4" /> Фото (обязательно)
                     <input
                       type="file"
                       accept="image/*"

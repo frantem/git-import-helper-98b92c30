@@ -14,6 +14,7 @@
 export type ImgPreset =
   | "thumb"
   | "card"
+  | "post"
   | "detail"
   | "banner"
   | "category"
@@ -30,6 +31,7 @@ interface PresetConfig {
 const PRESETS: Record<ImgPreset, PresetConfig> = {
   thumb: { w: 120, h: 120, q: 72, fit: "cover" },
   card: { w: 240, h: 240, q: 72, fit: "cover" },
+  post: { w: 360, h: 540, q: 82, fit: "cover" },
   detail: { w: 900, q: 80, fit: "inside" },
   banner: { w: 1080, h: 540, q: 72, fit: "cover" },
   category: { w: 140, h: 140, q: 72, fit: "cover" },

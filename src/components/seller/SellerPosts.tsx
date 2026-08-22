@@ -1,5 +1,6 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { cdnImage } from "@/lib/imageCdn";
 import type { SellerPost } from "@/hooks/useSellerPage";
 
 interface SellerPostsProps {
@@ -8,17 +9,19 @@ interface SellerPostsProps {
   blockTitle?: string | null;
 }
 
-/** Порог, после которого текст считается длинным и получает «Читать дальше». */
-const PREVIEW_LIMIT = 90;
+/** Длина текста, после которой он не помещается в 3 строки превью. */
+const PREVIEW_LIMIT = 60;
 
 /**
- * Блок «О нас»: карточки-истории продавца.
+ * Блок «О нас»: стандартные карточки-истории продавца (фото обязательно).
  * Никаких переходов — длинный текст разворачивается внутри карточки.
  */
 export const SellerPosts = memo(function SellerPosts({ posts, blockTitle }: SellerPostsProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  if (posts.length === 0) return null;
+  const visible = useMemo(() => posts.filter((p) => !!p.image_url), [posts]);
+
+  if (visible.length === 0) return null;
 
   return (
     <section className="mb-6">
@@ -27,59 +30,66 @@ export const SellerPosts = memo(function SellerPosts({ posts, blockTitle }: Sell
       </h2>
 
       <div className="-mx-3 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {posts.map((post) => {
+        {visible.map((post) => {
           const isOpen = !!expanded[post.id];
           const body = post.body?.trim() || "";
           const isLong = body.length > PREVIEW_LIMIT;
-          const hasImage = !!post.image_url;
-
-          const widthClasses = hasImage
-            ? "w-[54%] max-w-[240px]"
-            : "w-[72%] max-w-[320px]";
 
           return (
             <article
               key={post.id}
-              className={`${widthClasses} relative flex flex-shrink-0 snap-start flex-col overflow-hidden rounded-[22px] bg-[hsl(var(--seller-deep))] shadow-md`}
+              className="relative flex w-[66%] max-w-[280px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[24px] shadow-lg"
             >
-              {hasImage && (
-                <OptimizedImage
-                  src={post.image_url!}
-                  alt={post.title}
-                  preset="card"
-                  className="absolute inset-0 h-full w-full rounded-none object-cover"
-                />
-              )}
+              {/* Фото — фон карточки */}
+              <OptimizedImage
+                src={post.image_url!}
+                alt={post.title}
+                preset="post"
+                className="absolute inset-0 h-full w-full rounded-none object-cover"
+              />
 
-              {/* Пропорция как на референсе: фото занимает верх карточки */}
-              <div className="aspect-[9/13] w-full" />
+              {/* Пропорция карточки как на референсе */}
+              <div className="aspect-[2/3] w-full" />
 
-              <div className="relative bg-black/25 px-3 pb-3 pt-2.5 backdrop-blur-xl">
-                <h3 className="font-serif text-[17px] font-bold leading-tight text-white">
-                  {post.title}
-                </h3>
+              {/* Стеклянная плашка: размытие самого фото + мягкое затемнение */}
+              <div className="relative">
+                <div className="absolute inset-0 overflow-hidden">
+                  <img
+                    src={cdnImage(post.image_url, "post")}
+                    alt=""
+                    aria-hidden
+                    className="absolute inset-x-0 bottom-0 h-full w-full scale-110 object-cover object-bottom blur-xl"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/55 to-black/75" />
+                </div>
 
-                {body && (
-                  <p
-                    className={`mt-1 whitespace-pre-wrap text-[13.5px] leading-snug text-white/95 ${
-                      isOpen ? "" : "line-clamp-3"
-                    }`}
-                  >
-                    {body}
-                  </p>
-                )}
+                <div className="relative px-4 pb-4 pt-3">
+                  <h3 className="text-[19px] font-bold leading-tight text-white">
+                    {post.title}
+                  </h3>
 
-                {isLong && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpanded((prev) => ({ ...prev, [post.id]: !prev[post.id] }))
-                    }
-                    className="mt-1.5 text-left text-[12px] font-medium text-white/85 underline underline-offset-2 hover:text-white"
-                  >
-                    {isOpen ? "Свернуть" : "Читать дальше"}
-                  </button>
-                )}
+                  {body && (
+                    <p
+                      className={`mt-1.5 whitespace-pre-wrap text-[14px] leading-snug text-white ${
+                        isOpen ? "" : "line-clamp-3"
+                      }`}
+                    >
+                      {body}
+                    </p>
+                  )}
+
+                  {isLong && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpanded((prev) => ({ ...prev, [post.id]: !prev[post.id] }))
+                      }
+                      className="mt-2 block text-left text-[13px] font-medium text-white underline underline-offset-2"
+                    >
+                      {isOpen ? "Свернуть" : "Читать дальше"}
+                    </button>
+                  )}
+                </div>
               </div>
             </article>
           );
