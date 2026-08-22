@@ -297,9 +297,9 @@ export default function SellerProfile() {
         {/* Посты-статьи продавца */}
         <SellerPosts
           posts={pageContent?.posts || []}
-          sellerSlug={sellerSlug}
           blockTitle={farmer.posts_block_title}
         />
+
 
         {/* 5. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
