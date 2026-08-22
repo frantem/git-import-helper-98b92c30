@@ -9,7 +9,7 @@ interface SellerPostsProps {
 }
 
 /** Порог, после которого текст считается длинным и получает «Читать дальше». */
-const PREVIEW_LIMIT = 180;
+const PREVIEW_LIMIT = 90;
 
 /**
  * Блок «О нас»: карточки-истории продавца.
@@ -37,28 +37,31 @@ export const SellerPosts = memo(function SellerPosts({ posts, blockTitle }: Sell
             ? "w-[54%] max-w-[240px]"
             : "w-[72%] max-w-[320px]";
 
-          const overlayClasses = hasImage
-            ? "-mt-[30%] flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/50 to-black/10 px-3 pb-3 pt-[30%] backdrop-blur-md"
-            : "flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/50 to-transparent px-3 pb-3 pt-12 backdrop-blur-md";
-
           return (
             <article
               key={post.id}
-              className={`${widthClasses} flex-shrink-0 snap-start overflow-hidden rounded-2xl bg-[hsl(var(--seller-deep))] shadow-md`}
+              className={`${widthClasses} relative flex flex-shrink-0 snap-start flex-col overflow-hidden rounded-[22px] bg-[hsl(var(--seller-deep))] shadow-md`}
             >
               {hasImage && (
                 <OptimizedImage
                   src={post.image_url!}
                   alt={post.title}
                   preset="card"
-                  className="aspect-[4/5] w-full rounded-none"
+                  className="absolute inset-0 h-full w-full rounded-none object-cover"
                 />
               )}
 
-              <div className={`relative ${overlayClasses}`}>
+              {/* Пропорция как на референсе: фото занимает верх карточки */}
+              <div className="aspect-[9/13] w-full" />
+
+              <div className="relative bg-black/25 px-3 pb-3 pt-2.5 backdrop-blur-xl">
+                <h3 className="font-serif text-[17px] font-bold leading-tight text-white">
+                  {post.title}
+                </h3>
+
                 {body && (
                   <p
-                    className={`mb-1.5 whitespace-pre-wrap text-[14px] leading-snug text-white ${
+                    className={`mt-1 whitespace-pre-wrap text-[13.5px] leading-snug text-white/95 ${
                       isOpen ? "" : "line-clamp-3"
                     }`}
                   >
@@ -66,17 +69,13 @@ export const SellerPosts = memo(function SellerPosts({ posts, blockTitle }: Sell
                   </p>
                 )}
 
-                <h3 className="font-serif text-[16px] font-bold leading-tight text-white">
-                  {post.title}
-                </h3>
-
                 {isLong && (
                   <button
                     type="button"
                     onClick={() =>
                       setExpanded((prev) => ({ ...prev, [post.id]: !prev[post.id] }))
                     }
-                    className="mt-1 text-left text-[12px] font-medium text-white/90 underline-offset-2 hover:text-white hover:underline"
+                    className="mt-1.5 text-left text-[12px] font-medium text-white/85 underline underline-offset-2 hover:text-white"
                   >
                     {isOpen ? "Свернуть" : "Читать дальше"}
                   </button>
