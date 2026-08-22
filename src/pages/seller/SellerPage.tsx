@@ -16,6 +16,19 @@ import { cdnImage } from "@/lib/imageCdn";
 
 const MAX_VIDEO_MB = 15;
 
+const THEMES: { value: string; label: string }[] = [
+  { value: "forest", label: "Лес" },
+  { value: "terracotta", label: "Терракота" },
+  { value: "night", label: "Ночной синий" },
+  { value: "sand", label: "Песок" },
+];
+
+interface HitRow {
+  id: string;
+  title: string;
+  is_featured: boolean;
+}
+
 interface PostRow {
   id: string;
   slug: string | null;
@@ -52,7 +65,15 @@ export default function SellerPage() {
     hero_media_url: "",
     hero_media_type: "",
     location_label: "",
+    unique_fact: "",
+    delivery_note: "",
+    theme: "forest",
+    contact_phone: "",
+    contact_instagram: "",
+    contact_telegram: "",
   });
+
+  const [hits, setHits] = useState<HitRow[]>([]);
 
   const [postsBlockTitle, setPostsBlockTitle] = useState("");
   const [posts, setPosts] = useState<PostRow[]>([]);
@@ -63,7 +84,7 @@ export default function SellerPage() {
     if (!user) return;
     const { data: farmer } = await supabase
       .from("farmers")
-      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title")
+      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title, unique_fact, delivery_note, contacts, theme")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -80,11 +101,23 @@ export default function SellerPage() {
       hero_media_url: farmer.hero_media_url || "",
       hero_media_type: farmer.hero_media_type || "",
       location_label: farmer.location_label || "",
+      unique_fact: (farmer as any).unique_fact || "",
+      delivery_note: (farmer as any).delivery_note || "",
+      theme: (farmer as any).theme || "forest",
+      contact_phone: ((farmer as any).contacts as any)?.phone || "",
+      contact_instagram: ((farmer as any).contacts as any)?.instagram || "",
+      contact_telegram: ((farmer as any).contacts as any)?.telegram || "",
     });
     setPostsBlockTitle(farmer.posts_block_title || "");
 
 
-    const [postsRes, promosRes] = await Promise.all([
+    const [productsRes, postsRes, promosRes] = await Promise.all([
+      supabase
+        .from("products")
+        .select("id, title, is_featured")
+        .eq("farmer_id", farmer.id)
+        .eq("is_deleted", false)
+        .order("title"),
       supabase
         .from("seller_posts")
         .select("id, slug, title, body, image_url, sort_order, is_active")
@@ -97,6 +130,7 @@ export default function SellerPage() {
         .order("sort_order"),
     ]);
 
+    setHits((productsRes.data as HitRow[]) || []);
     setPosts((postsRes.data as PostRow[]) || []);
     setPromos((promosRes.data as PromoRow[]) || []);
     setIsLoading(false);
@@ -150,6 +184,14 @@ export default function SellerPage() {
         hero_media_url: hero.hero_media_url || null,
         hero_media_type: hero.hero_media_url ? hero.hero_media_type || "image" : null,
         location_label: hero.location_label || null,
+        unique_fact: hero.unique_fact.trim() || null,
+        delivery_note: hero.delivery_note.trim() || null,
+        theme: hero.theme || "forest",
+        contacts: {
+          phone: hero.contact_phone.trim() || null,
+          instagram: hero.contact_instagram.trim() || null,
+          telegram: hero.contact_telegram.trim() || null,
+        },
       })
       .eq("id", farmerId);
     setIsSaving(false);
@@ -158,6 +200,21 @@ export default function SellerPage() {
       return;
     }
     toast.success("Обложка сохранена");
+  };
+
+  const featuredCount = hits.filter((h) => h.is_featured).length;
+
+  const toggleHit = async (product: HitRow, value: boolean) => {
+    if (value && featuredCount >= 4) {
+      toast.error("Можно выбрать не больше 4 хитов");
+      return;
+    }
+    const { error } = await supabase
+      .from("products")
+      .update({ is_featured: value })
+      .eq("id", product.id);
+    if (error) { toast.error("Не удалось сохранить"); return; }
+    setHits((prev) => prev.map((h) => (h.id === product.id ? { ...h, is_featured: value } : h)));
   };
 
   // ---- Посты ----
@@ -368,10 +425,111 @@ export default function SellerPage() {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="fact">Факт уникальности (одна строка)</Label>
+              <Textarea
+                id="fact"
+                rows={2}
+                value={hero.unique_fact}
+                onChange={(e) => setHero({ ...hero, unique_fact: e.target.value })}
+                placeholder="Например: печём на закваске без дрожжей, рецепту 40 лет"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Конкретный факт, а не общая фраза. Пока пусто — на странице виден плейсхолдер.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="delivery">Доставка и самовывоз (1–2 строки)</Label>
+              <Textarea
+                id="delivery"
+                rows={2}
+                value={hero.delivery_note}
+                onChange={(e) => setHero({ ...hero, delivery_note: e.target.value })}
+                placeholder="Самовывоз в Витебске, доставка на следующий день, от 5 р."
+              />
+            </div>
+
+            <div>
+              <Label>Цветовая тема страницы</Label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {THEMES.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setHero({ ...hero, theme: t.value })}
+                    className={`rounded-full border px-4 py-1.5 text-sm ${
+                      hero.theme === t.value
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-2 md:grid-cols-3">
+              <div>
+                <Label htmlFor="c-phone">Телефон</Label>
+                <Input
+                  id="c-phone"
+                  value={hero.contact_phone}
+                  onChange={(e) => setHero({ ...hero, contact_phone: e.target.value })}
+                  placeholder="+375 29 000-00-00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-ig">Instagram</Label>
+                <Input
+                  id="c-ig"
+                  value={hero.contact_instagram}
+                  onChange={(e) => setHero({ ...hero, contact_instagram: e.target.value })}
+                  placeholder="@my_brand"
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-tg">Telegram</Label>
+                <Input
+                  id="c-tg"
+                  value={hero.contact_telegram}
+                  onChange={(e) => setHero({ ...hero, contact_telegram: e.target.value })}
+                  placeholder="@my_brand"
+                />
+              </div>
+            </div>
+
             <Button onClick={saveHero} disabled={isSaving || uploading} className="w-full">
               {isSaving ? "Сохранение…" : "Сохранить обложку"}
             </Button>
           </div>
+        </section>
+
+        {/* Хиты */}
+        <section className="mb-6 rounded-2xl bg-card p-4">
+          <h2 className="mb-1 font-bold">Хиты продаж</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Выберите до 4 товаров — они появятся сразу под блоком «О нас» с кнопкой «В корзину».
+            Выбрано: {featuredCount}/4
+          </p>
+
+          {hits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Пока нет товаров</p>
+          ) : (
+            <div className="space-y-2">
+              {hits.map((h) => (
+                <div key={h.id} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate text-sm">{h.title}</span>
+                  <Switch
+                    checked={h.is_featured}
+                    onCheckedChange={(v) => toggleHit(h, v)}
+                    aria-label={`Хит: ${h.title}`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Посты */}
