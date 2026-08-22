@@ -199,7 +199,9 @@ export type Database = {
           address_details: string | null
           busy_dates: Json | null
           city: string | null
+          contacts: Json
           created_at: string
+          delivery_note: string | null
           description: string | null
           district: string | null
           hero_media_type: string | null
@@ -218,6 +220,8 @@ export type Database = {
           tagline: string | null
           telegram_chat_id: string | null
           telegram_link_code: string | null
+          theme: string
+          unique_fact: string | null
           user_id: string | null
           vacation_dates: Json | null
           village: string | null
@@ -227,7 +231,9 @@ export type Database = {
           address_details?: string | null
           busy_dates?: Json | null
           city?: string | null
+          contacts?: Json
           created_at?: string
+          delivery_note?: string | null
           description?: string | null
           district?: string | null
           hero_media_type?: string | null
@@ -246,6 +252,8 @@ export type Database = {
           tagline?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
+          theme?: string
+          unique_fact?: string | null
           user_id?: string | null
           vacation_dates?: Json | null
           village?: string | null
@@ -255,7 +263,9 @@ export type Database = {
           address_details?: string | null
           busy_dates?: Json | null
           city?: string | null
+          contacts?: Json
           created_at?: string
+          delivery_note?: string | null
           description?: string | null
           district?: string | null
           hero_media_type?: string | null
@@ -274,6 +284,8 @@ export type Database = {
           tagline?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
+          theme?: string
+          unique_fact?: string | null
           user_id?: string | null
           vacation_dates?: Json | null
           village?: string | null
@@ -1230,6 +1242,12 @@ export type Database = {
           full_name: string
           phone: string
           user_id: string
+        }[]
+      }
+      get_farmer_public_stats: {
+        Args: { _farmer_id: string }
+        Returns: {
+          orders_count: number
         }[]
       }
       get_orders_count_by_dates: {
