@@ -775,45 +775,6 @@ export default function Product() {
                 </span>}
             </div>
 
-            {/* Description */}
-            {product.description && (
-              <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
-                {product.description}
-              </p>
-            )}
-
-            {/* Nutrition capsules */}
-            {hasNutrition && (
-              <div className="mt-5">
-                <h2 className="text-base font-bold text-nutrition-label">КБЖУ на 100 г</h2>
-                <div className="mt-2 grid grid-cols-4 gap-2">
-                  {nutrition.map(n => (
-                    <div key={n.label} className="flex flex-col items-center rounded-full bg-nutrition px-1 py-3">
-                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-nutrition-value text-lg font-bold text-nutrition-value-foreground">
-                        {n.value ?? 0}
-                      </span>
-                      <span className="mt-1 text-sm font-bold text-foreground">{n.label}</span>
-                      <span className="text-[10px] text-muted-foreground">{n.unit}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Composition & shelf life */}
-            {dbProduct?.composition && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Состав: </span>
-                {dbProduct.composition}
-              </p>
-            )}
-            {dbProduct?.shelf_life && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Срок хранения: </span>
-                {dbProduct.shelf_life}
-              </p>
-            )}
-
             {/* Product Variants selector - only show if more than 1 variant */}
             {variants.length > 1 && <div className="mt-4 flex flex-wrap gap-2">
                 {variants.map(variant => <button key={variant.id} onClick={() => setSelectedVariantId(variant.id)} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", selectedVariant?.id === variant.id ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-foreground border-border hover:bg-secondary/80 hover:border-primary/50")}>
@@ -894,6 +855,55 @@ export default function Product() {
               </div>
             )}
 
+            {/* Nutrition capsules */}
+            {hasNutrition && (
+              <div className="mt-5">
+                <h2 className="text-base font-bold text-nutrition-label">КБЖУ на 100 г</h2>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {nutrition.map(n => (
+                    <div key={n.label} className="flex flex-col items-center rounded-full bg-nutrition px-1 py-3">
+                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-nutrition-value text-lg font-bold text-nutrition-value-foreground">
+                        {n.value ?? 0}
+                      </span>
+                      <span className="mt-1 text-sm font-bold text-foreground">{n.label}</span>
+                      <span className="text-[10px] text-muted-foreground">{n.unit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {isArchived ? <div className="mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
+                <p className="font-medium text-destructive">Товар снят с продажи</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Этот товар больше недоступен для заказа
+                </p>
+              </div> : <Button variant="buy" size="lg" className="mt-4 w-full" onClick={handleBuyNow}>
+                Купить сейчас
+              </Button>}
+
+            {/* Description */}
+            {product.description && (
+              <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+                {product.description}
+              </p>
+            )}
+
+            {/* Composition & shelf life */}
+            {dbProduct?.composition && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Состав: </span>
+                {dbProduct.composition}
+              </p>
+            )}
+            {dbProduct?.shelf_life && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Срок хранения: </span>
+                {dbProduct.shelf_life}
+              </p>
+            )}
+
             {/* Seller - compact */}
             <Link to={`/seller/${product.farmer_id}`} className="mt-4 block">
               <div className="rounded-xl bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
@@ -918,16 +928,6 @@ export default function Product() {
                 )}
               </div>
             </Link>
-
-            {/* Action buttons */}
-            {isArchived ? <div className="mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
-                <p className="font-medium text-destructive">Товар снят с продажи</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Этот товар больше недоступен для заказа
-                </p>
-              </div> : <Button variant="buy" size="lg" className="mt-4 w-full" onClick={handleBuyNow}>
-                Купить сейчас
-              </Button>}
           </div>
         </div>
 
