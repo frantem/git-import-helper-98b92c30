@@ -48,8 +48,8 @@ export const SellerPosts = memo(function SellerPosts({ posts, blockTitle }: Sell
                 className="absolute inset-0 h-full w-full rounded-none object-cover"
               />
 
-              {/* Пропорция карточки как на референсе */}
-              <div className="aspect-[2/3] w-full" />
+              {/* Пропорция карточки 4:5 как на референсе */}
+              <div className="aspect-[4/5] w-full" />
 
               {/* Стеклянная плашка: размытие самого фото + мягкое затемнение */}
               <div className="relative">
