@@ -34,7 +34,7 @@ export const SellerTrustFooter = memo(function SellerTrustFooter({
   return (
     <section className="mb-4">
       <Link
-        to={`/catalog?seller=${encodeURIComponent(sellerSlug)}`}
+        to={`/seller/${encodeURIComponent(sellerSlug)}/reviews`}
         className="flex items-center gap-3 rounded-2xl bg-[hsl(var(--seller-deep))] p-4 text-primary-foreground"
       >
         <Star className="h-5 w-5 flex-shrink-0 fill-accent text-accent" />
