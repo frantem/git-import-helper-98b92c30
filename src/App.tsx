@@ -29,6 +29,8 @@ const SellerPage = lazy(() => import("./pages/seller/SellerPage"));
 
 
 const SellerProfile = lazy(() => import("./pages/SellerProfile"));
+const SellerReviews = lazy(() => import("./pages/SellerReviews"));
+
 const SellerApplication = lazy(() => import("./pages/SellerApplication"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminSellers = lazy(() => import("./pages/admin/AdminSellers"));
@@ -81,7 +83,9 @@ const App = () => (
                   <Route path="/seller/page" element={<SellerPage />} />
 
                   
+                  <Route path="/seller/:id/reviews" element={<SellerReviews />} />
                   <Route path="/seller/:id" element={<SellerProfile />} />
+
                   <Route path="/seller-application" element={<SellerApplication />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/admin" element={<Admin />} />

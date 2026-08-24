@@ -106,6 +106,7 @@ export function useProduct(idOrSlug: string | undefined) {
 
       // Fetch farmer's average rating if we have farmer_id
       let farmerRating: number | null = null;
+      let farmerReviewCount = 0;
       if (product?.farmer_id) {
         const { data: farmerProducts } = await supabase
           .from("products")
@@ -120,6 +121,7 @@ export function useProduct(idOrSlug: string | undefined) {
             .in("product_id", productIds);
 
           if (allReviews && allReviews.length > 0) {
+            farmerReviewCount = allReviews.length;
             farmerRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
           }
         }
@@ -131,6 +133,7 @@ export function useProduct(idOrSlug: string | undefined) {
         variants: (variantsRes.data as ProductVariant[]) || [],
         addons: (addonsRes.data as ProductAddon[]) || [],
         farmerRating,
+        farmerReviewCount,
       };
     },
     enabled: !!idOrSlug,
@@ -166,6 +169,8 @@ export function usePrefetchProduct() {
           variants: (variantsRes.data as ProductVariant[]) || [],
           addons: (addonsRes.data as ProductAddon[]) || [],
           farmerRating: null, // Skip farmer rating for prefetch
+          farmerReviewCount: 0,
+
         };
       },
       staleTime: 2 * 60 * 1000,
