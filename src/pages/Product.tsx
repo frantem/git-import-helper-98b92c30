@@ -642,6 +642,16 @@ export default function Product() {
         <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
           {/* Product image(s) */}
           <div className="relative lg:flex-1">
+            {/* Floating back button over image */}
+            <button
+              type="button"
+              onClick={handleGoBack}
+              aria-label="Назад"
+              className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-primary-foreground backdrop-blur-md transition-colors hover:bg-black/50 md:hidden"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+
             {allImages.length > 1 ? <Carousel className="w-full">
                 <CarouselContent>
                   {allImages.map((img, index) => <CarouselItem key={index}>
