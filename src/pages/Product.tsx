@@ -86,6 +86,8 @@ export default function Product() {
   const productImages = productData?.images || [];
   const variants = productData?.variants || [];
   const farmerRating = productData?.farmerRating || null;
+  const farmerReviewCount = productData?.farmerReviewCount || 0;
+
   const addons = productData?.addons || [];
   // Custom fields
   const {
@@ -912,18 +914,26 @@ export default function Product() {
             )}
 
             {/* Seller - compact */}
-            <Link to={`/seller/${product.farmer_id}`} className="mt-4 block group">
-              <div className="rounded-xl bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
-                <div className="flex items-center justify-between px-[10px]">
-                  <div className="flex items-center gap-1.5">
+            <div className="mt-4 block">
+              <div className="rounded-xl bg-card p-2 px-px mx-0 py-[8px]">
+                <div className="flex items-center justify-between gap-2 px-[10px]">
+                  <Link to={`/seller/${product.farmer_id}`} className="flex items-center gap-1.5 group min-w-0">
                     {dbProduct?.farmers?.photo_url ? <img src={dbProduct.farmers.photo_url} alt={product.seller} className="h-9 w-9 rounded-full object-cover" /> : <span className="text-lg">🧑‍🌾</span>}
-                    <span className="font-medium text-primary text-sm group-hover:underline">{product.seller}</span>
-                    <ChevronRight className="h-4 w-4 text-primary" />
-                  </div>
-                  {farmerRating !== null && <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="font-medium text-primary text-sm group-hover:underline truncate">{product.seller}</span>
+                    <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
+                  </Link>
+                  {farmerRating !== null && (
+                    <Link
+                      to={`/seller/${product.farmer_id}/reviews`}
+                      className="flex flex-shrink-0 items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs text-foreground hover:bg-secondary/70"
+                      aria-label="Все отзывы о продавце"
+                    >
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {farmerRating.toFixed(1)}
-                    </div>}
+                      <span className="font-medium">{farmerRating.toFixed(1).replace(".", ",")}</span>
+                      <span className="text-muted-foreground">({farmerReviewCount})</span>
+                      <ChevronRight className="h-3 w-3 text-primary" />
+                    </Link>
+                  )}
                 </div>
                 {farmerCity && (
                   <div className="mt-2 px-[10px]">
@@ -932,7 +942,8 @@ export default function Product() {
                   </div>
                 )}
               </div>
-            </Link>
+            </div>
+
           </div>
         </div>
 
