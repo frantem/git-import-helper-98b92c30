@@ -705,6 +705,11 @@ export default function Product() {
               <div className="absolute -top-6 left-1/2 z-20 flex -translate-x-1/2 items-center rounded-full bg-card shadow-lg lg:static lg:left-auto lg:top-auto lg:mb-4 lg:translate-x-0">
                 <span className="flex h-12 items-center rounded-full bg-brand-deep px-5 text-base font-bold text-brand-deep-foreground">
                   {currentPrice.formatted}<BynSymbol />
+                  {effectiveDiscount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center rounded-full bg-[#be5c41] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                      −{effectiveDiscount}%
+                    </span>
+                  )}
                 </span>
                 {currentQuantity > 0 ? (
                   <div className="flex h-12 items-center gap-1 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground">
