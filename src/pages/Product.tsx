@@ -639,12 +639,6 @@ export default function Product() {
       <Header />
 
       <main className="container mx-auto px-0 pb-6 md:px-4 md:py-6 bg-[#faf5ea]">
-        {/* Mobile back button */}
-        <button onClick={handleGoBack} className="mx-4 mb-3 mt-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary md:hidden">
-          <ArrowLeft className="h-4 w-4" />
-          Назад
-        </button>
-
         <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
           {/* Product image(s) */}
           <div className="relative lg:flex-1">
