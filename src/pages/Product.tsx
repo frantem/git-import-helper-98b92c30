@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { compressImage } from "@/lib/imageUtils";
-import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2, ChevronRight } from "lucide-react";
 
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -683,10 +683,6 @@ export default function Product() {
               onClose={() => setLightboxIndex(null)}
             />
 
-            {product.discount && <span className="absolute left-4 top-4 rounded px-3 py-1 text-sm font-bold text-primary-foreground z-10 bg-[#ab5a3f]">
-                -{product.discount}%
-              </span>}
-
             {/* Actions */}
             <div className="absolute right-4 top-4 flex gap-2 z-10">
               <button onClick={toggleFavorite} aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
@@ -709,6 +705,11 @@ export default function Product() {
               <div className="absolute -top-6 left-1/2 z-20 flex -translate-x-1/2 items-center rounded-full bg-card shadow-lg lg:static lg:left-auto lg:top-auto lg:mb-4 lg:translate-x-0">
                 <span className="flex h-12 items-center rounded-full bg-brand-deep px-5 text-base font-bold text-brand-deep-foreground">
                   {currentPrice.formatted}<BynSymbol />
+                  {effectiveDiscount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center rounded-full bg-[#be5c41] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                      −{effectiveDiscount}%
+                    </span>
+                  )}
                 </span>
                 {currentQuantity > 0 ? (
                   <div className="flex h-12 items-center gap-1 whitespace-nowrap pl-3 pr-5 text-sm font-bold text-foreground">
@@ -909,20 +910,18 @@ export default function Product() {
             )}
 
             {/* Seller - compact */}
-            <Link to={`/seller/${product.farmer_id}`} className="mt-4 block">
+            <Link to={`/seller/${product.farmer_id}`} className="mt-4 block group">
               <div className="rounded-xl bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
                 <div className="flex items-center justify-between px-[10px]">
                   <div className="flex items-center gap-1.5">
                     {dbProduct?.farmers?.photo_url ? <img src={dbProduct.farmers.photo_url} alt={product.seller} className="h-9 w-9 rounded-full object-cover" /> : <span className="text-lg">🧑‍🌾</span>}
-                    <span className="font-medium text-foreground text-sm">{product.seller}</span>
+                    <span className="font-medium text-primary text-sm group-hover:underline">{product.seller}</span>
+                    <ChevronRight className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    {farmerRating !== null && <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        {farmerRating.toFixed(1)}
-                      </div>}
-                    <span className="text-xs text-primary font-medium">Все товары →</span>
-                  </div>
+                  {farmerRating !== null && <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {farmerRating.toFixed(1)}
+                    </div>}
                 </div>
                 {farmerCity && (
                   <div className="mt-2 px-[10px]">
