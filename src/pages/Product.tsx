@@ -683,10 +683,6 @@ export default function Product() {
               onClose={() => setLightboxIndex(null)}
             />
 
-            {product.discount && <span className="absolute left-4 top-4 rounded px-3 py-1 text-sm font-bold text-primary-foreground z-10 bg-[#ab5a3f]">
-                -{product.discount}%
-              </span>}
-
             {/* Actions */}
             <div className="absolute right-4 top-4 flex gap-2 z-10">
               <button onClick={toggleFavorite} aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
