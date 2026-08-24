@@ -639,15 +639,19 @@ export default function Product() {
       <Header />
 
       <main className="container mx-auto px-0 pb-6 md:px-4 md:py-6 bg-[#faf5ea]">
-        {/* Mobile back button */}
-        <button onClick={handleGoBack} className="mx-4 mb-3 mt-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary md:hidden">
-          <ArrowLeft className="h-4 w-4" />
-          Назад
-        </button>
-
         <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
           {/* Product image(s) */}
           <div className="relative lg:flex-1">
+            {/* Floating back button over image */}
+            <button
+              type="button"
+              onClick={handleGoBack}
+              aria-label="Назад"
+              className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-primary-foreground backdrop-blur-md transition-colors hover:bg-black/50 md:hidden"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+
             {allImages.length > 1 ? <Carousel className="w-full">
                 <CarouselContent>
                   {allImages.map((img, index) => <CarouselItem key={index}>
