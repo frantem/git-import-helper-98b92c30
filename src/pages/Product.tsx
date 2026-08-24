@@ -910,20 +910,18 @@ export default function Product() {
             )}
 
             {/* Seller - compact */}
-            <Link to={`/seller/${product.farmer_id}`} className="mt-4 block">
+            <Link to={`/seller/${product.farmer_id}`} className="mt-4 block group">
               <div className="rounded-xl bg-card p-2 hover:bg-card/80 transition-colors cursor-pointer px-px mx-0 py-[8px]">
                 <div className="flex items-center justify-between px-[10px]">
                   <div className="flex items-center gap-1.5">
                     {dbProduct?.farmers?.photo_url ? <img src={dbProduct.farmers.photo_url} alt={product.seller} className="h-9 w-9 rounded-full object-cover" /> : <span className="text-lg">🧑‍🌾</span>}
-                    <span className="font-medium text-foreground text-sm">{product.seller}</span>
+                    <span className="font-medium text-primary text-sm group-hover:underline">{product.seller}</span>
+                    <ChevronRight className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    {farmerRating !== null && <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        {farmerRating.toFixed(1)}
-                      </div>}
-                    <span className="text-xs text-primary font-medium">Все товары →</span>
-                  </div>
+                  {farmerRating !== null && <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {farmerRating.toFixed(1)}
+                    </div>}
                 </div>
                 {farmerCity && (
                   <div className="mt-2 px-[10px]">
