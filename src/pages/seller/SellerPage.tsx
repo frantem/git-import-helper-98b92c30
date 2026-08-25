@@ -508,6 +508,24 @@ export default function SellerPage() {
                   placeholder="@my_brand"
                 />
               </div>
+              <div>
+                <Label htmlFor="c-vb">Viber (номер)</Label>
+                <Input
+                  id="c-vb"
+                  value={hero.contact_viber}
+                  onChange={(e) => setHero({ ...hero, contact_viber: e.target.value })}
+                  placeholder="+375 29 000-00-00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-wa">WhatsApp (номер)</Label>
+                <Input
+                  id="c-wa"
+                  value={hero.contact_whatsapp}
+                  onChange={(e) => setHero({ ...hero, contact_whatsapp: e.target.value })}
+                  placeholder="+375 29 000-00-00"
+                />
+              </div>
             </div>
 
             <Button onClick={saveHero} disabled={isSaving || uploading} className="w-full">
