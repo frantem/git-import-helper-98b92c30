@@ -61,7 +61,7 @@ export const SellerContactIcons = memo(function SellerContactIcons({
   if (!phone && !telegram && !instagram && !viber && !whatsapp) return null;
 
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="mb-6 flex flex-wrap gap-2">
       {phone && (
         <a
           href={`tel:${digitsOnly(phone)}`}
