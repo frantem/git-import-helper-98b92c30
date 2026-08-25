@@ -109,6 +109,8 @@ export default function SellerPage() {
       contact_phone: ((farmer as any).contacts as any)?.phone || "",
       contact_instagram: ((farmer as any).contacts as any)?.instagram || "",
       contact_telegram: ((farmer as any).contacts as any)?.telegram || "",
+      contact_viber: ((farmer as any).contacts as any)?.viber || "",
+      contact_whatsapp: ((farmer as any).contacts as any)?.whatsapp || "",
     });
     setPostsBlockTitle(farmer.posts_block_title || "");
 
@@ -193,6 +195,8 @@ export default function SellerPage() {
           phone: hero.contact_phone.trim() || null,
           instagram: hero.contact_instagram.trim() || null,
           telegram: hero.contact_telegram.trim() || null,
+          viber: hero.contact_viber.trim() || null,
+          whatsapp: hero.contact_whatsapp.trim() || null,
         },
       })
       .eq("id", farmerId);
