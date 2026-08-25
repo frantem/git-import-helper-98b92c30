@@ -142,6 +142,7 @@ export default function SellerProfile() {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get("ref")) {
         localStorage.setItem("referrer_farmer_id", farmerData.id);
+        localStorage.setItem("referrer_farmer_slug", farmerData.slug || farmerData.id);
         localStorage.setItem("referrer_farmer_ts", Date.now().toString());
       }
 
