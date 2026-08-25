@@ -302,6 +302,8 @@ export default function SellerProfile() {
           blockTitle={farmer.posts_block_title}
         />
 
+        {/* Иконки контактов — под блоком «О нас» */}
+        <SellerContactIcons contacts={farmer.contacts} />
 
         {/* 5. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
