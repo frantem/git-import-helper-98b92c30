@@ -12,6 +12,7 @@ import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { useSellerPage } from "@/hooks/useSellerPage";
 import { SellerHero } from "@/components/seller/SellerHero";
 import { SellerAbout } from "@/components/seller/SellerAbout";
+import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
 import { SellerHits } from "@/components/seller/SellerHits";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerPosts } from "@/components/seller/SellerPosts";
@@ -287,7 +288,6 @@ export default function SellerProfile() {
           name={farmer.name}
           aboutText={farmer.about_text || farmer.tagline || farmer.description}
           photoUrl={farmer.photo_url}
-          contacts={farmer.contacts}
         />
 
         {/* 3. Хиты */}
@@ -302,6 +302,8 @@ export default function SellerProfile() {
           blockTitle={farmer.posts_block_title}
         />
 
+        {/* Иконки контактов — под блоком «О нас» */}
+        <SellerContactIcons contacts={farmer.contacts} />
 
         {/* 5. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
