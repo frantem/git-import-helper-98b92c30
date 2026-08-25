@@ -25,26 +25,34 @@ export const SellerAbout = memo(function SellerAbout({
   return (
     <section className="mb-6">
       {hasAbout && (
-        <div className="flex items-start gap-3 rounded-2xl bg-card p-4">
-          {photoUrl && (
-            <img
-              src={cdnImage(photoUrl, "thumb")}
-              alt={name}
-              loading="lazy"
-              decoding="async"
-              className="h-16 w-16 flex-shrink-0 rounded-full object-cover"
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-foreground">
-              {aboutText}
-            </p>
+        <div className="rounded-2xl bg-card p-4">
+          <div className="flex items-start gap-3">
+            {photoUrl && (
+              <img
+                src={cdnImage(photoUrl, "thumb")}
+                alt={name}
+                loading="lazy"
+                decoding="async"
+                className="h-16 w-16 flex-shrink-0 rounded-full object-cover"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-foreground">
+                {aboutText}
+              </p>
+            </div>
           </div>
+
+          {hasContacts && (
+            <div className="mt-3 border-t border-border/50 pt-3">
+              <SellerContactIcons contacts={contacts} />
+            </div>
+          )}
         </div>
       )}
 
-      {hasContacts && (
-        <div className="mt-3">
+      {!hasAbout && hasContacts && (
+        <div className="rounded-2xl bg-card p-4">
           <SellerContactIcons contacts={contacts} />
         </div>
       )}
