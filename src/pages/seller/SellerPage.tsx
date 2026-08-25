@@ -71,6 +71,8 @@ export default function SellerPage() {
     contact_phone: "",
     contact_instagram: "",
     contact_telegram: "",
+    contact_viber: "",
+    contact_whatsapp: "",
   });
 
   const [hits, setHits] = useState<HitRow[]>([]);
@@ -107,6 +109,8 @@ export default function SellerPage() {
       contact_phone: ((farmer as any).contacts as any)?.phone || "",
       contact_instagram: ((farmer as any).contacts as any)?.instagram || "",
       contact_telegram: ((farmer as any).contacts as any)?.telegram || "",
+      contact_viber: ((farmer as any).contacts as any)?.viber || "",
+      contact_whatsapp: ((farmer as any).contacts as any)?.whatsapp || "",
     });
     setPostsBlockTitle(farmer.posts_block_title || "");
 
@@ -191,6 +195,8 @@ export default function SellerPage() {
           phone: hero.contact_phone.trim() || null,
           instagram: hero.contact_instagram.trim() || null,
           telegram: hero.contact_telegram.trim() || null,
+          viber: hero.contact_viber.trim() || null,
+          whatsapp: hero.contact_whatsapp.trim() || null,
         },
       })
       .eq("id", farmerId);
@@ -500,6 +506,24 @@ export default function SellerPage() {
                   value={hero.contact_telegram}
                   onChange={(e) => setHero({ ...hero, contact_telegram: e.target.value })}
                   placeholder="@my_brand"
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-vb">Viber (номер)</Label>
+                <Input
+                  id="c-vb"
+                  value={hero.contact_viber}
+                  onChange={(e) => setHero({ ...hero, contact_viber: e.target.value })}
+                  placeholder="+375 29 000-00-00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-wa">WhatsApp (номер)</Label>
+                <Input
+                  id="c-wa"
+                  value={hero.contact_whatsapp}
+                  onChange={(e) => setHero({ ...hero, contact_whatsapp: e.target.value })}
+                  placeholder="+375 29 000-00-00"
                 />
               </div>
             </div>

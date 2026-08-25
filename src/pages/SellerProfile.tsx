@@ -287,6 +287,7 @@ export default function SellerProfile() {
           name={farmer.name}
           aboutText={farmer.about_text || farmer.tagline || farmer.description}
           photoUrl={farmer.photo_url}
+          contacts={farmer.contacts}
         />
 
         {/* 3. Хиты */}
@@ -339,7 +340,6 @@ export default function SellerProfile() {
           sellerSlug={sellerSlug}
           rating={averageRating}
           reviewCount={totalReviewCount}
-          contacts={farmer.contacts}
         />
       </main>
 
