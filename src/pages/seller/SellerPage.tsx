@@ -71,6 +71,8 @@ export default function SellerPage() {
     contact_phone: "",
     contact_instagram: "",
     contact_telegram: "",
+    contact_viber: "",
+    contact_whatsapp: "",
   });
 
   const [hits, setHits] = useState<HitRow[]>([]);
