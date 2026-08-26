@@ -26,6 +26,8 @@ const SellerProducts = lazy(() => import("./pages/seller/SellerProducts"));
 const SellerOrders = lazy(() => import("./pages/seller/SellerOrders"));
 const SellerSettings = lazy(() => import("./pages/seller/SellerSettings"));
 const SellerPage = lazy(() => import("./pages/seller/SellerPage"));
+const SellerClients = lazy(() => import("./pages/seller/SellerClients"));
+
 
 
 const SellerProfile = lazy(() => import("./pages/SellerProfile"));
