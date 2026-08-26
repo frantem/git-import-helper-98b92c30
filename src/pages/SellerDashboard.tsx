@@ -5,7 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Settings, Loader2 } from "lucide-react";
+import { Package, ShoppingBag, Settings, Loader2, Users } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 
 export default function SellerDashboard() {
