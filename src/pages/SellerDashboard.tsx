@@ -63,6 +63,10 @@ export default function SellerDashboard() {
     <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
       <Header />
       <main className="container mx-auto px-4 py-6">
+        {planState.isTrial && planState.trialDaysLeft !== null && planState.trialDaysLeft <= 2 && (
+          <TrialBanner daysLeft={planState.trialDaysLeft} />
+        )}
+
         <h1 className="text-2xl font-bold mb-4">{farmerName}</h1>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
