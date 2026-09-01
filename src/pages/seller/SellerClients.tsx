@@ -4,7 +4,9 @@ import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, Phone } from "lucide-react";
+import { ArrowLeft, Loader2, Phone, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSellerPlan } from "@/hooks/useSellerPlan";
 
 type ClientStatus = "new" | "regular" | "lost";
 
