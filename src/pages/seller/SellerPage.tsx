@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2, Upload, ExternalLink, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
+import { useSellerPlan } from "@/hooks/useSellerPlan";
 
 const MAX_VIDEO_MB = 15;
 
@@ -51,6 +52,8 @@ interface PromoRow {
 
 export default function SellerPage() {
   const { user, role, isLoading: authLoading } = useAuth();
+  const { canShowContacts } = useSellerPlan();
+
   const navigate = useNavigate();
 
   const [farmerId, setFarmerId] = useState<string | null>(null);
@@ -480,53 +483,70 @@ export default function SellerPage() {
               </div>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-3">
-              <div>
-                <Label htmlFor="c-phone">Телефон</Label>
-                <Input
-                  id="c-phone"
-                  value={hero.contact_phone}
-                  onChange={(e) => setHero({ ...hero, contact_phone: e.target.value })}
-                  placeholder="+375 29 000-00-00"
-                />
-              </div>
-              <div>
-                <Label htmlFor="c-ig">Instagram</Label>
-                <Input
-                  id="c-ig"
-                  value={hero.contact_instagram}
-                  onChange={(e) => setHero({ ...hero, contact_instagram: e.target.value })}
-                  placeholder="@my_brand"
-                />
-              </div>
-              <div>
-                <Label htmlFor="c-tg">Telegram</Label>
-                <Input
-                  id="c-tg"
-                  value={hero.contact_telegram}
-                  onChange={(e) => setHero({ ...hero, contact_telegram: e.target.value })}
-                  placeholder="@my_brand"
-                />
-              </div>
-              <div>
-                <Label htmlFor="c-vb">Viber (номер)</Label>
-                <Input
-                  id="c-vb"
-                  value={hero.contact_viber}
-                  onChange={(e) => setHero({ ...hero, contact_viber: e.target.value })}
-                  placeholder="+375 29 000-00-00"
-                />
-              </div>
-              <div>
-                <Label htmlFor="c-wa">WhatsApp (номер)</Label>
-                <Input
-                  id="c-wa"
-                  value={hero.contact_whatsapp}
-                  onChange={(e) => setHero({ ...hero, contact_whatsapp: e.target.value })}
-                  placeholder="+375 29 000-00-00"
-                />
+            <div className="relative">
+              {!canShowContacts && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/80 backdrop-blur-[2px] p-3 text-center">
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">Доступно по подписке Standard</p>
+                  <Link to="/seller/tariffs">
+                    <Button size="sm">Подключить Standard</Button>
+                  </Link>
+                </div>
+              )}
+              <div className={`grid gap-2 md:grid-cols-3 ${!canShowContacts ? "pointer-events-none select-none opacity-40" : ""}`}>
+                <div>
+                  <Label htmlFor="c-phone">Телефон</Label>
+                  <Input
+                    id="c-phone"
+                    disabled={!canShowContacts}
+                    value={hero.contact_phone}
+                    onChange={(e) => setHero({ ...hero, contact_phone: e.target.value })}
+                    placeholder="+375 29 000-00-00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="c-ig">Instagram</Label>
+                  <Input
+                    id="c-ig"
+                    disabled={!canShowContacts}
+                    value={hero.contact_instagram}
+                    onChange={(e) => setHero({ ...hero, contact_instagram: e.target.value })}
+                    placeholder="@my_brand"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="c-tg">Telegram</Label>
+                  <Input
+                    id="c-tg"
+                    disabled={!canShowContacts}
+                    value={hero.contact_telegram}
+                    onChange={(e) => setHero({ ...hero, contact_telegram: e.target.value })}
+                    placeholder="@my_brand"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="c-vb">Viber (номер)</Label>
+                  <Input
+                    id="c-vb"
+                    disabled={!canShowContacts}
+                    value={hero.contact_viber}
+                    onChange={(e) => setHero({ ...hero, contact_viber: e.target.value })}
+                    placeholder="+375 29 000-00-00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="c-wa">WhatsApp (номер)</Label>
+                  <Input
+                    id="c-wa"
+                    disabled={!canShowContacts}
+                    value={hero.contact_whatsapp}
+                    onChange={(e) => setHero({ ...hero, contact_whatsapp: e.target.value })}
+                    placeholder="+375 29 000-00-00"
+                  />
+                </div>
               </div>
             </div>
+
 
             <Button onClick={saveHero} disabled={isSaving || uploading} className="w-full">
               {isSaving ? "Сохранение…" : "Сохранить обложку"}
