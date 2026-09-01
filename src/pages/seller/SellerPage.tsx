@@ -52,6 +52,8 @@ interface PromoRow {
 
 export default function SellerPage() {
   const { user, role, isLoading: authLoading } = useAuth();
+  const { canShowContacts } = useSellerPlan();
+
   const navigate = useNavigate();
 
   const [farmerId, setFarmerId] = useState<string | null>(null);
