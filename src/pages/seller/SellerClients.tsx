@@ -57,6 +57,7 @@ export default function SellerClients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | ClientStatus>("all");
+  const planState = useSellerPlan();
 
   useEffect(() => {
     if (authLoading) return;
