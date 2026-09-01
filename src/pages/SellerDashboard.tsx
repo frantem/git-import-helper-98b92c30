@@ -5,13 +5,18 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Settings, Loader2, Users } from "lucide-react";
+import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
+import { useSellerPlan } from "@/hooks/useSellerPlan";
+import { TrialBanner } from "@/components/seller/TrialBanner";
+
+const PLAN_LABEL = { free: "Free", standard: "Standard", pro: "Pro" } as const;
 
 export default function SellerDashboard() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { sellerPendingCount } = usePendingOrdersCount();
+  const planState = useSellerPlan();
   const [farmerName, setFarmerName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -58,6 +63,10 @@ export default function SellerDashboard() {
     <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
       <Header />
       <main className="container mx-auto px-4 py-6">
+        {planState.isTrial && planState.trialDaysLeft !== null && planState.trialDaysLeft <= 2 && (
+          <TrialBanner daysLeft={planState.trialDaysLeft} />
+        )}
+
         <h1 className="text-2xl font-bold mb-4">{farmerName}</h1>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -84,9 +93,24 @@ export default function SellerDashboard() {
 
           <Link to="/seller/clients" className="flex items-center gap-4 rounded-xl bg-card p-6">
             <Users className="h-8 w-8 text-primary" />
+            <div className="flex-1">
+              <h3 className="flex items-center gap-2 font-bold">
+                Клиенты
+                {!planState.canUseClients && <Lock className="h-4 w-4 text-muted-foreground" />}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {planState.canUseClients ? "Покупатели и их статусы" : "Доступно на Standard"}
+              </p>
+            </div>
+          </Link>
+
+          <Link to="/seller/tariffs" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <CreditCard className="h-8 w-8 text-primary" />
             <div>
-              <h3 className="font-bold">Клиенты</h3>
-              <p className="text-sm text-muted-foreground">Покупатели и их статусы</p>
+              <h3 className="font-bold">Тарифы</h3>
+              <p className="text-sm text-muted-foreground">
+                Текущий тариф: {planState.isTrial ? "Standard (пробный)" : PLAN_LABEL[planState.plan]}
+              </p>
             </div>
           </Link>
 

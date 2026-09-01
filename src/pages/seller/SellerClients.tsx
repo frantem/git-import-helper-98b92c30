@@ -4,7 +4,9 @@ import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, Phone } from "lucide-react";
+import { ArrowLeft, Loader2, Phone, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSellerPlan } from "@/hooks/useSellerPlan";
 
 type ClientStatus = "new" | "regular" | "lost";
 
@@ -55,6 +57,7 @@ export default function SellerClients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | ClientStatus>("all");
+  const planState = useSellerPlan();
 
   useEffect(() => {
     if (authLoading) return;
@@ -157,10 +160,34 @@ export default function SellerClients() {
     return filtered;
   }, [clients, filter]);
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || planState.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!planState.canUseClients) {
+    return (
+      <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
+        <Header />
+        <main className="container mx-auto px-4 py-6">
+          <Link to="/seller" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Панель продавца
+          </Link>
+          <div className="rounded-xl bg-card p-6 text-center">
+            <Lock className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <h1 className="text-xl font-bold mb-2">База клиентов доступна на Standard</h1>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Подключите тариф Standard или запустите бесплатный пробный период на 14 дней —
+              вся история заказов уже сохранена.
+            </p>
+            <Button onClick={() => navigate("/seller/tariffs")}>Посмотреть тарифы</Button>
+          </div>
+        </main>
+        <BottomNavigation />
       </div>
     );
   }

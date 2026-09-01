@@ -213,6 +213,7 @@ export type Database = {
           name: string
           photo_url: string | null
           pickup_slots: Json | null
+          plan: string
           posts_block_title: string | null
           rating: number | null
           slug: string | null
@@ -221,6 +222,8 @@ export type Database = {
           telegram_chat_id: string | null
           telegram_link_code: string | null
           theme: string
+          trial_ends_at: string | null
+          trial_started_at: string | null
           unique_fact: string | null
           user_id: string | null
           vacation_dates: Json | null
@@ -245,6 +248,7 @@ export type Database = {
           name: string
           photo_url?: string | null
           pickup_slots?: Json | null
+          plan?: string
           posts_block_title?: string | null
           rating?: number | null
           slug?: string | null
@@ -253,6 +257,8 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           theme?: string
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           unique_fact?: string | null
           user_id?: string | null
           vacation_dates?: Json | null
@@ -277,6 +283,7 @@ export type Database = {
           name?: string
           photo_url?: string | null
           pickup_slots?: Json | null
+          plan?: string
           posts_block_title?: string | null
           rating?: number | null
           slug?: string | null
@@ -285,6 +292,8 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           theme?: string
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           unique_fact?: string | null
           user_id?: string | null
           vacation_dates?: Json | null
@@ -1194,6 +1203,47 @@ export type Database = {
           visitor_id?: string
         }
         Relationships: []
+      }
+      subscription_requests: {
+        Row: {
+          amount_kopecks: number
+          created_at: string
+          farmer_id: string
+          id: string
+          period_months: number
+          plan: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_kopecks: number
+          created_at?: string
+          farmer_id: string
+          id?: string
+          period_months: number
+          plan: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_kopecks?: number
+          created_at?: string
+          farmer_id?: string
+          id?: string
+          period_months?: number
+          plan?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_requests_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

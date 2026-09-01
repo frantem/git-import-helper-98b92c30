@@ -118,7 +118,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors.
       const safeCols =
-        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title, unique_fact, delivery_note, contacts, theme";
+        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title, unique_fact, delivery_note, contacts, theme, plan, trial_ends_at";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -302,8 +302,12 @@ export default function SellerProfile() {
           blockTitle={farmer.posts_block_title}
         />
 
-        {/* Иконки контактов — под блоком «О нас» */}
-        <SellerContactIcons contacts={farmer.contacts} />
+        {/* Иконки контактов — только на платных тарифах (Standard/Pro) */}
+        {(farmer as any).plan && (farmer as any).plan !== "free" &&
+          (!(farmer as any).trial_ends_at ||
+            new Date((farmer as any).trial_ends_at).getTime() > Date.now()) && (
+          <SellerContactIcons contacts={farmer.contacts} />
+        )}
 
         {/* 5. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
