@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2, Upload, ExternalLink, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
+import { useSellerPlan } from "@/hooks/useSellerPlan";
 
 const MAX_VIDEO_MB = 15;
 
