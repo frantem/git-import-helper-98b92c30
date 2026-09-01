@@ -17,9 +17,10 @@ import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
-import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
+import { useSellerPlan } from "@/hooks/useSellerPlan";
 
 interface Product {
   id: string;
@@ -294,6 +295,10 @@ export default function SellerProducts() {
   };
 
   const handleToggleActive = async (productId: string, currentState: boolean) => {
+    if (!currentState && plan === "free" && activeCount >= FREE_ACTIVE_LIMIT) {
+      toast.error(`На тарифе Free можно держать активными до ${FREE_ACTIVE_LIMIT} товаров. Подключите Standard, чтобы публиковать до 30 товаров.`);
+      return;
+    }
     const { error } = await supabase.from("products")
       .update({ is_active: !currentState })
       .eq("id", productId);
