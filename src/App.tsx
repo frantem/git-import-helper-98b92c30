@@ -27,6 +27,7 @@ const SellerOrders = lazy(() => import("./pages/seller/SellerOrders"));
 const SellerSettings = lazy(() => import("./pages/seller/SellerSettings"));
 const SellerPage = lazy(() => import("./pages/seller/SellerPage"));
 const SellerClients = lazy(() => import("./pages/seller/SellerClients"));
+const SellerTariffs = lazy(() => import("./pages/seller/SellerTariffs"));
 
 
 
@@ -84,6 +85,7 @@ const App = () => (
                   <Route path="/seller/settings" element={<SellerSettings />} />
                   <Route path="/seller/page" element={<SellerPage />} />
                   <Route path="/seller/clients" element={<SellerClients />} />
+                  <Route path="/seller/tariffs" element={<SellerTariffs />} />
 
 
                   
