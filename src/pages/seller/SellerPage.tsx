@@ -487,7 +487,7 @@ export default function SellerPage() {
               {!canShowContacts && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/80 backdrop-blur-[2px] p-3 text-center">
                   <Lock className="h-5 w-5 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">Доступно по подписке Standard</p>
+                  <p className="text-sm font-medium text-foreground">Контакты на Вашей странице<br />доступны по подписке Standard</p>
                   <Link to="/seller/tariffs">
                     <Button size="sm">Подключить Standard</Button>
                   </Link>
