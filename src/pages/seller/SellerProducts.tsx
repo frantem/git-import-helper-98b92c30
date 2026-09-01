@@ -22,6 +22,8 @@ import { Switch } from "@/components/ui/switch";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 
+const FREE_ACTIVE_LIMIT = 3;
+
 interface Product {
   id: string;
   title: string;
@@ -65,6 +67,8 @@ interface AddonLocal {
 
 export default function SellerProducts() {
   const { user, role, isLoading: authLoading } = useAuth();
+  const { plan } = useSellerPlan();
+  const activeCount = products.filter((p) => p.is_active).length;
   const navigate = useNavigate();
 
   const [farmerId, setFarmerId] = useState<string | null>(null);
@@ -410,6 +414,25 @@ export default function SellerProducts() {
         </div>
 
         <div className="space-y-4">
+          {plan === "free" && (
+            <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+              <div className="flex items-start gap-2">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Тариф Free: активными могут быть только {FREE_ACTIVE_LIMIT} товара ({activeCount} из {FREE_ACTIVE_LIMIT} занято)
+                  </p>
+                  <p className="mt-1 text-xs text-secondary-foreground">
+                    Подключите Standard — публикуйте до 30 товаров, продавайте без комиссии и открывайте контакты клиентов.
+                  </p>
+                  <Link to="/seller/tariffs">
+                    <Button size="sm" className="mt-3">Подключить Standard</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center">
             <h2 className="font-medium text-foreground">Товары ({products.length})</h2>
             <Button size="sm" onClick={() => { clearDraft("seller_product_draft"); resetProductForm(); setEditingProduct(null); setShowProductForm(true); }}>
