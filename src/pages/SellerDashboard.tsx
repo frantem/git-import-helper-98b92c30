@@ -84,9 +84,24 @@ export default function SellerDashboard() {
 
           <Link to="/seller/clients" className="flex items-center gap-4 rounded-xl bg-card p-6">
             <Users className="h-8 w-8 text-primary" />
+            <div className="flex-1">
+              <h3 className="flex items-center gap-2 font-bold">
+                Клиенты
+                {!planState.canUseClients && <Lock className="h-4 w-4 text-muted-foreground" />}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {planState.canUseClients ? "Покупатели и их статусы" : "Доступно на Standard"}
+              </p>
+            </div>
+          </Link>
+
+          <Link to="/seller/tariffs" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <CreditCard className="h-8 w-8 text-primary" />
             <div>
-              <h3 className="font-bold">Клиенты</h3>
-              <p className="text-sm text-muted-foreground">Покупатели и их статусы</p>
+              <h3 className="font-bold">Тарифы</h3>
+              <p className="text-sm text-muted-foreground">
+                Текущий тариф: {planState.isTrial ? "Standard (пробный)" : PLAN_LABEL[planState.plan]}
+              </p>
             </div>
           </Link>
 

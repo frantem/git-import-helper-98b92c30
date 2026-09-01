@@ -302,8 +302,12 @@ export default function SellerProfile() {
           blockTitle={farmer.posts_block_title}
         />
 
-        {/* Иконки контактов — под блоком «О нас» */}
-        <SellerContactIcons contacts={farmer.contacts} />
+        {/* Иконки контактов — только на платных тарифах (Standard/Pro) */}
+        {(farmer as any).plan && (farmer as any).plan !== "free" &&
+          (!(farmer as any).trial_ends_at ||
+            new Date((farmer as any).trial_ends_at).getTime() > Date.now()) && (
+          <SellerContactIcons contacts={farmer.contacts} />
+        )}
 
         {/* 5. Акции и наборы */}
         <SellerPromos promos={pageContent?.promos || []} />
