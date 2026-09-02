@@ -637,6 +637,7 @@ export default function Product() {
         ogType="product"
         canonical={product ? `https://locusfood.by/product/${product.slug || product.id}` : undefined}
         jsonLd={allJsonLd as unknown as Record<string, unknown> | Record<string, unknown>[]}
+        noindex={!!isArchived}
       />
       <Header />
 

@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ProductCard } from "@/components/ProductCard";
@@ -70,6 +70,7 @@ interface Product {
 
 export default function SellerProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [ordersCount, setOrdersCount] = useState<number | null>(null);
@@ -135,6 +136,12 @@ export default function SellerProfile() {
       if (farmerError) {
         console.error("Error fetching farmer:", farmerError);
         setIsLoading(false);
+        return;
+      }
+
+      // Старая UUID-ссылка → заменяем на slug-версию (склейка дублей для SEO).
+      if (isUUID && farmerData.slug && farmerData.slug !== id) {
+        navigate(`/seller/${farmerData.slug}${window.location.search}`, { replace: true });
         return;
       }
 
