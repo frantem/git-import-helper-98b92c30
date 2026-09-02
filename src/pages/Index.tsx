@@ -29,11 +29,6 @@ const homepageJsonLd = [
     "@type": "WebSite",
     name: "Locus",
     url: "https://locusfood.by",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://locusfood.by/catalog?search={search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
   },
   {
     "@context": "https://schema.org",
