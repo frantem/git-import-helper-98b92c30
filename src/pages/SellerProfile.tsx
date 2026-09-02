@@ -139,6 +139,12 @@ export default function SellerProfile() {
         return;
       }
 
+      // Старая UUID-ссылка → заменяем на slug-версию (склейка дублей для SEO).
+      if (isUUID && farmerData.slug && farmerData.slug !== id) {
+        navigate(`/seller/${farmerData.slug}${window.location.search}`, { replace: true });
+        return;
+      }
+
       setFarmer(farmerData);
 
       const searchParams = new URLSearchParams(window.location.search);
