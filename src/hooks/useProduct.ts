@@ -81,7 +81,8 @@ export function useProduct(idOrSlug: string | undefined) {
           .maybeSingle();
         product = fallback.data;
       }
-      if (!product) return null;
+      // Удалённые (soft delete) товары для публичной страницы = не найдены.
+      if (!product || (product as any).is_deleted) return null;
 
       const productId = product.id;
 
