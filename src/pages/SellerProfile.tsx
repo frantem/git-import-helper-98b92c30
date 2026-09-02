@@ -70,6 +70,7 @@ interface Product {
 
 export default function SellerProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [ordersCount, setOrdersCount] = useState<number | null>(null);
