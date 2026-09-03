@@ -49,7 +49,7 @@ const PRICING: Record<"standard" | "pro", { 1: number; 6: number; discount: stri
 function CellValue({ value }: { value: Cell }) {
   if (value === true) return <Check className="mx-auto h-4 w-4 text-primary" />;
   if (value === false) return <Minus className="mx-auto h-4 w-4 text-muted-foreground" />;
-  return <span className="text-sm">{value}</span>;
+  return <span className="whitespace-nowrap">{value}</span>;
 }
 
 function Money({ kopecks }: { kopecks: number }) {
