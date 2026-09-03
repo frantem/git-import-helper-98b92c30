@@ -27,16 +27,15 @@ const PLAN_LABEL: Record<SellerPlan, string> = {
 type Cell = boolean | string;
 
 const FEATURES: Array<{ label: string; free: Cell; standard: Cell; pro: Cell }> = [
-  { label: "Товары", free: "до 3", standard: "до 30", pro: "без лимита" },
   { label: "Онлайн заказы", free: true, standard: true, pro: true },
   { label: "Продажи", free: true, standard: true, pro: true },
   { label: "Страница бренда", free: true, standard: true, pro: true },
-  { label: "Ваши товары на LOCUS", free: true, standard: true, pro: true },
+  { label: "Ваши товары\nна LOCUS", free: true, standard: true, pro: true },
   { label: "База клиентов", free: false, standard: true, pro: true },
-  { label: "Комиссия с продажи", free: "10%", standard: "0%", pro: "0%" },
-  { label: "Контакты на странице", free: false, standard: true, pro: true },
-  { label: "Все контакты клиентов открыты", free: false, standard: true, pro: true },
-  { label: "Можете сами делать доставку", free: false, standard: true, pro: true },
+  { label: "Комиссия\nс продажи", free: "10%", standard: "0%", pro: "0%" },
+  { label: "Контакты\nна странице", free: false, standard: true, pro: true },
+  { label: "Все контакты\nклиентов открыты", free: false, standard: true, pro: true },
+  { label: "Можете сами\nделать доставку", free: false, standard: true, pro: true },
   { label: "Авто рассылка", free: false, standard: false, pro: true },
   { label: "Онлайн оплата", free: false, standard: false, pro: true },
 ];

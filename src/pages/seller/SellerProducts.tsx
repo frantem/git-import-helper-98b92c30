@@ -73,7 +73,7 @@ export default function SellerProducts() {
   const [farmerId, setFarmerId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const activeCount = products.filter((p) => p.is_active).length;
+  
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
