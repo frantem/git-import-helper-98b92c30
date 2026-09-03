@@ -27,16 +27,15 @@ const PLAN_LABEL: Record<SellerPlan, string> = {
 type Cell = boolean | string;
 
 const FEATURES: Array<{ label: string; free: Cell; standard: Cell; pro: Cell }> = [
-  { label: "Товары", free: "до 3", standard: "до 30", pro: "без лимита" },
   { label: "Онлайн заказы", free: true, standard: true, pro: true },
   { label: "Продажи", free: true, standard: true, pro: true },
   { label: "Страница бренда", free: true, standard: true, pro: true },
-  { label: "Ваши товары на LOCUS", free: true, standard: true, pro: true },
+  { label: "Ваши товары\nна LOCUS", free: true, standard: true, pro: true },
   { label: "База клиентов", free: false, standard: true, pro: true },
-  { label: "Комиссия с продажи", free: "10%", standard: "0%", pro: "0%" },
-  { label: "Контакты на странице", free: false, standard: true, pro: true },
-  { label: "Все контакты клиентов открыты", free: false, standard: true, pro: true },
-  { label: "Можете сами делать доставку", free: false, standard: true, pro: true },
+  { label: "Комиссия\nс продажи", free: "10%", standard: "0%", pro: "0%" },
+  { label: "Контакты\nна странице", free: false, standard: true, pro: true },
+  { label: "Все контакты\nклиентов открыты", free: false, standard: true, pro: true },
+  { label: "Можете сами\nделать доставку", free: false, standard: true, pro: true },
   { label: "Авто рассылка", free: false, standard: false, pro: true },
   { label: "Онлайн оплата", free: false, standard: false, pro: true },
 ];
@@ -50,7 +49,7 @@ const PRICING: Record<"standard" | "pro", { 1: number; 6: number; discount: stri
 function CellValue({ value }: { value: Cell }) {
   if (value === true) return <Check className="mx-auto h-4 w-4 text-primary" />;
   if (value === false) return <Minus className="mx-auto h-4 w-4 text-muted-foreground" />;
-  return <span className="text-sm">{value}</span>;
+  return <span className="whitespace-nowrap">{value}</span>;
 }
 
 function Money({ kopecks }: { kopecks: number }) {
@@ -188,96 +187,55 @@ export default function SellerTariffs() {
           </div>
         )}
 
-        {/* Таблица — на десктопе */}
-        <div className="mt-6 hidden overflow-hidden rounded-xl bg-card md:block">
-          <table className="w-full text-sm">
+        {/* Таблица тарифов — одна на всех экранах */}
+        <div className="mt-6 overflow-hidden rounded-xl bg-card">
+          <table className="w-full table-fixed text-[11px] sm:text-sm">
+            <colgroup>
+              <col />
+              <col className="w-[16%] sm:w-[15%]" />
+              <col className="w-[22%] sm:w-[18%]" />
+              <col className="w-[16%] sm:w-[15%]" />
+            </colgroup>
             <thead>
               <tr className="border-b border-border">
-                <th className="p-3 text-left font-semibold">Функция</th>
-                <th className="p-3 text-center font-semibold">Free</th>
-                <th className="bg-primary/10 p-3 text-center font-semibold">
+                <th className="px-2 py-2.5 text-left font-semibold sm:px-3">Функция</th>
+                <th className="px-1 py-2.5 text-center font-semibold sm:px-2">Free</th>
+                <th className="bg-primary/10 px-1 py-2.5 text-center font-semibold leading-tight sm:px-2">
                   Standard
-                  <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                  <span className="mt-0.5 block rounded-full bg-primary px-1 py-0.5 text-[9px] font-bold text-primary-foreground sm:inline sm:ml-2 sm:mt-0">
                     Рекомендуем
                   </span>
                 </th>
-                <th className="p-3 text-center font-semibold">Pro</th>
+                <th className="px-1 py-2.5 text-center font-semibold sm:px-2">Pro</th>
               </tr>
             </thead>
             <tbody>
               {FEATURES.map((f) => (
                 <tr key={f.label} className="border-b border-border/50 last:border-0">
-                  <td className="p-3 text-left text-muted-foreground">{f.label}</td>
-                  <td className="p-3 text-center"><CellValue value={f.free} /></td>
-                  <td className="bg-primary/5 p-3 text-center"><CellValue value={f.standard} /></td>
-                  <td className="p-3 text-center"><CellValue value={f.pro} /></td>
+                  <td className="whitespace-pre-line px-2 py-2 text-left leading-tight text-muted-foreground sm:px-3">
+                    {f.label}
+                  </td>
+                  <td className="px-1 py-2 text-center sm:px-2"><CellValue value={f.free} /></td>
+                  <td className="bg-primary/5 px-1 py-2 text-center sm:px-2"><CellValue value={f.standard} /></td>
+                  <td className="px-1 py-2 text-center sm:px-2"><CellValue value={f.pro} /></td>
                 </tr>
               ))}
               <tr>
-                <td className="p-3 text-left font-semibold">Стоимость</td>
-                <td className="p-3 text-center font-semibold">0</td>
-                <td className="bg-primary/5 p-3 text-center font-semibold">
-                  <Money kopecks={PRICING.standard[1]} />/мес
+                <td className="px-2 py-2.5 text-left font-semibold sm:px-3">Стоимость</td>
+                <td className="px-1 py-2.5 text-center font-semibold sm:px-2">0</td>
+                <td className="bg-primary/5 px-1 py-2.5 text-center font-semibold leading-tight sm:px-2">
+                  <Money kopecks={PRICING.standard[1]} />
+                  <span className="block sm:inline">/мес</span>
                 </td>
-                <td className="p-3 text-center font-semibold">
-                  <Money kopecks={PRICING.pro[1]} />/мес
+                <td className="px-1 py-2.5 text-center font-semibold leading-tight sm:px-2">
+                  <Money kopecks={PRICING.pro[1]} />
+                  <span className="block sm:inline">/мес</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Карточки — на мобильном */}
-        <div className="mt-6 space-y-4 md:hidden">
-          {(["free", "standard", "pro"] as const).map((key) => (
-            <div
-              key={key}
-              className={`rounded-xl p-4 ${
-                key === "standard" ? "border-2 border-primary bg-primary/5" : "bg-card"
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="font-bold text-foreground">{PLAN_LABEL[key]}</h3>
-                {key === "standard" && (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                    Рекомендуем
-                  </span>
-                )}
-              </div>
-              <ul className="space-y-1.5">
-                {FEATURES.map((f) => {
-                  const value = f[key];
-                  return (
-                    <li key={f.label} className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-muted-foreground">{f.label}</span>
-                      <span className="shrink-0 font-medium text-foreground">
-                        {value === true ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : value === false ? (
-                          <Minus className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          value
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
-                <li className="flex items-center justify-between gap-3 border-t border-border/50 pt-2 text-sm">
-                  <span className="font-semibold">Стоимость</span>
-                  <span className="font-bold">
-                    {key === "free" ? (
-                      "0"
-                    ) : (
-                      <>
-                        <Money kopecks={PRICING[key][1]} />/мес
-                      </>
-                    )}
-                  </span>
-                </li>
-              </ul>
-            </div>
-          ))}
-        </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Button onClick={() => { setDialogPlan("standard"); setPeriod(6); }}>
