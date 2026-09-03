@@ -5,7 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard } from "lucide-react";
+import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 import { TrialBanner } from "@/components/seller/TrialBanner";
@@ -121,6 +121,15 @@ export default function SellerDashboard() {
               <p className="text-sm text-muted-foreground">Обложка, посты, акции</p>
             </div>
           </Link>
+
+          <Link to="/seller/story" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <ImageIcon className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Создать изображение</h3>
+              <p className="text-sm text-muted-foreground">Сторис с вашими товарами</p>
+            </div>
+          </Link>
+
 
 
           <Link to="/seller/settings" className="flex items-center gap-4 rounded-xl bg-card p-6">
