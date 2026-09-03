@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 
-const FREE_ACTIVE_LIMIT = 3;
+
 
 interface Product {
   id: string;
@@ -299,10 +299,6 @@ export default function SellerProducts() {
   };
 
   const handleToggleActive = async (productId: string, currentState: boolean) => {
-    if (!currentState && plan === "free" && activeCount >= FREE_ACTIVE_LIMIT) {
-      toast.error(`На тарифе Free можно держать активными до ${FREE_ACTIVE_LIMIT} товаров. Подключите Standard, чтобы публиковать до 30 товаров.`);
-      return;
-    }
     const { error } = await supabase.from("products")
       .update({ is_active: !currentState })
       .eq("id", productId);
@@ -420,10 +416,10 @@ export default function SellerProducts() {
                 <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    Тариф Free: активными могут быть только {FREE_ACTIVE_LIMIT} товара ({activeCount} из {FREE_ACTIVE_LIMIT} занято)
+                    У вас тариф Free
                   </p>
                   <p className="mt-1 text-xs text-secondary-foreground">
-                    Подключите Standard — публикуйте до 30 товаров, продавайте без комиссии и открывайте контакты клиентов.
+                    Подключите Standard — продавайте без комиссии, открывайте контакты клиентов и показывайте свои контакты на странице бренда.
                   </p>
                   <Link to="/seller/tariffs">
                     <Button size="sm" className="mt-3">Подключить Standard</Button>
