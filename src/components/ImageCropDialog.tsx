@@ -72,7 +72,7 @@ export function ImageCropDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="relative w-full h-[320px] bg-black rounded-md overflow-hidden">
+        <div className="relative w-full h-[320px] max-h-[55svh] min-h-[260px] bg-black rounded-md overflow-hidden">
           {imageSrc && (
             <Cropper
               image={imageSrc}
