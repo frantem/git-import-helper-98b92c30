@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import { Upload, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { StoryBackground } from "./storyBackgrounds";
 
