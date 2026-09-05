@@ -36,8 +36,8 @@ export function BackgroundPicker({ backgrounds, selectedId, onSelect, onUploadFi
               aria-label={bg.label}
               aria-pressed={active}
               className={cn(
-                "relative aspect-[9/16] overflow-hidden rounded-lg border-2 transition-all",
-                active ? "border-primary ring-2 ring-primary/40" : "border-transparent",
+                "relative aspect-[9/16] w-[56px] shrink-0 snap-start overflow-hidden rounded-lg border-2 transition-all",
+                active ? "border-primary ring-2 ring-primary/40" : "border-border",
               )}
               style={{ background: bg.css }}
             >
@@ -62,10 +62,6 @@ export function BackgroundPicker({ backgrounds, selectedId, onSelect, onUploadFi
           e.target.value = "";
         }}
       />
-      <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-        <Upload className="mr-2 h-4 w-4" />
-        Загрузить своё
-      </Button>
     </div>
   );
 }
