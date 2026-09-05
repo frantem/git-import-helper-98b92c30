@@ -52,19 +52,21 @@ export const StoryCanvas = forwardRef<HTMLDivElement, Props>(function StoryCanva
       )}
 
       {/* Заголовок */}
-      <div
-        style={{
-          position: "absolute", top: 150, left: 80, right: 80,
-          textAlign: "center",
-          fontSize: 66, fontWeight: 800, lineHeight: 1.1,
-          letterSpacing: 1,
-          textTransform: "uppercase",
-          textShadow: light ? "none" : "0 4px 24px rgba(0,0,0,0.35)",
-          whiteSpace: "pre-wrap", wordBreak: "break-word",
-        }}
-      >
-        {heading}
-      </div>
+      {heading.trim() && (
+        <div
+          style={{
+            position: "absolute", top: 150, left: 80, right: 80,
+            textAlign: "center",
+            fontSize: 66, fontWeight: 800, lineHeight: 1.1,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            textShadow: light ? "none" : "0 4px 24px rgba(0,0,0,0.35)",
+            whiteSpace: "pre-wrap", wordBreak: "break-word",
+          }}
+        >
+          {heading}
+        </div>
+      )}
 
       {/* Карточки */}
       <div

@@ -23,7 +23,7 @@ import { STORY_BACKGROUNDS, type StoryBackground } from "@/components/seller/sto
 import type { StoryProduct } from "@/components/seller/story/StoryProductCard";
 
 const MAX_SELECTED = 4;
-const DEFAULT_HEADING = "Выбор покупателей:";
+const DEFAULT_HEADING = "В наличии";
 
 export default function SellerStory() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -222,7 +222,7 @@ export default function SellerStory() {
                     background={background}
                     products={selected}
                     pickupLabels={pickupLabels}
-                    heading={heading || DEFAULT_HEADING}
+                    heading={heading}
                   />
                 </div>
               </div>
