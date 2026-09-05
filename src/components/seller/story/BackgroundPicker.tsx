@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import { Upload, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { StoryBackground } from "./storyBackgrounds";
 
@@ -16,7 +15,16 @@ export function BackgroundPicker({ backgrounds, selectedId, onSelect, onUploadFi
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+      <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          aria-label="Загрузить своё"
+          className="flex aspect-[9/16] w-[56px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-[10px] text-muted-foreground"
+        >
+          <Upload className="h-4 w-4" />
+          Своё
+        </button>
         {backgrounds.map((bg) => {
           const active = bg.id === selectedId;
           return (
@@ -27,8 +35,8 @@ export function BackgroundPicker({ backgrounds, selectedId, onSelect, onUploadFi
               aria-label={bg.label}
               aria-pressed={active}
               className={cn(
-                "relative aspect-[9/16] overflow-hidden rounded-lg border-2 transition-all",
-                active ? "border-primary ring-2 ring-primary/40" : "border-transparent",
+                "relative aspect-[9/16] w-[56px] shrink-0 snap-start overflow-hidden rounded-lg border-2 transition-all",
+                active ? "border-primary ring-2 ring-primary/40" : "border-border",
               )}
               style={{ background: bg.css }}
             >
@@ -53,10 +61,6 @@ export function BackgroundPicker({ backgrounds, selectedId, onSelect, onUploadFi
           e.target.value = "";
         }}
       />
-      <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-        <Upload className="mr-2 h-4 w-4" />
-        Загрузить своё
-      </Button>
     </div>
   );
 }

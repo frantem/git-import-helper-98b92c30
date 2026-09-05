@@ -61,15 +61,20 @@ export default function SellerStory() {
     })();
   }, [user, role, authLoading, navigate]);
 
-  // Масштаб превью под ширину контейнера
+  // Масштаб превью под размер контейнера (по ширине и высоте)
   useEffect(() => {
     const el = previewWrapRef.current;
     if (!el) return;
-    const update = () => setScale(el.clientWidth / STORY_W);
+    const update = () =>
+      setScale(Math.min(el.clientWidth / STORY_W, el.clientHeight / STORY_H) || 0.3);
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, [isLoading]);
 
   const selected = useMemo(
@@ -175,14 +180,14 @@ export default function SellerStory() {
   const allBackgrounds = customBg ? [customBg, ...STORY_BACKGROUNDS] : STORY_BACKGROUNDS;
 
   return (
-    <div className="min-h-screen pb-24 md:pb-0 bg-[#faf5ea]">
+    <div className="min-h-screen pb-40 md:pb-0 bg-[#faf5ea]">
       <Header />
-      <main className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="mb-4 flex items-center gap-3">
+      <main className="container mx-auto px-4 py-4 md:py-6 max-w-5xl">
+        <div className="mb-3 flex items-center gap-2 md:mb-4 md:gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/seller")} aria-label="Назад">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Создать изображение</h1>
+          <h1 className="text-xl font-bold md:text-2xl">Создать изображение</h1>
         </div>
 
         {products.length === 0 ? (
@@ -195,17 +200,71 @@ export default function SellerStory() {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-[1fr_360px]">
+          <div className="flex flex-col gap-4 md:grid md:gap-6 md:grid-cols-[1fr_360px]">
+            {/* Превью */}
+            <div className="order-first space-y-3 md:order-last md:sticky md:top-20 md:self-start">
+              <h2 className="hidden font-bold md:block">Превью</h2>
+              <div
+                ref={previewWrapRef}
+                className="relative mx-auto h-[45svh] overflow-hidden rounded-2xl bg-muted shadow-lg md:h-auto md:w-full"
+                style={{ aspectRatio: `${STORY_W} / ${STORY_H}` }}
+              >
+                <div
+                  style={{
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top left",
+                    width: STORY_W,
+                    height: STORY_H,
+                  }}
+                >
+                  <StoryCanvas
+                    ref={canvasRef}
+                    background={background}
+                    products={selected}
+                    pickupLabels={pickupLabels}
+                    heading={heading || DEFAULT_HEADING}
+                  />
+                </div>
+              </div>
+
+              {/* Кнопки: закреплены внизу на мобильном */}
+              <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border/60 bg-[#faf5ea]/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+                <div className={`grid gap-2 ${canShareFiles ? "grid-cols-2" : "grid-cols-1"}`}>
+                  <Button
+                    size="lg"
+                    className="md:h-10"
+                    onClick={handleDownload}
+                    disabled={!!exporting || selected.length === 0}
+                  >
+                    {exporting === "download" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    Скачать
+                  </Button>
+                  {canShareFiles && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="md:h-10"
+                      onClick={handleShare}
+                      disabled={!!exporting || selected.length === 0}
+                    >
+                      {exporting === "share" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                      Поделиться
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Настройки */}
-            <div className="space-y-6">
-              <section className="rounded-xl bg-card p-4">
-                <div className="mb-3 flex items-center justify-between">
+            <div className="space-y-4 md:space-y-6">
+              <section className="rounded-xl bg-card p-3 md:p-4">
+                <div className="mb-2 flex items-center justify-between md:mb-3">
                   <h2 className="font-bold">Товары</h2>
                   <span className="text-sm text-muted-foreground">
                     Выбрано {selectedIds.length} из {MAX_SELECTED}
                   </span>
                 </div>
-                <div className="space-y-2">
+                <div className="max-h-[42svh] space-y-2 overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:pr-0">
                   {products.map((p) => {
                     const checked = selectedIds.includes(p.id);
                     const disabled = !checked && selectedIds.length >= MAX_SELECTED;
@@ -218,7 +277,7 @@ export default function SellerStory() {
                         <img
                           src={cdnImage(p.image_url, "thumb")}
                           alt=""
-                          className="h-12 w-12 rounded-md object-cover bg-secondary"
+                          className="h-10 w-10 shrink-0 rounded-md object-cover bg-secondary md:h-12 md:w-12"
                         />
                         <span className="line-clamp-2 text-sm font-medium">{p.title}</span>
                       </label>
@@ -227,7 +286,7 @@ export default function SellerStory() {
                 </div>
               </section>
 
-              <section className="rounded-xl bg-card p-4">
+              <section className="rounded-xl bg-card p-3 md:p-4">
                 <h2 className="mb-3 font-bold">Фон</h2>
                 <BackgroundPicker
                   backgrounds={allBackgrounds}
@@ -237,7 +296,7 @@ export default function SellerStory() {
                 />
               </section>
 
-              <section className="rounded-xl bg-card p-4">
+              <section className="rounded-xl bg-card p-3 md:p-4">
                 <Label htmlFor="story-heading" className="mb-2 block font-bold">Заголовок</Label>
                 <Input
                   id="story-heading"
@@ -245,46 +304,14 @@ export default function SellerStory() {
                   maxLength={40}
                   onChange={(e) => setHeading(e.target.value)}
                   placeholder={DEFAULT_HEADING}
+                  className="text-base"
                 />
               </section>
-            </div>
-
-            {/* Превью */}
-            <div className="space-y-3 md:sticky md:top-20 md:self-start">
-              <h2 className="font-bold">Превью</h2>
-              <div
-                ref={previewWrapRef}
-                className="relative w-full overflow-hidden rounded-2xl shadow-lg bg-muted"
-                style={{ aspectRatio: `${STORY_W} / ${STORY_H}` }}
-              >
-                <div style={{ transform: `scale(${scale})`, transformOrigin: "top left", width: STORY_W, height: STORY_H }}>
-                  <StoryCanvas
-                    ref={canvasRef}
-                    background={background}
-                    products={selected}
-                    pickupLabels={pickupLabels}
-                    heading={heading || DEFAULT_HEADING}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button onClick={handleDownload} disabled={!!exporting || selected.length === 0}>
-                  {exporting === "download" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                  Скачать
-                </Button>
-                {canShareFiles ? (
-                  <Button variant="outline" onClick={handleShare} disabled={!!exporting || selected.length === 0}>
-                    {exporting === "share" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                    Поделиться
-                  </Button>
-                ) : (
-                  <p className="self-center text-xs text-muted-foreground">Скачайте и поделитесь вручную</p>
-                )}
-              </div>
             </div>
           </div>
         )}
       </main>
+
 
       <ImageCropDialog
         open={!!cropSrc}
