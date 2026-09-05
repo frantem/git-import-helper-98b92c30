@@ -61,15 +61,20 @@ export default function SellerStory() {
     })();
   }, [user, role, authLoading, navigate]);
 
-  // Масштаб превью под ширину контейнера
+  // Масштаб превью под размер контейнера (по ширине и высоте)
   useEffect(() => {
     const el = previewWrapRef.current;
     if (!el) return;
-    const update = () => setScale(el.clientWidth / STORY_W);
+    const update = () =>
+      setScale(Math.min(el.clientWidth / STORY_W, el.clientHeight / STORY_H) || 0.3);
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, [isLoading]);
 
   const selected = useMemo(
