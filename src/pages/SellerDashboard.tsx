@@ -17,6 +17,7 @@ export default function SellerDashboard() {
   const { user, role, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { sellerPendingCount } = usePendingOrdersCount();
+  const { count: clientsCount } = useSellerClientsCount();
   const planState = useSellerPlan();
   const [farmerName, setFarmerName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
