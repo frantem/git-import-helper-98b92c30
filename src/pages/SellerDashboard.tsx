@@ -93,7 +93,7 @@ export default function SellerDashboard() {
             )}
           </Link>
 
-          <Link to="/seller/clients" className="flex items-center gap-4 rounded-xl bg-card p-6">
+          <Link to="/seller/clients" className="flex items-center gap-4 rounded-xl bg-card p-6 relative">
             <Users className="h-8 w-8 text-primary" />
             <div className="flex-1">
               <h3 className="flex items-center gap-2 font-bold">
@@ -104,6 +104,11 @@ export default function SellerDashboard() {
                 {planState.canUseClients ? "Покупатели и их статусы" : "Доступно на Standard"}
               </p>
             </div>
+            {clientsCount > 0 && (
+              <span className="bg-primary text-primary-foreground text-sm font-bold px-2.5 py-1 rounded-full">
+                {clientsCount}
+              </span>
+            )}
           </Link>
 
           <Link to="/seller/tariffs" className="flex items-center gap-4 rounded-xl bg-card p-6">
