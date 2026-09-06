@@ -772,7 +772,7 @@ export default function Product() {
 
             {/* Price details (unit + old price) */}
             <div className="mt-1 flex items-baseline gap-2 text-sm">
-              <span className="text-muted-foreground">за {displayUnit}</span>
+              <span className="text-muted-foreground">{displayUnit}</span>
               {oldPriceFormatted && <span className="flex items-center gap-1.5">
                   <span className="text-muted-foreground line-through">
                     {oldPriceFormatted.formatted}<BynSymbol />
