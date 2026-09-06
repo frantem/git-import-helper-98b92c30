@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 export interface StoryProduct {
   id: string;
   title: string;
+  description?: string | null;
   price: number;
   old_price: number | null;
   unit: string;
