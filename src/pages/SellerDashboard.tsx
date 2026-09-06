@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
+import { useSellerClientsCount } from "@/hooks/useSellerClientsCount";
 import { TrialBanner } from "@/components/seller/TrialBanner";
 
 const PLAN_LABEL = { free: "Free", standard: "Standard", pro: "Pro" } as const;
