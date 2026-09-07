@@ -89,7 +89,9 @@ const App = () => (
                   <Route path="/seller/page" element={<SellerPage />} />
                   <Route path="/seller/clients" element={<SellerClients />} />
                   <Route path="/seller/tariffs" element={<SellerTariffs />} />
-                  <Route path="/seller/story" element={<SellerStory />} />
+                  <Route path="/seller/story" element={<SellerStoryGallery />} />
+                  <Route path="/seller/story/stock" element={<SellerStoryStock />} />
+                  <Route path="/seller/story/about" element={<SellerStoryAbout />} />
 
 
                   
