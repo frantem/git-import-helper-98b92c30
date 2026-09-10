@@ -63,6 +63,17 @@ export function AboutProductCard({ product, theme, size, rating, showRating }: P
           {product.description.trim()}
         </div>
       )}
+      {product.composition?.trim() && (
+        <div
+          style={{
+            fontSize: 26 * k, fontWeight: 500, lineHeight: 1.3, color: mutedColor,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          Состав: {product.composition.trim()}
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "stretch", marginTop: 10 * k }}>
         {stats.map((s, i) => (
           <div
@@ -89,23 +100,32 @@ export function AboutProductCard({ product, theme, size, rating, showRating }: P
     />
   );
 
+  const border = 16 * k; // белая рамка вокруг карточки, как на референсе
+
   if (full) {
     const height = lg ? 1240 : 820;
     return (
       <div
         style={{
-          width, height, position: "relative", overflow: "hidden",
-          borderRadius: 44 * k, boxShadow: "0 18px 40px rgba(0,0,0,0.28)", background: "#2a2a2a",
+          width, height, background: "#ffffff", padding: border,
+          borderRadius: 44 * k, boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
         }}
       >
-        <div style={{ position: "absolute", inset: 0 }}>{img}</div>
         <div
           style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.1) 100%)",
+            position: "relative", overflow: "hidden", width: "100%", height: "100%",
+            borderRadius: 28 * k, background: "#2a2a2a",
           }}
-        />
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>{textBlock}</div>
+        >
+          <div style={{ position: "absolute", inset: 0 }}>{img}</div>
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.1) 100%)",
+            }}
+          />
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>{textBlock}</div>
+        </div>
       </div>
     );
   }
@@ -113,12 +133,19 @@ export function AboutProductCard({ product, theme, size, rating, showRating }: P
   return (
     <div
       style={{
-        width, overflow: "hidden", background: "#ffffff",
+        width, background: "#ffffff", padding: border,
         borderRadius: 44 * k, boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
         display: "flex", flexDirection: "column",
       }}
     >
-      <div style={{ width, height: width, background: "#f1f0ea", overflow: "hidden" }}>{img}</div>
+      <div
+        style={{
+          width: "100%", aspectRatio: "1 / 1", background: "#f1f0ea",
+          overflow: "hidden", borderRadius: 28 * k,
+        }}
+      >
+        {img}
+      </div>
       {textBlock}
     </div>
   );

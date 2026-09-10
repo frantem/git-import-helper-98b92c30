@@ -4,6 +4,8 @@ import "@fontsource/manrope/700.css";
 import "@fontsource/manrope/800.css";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { StoryEditorLayout } from "@/components/seller/story/StoryEditorLayout";
 import { StoryProductPicker } from "@/components/seller/story/StoryProductPicker";
@@ -19,6 +21,7 @@ import type { StoryProduct } from "@/components/seller/story/StoryProductCard";
 import { cn } from "@/lib/utils";
 
 const MAX_SELECTED = 2;
+const DEFAULT_HEADING = "О продукте";
 
 const THEMES: { id: AboutTheme; label: string }[] = [
   { id: "photoTop", label: "Фото сверху" },
@@ -33,6 +36,7 @@ export default function SellerStoryAbout() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [theme, setTheme] = useState<AboutTheme>("photoFull");
   const [showRating, setShowRating] = useState(true);
+  const [heading, setHeading] = useState(DEFAULT_HEADING);
 
   const selected = useMemo(
     () => selectedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as StoryProduct[],
@@ -70,6 +74,7 @@ export default function SellerStoryAbout() {
             theme={theme}
             ratings={ratings}
             showRating={showRating}
+            heading={heading}
           />
         }
       >
@@ -126,6 +131,18 @@ export default function SellerStoryAbout() {
             selectedId={bg.background.id}
             onSelect={bg.setBackground}
             onUploadFile={bg.handleUploadFile}
+          />
+        </section>
+
+        <section className="rounded-xl bg-card p-3 md:p-4">
+          <Label htmlFor="story-heading" className="mb-2 block font-bold">Заголовок</Label>
+          <Input
+            id="story-heading"
+            value={heading}
+            maxLength={40}
+            onChange={(e) => setHeading(e.target.value)}
+            placeholder={DEFAULT_HEADING}
+            className="text-base"
           />
         </section>
 
