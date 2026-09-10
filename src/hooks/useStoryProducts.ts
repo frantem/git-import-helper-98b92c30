@@ -22,7 +22,7 @@ export function useStoryProducts() {
       if (!farmer) { setIsLoading(false); return; }
       const { data } = await supabase
         .from("products")
-        .select("id, title, description, price, old_price, unit, image_url, farmer_id, prep_time_minutes, order_lead_time_hours")
+        .select("id, title, description, composition, price, old_price, unit, image_url, farmer_id, prep_time_minutes, order_lead_time_hours")
         .eq("farmer_id", farmer.id)
         .eq("is_deleted", false)
         .eq("is_active", true)

@@ -6,6 +6,7 @@ export interface StoryProduct {
   id: string;
   title: string;
   description?: string | null;
+  composition?: string | null;
   price: number;
   old_price: number | null;
   unit: string;
