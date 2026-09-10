@@ -12,13 +12,14 @@ interface Props {
   theme: AboutTheme;
   ratings: Map<string, ProductRating>;
   showRating: boolean;
+  heading: string;
 }
 
 const FONT = "'Manrope', 'Inter', system-ui, sans-serif";
 
 /** Холст шаблона «О продукте» 1080×1920. */
 export const AboutStoryCanvas = forwardRef<HTMLDivElement, Props>(function AboutStoryCanvas(
-  { background, products, theme, ratings, showRating },
+  { background, products, theme, ratings, showRating, heading },
   ref,
 ) {
   const light = isLightBackground(background);
@@ -46,9 +47,26 @@ export const AboutStoryCanvas = forwardRef<HTMLDivElement, Props>(function About
         />
       )}
 
+      {/* Заголовок — тот же стиль и логика, что в шаблоне «В наличии» */}
+      {heading.trim() && (
+        <div
+          style={{
+            position: "absolute", top: 150, left: 80, right: 80,
+            textAlign: "center",
+            fontSize: 66, fontWeight: 800, lineHeight: 1.1,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            textShadow: light ? "none" : "0 4px 24px rgba(0,0,0,0.35)",
+            whiteSpace: "pre-wrap", wordBreak: "break-word",
+          }}
+        >
+          {heading}
+        </div>
+      )}
+
       <div
         style={{
-          position: "absolute", top: 140, left: 0, right: 0, bottom: 300,
+          position: "absolute", top: 330, left: 0, right: 0, bottom: 300,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >
