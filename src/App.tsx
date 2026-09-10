@@ -55,6 +55,7 @@ const SellerTerms = lazy(() => import("./pages/SellerTerms"));
 const Delivery = lazy(() => import("./pages/Delivery"));
 const CookiesPolicy = lazy(() => import("./pages/CookiesPolicy"));
 const LocalLanding = lazy(() => import("./pages/LocalLanding"));
+const ForSellers = lazy(() => import("./pages/ForSellers"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -116,6 +117,7 @@ const App = () => (
                   <Route path="/delivery" element={<Delivery />} />
                   <Route path="/cookies" element={<CookiesPolicy />} />
                   <Route path="/vitebsk/:slug" element={<LocalLanding />} />
+                  <Route path="/for-sellers" element={<ForSellers />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
