@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
   </url>`;
 
   const staticEntries = [
+    { path: "/for-sellers", changefreq: "monthly", priority: "0.8" },
     { path: "/delivery", changefreq: "monthly", priority: "0.6" },
     { path: "/privacy-policy", changefreq: "yearly", priority: "0.3" },
     { path: "/oferta", changefreq: "yearly", priority: "0.3" },

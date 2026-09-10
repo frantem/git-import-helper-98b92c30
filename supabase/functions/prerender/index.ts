@@ -686,6 +686,11 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<SellerLookup
 // ----- Static informational pages -----
 
 const STATIC_PAGES: Record<string, { title: string; description: string; h1: string }> = {
+  "/for-sellers": {
+    title: `Бесплатный сайт для продавцов Витебска — ${SITE_NAME}`,
+    description: `Личный сайт с корзиной, доставкой и базой клиентов для фермеров, пекарей, кондитеров и сыроваров Витебска. Подключение за 1 день.`,
+    h1: `Хватит терять клиентов в переписках`,
+  },
   "/delivery": {
     title: `Доставка и возврат — ${SITE_NAME}`,
     description: `Условия доставки фермерских продуктов по ${CITY_NOM}у: курьер или самовывоз, оплата при получении, порядок возврата и обмена товара.`,
@@ -716,6 +721,29 @@ const STATIC_PAGES: Record<string, { title: string; description: string; h1: str
 function staticPageMeta(pathname: string): PageMeta | null {
   const page = STATIC_PAGES[pathname];
   if (!page) return null;
+  if (pathname === "/for-sellers") {
+    return {
+      title: page.title,
+      description: page.description,
+      canonical: `${DOMAIN}${pathname}`,
+      h1: page.h1,
+      bodyContent: `<p>Бесплатный личный сайт с корзиной, доставкой и базой клиентов — специально для мастеров Витебска.</p>
+        <h2>Что получает продавец</h2>
+        <ul><li>Автоматическая база клиентов</li><li>Готовые сторис из товаров за один клик</li><li>Готовая страница для приёма заказов уже сегодня</li></ul>
+        <h2>Как начать</h2>
+        <ol><li>Оставьте заявку за 2 минуты</li><li>Мы подключим страницу за 1 день</li><li>Начинайте получать заказы</li></ol>
+        <p><strong>Базовый сайт — бесплатно навсегда.</strong> <a href="${DOMAIN}/seller-application">Оставить заявку</a></p>`,
+      jsonLd: [{
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: `Бесплатный сайт для продавцов ${SITE_NAME}`,
+        description: page.description,
+        provider: { "@type": "Organization", name: SITE_NAME, url: DOMAIN },
+        areaServed: { "@type": "City", name: CITY_NOM },
+        offers: { "@type": "Offer", price: "0", priceCurrency: "BYN", url: `${DOMAIN}/seller-application` },
+      }],
+    };
+  }
   return {
     title: page.title,
     description: page.description,
