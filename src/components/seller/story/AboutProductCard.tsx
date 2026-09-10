@@ -63,6 +63,17 @@ export function AboutProductCard({ product, theme, size, rating, showRating }: P
           {product.description.trim()}
         </div>
       )}
+      {product.composition?.trim() && (
+        <div
+          style={{
+            fontSize: 26 * k, fontWeight: 500, lineHeight: 1.3, color: mutedColor,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          Состав: {product.composition.trim()}
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "stretch", marginTop: 10 * k }}>
         {stats.map((s, i) => (
           <div
