@@ -16,6 +16,7 @@ import { SEO } from "@/components/SEO";
 import sellerPageAsset from "@/assets/knyazhetsky-page.png.asset.json";
 
 const applicationPath = "/seller-application";
+const sellerPageScreenshot = `https://id-preview--ebaf881d-1e92-46f6-b5cb-8621d71bf572.lovable.app${sellerPageAsset.url}`;
 
 const pains = [
   {
@@ -142,7 +143,7 @@ export default function ForSellers() {
             <div className="mx-auto w-full max-w-[380px] md:max-w-[410px]">
               <div className="relative overflow-hidden rounded-[2rem] border-[6px] border-brand-deep bg-card shadow-2xl">
                 <img
-                  src={sellerPageAsset.url}
+                  src={sellerPageScreenshot}
                   alt="Реальная страница фермерского хозяйства Княжеское подворье на Locus"
                   width="430"
                   height="932"
@@ -249,7 +250,7 @@ export default function ForSellers() {
               <figure>
                 <div className="max-h-[520px] overflow-hidden rounded-lg border border-brand-deep-foreground/20 bg-card shadow-2xl">
                   <img
-                    src={sellerPageAsset.url}
+                    src={sellerPageScreenshot}
                     alt="Страница фермерского хозяйства Княжеское подворье с товарами и корзиной"
                     width="430"
                     height="932"
