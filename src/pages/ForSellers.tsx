@@ -148,7 +148,6 @@ export default function ForSellers() {
             <div className="mx-auto w-full max-w-[380px] md:max-w-[410px]">
               <div className="relative overflow-hidden rounded-[2rem] border-[6px] border-brand-deep bg-card shadow-2xl">
                 <video
-                  src={sellerPageVideo}
                   poster={sellerPageScreenshot}
                   aria-label="Реальная страница фермерского хозяйства Княжеское подворье на Locus"
                   width="430"
@@ -159,7 +158,10 @@ export default function ForSellers() {
                   playsInline
                   preload="metadata"
                   className="block h-auto w-full"
-                />
+                >
+                  <source src={sellerPageVideoWebm} type="video/webm" />
+                  <source src={sellerPageVideoMp4} type="video/mp4" />
+                </video>
               </div>
               <p className="mt-3 text-center text-sm text-muted-foreground">
                 Реальная страница продавца на Locus
