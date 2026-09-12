@@ -115,7 +115,7 @@ export default function ForSellers() {
             Locus
           </Link>
           <Button asChild size="sm">
-            <Link to={applicationPath}>Оставить заявку</Link>
+             <Link to={applicationPath}>Подключить</Link>
           </Button>
         </div>
       </header>
