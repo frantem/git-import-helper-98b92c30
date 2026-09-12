@@ -14,9 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import sellerPageAsset from "@/assets/knyazhetsky-page.png.asset.json";
+import sellerPageVideoAsset from "@/assets/knyazhetsky-page-video.mp4.asset.json";
 
 const applicationPath = "/seller-application";
 const sellerPageScreenshot = `https://id-preview--ebaf881d-1e92-46f6-b5cb-8621d71bf572.lovable.app${sellerPageAsset.url}`;
+const sellerPageVideo = `https://id-preview--ebaf881d-1e92-46f6-b5cb-8621d71bf572.lovable.app${sellerPageVideoAsset.url}`;
 
 const pains = [
   {
@@ -142,12 +144,17 @@ export default function ForSellers() {
 
             <div className="mx-auto w-full max-w-[380px] md:max-w-[410px]">
               <div className="relative overflow-hidden rounded-[2rem] border-[6px] border-brand-deep bg-card shadow-2xl">
-                <img
-                  src={sellerPageScreenshot}
-                  alt="Реальная страница фермерского хозяйства Княжеское подворье на Locus"
+                <video
+                  src={sellerPageVideo}
+                  poster={sellerPageScreenshot}
+                  aria-label="Реальная страница фермерского хозяйства Княжеское подворье на Locus"
                   width="430"
                   height="932"
-                  fetchPriority="high"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
                   className="block h-auto w-full"
                 />
               </div>
