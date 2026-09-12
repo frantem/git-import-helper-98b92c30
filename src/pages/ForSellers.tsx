@@ -14,9 +14,14 @@ import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import sellerPageAsset from "@/assets/knyazhetsky-page.png.asset.json";
+import sellerPageVideoAsset from "@/assets/knyazhetsky-page-video.mp4.asset.json";
+import sellerPageVideoWebmAsset from "@/assets/knyazhetsky-page-video.webm.asset.json";
 
 const applicationPath = "/seller-application";
-const sellerPageScreenshot = `https://id-preview--ebaf881d-1e92-46f6-b5cb-8621d71bf572.lovable.app${sellerPageAsset.url}`;
+const assetBase = "https://id-preview--ebaf881d-1e92-46f6-b5cb-8621d71bf572.lovable.app";
+const sellerPageScreenshot = `${assetBase}${sellerPageAsset.url}`;
+const sellerPageVideoMp4 = `${assetBase}${sellerPageVideoAsset.url}`;
+const sellerPageVideoWebm = `${assetBase}${sellerPageVideoWebmAsset.url}`;
 
 const pains = [
   {
@@ -142,14 +147,21 @@ export default function ForSellers() {
 
             <div className="mx-auto w-full max-w-[380px] md:max-w-[410px]">
               <div className="relative overflow-hidden rounded-[2rem] border-[6px] border-brand-deep bg-card shadow-2xl">
-                <img
-                  src={sellerPageScreenshot}
-                  alt="Реальная страница фермерского хозяйства Княжеское подворье на Locus"
+                <video
+                  poster={sellerPageScreenshot}
+                  aria-label="Реальная страница фермерского хозяйства Княжеское подворье на Locus"
                   width="430"
                   height="932"
-                  fetchPriority="high"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
                   className="block h-auto w-full"
-                />
+                >
+                  <source src={sellerPageVideoWebm} type="video/webm" />
+                  <source src={sellerPageVideoMp4} type="video/mp4" />
+                </video>
               </div>
               <p className="mt-3 text-center text-sm text-muted-foreground">
                 Реальная страница продавца на Locus
