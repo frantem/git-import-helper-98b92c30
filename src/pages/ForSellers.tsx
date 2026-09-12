@@ -13,15 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
-import sellerPageAsset from "@/assets/knyazhetsky-page.png.asset.json";
-import sellerPageVideoAsset from "@/assets/knyazhetsky-page-video.mp4.asset.json";
-import sellerPageVideoWebmAsset from "@/assets/knyazhetsky-page-video.webm.asset.json";
 
 const applicationPath = "/seller-application";
-const assetBase = "https://id-preview--ebaf881d-1e92-46f6-b5cb-8621d71bf572.lovable.app";
-const sellerPageScreenshot = `${assetBase}${sellerPageAsset.url}`;
-const sellerPageVideoMp4 = `${assetBase}${sellerPageVideoAsset.url}`;
-const sellerPageVideoWebm = `${assetBase}${sellerPageVideoWebmAsset.url}`;
+const sellerPageScreenshot = "/media/knyazhetsky-page.jpg";
+const sellerPageVideoMp4 = "/media/knyazhetsky-page.mp4";
+
 
 const pains = [
   {
