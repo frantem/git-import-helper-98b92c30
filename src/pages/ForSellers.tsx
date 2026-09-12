@@ -26,26 +26,26 @@ const sellerPageVideoWebm = `${assetBase}${sellerPageVideoWebmAsset.url}`;
 const pains = [
   {
     icon: MessageCircleMore,
-    title: "Клиенты теряются в переписках",
-    text: "Вы не помните, кто заказывал на прошлой неделе, а кто месяц назад",
+    title: "Покупатель спросил \"сколько стоит?\" — а вы ответили через час.",
+    text: "Пока вы освободились, человек уже заказал у того, кто ответил быстрее.",
   },
   {
     icon: Instagram,
-    title: "Вечера уходят на посты в Instagram",
-    text: "Нужно постоянно что-то публиковать, а времени и дизайнерских навыков нет",
+    title: "Каждый вечер снова садиться и придумывать, что написать в сторис.",
+    text: "Фото есть, а времени и сил на красивый пост уже не остаётся.",
   },
   {
     icon: Code2,
-    title: "Сайт у разработчика — от $100 и долгое ожидание",
-    text: "А нужен он был ещё вчера",
+    title: "Сайт у разработчика — от 500 руб. Без пониманию, для чего он.",
+    text: "А сайт уровня интернет магазин с корзиной стоит от 1000 руб.\u00a0",
   },
 ];
 
 const solutions = [
   {
     icon: Users,
-    title: "Автоматическая база клиентов",
-    text: "Видите, кто заказывал, когда, и кто давно не появлялся — сами",
+    title: "Заказ как в интернет магазине",
+    text: "Покупатель заказывает сам. Вам приходит уведомление.",
   },
   {
     icon: Sparkles,
@@ -128,16 +128,16 @@ export default function ForSellers() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Store className="h-4 w-4" />
                 </span>
-                Для мастеров Витебска
+                 Для тех кто создаёт своими руками
               </p>
               <h1 className="max-w-2xl font-serif text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl">
-                Хватит терять клиентов в переписках
+                 Хватит терять заказы!
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-secondary-foreground md:text-xl">
-                Бесплатный личный сайт с корзиной, доставкой и базой клиентов — специально для мастеров Витебска
+                 Дайте возможность Вашим покупателям заказывать как на Валберис!
               </p>
               <div className="mt-7 flex flex-col items-start">
-                <ApplicationButton label="Оставить заявку — бесплатно" />
+                 <ApplicationButton label="Подключите — бесплатно" />
                 <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock3 className="h-4 w-4" />
                   Займёт 2 минуты. Подключим за 1 день.
@@ -164,7 +164,7 @@ export default function ForSellers() {
                 </video>
               </div>
               <p className="mt-3 text-center text-sm text-muted-foreground">
-                Реальная страница продавца на Locus
+                 Реальная страница продавца
               </p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function ForSellers() {
           <div className="container mx-auto max-w-6xl px-4 md:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-sm font-bold uppercase text-primary">Locus берёт это на себя</p>
-              <h2 className="mt-2 font-serif text-3xl font-bold md:text-4xl">Вместо рутины — готовые инструменты</h2>
+              <h2 className="mt-2 font-serif text-3xl font-bold md:text-4xl">Решаем это одним сайтом</h2>
             </div>
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               {solutions.map(({ icon: Icon, title, text }) => (
@@ -230,7 +230,7 @@ export default function ForSellers() {
               ))}
             </div>
             <div className="mt-10">
-              <ApplicationButton label="Оставить заявку" />
+               <ApplicationButton label="Подключиться" />
             </div>
           </div>
         </section>
@@ -253,10 +253,10 @@ export default function ForSellers() {
                   Уже пользуются 30+ мастеров Витебска
                 </h2>
                 <p className="mt-4 max-w-md text-brand-deep-foreground/80">
-                  Фермеры, пекари, кондитеры и сыровары уже показывают товары и принимают заказы на своих страницах.
+                   Кондитеры, пекари, сыровары, пасечники... уже подключили свой сайт и принимают заказы.
                 </p>
                 <Button asChild size="lg" className="mt-7">
-                  <Link to={applicationPath}>Присоединиться <ArrowRight className="h-5 w-5" /></Link>
+                   <Link to={applicationPath}>Подключить <ArrowRight className="h-5 w-5" /></Link>
                 </Button>
               </div>
               <figure>
@@ -286,13 +286,13 @@ export default function ForSellers() {
                 Базовый сайт — бесплатно навсегда
               </h2>
               <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-secondary-foreground">
-                Обычно такой сайт стоит от $300 и требует недель ожидания у разработчика. У нас — бесплатно и готово за 1 день.
+                 Обычно такой сайт стоит от $300 и требует недель ожидания, согласований, доработок у разработчика. У нас — бесплатно и готово за 1 день.
               </p>
               <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground">
                 Есть платные тарифы для тех, кто хочет больше — от 15 руб/мес, но начать можно бесплатно уже сегодня.
               </p>
               <div className="mt-7">
-                <ApplicationButton label="Начать бесплатно" />
+                 <ApplicationButton label="Подключиться бесплатно" />
               </div>
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function ForSellers() {
               Расскажите о своих товарах — остальное поможем настроить.
             </p>
             <Button asChild size="lg" variant="secondary" className="mt-7 h-12 px-7 text-base font-bold">
-              <Link to={applicationPath}>Оставить заявку <ArrowRight className="h-5 w-5" /></Link>
+               <Link to={applicationPath}>Подключить бесплатно <ArrowRight className="h-5 w-5" /></Link>
             </Button>
           </div>
         </section>
@@ -315,7 +315,7 @@ export default function ForSellers() {
 
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-3 shadow-xl md:hidden">
         <Button asChild className="h-12 w-full text-base font-bold">
-          <Link to={applicationPath}>Оставить заявку <ArrowRight className="h-5 w-5" /></Link>
+           <Link to={applicationPath}>Подключить <ArrowRight className="h-5 w-5" /></Link>
         </Button>
         <div className="h-safe-area-inset-bottom" />
       </div>
