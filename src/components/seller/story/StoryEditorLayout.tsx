@@ -123,6 +123,12 @@ export function StoryEditorLayout({
         )}
       </main>
       <BottomNavigation />
+      <StoryResultDialog
+        url={resultUrl}
+        canShareFiles={canShareFiles}
+        onShare={onShare}
+        onClose={() => onCloseResult?.()}
+      />
     </div>
   );
 }
