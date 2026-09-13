@@ -5,6 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Share2, Loader2 } from "lucide-react";
 import { STORY_W, STORY_H } from "./StoryCanvas";
+import { StoryResultDialog } from "./StoryResultDialog";
 import type { ExportKind } from "@/hooks/useStoryExport";
 
 interface Props {
