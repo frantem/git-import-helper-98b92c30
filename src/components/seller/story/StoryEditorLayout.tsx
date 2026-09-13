@@ -32,6 +32,7 @@ interface Props {
 export function StoryEditorLayout({
   title, isLoading, hasProducts, canvas, children,
   exporting, canShareFiles, canExport, onDownload, onShare,
+  resultUrl = null, onCloseResult,
 }: Props) {
   const navigate = useNavigate();
   const previewWrapRef = useRef<HTMLDivElement>(null);
