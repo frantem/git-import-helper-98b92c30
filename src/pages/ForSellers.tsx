@@ -97,7 +97,7 @@ function ApplicationButton({ label, className = "" }: { label: string; className
 
 export default function ForSellers() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background pb-20 md:pb-0">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       <SEO
         title="Бесплатный сайт для продавцов Витебска — Locus"
         description="Личный сайт с корзиной, доставкой и базой клиентов для фермеров, пекарей, кондитеров и сыроваров Витебска. Подключение за 1 день."
