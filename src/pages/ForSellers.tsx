@@ -155,8 +155,8 @@ export default function ForSellers() {
                   preload="metadata"
                   className="block h-auto w-full"
                 >
-                  <source src={sellerPageVideoWebm} type="video/webm" />
                   <source src={sellerPageVideoMp4} type="video/mp4" />
+
                 </video>
               </div>
               <p className="mt-3 text-center text-sm text-muted-foreground">
