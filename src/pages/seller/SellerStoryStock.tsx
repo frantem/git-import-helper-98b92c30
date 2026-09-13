@@ -22,7 +22,7 @@ const DEFAULT_HEADING = "В наличии";
 export default function SellerStoryStock() {
   const { products, isLoading } = useStoryProducts();
   const bg = useStoryBackground();
-  const { canvasRef, exporting, canShareFiles, handleDownload, handleShare } = useStoryExport();
+  const { canvasRef, exporting, canShareFiles, resultUrl, closeResult, handleDownload, handleShare } = useStoryExport();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [heading, setHeading] = useState(DEFAULT_HEADING);
