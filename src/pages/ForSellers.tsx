@@ -309,12 +309,6 @@ export default function ForSellers() {
 
       <Footer />
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-3 shadow-xl md:hidden">
-        <Button asChild className="h-12 w-full text-base font-bold">
-           <Link to={applicationPath}>Подключить <ArrowRight className="h-5 w-5" /></Link>
-        </Button>
-        <div className="h-safe-area-inset-bottom" />
-      </div>
     </div>
   );
 }
