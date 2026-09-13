@@ -66,6 +66,8 @@ export default function SellerStoryAbout() {
         canExport={selected.length > 0}
         onDownload={handleDownload}
         onShare={handleShare}
+        resultUrl={resultUrl}
+        onCloseResult={closeResult}
         canvas={
           <AboutStoryCanvas
             ref={canvasRef}
