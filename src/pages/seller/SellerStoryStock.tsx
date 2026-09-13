@@ -55,6 +55,8 @@ export default function SellerStoryStock() {
         canExport={selected.length > 0}
         onDownload={handleDownload}
         onShare={handleShare}
+        resultUrl={resultUrl}
+        onCloseResult={closeResult}
         canvas={
           <StoryCanvas
             ref={canvasRef}
