@@ -97,7 +97,7 @@ function ApplicationButton({ label, className = "" }: { label: string; className
 
 export default function ForSellers() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background pb-20 md:pb-0">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       <SEO
         title="Бесплатный сайт для продавцов Витебска — Locus"
         description="Личный сайт с корзиной, доставкой и базой клиентов для фермеров, пекарей, кондитеров и сыроваров Витебска. Подключение за 1 день."
@@ -309,12 +309,6 @@ export default function ForSellers() {
 
       <Footer />
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-3 shadow-xl md:hidden">
-        <Button asChild className="h-12 w-full text-base font-bold">
-           <Link to={applicationPath}>Подключить <ArrowRight className="h-5 w-5" /></Link>
-        </Button>
-        <div className="h-safe-area-inset-bottom" />
-      </div>
     </div>
   );
 }
