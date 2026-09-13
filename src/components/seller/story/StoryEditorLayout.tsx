@@ -5,6 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Share2, Loader2 } from "lucide-react";
 import { STORY_W, STORY_H } from "./StoryCanvas";
+import { StoryResultDialog } from "./StoryResultDialog";
 import type { ExportKind } from "@/hooks/useStoryExport";
 
 interface Props {
@@ -20,6 +21,8 @@ interface Props {
   canExport: boolean;
   onDownload: () => void;
   onShare: () => void;
+  resultUrl?: string | null;
+  onCloseResult?: () => void;
 }
 
 /**
@@ -29,6 +32,7 @@ interface Props {
 export function StoryEditorLayout({
   title, isLoading, hasProducts, canvas, children,
   exporting, canShareFiles, canExport, onDownload, onShare,
+  resultUrl = null, onCloseResult,
 }: Props) {
   const navigate = useNavigate();
   const previewWrapRef = useRef<HTMLDivElement>(null);
@@ -119,6 +123,12 @@ export function StoryEditorLayout({
         )}
       </main>
       <BottomNavigation />
+      <StoryResultDialog
+        url={resultUrl}
+        canShareFiles={canShareFiles}
+        onShare={onShare}
+        onClose={() => onCloseResult?.()}
+      />
     </div>
   );
 }
