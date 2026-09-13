@@ -31,7 +31,7 @@ const THEMES: { id: AboutTheme; label: string }[] = [
 export default function SellerStoryAbout() {
   const { products, isLoading } = useStoryProducts();
   const bg = useStoryBackground();
-  const { canvasRef, exporting, canShareFiles, handleDownload, handleShare } = useStoryExport();
+  const { canvasRef, exporting, canShareFiles, resultUrl, closeResult, handleDownload, handleShare } = useStoryExport();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [theme, setTheme] = useState<AboutTheme>("photoFull");
