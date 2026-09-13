@@ -21,6 +21,8 @@ interface Props {
   canExport: boolean;
   onDownload: () => void;
   onShare: () => void;
+  resultUrl?: string | null;
+  onCloseResult?: () => void;
 }
 
 /**
