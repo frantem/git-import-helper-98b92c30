@@ -30,15 +30,35 @@ interface CartItem {
   addons?: CartItemAddon[];
 }
 
+interface PendingAdd {
+  product: Product;
+  variant?: CartItemVariant;
+  customFields?: CartItemCustomField[];
+  addons?: CartItemAddon[];
+}
+
+export interface CartConflict {
+  currentSellerName: string;
+  newSellerName: string;
+  pending: PendingAdd;
+}
+
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, variant?: CartItemVariant, customFields?: CartItemCustomField[], addons?: CartItemAddon[]) => void;
+  addToCart: (product: Product, variant?: CartItemVariant, customFields?: CartItemCustomField[], addons?: CartItemAddon[]) => boolean;
   removeFromCart: (itemKey: string) => void;
   updateQuantity: (itemKey: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
   getItemKey: (item: CartItem) => string;
+  /** Продавец, чьи товары сейчас в корзине (в корзине всегда один продавец). */
+  cartFarmerId: string | null;
+  /** Конфликт «товар другого продавца» — обрабатывается CartConflictDialog. */
+  conflict: CartConflict | null;
+  cancelConflict: () => void;
+  /** Очистить корзину и добавить отложенный товар. */
+  replaceCartWithPending: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -63,6 +83,8 @@ const getItemKey = (item: CartItem): string => {
   return key;
 };
 
+const sellerNameOf = (product: Product): string => product.seller || "другого продавца";
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
@@ -72,12 +94,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [];
     }
   });
+  const [conflict, setConflict] = useState<CartConflict | null>(null);
 
   useEffect(() => {
     localStorage.setItem('locus-cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product, variant?: CartItemVariant, customFields?: CartItemCustomField[], addons?: CartItemAddon[]) => {
+  const cartFarmerId = items.find((i) => i.product.farmer_id)?.product.farmer_id ?? null;
+
+  const pushItem = (
+    product: Product,
+    variant?: CartItemVariant,
+    customFields?: CartItemCustomField[],
+    addons?: CartItemAddon[],
+    resetCart = false,
+  ) => {
     // Meta Pixel + CAPI: AddToCart (global — fires for any source)
     const unitPrice = variant?.price ?? product.price;
     const addonsPrice = addons?.reduce((s, a) => s + a.price, 0) || 0;
@@ -90,19 +121,54 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
 
     setItems((prev) => {
+      const base = resetCart ? [] : prev;
       const tempItem = { product, quantity: 1, variant, customFields, addons } as CartItem;
       const itemKey = getItemKey(tempItem);
-      const existing = prev.find((item) => getItemKey(item) === itemKey);
+      const existing = base.find((item) => getItemKey(item) === itemKey);
 
       if (existing) {
-        return prev.map((item) =>
+        return base.map((item) =>
           getItemKey(item) === itemKey
             ? { ...item, quantity: item.quantity + 1, customFields: customFields || item.customFields, addons: addons || item.addons }
             : item
         );
       }
-      return [...prev, { product, quantity: 1, variant, customFields, addons }];
+      return [...base, { product, quantity: 1, variant, customFields, addons }];
     });
+  };
+
+  /**
+   * Добавляет товар в корзину. В корзине допустим только один продавец:
+   * при попытке добавить товар другого продавца возвращает false и открывает диалог.
+   */
+  const addToCart = (
+    product: Product,
+    variant?: CartItemVariant,
+    customFields?: CartItemCustomField[],
+    addons?: CartItemAddon[],
+  ): boolean => {
+    const newFarmerId = product.farmer_id ?? null;
+    if (cartFarmerId && newFarmerId && cartFarmerId !== newFarmerId) {
+      const currentProduct = items.find((i) => i.product.farmer_id === cartFarmerId)?.product;
+      setConflict({
+        currentSellerName: currentProduct ? sellerNameOf(currentProduct) : "другого продавца",
+        newSellerName: sellerNameOf(product),
+        pending: { product, variant, customFields, addons },
+      });
+      return false;
+    }
+
+    pushItem(product, variant, customFields, addons);
+    return true;
+  };
+
+  const cancelConflict = () => setConflict(null);
+
+  const replaceCartWithPending = () => {
+    if (!conflict) return;
+    const { product, variant, customFields, addons } = conflict.pending;
+    pushItem(product, variant, customFields, addons, true);
+    setConflict(null);
   };
 
   const removeFromCart = (itemKey: string) => {
@@ -141,6 +207,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         totalItems,
         totalPrice,
         getItemKey,
+        cartFarmerId,
+        conflict,
+        cancelConflict,
+        replaceCartWithPending,
       }}
     >
       {children}

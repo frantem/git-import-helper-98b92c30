@@ -11,6 +11,7 @@ import { MetaPageTracker } from "@/components/MetaPageTracker";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { ScrollManager } from "@/components/ScrollManager";
 import { CookieBanner } from "@/components/CookieBanner";
+import { CartConflictDialog } from "@/components/CartConflictDialog";
 import Index from "./pages/Index";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
@@ -25,6 +26,7 @@ const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const SellerProducts = lazy(() => import("./pages/seller/SellerProducts"));
 const SellerOrders = lazy(() => import("./pages/seller/SellerOrders"));
 const SellerSettings = lazy(() => import("./pages/seller/SellerSettings"));
+const SellerDelivery = lazy(() => import("./pages/seller/SellerDelivery"));
 const SellerPage = lazy(() => import("./pages/seller/SellerPage"));
 const SellerClients = lazy(() => import("./pages/seller/SellerClients"));
 const SellerTariffs = lazy(() => import("./pages/seller/SellerTariffs"));
@@ -43,7 +45,7 @@ const AdminSellers = lazy(() => import("./pages/admin/AdminSellers"));
 const AdminSellerApplications = lazy(() => import("./pages/admin/AdminSellerApplications"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
-const AdminPickupPoints = lazy(() => import("./pages/admin/AdminPickupPoints"));
+
 const AdminBlocks = lazy(() => import("./pages/admin/AdminBlocks"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
@@ -87,6 +89,7 @@ const App = () => (
                   <Route path="/seller/products" element={<SellerProducts />} />
                   <Route path="/seller/orders" element={<SellerOrders />} />
                   <Route path="/seller/settings" element={<SellerSettings />} />
+                  <Route path="/seller/delivery" element={<SellerDelivery />} />
                   <Route path="/seller/page" element={<SellerPage />} />
                   <Route path="/seller/clients" element={<SellerClients />} />
                   <Route path="/seller/tariffs" element={<SellerTariffs />} />
@@ -106,7 +109,7 @@ const App = () => (
                   <Route path="/admin/applications" element={<AdminSellerApplications />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
                   <Route path="/admin/banners" element={<AdminBanners />} />
-                  <Route path="/admin/pickup-points" element={<AdminPickupPoints />} />
+                  
                   <Route path="/admin/blocks" element={<AdminBlocks />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                   <Route path="/admin/products" element={<AdminProducts />} />
@@ -122,6 +125,7 @@ const App = () => (
                 </Routes>
               </Suspense>
             </ChunkErrorBoundary>
+            <CartConflictDialog />
             <CookieBanner />
           </BrowserRouter>
         </TooltipProvider>
