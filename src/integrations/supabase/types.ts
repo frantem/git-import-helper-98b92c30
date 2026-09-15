@@ -201,9 +201,12 @@ export type Database = {
           city: string | null
           contacts: Json
           created_at: string
+          delivery_cost: number | null
+          delivery_enabled: boolean
           delivery_note: string | null
           description: string | null
           district: string | null
+          free_delivery_from: number | null
           hero_media_type: string | null
           hero_media_url: string | null
           id: string
@@ -212,6 +215,7 @@ export type Database = {
           max_orders_per_day: number | null
           name: string
           photo_url: string | null
+          pickup_enabled: boolean
           pickup_slots: Json | null
           plan: string
           posts_block_title: string | null
@@ -236,9 +240,12 @@ export type Database = {
           city?: string | null
           contacts?: Json
           created_at?: string
+          delivery_cost?: number | null
+          delivery_enabled?: boolean
           delivery_note?: string | null
           description?: string | null
           district?: string | null
+          free_delivery_from?: number | null
           hero_media_type?: string | null
           hero_media_url?: string | null
           id?: string
@@ -247,6 +254,7 @@ export type Database = {
           max_orders_per_day?: number | null
           name: string
           photo_url?: string | null
+          pickup_enabled?: boolean
           pickup_slots?: Json | null
           plan?: string
           posts_block_title?: string | null
@@ -271,9 +279,12 @@ export type Database = {
           city?: string | null
           contacts?: Json
           created_at?: string
+          delivery_cost?: number | null
+          delivery_enabled?: boolean
           delivery_note?: string | null
           description?: string | null
           district?: string | null
+          free_delivery_from?: number | null
           hero_media_type?: string | null
           hero_media_url?: string | null
           id?: string
@@ -282,6 +293,7 @@ export type Database = {
           max_orders_per_day?: number | null
           name?: string
           photo_url?: string | null
+          pickup_enabled?: boolean
           pickup_slots?: Json | null
           plan?: string
           posts_block_title?: string | null
@@ -1319,8 +1331,12 @@ export type Database = {
         Args: { farmer_ids: string[] }
         Returns: {
           busy_dates: Json
+          delivery_cost: number
+          delivery_enabled: boolean
           farmer_id: string
+          free_delivery_from: number
           max_orders_per_day: number
+          pickup_enabled: boolean
           pickup_slots: Json
           vacation_dates: Json
         }[]
