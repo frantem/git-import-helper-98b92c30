@@ -155,9 +155,6 @@ export default function SellerSettings() {
           district: settingsForm.district,
           village: settingsForm.village || null,
           photo_url: settingsForm.photo_url || null,
-          city: settingsForm.city || null,
-          street: settingsForm.street || null,
-          address_details: settingsForm.address_details || null,
           slug: slug || null,
         } as any)
         .eq("id", farmerId);
