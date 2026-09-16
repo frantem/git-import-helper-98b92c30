@@ -86,22 +86,10 @@ export default function SellerSettings() {
         district: farmer.district,
         village: farmer.village || "",
         photo_url: farmer.photo_url || "",
-        city: farmer.city || "",
-        street: farmer.street || "",
-        address_details: farmer.address_details || "",
         slug: farmer.slug || "",
       };
 
-      let slots = DEFAULT_PICKUP_SLOTS;
-      let maxOrders = 5;
-      let busy: Date[] = [];
-      let vacation: Date[] = [];
-
       const fFull = farmer as any;
-      if (fFull.pickup_slots) slots = fFull.pickup_slots as unknown as PickupSlots;
-      if (fFull.max_orders_per_day != null) maxOrders = fFull.max_orders_per_day as number;
-      if (fFull.busy_dates) busy = (fFull.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
-      if (fFull.vacation_dates) vacation = (fFull.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
       setTelegramChatId(fFull.telegram_chat_id || null);
       setTelegramLinkCode(fFull.telegram_link_code || null);
 
