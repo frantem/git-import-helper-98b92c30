@@ -105,18 +105,11 @@ export default function SellerSettings() {
         try {
           const draft: SellerDraft = JSON.parse(saved);
           if (draft.settingsForm) form = { ...form, ...draft.settingsForm };
-          if (draft.pickupSlots) slots = draft.pickupSlots;
-          if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
-          if (draft.busyDates) busy = draft.busyDates.map(s => new Date(s));
-          if (draft.vacationDates) vacation = draft.vacationDates.map(s => new Date(s));
         } catch {}
       }
 
       setSettingsForm(form);
-      setPickupSlots(slots);
-      setMaxOrdersPerDay(maxOrders);
-      setBusyDates(busy);
-      setVacationDates(vacation);
+
 
       setIsLoading(false);
       setDataLoaded(true);
