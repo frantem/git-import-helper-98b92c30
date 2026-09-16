@@ -11,17 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Camera, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
-import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 
 interface SellerDraft {
   settingsForm: {
     name: string; description: string; district: string; village: string;
-    photo_url: string; city: string; street: string; address_details: string; slug: string;
+    photo_url: string; slug: string;
   };
-  pickupSlots: PickupSlots;
-  maxOrdersPerDay: number;
-  busyDates: string[];
-  vacationDates: string[];
 }
 
 export default function SellerSettings() {
