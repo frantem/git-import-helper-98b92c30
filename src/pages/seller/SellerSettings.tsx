@@ -372,34 +372,15 @@ export default function SellerSettings() {
           </div>
 
           <div className="pt-4 border-t border-border">
-            <h3 className="font-medium text-foreground mb-3">Адрес для самовывоза</h3>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>Населённый пункт</Label>
-                <Input value={settingsForm.city} onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })} placeholder="Витебск" />
-              </div>
-              <div className="space-y-2">
-                <Label>Улица</Label>
-                <Input value={settingsForm.street} onChange={(e) => setSettingsForm({ ...settingsForm, street: e.target.value })} placeholder="Центральная" />
-              </div>
-              <div className="space-y-2">
-                <Label>Дом, подъезд, квартира</Label>
-                <Input value={settingsForm.address_details} onChange={(e) => setSettingsForm({ ...settingsForm, address_details: e.target.value })} placeholder="д.37, подъезд 2, этаж 2, кв.61" />
-              </div>
-              <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
-            </div>
+            <h3 className="font-medium text-foreground mb-1">Доставка и самовывоз</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Адрес самовывоза, график выдачи и стоимость доставки — на отдельной странице.
+            </p>
+            <Link to="/seller/delivery">
+              <Button variant="outline" size="sm">Открыть настройки получения</Button>
+            </Link>
           </div>
 
-          <PickupSettingsSection
-            pickupSlots={pickupSlots}
-            onPickupSlotsChange={setPickupSlots}
-            maxOrdersPerDay={maxOrdersPerDay}
-            onMaxOrdersChange={setMaxOrdersPerDay}
-            busyDates={busyDates}
-            onBusyDatesChange={setBusyDates}
-            vacationDates={vacationDates}
-            onVacationDatesChange={setVacationDates}
-          />
 
           {/* Telegram-уведомления */}
           <div className="pt-4 border-t border-border space-y-3">
