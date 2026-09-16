@@ -198,22 +198,6 @@ export default function SellerSettings() {
 
       if (error) { toast.error("Ошибка при сохранении: " + error.message); return; }
 
-      const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const validBusy = busyDates.filter(d => !isNaN(d.getTime()));
-      const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
-
-      const { error: profileError } = await supabase
-        .from("farmers")
-        .update({
-          pickup_slots: pickupSlots as any,
-          max_orders_per_day: maxOrdersPerDay,
-          busy_dates: validBusy.map(formatDate),
-          vacation_dates: validVacation.map(formatDate),
-        } as any)
-        .eq("id", farmerId);
-
-      if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
-
       // Clear draft after successful save
       if (draftKey) localStorage.removeItem(draftKey);
       toast.success("Настройки сохранены");
