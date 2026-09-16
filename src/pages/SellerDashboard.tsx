@@ -5,7 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon } from "lucide-react";
+import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon, Truck } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 import { useSellerClientsCount } from "@/hooks/useSellerClientsCount";
@@ -139,11 +139,19 @@ export default function SellerDashboard() {
 
 
 
+          <Link to="/seller/delivery" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <Truck className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Доставка и самовывоз</h3>
+              <p className="text-sm text-muted-foreground">Способы получения заказа</p>
+            </div>
+          </Link>
+
           <Link to="/seller/settings" className="flex items-center gap-4 rounded-xl bg-card p-6">
             <Settings className="h-8 w-8 text-primary" />
             <div>
               <h3 className="font-bold">Настройки</h3>
-              <p className="text-sm text-muted-foreground">Профиль и самовывоз</p>
+              <p className="text-sm text-muted-foreground">Профиль продавца</p>
             </div>
           </Link>
 

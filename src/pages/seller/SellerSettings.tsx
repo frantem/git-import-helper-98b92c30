@@ -11,17 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Camera, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
-import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
 
 interface SellerDraft {
   settingsForm: {
     name: string; description: string; district: string; village: string;
-    photo_url: string; city: string; street: string; address_details: string; slug: string;
+    photo_url: string; slug: string;
   };
-  pickupSlots: PickupSlots;
-  maxOrdersPerDay: number;
-  busyDates: string[];
-  vacationDates: string[];
 }
 
 export default function SellerSettings() {
@@ -34,15 +29,11 @@ export default function SellerSettings() {
   const savingRef = useRef(false);
 
   const [settingsForm, setSettingsForm] = useState({
-    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", address_details: "", slug: "",
+    name: "", description: "", district: "", village: "", photo_url: "", slug: "",
   });
   const [slugError, setSlugError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
-  const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
-  const [busyDates, setBusyDates] = useState<Date[]>([]);
-  const [vacationDates, setVacationDates] = useState<Date[]>([]);
 
   // Telegram linking
   const [telegramChatId, setTelegramChatId] = useState<string | null>(null);
@@ -55,15 +46,9 @@ export default function SellerSettings() {
   // Save full snapshot to localStorage
   const saveDraft = useCallback(() => {
     if (!draftKey || !dataLoaded) return;
-    const snapshot: SellerDraft = {
-      settingsForm,
-      pickupSlots,
-      maxOrdersPerDay,
-      busyDates: busyDates.filter(d => !isNaN(d.getTime())).map(d => d.toISOString()),
-      vacationDates: vacationDates.filter(d => !isNaN(d.getTime())).map(d => d.toISOString()),
-    };
+    const snapshot: SellerDraft = { settingsForm };
     localStorage.setItem(draftKey, JSON.stringify(snapshot));
-  }, [draftKey, dataLoaded, settingsForm, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
+  }, [draftKey, dataLoaded, settingsForm]);
 
   // Persist on change + pagehide/visibilitychange
   useEffect(() => {
@@ -101,22 +86,10 @@ export default function SellerSettings() {
         district: farmer.district,
         village: farmer.village || "",
         photo_url: farmer.photo_url || "",
-        city: farmer.city || "",
-        street: farmer.street || "",
-        address_details: farmer.address_details || "",
         slug: farmer.slug || "",
       };
 
-      let slots = DEFAULT_PICKUP_SLOTS;
-      let maxOrders = 5;
-      let busy: Date[] = [];
-      let vacation: Date[] = [];
-
       const fFull = farmer as any;
-      if (fFull.pickup_slots) slots = fFull.pickup_slots as unknown as PickupSlots;
-      if (fFull.max_orders_per_day != null) maxOrders = fFull.max_orders_per_day as number;
-      if (fFull.busy_dates) busy = (fFull.busy_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
-      if (fFull.vacation_dates) vacation = (fFull.vacation_dates as unknown as string[]).map(d => new Date(d + "T00:00:00"));
       setTelegramChatId(fFull.telegram_chat_id || null);
       setTelegramLinkCode(fFull.telegram_link_code || null);
 
@@ -132,18 +105,11 @@ export default function SellerSettings() {
         try {
           const draft: SellerDraft = JSON.parse(saved);
           if (draft.settingsForm) form = { ...form, ...draft.settingsForm };
-          if (draft.pickupSlots) slots = draft.pickupSlots;
-          if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
-          if (draft.busyDates) busy = draft.busyDates.map(s => new Date(s));
-          if (draft.vacationDates) vacation = draft.vacationDates.map(s => new Date(s));
         } catch {}
       }
 
       setSettingsForm(form);
-      setPickupSlots(slots);
-      setMaxOrdersPerDay(maxOrders);
-      setBusyDates(busy);
-      setVacationDates(vacation);
+
 
       setIsLoading(false);
       setDataLoaded(true);
@@ -189,30 +155,11 @@ export default function SellerSettings() {
           district: settingsForm.district,
           village: settingsForm.village || null,
           photo_url: settingsForm.photo_url || null,
-          city: settingsForm.city || null,
-          street: settingsForm.street || null,
-          address_details: settingsForm.address_details || null,
           slug: slug || null,
         } as any)
         .eq("id", farmerId);
 
       if (error) { toast.error("Ошибка при сохранении: " + error.message); return; }
-
-      const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const validBusy = busyDates.filter(d => !isNaN(d.getTime()));
-      const validVacation = vacationDates.filter(d => !isNaN(d.getTime()));
-
-      const { error: profileError } = await supabase
-        .from("farmers")
-        .update({
-          pickup_slots: pickupSlots as any,
-          max_orders_per_day: maxOrdersPerDay,
-          busy_dates: validBusy.map(formatDate),
-          vacation_dates: validVacation.map(formatDate),
-        } as any)
-        .eq("id", farmerId);
-
-      if (profileError) { toast.error("Ошибка сохранения настроек выдачи: " + profileError.message); return; }
 
       // Clear draft after successful save
       if (draftKey) localStorage.removeItem(draftKey);
@@ -372,34 +319,15 @@ export default function SellerSettings() {
           </div>
 
           <div className="pt-4 border-t border-border">
-            <h3 className="font-medium text-foreground mb-3">Адрес для самовывоза</h3>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>Населённый пункт</Label>
-                <Input value={settingsForm.city} onChange={(e) => setSettingsForm({ ...settingsForm, city: e.target.value })} placeholder="Витебск" />
-              </div>
-              <div className="space-y-2">
-                <Label>Улица</Label>
-                <Input value={settingsForm.street} onChange={(e) => setSettingsForm({ ...settingsForm, street: e.target.value })} placeholder="Центральная" />
-              </div>
-              <div className="space-y-2">
-                <Label>Дом, подъезд, квартира</Label>
-                <Input value={settingsForm.address_details} onChange={(e) => setSettingsForm({ ...settingsForm, address_details: e.target.value })} placeholder="д.37, подъезд 2, этаж 2, кв.61" />
-              </div>
-              <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
-            </div>
+            <h3 className="font-medium text-foreground mb-1">Доставка и самовывоз</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Адрес самовывоза, график выдачи и стоимость доставки — на отдельной странице.
+            </p>
+            <Link to="/seller/delivery">
+              <Button variant="outline" size="sm">Открыть настройки получения</Button>
+            </Link>
           </div>
 
-          <PickupSettingsSection
-            pickupSlots={pickupSlots}
-            onPickupSlotsChange={setPickupSlots}
-            maxOrdersPerDay={maxOrdersPerDay}
-            onMaxOrdersChange={setMaxOrdersPerDay}
-            busyDates={busyDates}
-            onBusyDatesChange={setBusyDates}
-            vacationDates={vacationDates}
-            onVacationDatesChange={setVacationDates}
-          />
 
           {/* Telegram-уведомления */}
           <div className="pt-4 border-t border-border space-y-3">
