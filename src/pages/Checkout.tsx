@@ -39,12 +39,6 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { EmailChangePrompt } from "@/components/EmailChangePrompt";
-interface PickupPoint {
-  id: string;
-  name: string;
-  address: string;
-  working_hours: string | null;
-}
 interface FarmerInfo {
   id: string;
   city: string | null;
@@ -61,6 +55,10 @@ interface SellerPickupSettings {
   max_orders_per_day: number;
   busy_dates: string[] | null;
   vacation_dates: string[] | null;
+  pickup_enabled?: boolean | null;
+  delivery_enabled?: boolean | null;
+  delivery_cost?: number | null;
+  free_delivery_from?: number | null;
 }
 type OrderCountsMap = Record<string, number>; // "farmerId:YYYY-MM-DD" -> count
 export default function Checkout() {
@@ -68,7 +66,8 @@ export default function Checkout() {
     items,
     totalPrice,
     clearCart,
-    getItemKey
+    getItemKey,
+    cartFarmerId
   } = useCart();
   const {
     user,
@@ -76,8 +75,6 @@ export default function Checkout() {
     isLoading: isAuthLoading
   } = useAuth();
   const navigate = useNavigate();
-  const [pickupPoints, setPickupPoints] = useState<PickupPoint[]>([]);
-  const [selectedPoint, setSelectedPoint] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPoints, setIsLoadingPoints] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -90,13 +87,13 @@ export default function Checkout() {
   const showEmailPrompt = !emailPromptDismissed && !hasRealEmail;
 
   // Delivery type state
-  const [deliveryType, setDeliveryType] = useState<"pickup" | "courier" | "self" | "">("");
+  const [deliveryType, setDeliveryType] = useState<"courier" | "self" | "">("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [profileDeliveryAddress, setProfileDeliveryAddress] = useState<string | null>(null);
   const [farmersMap, setFarmersMap] = useState<FarmersMap>(new Map());
   const [sellerPickupSettings, setSellerPickupSettings] = useState<Map<string, SellerPickupSettings>>(new Map());
   const [orderCountsMap, setOrderCountsMap] = useState<OrderCountsMap>({});
-  const [isPickupDialogOpen, setIsPickupDialogOpen] = useState(false);
+  
 
   // Courier delivery date/time selection
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -146,12 +143,8 @@ export default function Checkout() {
     });
   }, [items, sellerPickupSettings]);
 
-  // Pickup-point end-of-day cutoff (для типа "пункт выдачи")
-  const pickupPointEndMinutes = useMemo(() => {
-    if (deliveryType !== "pickup" || !selectedPoint) return undefined;
-    const point = pickupPoints.find((p) => p.id === selectedPoint);
-    return parseWorkingHoursEnd(point?.working_hours) ?? undefined;
-  }, [deliveryType, selectedPoint, pickupPoints]);
+  // Пункты выдачи больше не используются — ограничения по времени пункта нет
+  const pickupPointEndMinutes: number | undefined = undefined;
 
   // Ближайшая доставка (учитывает ВСЕХ продавцов в корзине)
   const fastDeliveryResult = useMemo<DeliveryTimeResult>(() => {
@@ -219,17 +212,29 @@ export default function Checkout() {
   };
 
 
-  // Calculate delivery cost
-  const deliveryCost = deliveryType === "courier" ? 690 : 0; // 6,90р = 690 kopecks
+  // Настройки получения заказа у продавца (в корзине всегда один продавец)
+  const cartSellerSettings = cartFarmerId ? sellerPickupSettings.get(cartFarmerId) : undefined;
+  const sellerPickupEnabled = cartSellerSettings?.pickup_enabled ?? true;
+  const sellerDeliveryEnabled = cartSellerSettings?.delivery_enabled ?? false;
+  const sellerDeliveryBaseCost = cartSellerSettings?.delivery_cost ?? 0;
+  const sellerFreeDeliveryFrom = cartSellerSettings?.free_delivery_from ?? null;
+  const isDeliveryFree = sellerFreeDeliveryFrom != null && totalPrice >= sellerFreeDeliveryFrom;
+
+  const deliveryCost = deliveryType === "courier" ? (isDeliveryFree ? 0 : sellerDeliveryBaseCost) : 0;
   const finalTotalPrice = totalPrice + deliveryCost;
+
+  // Сбрасываем способ получения, если продавец его отключил
+  useEffect(() => {
+    if (deliveryType === "courier" && !sellerDeliveryEnabled) setDeliveryType("");
+    if (deliveryType === "self" && !sellerPickupEnabled) setDeliveryType("");
+  }, [deliveryType, sellerDeliveryEnabled, sellerPickupEnabled]);
+
   useEffect(() => {
     if (!isAuthLoading && user) {
-      fetchPickupPoints();
       fetchFarmerInfo();
       fetchProfileAddress();
-    } else if (!isAuthLoading && !user) {
-      setIsLoadingPoints(false);
     }
+    setIsLoadingPoints(false);
   }, [user, isAuthLoading, items]);
 
   const fetchProfileAddress = async () => {
@@ -262,26 +267,6 @@ export default function Checkout() {
     setSelfPickupSelections({});
     setSelfPickupPopoverOpen({});
   }, [deliveryType]);
-  const fetchPickupPoints = async () => {
-    setIsLoadingPoints(true);
-    setLoadError(false);
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from("pickup_points").select("*").eq("is_active", true);
-      if (error) throw error;
-      if (data) {
-        setPickupPoints(data);
-        // Don't auto-select first point - user must choose
-      }
-    } catch (error) {
-      console.error("Error fetching pickup points:", error);
-      setLoadError(true);
-    } finally {
-      setIsLoadingPoints(false);
-    }
-  };
 
   // Fetch farmer info for all unique farmers in cart
   const fetchFarmerInfo = async () => {
@@ -378,10 +363,6 @@ export default function Checkout() {
     }
 
     // Validation based on delivery type
-    if (deliveryType === "pickup" && !selectedPoint) {
-      toast.error("Выберите пункт выдачи");
-      return;
-    }
     if (deliveryType === "courier" && !deliveryAddress.trim()) {
       toast.error("Укажите адрес доставки");
       return;
@@ -420,8 +401,6 @@ export default function Checkout() {
         } else {
           estimatedDeliveryTime = normalizeDeliveryText(fastDeliveryResult.text);
         }
-      } else if (deliveryType === "pickup") {
-        estimatedDeliveryTime = normalizeDeliveryText(fastDeliveryResult.text);
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
         const farmerIds = [...new Set(items.map((i) => i.product.farmer_id).filter(Boolean))] as string[];
@@ -463,7 +442,7 @@ export default function Checkout() {
         error: orderError
       } = await supabase.from("orders").insert({
         buyer_id: user.id,
-        pickup_point_id: deliveryType === "pickup" ? selectedPoint : null,
+        pickup_point_id: null,
         total_amount: finalTotalPrice,
         status: "pending",
         delivery_type: deliveryType,
