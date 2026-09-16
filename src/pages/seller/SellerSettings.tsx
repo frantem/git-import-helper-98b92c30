@@ -29,15 +29,11 @@ export default function SellerSettings() {
   const savingRef = useRef(false);
 
   const [settingsForm, setSettingsForm] = useState({
-    name: "", description: "", district: "", village: "", photo_url: "", city: "", street: "", address_details: "", slug: "",
+    name: "", description: "", district: "", village: "", photo_url: "", slug: "",
   });
   const [slugError, setSlugError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
-  const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
-  const [busyDates, setBusyDates] = useState<Date[]>([]);
-  const [vacationDates, setVacationDates] = useState<Date[]>([]);
 
   // Telegram linking
   const [telegramChatId, setTelegramChatId] = useState<string | null>(null);
