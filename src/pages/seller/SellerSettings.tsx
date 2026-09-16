@@ -46,15 +46,9 @@ export default function SellerSettings() {
   // Save full snapshot to localStorage
   const saveDraft = useCallback(() => {
     if (!draftKey || !dataLoaded) return;
-    const snapshot: SellerDraft = {
-      settingsForm,
-      pickupSlots,
-      maxOrdersPerDay,
-      busyDates: busyDates.filter(d => !isNaN(d.getTime())).map(d => d.toISOString()),
-      vacationDates: vacationDates.filter(d => !isNaN(d.getTime())).map(d => d.toISOString()),
-    };
+    const snapshot: SellerDraft = { settingsForm };
     localStorage.setItem(draftKey, JSON.stringify(snapshot));
-  }, [draftKey, dataLoaded, settingsForm, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
+  }, [draftKey, dataLoaded, settingsForm]);
 
   // Persist on change + pagehide/visibilitychange
   useEffect(() => {
