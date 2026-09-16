@@ -5,7 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon } from "lucide-react";
+import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon, Truck } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 import { useSellerClientsCount } from "@/hooks/useSellerClientsCount";
