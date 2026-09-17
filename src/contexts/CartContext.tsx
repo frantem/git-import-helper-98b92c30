@@ -100,7 +100,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('locus-cart', JSON.stringify(items));
   }, [items]);
 
-  const cartFarmerId = items.find((i) => i.product.farmer_id)?.product.farmer_id ?? null;
+  const cartFarmerId = items[0]?.product.farmer_id ?? null;
 
   const pushItem = (
     product: Product,
@@ -148,8 +148,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     addons?: CartItemAddon[],
   ): boolean => {
     const newFarmerId = product.farmer_id ?? null;
-    if (cartFarmerId && newFarmerId && cartFarmerId !== newFarmerId) {
-      const currentProduct = items.find((i) => i.product.farmer_id === cartFarmerId)?.product;
+    if (items.length > 0 && cartFarmerId !== newFarmerId) {
+      const currentProduct = items[0]?.product;
       setConflict({
         currentSellerName: currentProduct ? sellerNameOf(currentProduct) : "другого продавца",
         newSellerName: sellerNameOf(product),

@@ -441,7 +441,8 @@ export default function Product() {
       return;
     }
     if (product) {
-      addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
+      const added = addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
+      if (!added) return;
     }
     navigate("/cart");
   };
@@ -451,8 +452,8 @@ export default function Product() {
       return;
     }
     if (product) {
-      addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
-      toast.success("Добавлено в корзину");
+      const added = addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
+      if (added) toast.success("Добавлено в корзину");
     }
   };
   const handleIncrement = () => {
