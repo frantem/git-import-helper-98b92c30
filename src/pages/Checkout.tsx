@@ -1011,7 +1011,11 @@ export default function Checkout() {
             </div>
             {deliveryType === "courier" && <div className="flex justify-between">
                 <span className="text-muted-foreground">Доставка:</span>
-                <span className="text-foreground">6,90<BynSymbol /></span>
+                <span className="text-foreground">
+                  {deliveryCost === 0
+                    ? "Бесплатно"
+                    : <>{formatPrice(deliveryCost).formatted}<BynSymbol /></>}
+                </span>
               </div>}
           </div>
           
@@ -1038,7 +1042,7 @@ export default function Checkout() {
 
       {/* Checkout button */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card p-3 shadow-lg md:hidden">
-        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "pickup" && (!selectedPoint || pickupPoints.length === 0)) || (deliveryType === "courier" && courierDeliveryMode === "fast" && noDeliveryAvailable) || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
+        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "courier" && courierDeliveryMode === "fast" && noDeliveryAvailable) || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
           {isLoading ? "Оформление..." : "Заказать"}
         </Button>
       </div>
