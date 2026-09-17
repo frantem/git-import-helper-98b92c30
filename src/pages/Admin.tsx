@@ -89,13 +89,6 @@ export default function Admin() {
             </div>
           </Link>
           
-          <Link to="/admin/pickup-points" className="flex items-center gap-4 rounded-xl bg-card p-6">
-            <MapPin className="h-8 w-8 text-primary" />
-            <div>
-              <h3 className="font-bold">Пункты выдачи</h3>
-              <p className="text-sm text-muted-foreground">Управление пунктами</p>
-            </div>
-          </Link>
           
           <Link to="/admin/sellers" className="flex items-center gap-4 rounded-xl bg-card p-6">
             <Users className="h-8 w-8 text-primary" />
