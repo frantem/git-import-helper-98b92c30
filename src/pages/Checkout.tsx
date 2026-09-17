@@ -622,23 +622,9 @@ export default function Checkout() {
             <h2 className="font-bold text-foreground">Выберите доставку:</h2>
           </div>
           
-          <RadioGroup value={deliveryType} onValueChange={(v) => setDeliveryType(v as "pickup" | "courier" | "self")} className="space-y-2">
-            {/* Pickup point option (disabled) */}
-            <div className="relative rounded-lg border-2 border-border bg-muted/60 px-3 py-2.5 opacity-60 cursor-not-allowed select-none">
-              <RadioGroupItem value="pickup" id="delivery-pickup" className="sr-only" disabled />
-              <Label htmlFor="delivery-pickup" className="flex justify-between items-center cursor-not-allowed">
-                <span className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium text-muted-foreground">Пункт выдачи</span>
-                </span>
-                <span className="text-muted-foreground font-medium">Бесплатно</span>
-              </Label>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="bg-muted-foreground/80 text-background text-xs font-bold px-3 py-1 rounded-full">В разработке</span>
-              </div>
-            </div>
-
-            {/* Courier delivery option */}
+          <RadioGroup value={deliveryType} onValueChange={(v) => setDeliveryType(v as "courier" | "self")} className="space-y-2">
+            {/* Courier delivery option (доставка продавца) */}
+            {sellerDeliveryEnabled && (
             <div
               className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
                 deliveryType === "courier"
@@ -653,11 +639,17 @@ export default function Checkout() {
                   <Home className="h-4 w-4" />
                   <span className="font-medium">Доставка</span>
                 </span>
-                <span className="font-medium">6,90<BynSymbol /></span>
+                <span className="font-medium">
+                  {isDeliveryFree || sellerDeliveryBaseCost === 0
+                    ? "Бесплатно"
+                    : <>{formatPrice(sellerDeliveryBaseCost).formatted}<BynSymbol /></>}
+                </span>
               </Label>
             </div>
+            )}
 
             {/* Self-pickup option */}
+            {sellerPickupEnabled && (
             <div
               className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
                 deliveryType === "self"
@@ -675,117 +667,23 @@ export default function Checkout() {
                 <span className={`font-medium ${deliveryType === "self" ? "" : "text-primary"}`}>Бесплатно</span>
               </Label>
             </div>
+            )}
+
+            {!sellerDeliveryEnabled && !sellerPickupEnabled && (
+              <p className="text-sm text-muted-foreground">
+                Продавец пока не указал способы получения заказа. Свяжитесь с ним или попробуйте позже.
+              </p>
+            )}
           </RadioGroup>
 
+          {sellerDeliveryEnabled && sellerFreeDeliveryFrom != null && !isDeliveryFree && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Бесплатная доставка от {formatPrice(sellerFreeDeliveryFrom).formatted}<BynSymbol />
+            </p>
+          )}
+
+
           {/* Conditional content based on delivery type */}
-          {deliveryType === "pickup" && <div className="mt-4 pt-4 border-t border-border">
-              <h3 className="text-sm font-medium text-foreground mb-3">Товары привезут в пункт выдачи:</h3>
-              <div className="space-y-3 mb-4">
-                {(() => {
-              // Group items by farmer_id for delivery time per seller
-              const groups = new Map<string, typeof items>();
-              items.forEach((item) => {
-                const fid = item.product.farmer_id || "unknown";
-                if (!groups.has(fid)) groups.set(fid, []);
-                groups.get(fid)!.push(item);
-              });
-              return Array.from(groups.entries()).map(([fid, groupItems]) => {
-                const settings = sellerPickupSettings.get(fid);
-                const maxPrep = Math.max(0, ...groupItems.map((i) => safePrepTime((i.product as any).prep_time_minutes)));
-                const maxLead = Math.max(0, ...groupItems.map((i) => Number((i.product as any).order_lead_time_hours) || 0));
-                const ppData = selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint) : null;
-                const ppEnd = parseWorkingHoursEnd(ppData?.working_hours) ?? undefined;
-                const deliveryResult = calculateDeliveryTimePerSeller(
-                  maxPrep,
-                  settings?.pickup_slots as PickupSlots | null ?? null,
-                  settings?.busy_dates ?? null,
-                  settings?.vacation_dates ?? null,
-                  adminSettings,
-                  ppEnd,
-                  maxLead
-                );
-                return (
-                  <div key={fid} className="space-y-1">
-                    {groupItems.map((item) =>
-                    <div key={getItemKey(item)} className="py-2 px-3 bg-secondary/30 rounded-lg">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-foreground">
-                                {item.product.name}
-                                {item.variant && <span className="text-muted-foreground"> ({item.variant.label})</span>}
-                                {" "}× {item.quantity}
-                              </span>
-                              <span className="text-xs text-primary font-medium">{deliveryResult.text}</span>
-                            </div>
-                            {item.customFields && item.customFields.length > 0 && (
-                              <div className="mt-0.5 space-y-0.5">
-                                {item.customFields.map((cf, i) => (
-                                  <p key={i} className="text-xs text-muted-foreground">{cf.label}: <span className="font-medium">«{cf.value}»</span></p>
-                                ))}
-                              </div>
-                            )}
-                            {item.addons && item.addons.length > 0 && (
-                              <div className="mt-0.5 space-y-0.5">
-                                {item.addons.map((a, i) => {
-                                  const ap = formatPrice(a.price);
-                                  return <p key={i} className="text-xs text-muted-foreground">+ {a.name}{a.price > 0 && <> ({ap.formatted}<BynSymbol />)</>}</p>;
-                                })}
-                              </div>
-                            )}
-                          </div>
-                    )}
-                      </div>);
-
-              });
-            })()}
-              </div>
-              
-              {/* Pickup point selection button */}
-              <Button variant={selectedPoint ? "outline" : "default"} className={`w-full justify-between ${!selectedPoint ? "animate-pulse" : ""}`} onClick={() => setIsPickupDialogOpen(true)} disabled={isLoadingPoints}>
-                <span className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  {selectedPoint ? pickupPoints.find((p) => p.id === selectedPoint)?.name : "Выберите пункт выдачи →"}
-                </span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              
-              {/* Pickup points dialog */}
-              <Dialog open={isPickupDialogOpen} onOpenChange={setIsPickupDialogOpen}>
-                <DialogContent className="max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Выберите пункт выдачи</DialogTitle>
-                  </DialogHeader>
-                  
-                  {isLoadingPoints ? <div className="py-4 text-center text-muted-foreground">
-                      <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
-                      Загрузка...
-                    </div> : loadError ? <div className="py-4 text-center">
-                      <p className="text-destructive mb-3">Не удалось загрузить</p>
-                      <Button variant="outline" size="sm" onClick={fetchPickupPoints}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Повторить
-                      </Button>
-                    </div> : pickupPoints.length === 0 ? <div className="py-4 text-center text-muted-foreground">
-                      <p className="mb-3">Пункты выдачи ещё не добавлены</p>
-                      {role === "admin" && <Link to="/admin/pickup-points">
-                          <Button variant="outline" size="sm">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Добавить в админке
-                          </Button>
-                        </Link>}
-                    </div> : <div className="space-y-2">
-                      {pickupPoints.map((point) => <div key={point.id} className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedPoint === point.id ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50 border border-transparent"}`} onClick={() => {
-                  setSelectedPoint(point.id);
-                  setIsPickupDialogOpen(false);
-                }}>
-                          <span className="font-medium text-foreground">{point.name}</span>
-                          <p className="text-sm text-muted-foreground">{point.address}</p>
-                          {point.working_hours && <p className="text-xs text-primary">{point.working_hours}</p>}
-                        </div>)}
-                    </div>}
-                </DialogContent>
-              </Dialog>
-            </div>}
-
           {deliveryType === "courier" && <div className="mt-4 pt-4 border-t border-border space-y-4">
               {/* Courier delivery mode selection */}
               <RadioGroup
