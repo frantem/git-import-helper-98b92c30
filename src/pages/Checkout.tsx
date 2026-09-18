@@ -395,7 +395,7 @@ export default function Checkout() {
           const dateStr = format(selectedDate, "d MMMM", { locale: ru });
           estimatedDeliveryTime = `${dateStr} ${selectedTime}`;
         } else {
-          estimatedDeliveryTime = normalizeDeliveryText(fastDeliveryResult.text);
+          estimatedDeliveryTime = "Время доставки согласуем при подтверждении заказа";
         }
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
@@ -1018,7 +1018,7 @@ export default function Checkout() {
 
       {/* Checkout button */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card p-3 shadow-lg md:hidden">
-        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "courier" && courierDeliveryMode === "fast" && noDeliveryAvailable) || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
+        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
           {isLoading ? "Оформление..." : "Заказать"}
         </Button>
       </div>
