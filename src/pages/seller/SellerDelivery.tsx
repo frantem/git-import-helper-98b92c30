@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, MapPin, Truck } from "lucide-react";
 import { toast } from "sonner";
@@ -279,30 +280,18 @@ export default function SellerDelivery() {
             </div>
 
             {deliveryEnabled && (
-              <div className="mt-4 space-y-3">
-                <div className="space-y-2">
-                  <Label>Стоимость доставки, BYN</Label>
-                  <Input
-                    inputMode="decimal"
-                    value={deliveryCost}
-                    onChange={(e) => setDeliveryCost(e.target.value)}
-                    placeholder="6,90"
-                    className="w-32"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Бесплатно от, BYN</Label>
-                  <Input
-                    inputMode="decimal"
-                    value={freeDeliveryFrom}
-                    onChange={(e) => setFreeDeliveryFrom(e.target.value)}
-                    placeholder="Не обязательно"
-                    className="w-40"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Если заполнено, при сумме заказа от этого значения доставка будет бесплатной.
-                  </p>
-                </div>
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="delivery-terms">Условия доставки</Label>
+                <Textarea
+                  id="delivery-terms"
+                  value={deliveryTerms}
+                  onChange={(e) => setDeliveryTerms(e.target.value)}
+                  placeholder="Например: 8 руб., только по Витебску, бесплатно от 50 руб., в другие города — Европочтой за отдельную плату"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Напишите в свободной форме как Вы можете отправить или доставить покупателю товар.
+                </p>
               </div>
             )}
           </div>
