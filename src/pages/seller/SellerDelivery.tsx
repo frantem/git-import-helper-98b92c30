@@ -35,8 +35,7 @@ export default function SellerDelivery() {
 
   const [pickupEnabled, setPickupEnabled] = useState(true);
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
-  const [deliveryCost, setDeliveryCost] = useState("");
-  const [freeDeliveryFrom, setFreeDeliveryFrom] = useState("");
+  const [deliveryTerms, setDeliveryTerms] = useState("");
   const [address, setAddress] = useState({ city: "", street: "", address_details: "" });
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
@@ -51,8 +50,7 @@ export default function SellerDelivery() {
     const snapshot: DeliveryDraft = {
       pickupEnabled,
       deliveryEnabled,
-      deliveryCost,
-      freeDeliveryFrom,
+      deliveryTerms,
       address,
       pickupSlots,
       maxOrdersPerDay,
@@ -60,7 +58,7 @@ export default function SellerDelivery() {
       vacationDates: vacationDates.filter((d) => !isNaN(d.getTime())).map((d) => d.toISOString()),
     };
     localStorage.setItem(draftKey, JSON.stringify(snapshot));
-  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryCost, freeDeliveryFrom, address, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
+  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryTerms, address, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
 
   useEffect(() => {
     if (!dataLoaded || !draftKey) return;
@@ -93,8 +91,7 @@ export default function SellerDelivery() {
       const f = farmer as any;
       let pEnabled = f.pickup_enabled ?? true;
       let dEnabled = f.delivery_enabled ?? false;
-      let dCost = fromKopecks(f.delivery_cost);
-      let freeFrom = fromKopecks(f.free_delivery_from);
+      let terms = f.delivery_terms || "";
       let addr = {
         city: f.city || "",
         street: f.street || "",
@@ -111,8 +108,7 @@ export default function SellerDelivery() {
           const draft: DeliveryDraft = JSON.parse(saved);
           if (draft.pickupEnabled != null) pEnabled = draft.pickupEnabled;
           if (draft.deliveryEnabled != null) dEnabled = draft.deliveryEnabled;
-          if (draft.deliveryCost != null) dCost = draft.deliveryCost;
-          if (draft.freeDeliveryFrom != null) freeFrom = draft.freeDeliveryFrom;
+          if (draft.deliveryTerms != null) terms = draft.deliveryTerms;
           if (draft.address) addr = { ...addr, ...draft.address };
           if (draft.pickupSlots) slots = draft.pickupSlots;
           if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
@@ -123,8 +119,7 @@ export default function SellerDelivery() {
 
       setPickupEnabled(pEnabled);
       setDeliveryEnabled(dEnabled);
-      setDeliveryCost(dCost);
-      setFreeDeliveryFrom(freeFrom);
+      setDeliveryTerms(terms);
       setAddress(addr);
       setPickupSlots(slots);
       setMaxOrdersPerDay(maxOrders);
@@ -145,21 +140,9 @@ export default function SellerDelivery() {
       return;
     }
 
-    let costKopecks: number | null = null;
-    let freeFromKopecks: number | null = null;
-    if (deliveryEnabled) {
-      costKopecks = toKopecks(deliveryCost);
-      if (costKopecks == null) {
-        toast.error("Укажите стоимость доставки");
-        return;
-      }
-      if (freeDeliveryFrom.trim()) {
-        freeFromKopecks = toKopecks(freeDeliveryFrom);
-        if (freeFromKopecks == null) {
-          toast.error("Неверная сумма в поле «Бесплатно от»");
-          return;
-        }
-      }
+    if (deliveryEnabled && !deliveryTerms.trim()) {
+      toast.error("Укажите условия доставки");
+      return;
     }
 
     savingRef.current = true;
@@ -175,8 +158,7 @@ export default function SellerDelivery() {
         .update({
           pickup_enabled: pickupEnabled,
           delivery_enabled: deliveryEnabled,
-          delivery_cost: deliveryEnabled ? costKopecks : null,
-          free_delivery_from: deliveryEnabled ? freeFromKopecks : null,
+          delivery_terms: deliveryEnabled ? deliveryTerms.trim() : null,
           city: address.city || null,
           street: address.street || null,
           address_details: address.address_details || null,
