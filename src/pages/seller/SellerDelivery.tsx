@@ -15,8 +15,7 @@ import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/comp
 interface DeliveryDraft {
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
-  deliveryCost: string;
-  freeDeliveryFrom: string;
+  deliveryTerms: string;
   address: { city: string; street: string; address_details: string };
   pickupSlots: PickupSlots;
   maxOrdersPerDay: number;
@@ -24,17 +23,6 @@ interface DeliveryDraft {
   vacationDates: string[];
 }
 
-/** BYN-строка ("6,90" / "6.9") -> копейки */
-const toKopecks = (value: string): number | null => {
-  const normalized = value.replace(",", ".").trim();
-  if (!normalized) return null;
-  const num = Number(normalized);
-  if (!isFinite(num) || num < 0) return null;
-  return Math.round(num * 100);
-};
-
-const fromKopecks = (value: number | null | undefined): string =>
-  value == null ? "" : (value / 100).toFixed(2).replace(".", ",");
 
 export default function SellerDelivery() {
   const { user, role, isLoading: authLoading } = useAuth();
