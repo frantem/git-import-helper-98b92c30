@@ -301,8 +301,8 @@ export default function SellerDelivery() {
               <div className="flex items-start gap-2">
                 <Truck className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-medium text-foreground">Собственная доставка</h2>
-                  <p className="text-xs text-muted-foreground">Вы сами доставляете заказ покупателю</p>
+                  <h2 className="font-medium text-foreground">Доставка</h2>
+                  <p className="text-xs text-muted-foreground">Напишите как Вы можете доставить или отправить заказ покупателю</p>
                 </div>
               </div>
               <Switch checked={deliveryEnabled} onCheckedChange={setDeliveryEnabled} />
