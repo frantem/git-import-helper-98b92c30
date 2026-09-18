@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, MapPin, Truck } from "lucide-react";
 import { toast } from "sonner";
@@ -15,8 +16,7 @@ import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/comp
 interface DeliveryDraft {
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
-  deliveryCost: string;
-  freeDeliveryFrom: string;
+  deliveryTerms: string;
   address: { city: string; street: string; address_details: string };
   pickupSlots: PickupSlots;
   maxOrdersPerDay: number;
@@ -24,17 +24,6 @@ interface DeliveryDraft {
   vacationDates: string[];
 }
 
-/** BYN-строка ("6,90" / "6.9") -> копейки */
-const toKopecks = (value: string): number | null => {
-  const normalized = value.replace(",", ".").trim();
-  if (!normalized) return null;
-  const num = Number(normalized);
-  if (!isFinite(num) || num < 0) return null;
-  return Math.round(num * 100);
-};
-
-const fromKopecks = (value: number | null | undefined): string =>
-  value == null ? "" : (value / 100).toFixed(2).replace(".", ",");
 
 export default function SellerDelivery() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -47,8 +36,7 @@ export default function SellerDelivery() {
 
   const [pickupEnabled, setPickupEnabled] = useState(true);
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
-  const [deliveryCost, setDeliveryCost] = useState("");
-  const [freeDeliveryFrom, setFreeDeliveryFrom] = useState("");
+  const [deliveryTerms, setDeliveryTerms] = useState("");
   const [address, setAddress] = useState({ city: "", street: "", address_details: "" });
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
@@ -63,8 +51,7 @@ export default function SellerDelivery() {
     const snapshot: DeliveryDraft = {
       pickupEnabled,
       deliveryEnabled,
-      deliveryCost,
-      freeDeliveryFrom,
+      deliveryTerms,
       address,
       pickupSlots,
       maxOrdersPerDay,
@@ -72,7 +59,7 @@ export default function SellerDelivery() {
       vacationDates: vacationDates.filter((d) => !isNaN(d.getTime())).map((d) => d.toISOString()),
     };
     localStorage.setItem(draftKey, JSON.stringify(snapshot));
-  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryCost, freeDeliveryFrom, address, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
+  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryTerms, address, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
 
   useEffect(() => {
     if (!dataLoaded || !draftKey) return;
@@ -105,8 +92,7 @@ export default function SellerDelivery() {
       const f = farmer as any;
       let pEnabled = f.pickup_enabled ?? true;
       let dEnabled = f.delivery_enabled ?? false;
-      let dCost = fromKopecks(f.delivery_cost);
-      let freeFrom = fromKopecks(f.free_delivery_from);
+      let terms = f.delivery_terms || "";
       let addr = {
         city: f.city || "",
         street: f.street || "",
@@ -123,8 +109,7 @@ export default function SellerDelivery() {
           const draft: DeliveryDraft = JSON.parse(saved);
           if (draft.pickupEnabled != null) pEnabled = draft.pickupEnabled;
           if (draft.deliveryEnabled != null) dEnabled = draft.deliveryEnabled;
-          if (draft.deliveryCost != null) dCost = draft.deliveryCost;
-          if (draft.freeDeliveryFrom != null) freeFrom = draft.freeDeliveryFrom;
+          if (draft.deliveryTerms != null) terms = draft.deliveryTerms;
           if (draft.address) addr = { ...addr, ...draft.address };
           if (draft.pickupSlots) slots = draft.pickupSlots;
           if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
@@ -135,8 +120,7 @@ export default function SellerDelivery() {
 
       setPickupEnabled(pEnabled);
       setDeliveryEnabled(dEnabled);
-      setDeliveryCost(dCost);
-      setFreeDeliveryFrom(freeFrom);
+      setDeliveryTerms(terms);
       setAddress(addr);
       setPickupSlots(slots);
       setMaxOrdersPerDay(maxOrders);
@@ -157,21 +141,9 @@ export default function SellerDelivery() {
       return;
     }
 
-    let costKopecks: number | null = null;
-    let freeFromKopecks: number | null = null;
-    if (deliveryEnabled) {
-      costKopecks = toKopecks(deliveryCost);
-      if (costKopecks == null) {
-        toast.error("Укажите стоимость доставки");
-        return;
-      }
-      if (freeDeliveryFrom.trim()) {
-        freeFromKopecks = toKopecks(freeDeliveryFrom);
-        if (freeFromKopecks == null) {
-          toast.error("Неверная сумма в поле «Бесплатно от»");
-          return;
-        }
-      }
+    if (deliveryEnabled && !deliveryTerms.trim()) {
+      toast.error("Укажите условия доставки");
+      return;
     }
 
     savingRef.current = true;
@@ -187,8 +159,7 @@ export default function SellerDelivery() {
         .update({
           pickup_enabled: pickupEnabled,
           delivery_enabled: deliveryEnabled,
-          delivery_cost: deliveryEnabled ? costKopecks : null,
-          free_delivery_from: deliveryEnabled ? freeFromKopecks : null,
+          delivery_terms: deliveryEnabled ? deliveryTerms.trim() : null,
           city: address.city || null,
           street: address.street || null,
           address_details: address.address_details || null,
@@ -309,30 +280,18 @@ export default function SellerDelivery() {
             </div>
 
             {deliveryEnabled && (
-              <div className="mt-4 space-y-3">
-                <div className="space-y-2">
-                  <Label>Стоимость доставки, BYN</Label>
-                  <Input
-                    inputMode="decimal"
-                    value={deliveryCost}
-                    onChange={(e) => setDeliveryCost(e.target.value)}
-                    placeholder="6,90"
-                    className="w-32"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Бесплатно от, BYN</Label>
-                  <Input
-                    inputMode="decimal"
-                    value={freeDeliveryFrom}
-                    onChange={(e) => setFreeDeliveryFrom(e.target.value)}
-                    placeholder="Не обязательно"
-                    className="w-40"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Если заполнено, при сумме заказа от этого значения доставка будет бесплатной.
-                  </p>
-                </div>
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="delivery-terms">Условия доставки</Label>
+                <Textarea
+                  id="delivery-terms"
+                  value={deliveryTerms}
+                  onChange={(e) => setDeliveryTerms(e.target.value)}
+                  placeholder="Например: 8 руб., только по Витебску, бесплатно от 50 руб., в другие города — Европочтой за отдельную плату"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Напишите в свободной форме как Вы можете отправить или доставить покупателю товар.
+                </p>
               </div>
             )}
           </div>

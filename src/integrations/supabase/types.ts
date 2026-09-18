@@ -204,6 +204,7 @@ export type Database = {
           delivery_cost: number | null
           delivery_enabled: boolean
           delivery_note: string | null
+          delivery_terms: string | null
           description: string | null
           district: string | null
           free_delivery_from: number | null
@@ -243,6 +244,7 @@ export type Database = {
           delivery_cost?: number | null
           delivery_enabled?: boolean
           delivery_note?: string | null
+          delivery_terms?: string | null
           description?: string | null
           district?: string | null
           free_delivery_from?: number | null
@@ -282,6 +284,7 @@ export type Database = {
           delivery_cost?: number | null
           delivery_enabled?: boolean
           delivery_note?: string | null
+          delivery_terms?: string | null
           description?: string | null
           district?: string | null
           free_delivery_from?: number | null
@@ -1331,10 +1334,9 @@ export type Database = {
         Args: { farmer_ids: string[] }
         Returns: {
           busy_dates: Json
-          delivery_cost: number
           delivery_enabled: boolean
+          delivery_terms: string
           farmer_id: string
-          free_delivery_from: number
           max_orders_per_day: number
           pickup_enabled: boolean
           pickup_slots: Json

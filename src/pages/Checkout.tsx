@@ -57,8 +57,7 @@ interface SellerPickupSettings {
   vacation_dates: string[] | null;
   pickup_enabled?: boolean | null;
   delivery_enabled?: boolean | null;
-  delivery_cost?: number | null;
-  free_delivery_from?: number | null;
+  delivery_terms?: string | null;
 }
 type OrderCountsMap = Record<string, number>; // "farmerId:YYYY-MM-DD" -> count
 export default function Checkout() {
@@ -216,12 +215,9 @@ export default function Checkout() {
   const cartSellerSettings = cartFarmerId ? sellerPickupSettings.get(cartFarmerId) : undefined;
   const sellerPickupEnabled = cartSellerSettings?.pickup_enabled ?? true;
   const sellerDeliveryEnabled = cartSellerSettings?.delivery_enabled ?? false;
-  const sellerDeliveryBaseCost = cartSellerSettings?.delivery_cost ?? 0;
-  const sellerFreeDeliveryFrom = cartSellerSettings?.free_delivery_from ?? null;
-  const isDeliveryFree = sellerFreeDeliveryFrom != null && totalPrice >= sellerFreeDeliveryFrom;
+  const sellerDeliveryTerms = cartSellerSettings?.delivery_terms?.trim() || "";
 
-  const deliveryCost = deliveryType === "courier" ? (isDeliveryFree ? 0 : sellerDeliveryBaseCost) : 0;
-  const finalTotalPrice = totalPrice + deliveryCost;
+  const finalTotalPrice = totalPrice;
 
   // Сбрасываем способ получения, если продавец его отключил
   useEffect(() => {
@@ -399,7 +395,7 @@ export default function Checkout() {
           const dateStr = format(selectedDate, "d MMMM", { locale: ru });
           estimatedDeliveryTime = `${dateStr} ${selectedTime}`;
         } else {
-          estimatedDeliveryTime = normalizeDeliveryText(fastDeliveryResult.text);
+          estimatedDeliveryTime = "Время доставки согласуем при подтверждении заказа";
         }
       } else if (deliveryType === "self") {
         // Compute per-seller pickup times
@@ -447,7 +443,7 @@ export default function Checkout() {
         status: "pending",
         delivery_type: deliveryType,
         delivery_address: deliveryType === "courier" ? deliveryAddress : null,
-        delivery_cost: deliveryCost,
+        delivery_cost: 0,
         delivery_date: deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedDate ?
         format(selectedDate, "yyyy-MM-dd") :
         null,
@@ -639,11 +635,6 @@ export default function Checkout() {
                   <Home className="h-4 w-4" />
                   <span className="font-medium">Доставка</span>
                 </span>
-                <span className="font-medium">
-                  {isDeliveryFree || sellerDeliveryBaseCost === 0
-                    ? "Бесплатно"
-                    : <>{formatPrice(sellerDeliveryBaseCost).formatted}<BynSymbol /></>}
-                </span>
               </Label>
             </div>
             )}
@@ -676,11 +667,6 @@ export default function Checkout() {
             )}
           </RadioGroup>
 
-          {sellerDeliveryEnabled && sellerFreeDeliveryFrom != null && !isDeliveryFree && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Бесплатная доставка от {formatPrice(sellerFreeDeliveryFrom).formatted}<BynSymbol />
-            </p>
-          )}
 
 
           {/* Conditional content based on delivery type */}
@@ -705,11 +691,9 @@ export default function Checkout() {
                 className="sr-only" />
 
                   <Label htmlFor="courier-fast" className="block cursor-pointer">
-                    <span className="font-medium">Ближайшая доставка</span>
-                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
-                      {noDeliveryAvailable
-                        ? "Нет доступных дат для доставки в ближайшее время"
-                        : `Привезем ваш заказ: ${fastDeliveryResult.text}`}
+                    <span className="font-medium">Условия доставки продавца</span>
+                    <p className={`text-sm mt-0.5 whitespace-pre-line ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
+                      {sellerDeliveryTerms || "Продавец согласует условия доставки при подтверждении заказа."}
                     </p>
                   </Label>
                 </div>
@@ -1009,14 +993,6 @@ export default function Checkout() {
               <span className="text-muted-foreground">Товары:</span>
               <span className="text-foreground">{formatPrice(totalPrice).formatted}<BynSymbol /></span>
             </div>
-            {deliveryType === "courier" && <div className="flex justify-between">
-                <span className="text-muted-foreground">Доставка:</span>
-                <span className="text-foreground">
-                  {deliveryCost === 0
-                    ? "Бесплатно"
-                    : <>{formatPrice(deliveryCost).formatted}<BynSymbol /></>}
-                </span>
-              </div>}
           </div>
           
           <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
@@ -1042,7 +1018,7 @@ export default function Checkout() {
 
       {/* Checkout button */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-card p-3 shadow-lg md:hidden">
-        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "courier" && courierDeliveryMode === "fast" && noDeliveryAvailable) || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
+        <Button className="w-full" size="lg" onClick={handleOrder} disabled={isLoading || !deliveryType || (deliveryType === "courier" && courierDeliveryMode === "scheduled" && (!selectedDate || !selectedTime))}>
           {isLoading ? "Оформление..." : "Заказать"}
         </Button>
       </div>
