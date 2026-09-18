@@ -443,7 +443,7 @@ export default function Checkout() {
         status: "pending",
         delivery_type: deliveryType,
         delivery_address: deliveryType === "courier" ? deliveryAddress : null,
-        delivery_cost: deliveryCost,
+        delivery_cost: 0,
         delivery_date: deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedDate ?
         format(selectedDate, "yyyy-MM-dd") :
         null,
@@ -635,11 +635,6 @@ export default function Checkout() {
                   <Home className="h-4 w-4" />
                   <span className="font-medium">Доставка</span>
                 </span>
-                <span className="font-medium">
-                  {isDeliveryFree || sellerDeliveryBaseCost === 0
-                    ? "Бесплатно"
-                    : <>{formatPrice(sellerDeliveryBaseCost).formatted}<BynSymbol /></>}
-                </span>
               </Label>
             </div>
             )}
@@ -672,11 +667,6 @@ export default function Checkout() {
             )}
           </RadioGroup>
 
-          {sellerDeliveryEnabled && sellerFreeDeliveryFrom != null && !isDeliveryFree && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Бесплатная доставка от {formatPrice(sellerFreeDeliveryFrom).formatted}<BynSymbol />
-            </p>
-          )}
 
 
           {/* Conditional content based on delivery type */}
