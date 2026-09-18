@@ -691,11 +691,9 @@ export default function Checkout() {
                 className="sr-only" />
 
                   <Label htmlFor="courier-fast" className="block cursor-pointer">
-                    <span className="font-medium">Ближайшая доставка</span>
-                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
-                      {noDeliveryAvailable
-                        ? "Нет доступных дат для доставки в ближайшее время"
-                        : `Привезем ваш заказ: ${fastDeliveryResult.text}`}
+                    <span className="font-medium">Условия доставки продавца</span>
+                    <p className={`text-sm mt-0.5 whitespace-pre-line ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
+                      {sellerDeliveryTerms || "Продавец согласует условия доставки при подтверждении заказа."}
                     </p>
                   </Label>
                 </div>
@@ -995,14 +993,6 @@ export default function Checkout() {
               <span className="text-muted-foreground">Товары:</span>
               <span className="text-foreground">{formatPrice(totalPrice).formatted}<BynSymbol /></span>
             </div>
-            {deliveryType === "courier" && <div className="flex justify-between">
-                <span className="text-muted-foreground">Доставка:</span>
-                <span className="text-foreground">
-                  {deliveryCost === 0
-                    ? "Бесплатно"
-                    : <>{formatPrice(deliveryCost).formatted}<BynSymbol /></>}
-                </span>
-              </div>}
           </div>
           
           <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
