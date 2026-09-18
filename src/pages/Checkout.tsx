@@ -57,8 +57,7 @@ interface SellerPickupSettings {
   vacation_dates: string[] | null;
   pickup_enabled?: boolean | null;
   delivery_enabled?: boolean | null;
-  delivery_cost?: number | null;
-  free_delivery_from?: number | null;
+  delivery_terms?: string | null;
 }
 type OrderCountsMap = Record<string, number>; // "farmerId:YYYY-MM-DD" -> count
 export default function Checkout() {
@@ -216,12 +215,9 @@ export default function Checkout() {
   const cartSellerSettings = cartFarmerId ? sellerPickupSettings.get(cartFarmerId) : undefined;
   const sellerPickupEnabled = cartSellerSettings?.pickup_enabled ?? true;
   const sellerDeliveryEnabled = cartSellerSettings?.delivery_enabled ?? false;
-  const sellerDeliveryBaseCost = cartSellerSettings?.delivery_cost ?? 0;
-  const sellerFreeDeliveryFrom = cartSellerSettings?.free_delivery_from ?? null;
-  const isDeliveryFree = sellerFreeDeliveryFrom != null && totalPrice >= sellerFreeDeliveryFrom;
+  const sellerDeliveryTerms = cartSellerSettings?.delivery_terms?.trim() || "";
 
-  const deliveryCost = deliveryType === "courier" ? (isDeliveryFree ? 0 : sellerDeliveryBaseCost) : 0;
-  const finalTotalPrice = totalPrice + deliveryCost;
+  const finalTotalPrice = totalPrice;
 
   // Сбрасываем способ получения, если продавец его отключил
   useEffect(() => {
