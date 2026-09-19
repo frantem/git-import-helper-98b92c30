@@ -672,51 +672,31 @@ export default function Checkout() {
 
           {/* Conditional content based on delivery type */}
           {deliveryType === "courier" && <div className="mt-4 pt-4 border-t border-border space-y-4">
-              {/* Courier delivery mode selection */}
-              <RadioGroup
-            value={courierDeliveryMode}
-            onValueChange={(v) => setCourierDeliveryMode(v as "fast" | "scheduled")}
-            className="space-y-2">
-
-                {/* Fast delivery option */}
-                <div
-              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
-              courierDeliveryMode === "fast" ?
-              "border-primary bg-primary/10 text-primary" :
-              "border-border bg-background text-foreground hover:bg-secondary/50"}`}
-              onClick={() => setCourierDeliveryMode("fast")}>
-
-                  <RadioGroupItem
-                value="fast"
-                id="courier-fast"
-                className="sr-only" />
-
-                  <Label htmlFor="courier-fast" className="block cursor-pointer">
-                    <span className="font-medium">Условия доставки продавца</span>
-                    <p className={`text-sm mt-0.5 whitespace-pre-line ${courierDeliveryMode === "fast" ? "text-primary/80" : "text-muted-foreground"}`}>
-                      {sellerDeliveryTerms || "Продавец согласует условия доставки при подтверждении заказа."}
-                    </p>
-                  </Label>
+              {/* Seller delivery terms — informational text, not selectable */}
+              <div className="rounded-xl border border-primary/40 bg-primary/10 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Условия доставки продавца</span>
                 </div>
+                <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
+                  {sellerDeliveryTerms || "Продавец согласует условия доставки при подтверждении заказа."}
+                </p>
+              </div>
 
-                {/* Scheduled delivery option */}
-                <div
-              className={`rounded-lg border-2 px-3 py-2.5 cursor-pointer transition-colors ${
-              courierDeliveryMode === "scheduled" ?
-              "border-primary bg-primary/10 text-primary" :
-              "border-border bg-background text-foreground hover:bg-secondary/50"}`
-              }
-              onClick={() => setCourierDeliveryMode("scheduled")}>
-
-                  <RadioGroupItem value="scheduled" id="courier-scheduled" className="sr-only" />
-                  <Label htmlFor="courier-scheduled" className="block cursor-pointer">
-                    <span className="font-medium">Доставка в указанное время</span>
-                    <p className={`text-sm mt-0.5 ${courierDeliveryMode === "scheduled" ? "text-primary/80" : "text-muted-foreground"}`}>
-                      Вы можете выбрать дату и время, когда мы Вам доставим товары
-                    </p>
-                  </Label>
-                </div>
-              </RadioGroup>
+              {/* Delivery in specified time */}
+              <label className="flex items-start gap-3 rounded-lg border border-border bg-background px-3 py-2.5 cursor-pointer transition-colors hover:bg-secondary/50">
+                <Checkbox
+                  checked={courierDeliveryMode === "scheduled"}
+                  onCheckedChange={(checked) => setCourierDeliveryMode(checked ? "scheduled" : "fast")}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium text-foreground">Доставка в указанное время</span>
+                  <p className="text-sm mt-0.5 text-muted-foreground">
+                    Можно выбрать дату и время, когда Вам доставить товары
+                  </p>
+                </span>
+              </label>
 
               {/* Calendar - shown only when scheduled mode is selected */}
               {courierDeliveryMode === "scheduled" &&
