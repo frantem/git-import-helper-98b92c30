@@ -102,6 +102,7 @@ export default function Checkout() {
   const [courierDeliveryMode, setCourierDeliveryMode] = useState<"fast" | "scheduled">("fast");
 
   // Payment method (on delivery)
+  const [orderComment, setOrderComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
 
   // Confirmation method
@@ -448,9 +449,15 @@ export default function Checkout() {
         delivery_date: deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedDate ?
         format(selectedDate, "yyyy-MM-dd") :
         null,
-        notes: deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedTime ?
-        `Доставка в указанное время: ${selectedTime}` :
-        null,
+        notes: (() => {
+          const parts: string[] = [];
+          if (deliveryType === "courier" && courierDeliveryMode === "scheduled" && selectedTime) {
+            parts.push(`Доставка в указанное время: ${selectedTime}`);
+          }
+          const comment = orderComment.trim();
+          if (comment) parts.push(`Комментарий: ${comment}`);
+          return parts.length > 0 ? parts.join("\n") : null;
+        })(),
         estimated_delivery_time: estimatedDeliveryTime,
         referrer_farmer_id: (() => {
           const refId = localStorage.getItem("referrer_farmer_id");
