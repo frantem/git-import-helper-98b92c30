@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -641,16 +642,15 @@ export default function SellerOrders() {
                                 Отмена
                               </Button>
                               <AlertDialog>
-                                <Button
-                                  asChild
-                                  size="sm"
-                                  variant="outline"
-                                  className="ml-auto text-destructive"
-                                >
-                                  <span>
-                                    <AlertDialogTriggerInner />
-                                  </span>
-                                </Button>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="ml-auto text-destructive"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Удалить товар из заказа?</AlertDialogTitle>
@@ -777,6 +777,12 @@ export default function SellerOrders() {
                       )}
 
                       <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" className="w-full text-destructive" disabled={isBusy}>
+                            <X className="h-4 w-4 mr-2" />
+                            Отменить заказ
+                          </Button>
+                        </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Отменить заказ?</AlertDialogTitle>
