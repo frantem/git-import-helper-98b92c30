@@ -641,16 +641,15 @@ export default function SellerOrders() {
                                 Отмена
                               </Button>
                               <AlertDialog>
-                                <Button
-                                  asChild
-                                  size="sm"
-                                  variant="outline"
-                                  className="ml-auto text-destructive"
-                                >
-                                  <span>
-                                    <AlertDialogTriggerInner />
-                                  </span>
-                                </Button>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="ml-auto text-destructive"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Удалить товар из заказа?</AlertDialogTitle>
