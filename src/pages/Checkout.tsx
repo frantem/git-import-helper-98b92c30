@@ -913,6 +913,17 @@ export default function Checkout() {
             </div>}
         </div>
 
+        {/* Order comment */}
+        <div className="rounded-2xl bg-card px-4 py-2.5 shadow-sm mb-4">
+          <h2 className="font-bold text-foreground mb-2 text-sm">Комментарий к заказу</h2>
+          <Textarea
+            value={orderComment}
+            onChange={(e) => setOrderComment(e.target.value)}
+            placeholder={"Например: отправьте европочтой отделение 506\nИванов Иван Иванович\nг. Минск ул. Центральная 111\n+375297778800"}
+            rows={4}
+          />
+        </div>
+
         {/* Payment method on delivery */}
         <div className="rounded-2xl bg-card px-4 py-2.5 shadow-sm mb-4">
           <h2 className="font-bold text-foreground mb-2 text-sm">Оплата при получении</h2>
