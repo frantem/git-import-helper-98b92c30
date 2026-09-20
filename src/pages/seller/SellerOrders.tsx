@@ -577,7 +577,7 @@ export default function SellerOrders() {
                   {order.notes && (
                     <div className="flex items-start gap-2 text-sm text-muted-foreground mb-3">
                       <Package className="h-4 w-4 mt-0.5 shrink-0" />
-                      <span>{order.notes}</span>
+                      <span className="whitespace-pre-line">{order.notes}</span>
                     </div>
                   )}
 
