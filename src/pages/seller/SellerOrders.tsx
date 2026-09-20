@@ -777,6 +777,12 @@ export default function SellerOrders() {
                       )}
 
                       <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" className="w-full text-destructive" disabled={isBusy}>
+                            <X className="h-4 w-4 mr-2" />
+                            Отменить заказ
+                          </Button>
+                        </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Отменить заказ?</AlertDialogTitle>
