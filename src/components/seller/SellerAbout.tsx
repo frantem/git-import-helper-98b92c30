@@ -39,8 +39,14 @@ export const SellerAbout = memo(function SellerAbout({
     const el = textRef.current;
     if (!el) return;
 
-    const check = () => setClipped(el.scrollHeight - el.clientHeight > 2);
+    const check = () => {
+      const style = window.getComputedStyle(el);
+      const lineHeight =
+        parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.625;
+      setClipped(el.scrollHeight > lineHeight * MAX_LINES + 2);
+    };
     check();
+
 
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(check);
