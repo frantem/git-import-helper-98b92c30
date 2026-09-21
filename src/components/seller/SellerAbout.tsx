@@ -116,7 +116,7 @@ export const SellerAbout = memo(function SellerAbout({
         className={cn(
           "rounded-2xl bg-card text-left",
           clipped &&
-            "cursor-pointer transition-colors duration-200 hover:bg-accent/5 active:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "cursor-pointer transition-colors duration-200 hover:bg-accent/10 active:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         )}
       >
         {content}
