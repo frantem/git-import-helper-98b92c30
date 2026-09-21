@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import type { HTMLAttributes, KeyboardEvent } from "react";
 import { cdnImage } from "@/lib/imageCdn";
 import { cn } from "@/lib/utils";
 
@@ -12,11 +12,10 @@ interface SellerAboutProps {
 /** Сколько строк текста видно, пока покупатель не развернул блок. */
 const MAX_LINES = 3;
 
-
 /**
  * Блок «О нас»: человек, история.
- * Длинные тексты свёрнуты до 3 строк — чтобы открыть продолжение,
- * нужно нажать на блок.
+ * Длинные тексты свёрнуты до 3 строк и заканчиваются многоточием —
+ * чтобы прочитать продолжение, покупатель нажимает на блок.
  */
 export const SellerAbout = memo(function SellerAbout({
   name,
@@ -24,7 +23,7 @@ export const SellerAbout = memo(function SellerAbout({
   photoUrl,
 }: SellerAboutProps) {
   const hasAbout = !!aboutText?.trim();
-  const textRef = useRef<HTMLParagraphElement>(null);
+  const measureRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [clipped, setClipped] = useState(false);
 
@@ -33,14 +32,13 @@ export const SellerAbout = memo(function SellerAbout({
     setExpanded(false);
   }, [aboutText]);
 
-  // Текст длиннее 3 строк? Проверяем, пока блок свёрнут.
+  // Скрытый клон текста никогда не сжимается, поэтому по нему надёжно
+  // видно, сколько строк занимает описание.
   useEffect(() => {
-    if (expanded) return;
-    const el = textRef.current;
+    const el = measureRef.current;
     if (!el) return;
 
     const check = () => {
-      // Узел мог быть пересоздан при переключении блока — такие вызовы игнорируем.
       if (!el.isConnected) return;
       const style = window.getComputedStyle(el);
       const lineHeight =
@@ -54,10 +52,28 @@ export const SellerAbout = memo(function SellerAbout({
     const observer = new ResizeObserver(check);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [expanded, aboutText, clipped]);
-
+  }, [aboutText]);
 
   if (!hasAbout) return null;
+
+  const toggle = () => setExpanded((v) => !v);
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggle();
+    }
+  };
+
+  const interactive: HTMLAttributes<HTMLDivElement> = clipped
+    ? {
+        role: "button",
+        tabIndex: 0,
+        "aria-expanded": expanded,
+        onClick: toggle,
+        onKeyDown,
+      }
+    : {};
 
   const content = (
     <div className="flex items-start gap-3 p-4">
@@ -72,65 +88,39 @@ export const SellerAbout = memo(function SellerAbout({
       )}
       <div className="min-w-0 flex-1">
         <div className="relative">
+          {/* Служебный клон: по нему меряем длину, он всегда невидим. */}
           <p
-            ref={textRef}
+            ref={measureRef}
+            aria-hidden
+            className="invisible pointer-events-none absolute inset-x-0 top-0 m-0 whitespace-pre-wrap text-[14px] leading-relaxed"
+          >
+            {aboutText}
+          </p>
+          <p
             className={cn(
               "whitespace-pre-wrap text-[14px] leading-relaxed text-foreground",
-              clipped && !expanded && "max-h-[4.875em] overflow-hidden",
+              clipped && !expanded && "line-clamp-3",
             )}
           >
             {aboutText}
           </p>
-          {clipped && !expanded && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-7 bg-gradient-to-t from-card to-transparent"
-            />
-          )}
         </div>
-
-        {clipped && (
-          <div className="mt-2 flex items-center gap-1.5">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold",
-                expanded
-                  ? "bg-secondary text-secondary-foreground"
-                  : "bg-accent text-accent-foreground",
-              )}
-            >
-              {expanded ? "Свернуть" : "Читать полностью"}
-              {expanded ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </span>
-            {!expanded && (
-              <span className="text-[12px] text-secondary-foreground">
-                нажмите на текст
-              </span>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
 
   return (
     <section className="mb-6">
-      {clipped ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="w-full cursor-pointer rounded-2xl bg-card text-left transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {content}
-        </button>
-      ) : (
-        <div className="rounded-2xl bg-card">{content}</div>
-      )}
+      <div
+        {...interactive}
+        className={cn(
+          "rounded-2xl bg-card text-left",
+          clipped &&
+            "cursor-pointer transition-colors duration-200 hover:bg-accent/5 active:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        )}
+      >
+        {content}
+      </div>
     </section>
   );
 });
