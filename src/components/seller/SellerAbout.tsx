@@ -33,26 +33,29 @@ export const SellerAbout = memo(function SellerAbout({
     setExpanded(false);
   }, [aboutText]);
 
-  // Текст длиннее 3 строк? Проверяем только в свёрнутом виде.
+  // Текст длиннее 3 строк? Проверяем, пока блок свёрнут.
   useEffect(() => {
     if (expanded) return;
     const el = textRef.current;
     if (!el) return;
 
     const check = () => {
+      // Узел мог быть пересоздан при переключении блока — такие вызовы игнорируем.
+      if (!el.isConnected) return;
       const style = window.getComputedStyle(el);
       const lineHeight =
         parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.625;
+      if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
       setClipped(el.scrollHeight > lineHeight * MAX_LINES + 2);
     };
     check();
-
 
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(check);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [expanded, aboutText]);
+  }, [expanded, aboutText, clipped]);
+
 
   if (!hasAbout) return null;
 
