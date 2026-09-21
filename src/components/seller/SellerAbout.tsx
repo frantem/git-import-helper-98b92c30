@@ -43,7 +43,6 @@ export const SellerAbout = memo(function SellerAbout({
       const style = window.getComputedStyle(el);
       const lineHeight =
         parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.625;
-      console.log('[about-check]', el.scrollHeight, lineHeight * MAX_LINES + 2, el.scrollHeight > lineHeight * MAX_LINES + 2);
       setClipped(el.scrollHeight > lineHeight * MAX_LINES + 2);
     };
     check();
