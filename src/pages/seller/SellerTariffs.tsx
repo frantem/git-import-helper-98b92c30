@@ -35,7 +35,7 @@ const FEATURES: Array<{ label: string; free: Cell; standard: Cell; pro: Cell }> 
   { label: "Комиссия\nс продажи", free: "10%", standard: "0%", pro: "0%" },
   { label: "Контакты\nна странице", free: false, standard: true, pro: true },
   { label: "Все контакты\nклиентов открыты", free: false, standard: true, pro: true },
-  { label: "Можете сами\nделать доставку", free: false, standard: true, pro: true },
+  { label: "SMS уведомления", free: false, standard: true, pro: true },
   { label: "Авто рассылка", free: false, standard: false, pro: true },
   { label: "Онлайн оплата", free: false, standard: false, pro: true },
 ];
