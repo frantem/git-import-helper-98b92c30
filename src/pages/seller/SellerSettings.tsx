@@ -318,17 +318,6 @@ export default function SellerSettings() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-border">
-            <h3 className="font-medium text-foreground mb-1">Доставка и самовывоз</h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Адрес самовывоза, график выдачи и стоимость доставки — на отдельной странице.
-            </p>
-            <Link to="/seller/delivery">
-              <Button variant="outline" size="sm">Открыть настройки получения</Button>
-            </Link>
-          </div>
-
-
           {/* Telegram-уведомления */}
           <div className="pt-4 border-t border-border space-y-3">
             <div className="flex items-center gap-2">
