@@ -35,13 +35,25 @@ export function usePendingOrdersCount() {
           .maybeSingle();
 
         if (farmer) {
-          const { count } = await supabase
+          // «Непринятый» заказ — это позиция без confirmed_at.
+          // order_items.status остаётся 'pending' до нажатия «Собран»,
+          // поэтому по нему считать нельзя (иначе доставленные админом
+          // заказы висят в бейдже). Заказы delivered/cancelled исключаем.
+          const { data } = await supabase
             .from("order_items")
-            .select("*", { count: "exact", head: true })
+            .select("id, order:orders(status)")
             .eq("farmer_id", farmer.id)
-            .eq("status", "pending");
-          
-          setSellerPendingCount(count || 0);
+            .is("confirmed_at", null);
+
+          const rows = (data || []) as unknown as Array<{ order: { status: string } | null }>;
+          const count = rows.filter(
+            (row) =>
+              row.order &&
+              row.order.status !== "delivered" &&
+              row.order.status !== "cancelled"
+          ).length;
+
+          setSellerPendingCount(count);
         }
       }
 
