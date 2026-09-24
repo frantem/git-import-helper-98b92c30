@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { formatPrice, kopecksToRublesString, parseRublesToKopecks } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import {
-  ArrowLeft, Package, MapPin, Calendar, User, Truck, Check, Clock,
+  ArrowLeft, Package, MapPin, User, Truck, Check, Clock,
   CheckCircle2, Phone, MessageSquare, Pencil, Trash2, Plus, Save, X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -84,7 +84,7 @@ export default function SellerOrders() {
   const [priceEdits, setPriceEdits] = useState<Record<string, string>>({});
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
-  const [editingSchedule, setEditingSchedule] = useState<{ id: string; date: string; time: string } | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<{ id: string; time: string } | null>(null);
   const [savingSchedule, setSavingSchedule] = useState(false);
 
   const [addingToOrderId, setAddingToOrderId] = useState<string | null>(null);
@@ -192,11 +192,6 @@ export default function SellerOrders() {
     setOrders(result);
     setIsLoading(false);
   };
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("ru-RU", {
-      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-    });
 
   const recalcOrderTotal = async (orderId: string) => {
     const { data: allItems } = await supabase
@@ -335,11 +330,10 @@ export default function SellerOrders() {
   const handleSaveSchedule = async () => {
     if (!editingSchedule) return;
     setSavingSchedule(true);
-    const newDate = editingSchedule.date.trim() || null;
     const newTime = editingSchedule.time.trim() || null;
     const { error } = await supabase
       .from("orders")
-      .update({ delivery_date: newDate, estimated_delivery_time: newTime })
+      .update({ estimated_delivery_time: newTime })
       .eq("id", editingSchedule.id);
     setSavingSchedule(false);
     if (error) {
@@ -347,10 +341,10 @@ export default function SellerOrders() {
       return;
     }
     setOrders(prev => prev.map(o => o.id === editingSchedule.id
-      ? { ...o, delivery_date: newDate, estimated_delivery_time: newTime }
+      ? { ...o, estimated_delivery_time: newTime }
       : o));
     setEditingSchedule(null);
-    toast.success("Дата и время обновлены");
+    toast.success("Время обновлено");
   };
 
   const handleConfirmOrder = async (orderId: string) => {
@@ -464,7 +458,6 @@ export default function SellerOrders() {
                   {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
                       <p className="text-lg font-bold text-foreground">
                         {price.formatted}<BynSymbol />
                       </p>
@@ -543,13 +536,13 @@ export default function SellerOrders() {
                     </div>
                   )}
 
-                  {/* Date / time with edit */}
+                  {/* Время получения заказа */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Calendar className="h-4 w-4 shrink-0" />
+                    <Clock className="h-4 w-4 shrink-0" />
                     <span>
-                      {order.delivery_date
-                        ? new Date(order.delivery_date).toLocaleDateString("ru-RU")
-                        : "Дата не указана"}
+                      {order.estimated_delivery_time
+                        ? `Время: ${order.estimated_delivery_time}`
+                        : "Время не указано"}
                     </span>
                     {canEdit && (
                       <Button
@@ -558,7 +551,6 @@ export default function SellerOrders() {
                         className="h-7 px-2"
                         onClick={() => setEditingSchedule({
                           id: order.id,
-                          date: order.delivery_date ?? "",
                           time: order.estimated_delivery_time ?? "",
                         })}
                       >
@@ -566,13 +558,6 @@ export default function SellerOrders() {
                       </Button>
                     )}
                   </div>
-
-                  {order.estimated_delivery_time && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Clock className="h-4 w-4 shrink-0" />
-                      <span>Время: {order.estimated_delivery_time}</span>
-                    </div>
-                  )}
 
                   {order.notes && (
                     <div className="flex items-start gap-2 text-sm text-muted-foreground mb-3">
@@ -811,17 +796,9 @@ export default function SellerOrders() {
       <Dialog open={!!editingSchedule} onOpenChange={(open) => !open && setEditingSchedule(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Дата и время</DialogTitle>
+            <DialogTitle>Время получения</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Дата</Label>
-              <Input
-                type="date"
-                value={editingSchedule?.date ?? ""}
-                onChange={(e) => setEditingSchedule(s => s ? { ...s, date: e.target.value } : s)}
-              />
-            </div>
             <div>
               <Label className="text-xs">Время</Label>
               <Input

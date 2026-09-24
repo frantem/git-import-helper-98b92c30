@@ -63,13 +63,9 @@ export default function SellerPage() {
   const [uploading, setUploading] = useState(false);
 
   const [hero, setHero] = useState({
-    tagline: "",
-    about_text: "",
     hero_media_url: "",
     hero_media_type: "",
-    location_label: "",
     unique_fact: "",
-    delivery_note: "",
     theme: "forest",
     contact_phone: "",
     contact_instagram: "",
@@ -89,7 +85,7 @@ export default function SellerPage() {
     if (!user) return;
     const { data: farmer } = await supabase
       .from("farmers")
-      .select("id, slug, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title, unique_fact, delivery_note, contacts, theme")
+      .select("id, slug, hero_media_url, hero_media_type, posts_block_title, unique_fact, contacts, theme")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -101,13 +97,9 @@ export default function SellerPage() {
     setFarmerId(farmer.id);
     setFarmerSlug(farmer.slug || farmer.id);
     setHero({
-      tagline: farmer.tagline || "",
-      about_text: farmer.about_text || "",
       hero_media_url: farmer.hero_media_url || "",
       hero_media_type: farmer.hero_media_type || "",
-      location_label: farmer.location_label || "",
       unique_fact: (farmer as any).unique_fact || "",
-      delivery_note: (farmer as any).delivery_note || "",
       theme: (farmer as any).theme || "forest",
       contact_phone: ((farmer as any).contacts as any)?.phone || "",
       contact_instagram: ((farmer as any).contacts as any)?.instagram || "",
@@ -186,13 +178,9 @@ export default function SellerPage() {
     const { error } = await supabase
       .from("farmers")
       .update({
-        tagline: hero.tagline || null,
-        about_text: hero.about_text || null,
         hero_media_url: hero.hero_media_url || null,
         hero_media_type: hero.hero_media_url ? hero.hero_media_type || "image" : null,
-        location_label: hero.location_label || null,
         unique_fact: hero.unique_fact.trim() || null,
-        delivery_note: hero.delivery_note.trim() || null,
         theme: hero.theme || "forest",
         contacts: {
           phone: hero.contact_phone.trim() || null,
@@ -354,38 +342,6 @@ export default function SellerPage() {
 
           <div className="space-y-3">
             <div>
-              <Label htmlFor="tagline">Девиз бренда</Label>
-              <Textarea
-                id="tagline"
-                rows={3}
-                value={hero.tagline}
-                onChange={(e) => setHero({ ...hero, tagline: e.target.value })}
-                placeholder="Короткий девиз, который увидят на обложке"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="about">О продавце</Label>
-              <Textarea
-                id="about"
-                rows={4}
-                value={hero.about_text}
-                onChange={(e) => setHero({ ...hero, about_text: e.target.value })}
-                placeholder="Пара предложений о вас и вашем хозяйстве"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="loc">Локация на обложке</Label>
-              <Input
-                id="loc"
-                value={hero.location_label}
-                onChange={(e) => setHero({ ...hero, location_label: e.target.value })}
-                placeholder="📍 Витебский, Витебск"
-              />
-            </div>
-
-            <div>
               <Label>Фото или видео обложки</Label>
               {hero.hero_media_url && (
                 <div className="mb-2 overflow-hidden rounded-xl">
@@ -450,17 +406,6 @@ export default function SellerPage() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Конкретный факт, а не общая фраза. Пока пусто — на странице виден плейсхолдер.
               </p>
-            </div>
-
-            <div>
-              <Label htmlFor="delivery">Доставка и самовывоз (1–2 строки)</Label>
-              <Textarea
-                id="delivery"
-                rows={2}
-                value={hero.delivery_note}
-                onChange={(e) => setHero({ ...hero, delivery_note: e.target.value })}
-                placeholder="Самовывоз в Витебске, доставка на следующий день, от 5 р."
-              />
             </div>
 
             <div>

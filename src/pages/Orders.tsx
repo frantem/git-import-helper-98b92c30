@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
-import { Package, Calendar, MapPin, Truck, Store, Clock } from "lucide-react";
+import { Package, MapPin, Truck, Store, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrderItemCustomFields } from "@/components/OrderItemCustomFields";
 
@@ -93,14 +93,6 @@ export default function Orders() {
     setIsLoading(false);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("ru-RU", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-  };
-
   if (!user) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
@@ -157,9 +149,6 @@ export default function Orders() {
                 
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <span className="text-sm text-muted-foreground">
-                        Заказ от {formatDate(order.created_at)}
-                      </span>
                       <p className="text-lg font-bold text-foreground">
                         {price.formatted}<BynSymbol />
                       </p>
@@ -187,22 +176,11 @@ export default function Orders() {
                     </p>
                 }
 
-                  {/* Estimated delivery time */}
+                  {/* Время получения заказа */}
                   {order.estimated_delivery_time &&
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                       <Clock className="h-4 w-4 shrink-0" />
-                      <span>Ожидаемое время: {order.estimated_delivery_time}</span>
-                    </div>
-                }
-
-                  {/* Delivery date */}
-                  {order.delivery_date &&
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <Calendar className="h-4 w-4 shrink-0" />
-                      <span>
-                        {order.delivery_type === "self" ? "Забрать" : "Доставка"}:{" "}
-                        {formatDate(order.delivery_date)}
-                      </span>
+                      <span>Время: {order.estimated_delivery_time}</span>
                     </div>
                 }
 

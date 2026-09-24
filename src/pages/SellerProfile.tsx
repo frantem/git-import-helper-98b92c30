@@ -28,16 +28,14 @@ interface Farmer {
   description: string | null;
   district: string;
   village: string | null;
+  city?: string | null;
   photo_url: string | null;
   rating?: number | null;
-  tagline?: string | null;
-  about_text?: string | null;
   hero_media_url?: string | null;
   hero_media_type?: string | null;
-  location_label?: string | null;
   posts_block_title?: string | null;
   unique_fact?: string | null;
-  delivery_note?: string | null;
+  delivery_terms?: string | null;
   contacts?: SellerContacts | null;
   theme?: string | null;
 }
@@ -119,7 +117,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors.
       const safeCols =
-        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, tagline, about_text, hero_media_url, hero_media_type, location_label, posts_block_title, unique_fact, delivery_note, contacts, theme, plan, trial_ends_at";
+        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, posts_block_title, unique_fact, delivery_terms, contacts, theme, plan, trial_ends_at";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -264,8 +262,7 @@ export default function SellerProfile() {
 
   const themeName = THEMES.includes((farmer.theme || "") as never) ? farmer.theme : "forest";
   const sellerSlug = farmer.slug || farmer.id;
-  const locationLabel =
-    farmer.location_label || `${farmer.district}${farmer.village ? `, ${farmer.village}` : ""}`;
+  const locationLabel = farmer.city?.trim() || farmer.village?.trim() || null;
 
   return (
     <div className={`seller-theme-${themeName} min-h-screen bg-background pb-16 md:pb-0`}>
@@ -293,7 +290,7 @@ export default function SellerProfile() {
         {/* 2. О нас */}
         <SellerAbout
           name={farmer.name}
-          aboutText={farmer.about_text || farmer.tagline || farmer.description}
+          aboutText={farmer.description}
           photoUrl={farmer.photo_url}
         />
 
@@ -301,7 +298,7 @@ export default function SellerProfile() {
         <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} />
 
         {/* 4. Доставка и самовывоз */}
-        <SellerDelivery note={farmer.delivery_note} />
+        <SellerDelivery note={farmer.delivery_terms} />
 
         {/* Посты-статьи продавца */}
         <SellerPosts

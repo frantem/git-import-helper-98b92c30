@@ -624,7 +624,7 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<SellerLookup
   const isUuid = UUID_RE.test(idOrSlug);
   const query = supabase
     .from("farmers")
-    .select("id, name, description, photo_url, slug, city, is_blocked, tagline, about_text");
+    .select("id, name, description, photo_url, slug, city, village, is_blocked, delivery_terms");
   const { data: farmer } = isUuid
     ? await query.eq("id", idOrSlug).maybeSingle()
     : await query.eq("slug", idOrSlug).maybeSingle();
@@ -640,14 +640,13 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<SellerLookup
 
   const title = `${name} — натуральные продукты в ${CITY} | ${SITE_NAME}`;
   const description = truncateMeta(
-    farmer.description || farmer.tagline ||
+    farmer.description ||
       `${name}: фермерские продукты с доставкой в ${CITY}. Покупайте натуральные продукты напрямую от производителя.`
   );
 
   const body: string[] = [];
-  if (farmer.tagline) body.push(`<p><em>${escapeHtml(clean(farmer.tagline))}</em></p>`);
-  if (farmer.description) body.push(`<p style="white-space:pre-wrap">${escapeHtml(farmer.description)}</p>`);
-  if (farmer.about_text && farmer.about_text !== farmer.description) body.push(`<h2>О нас</h2><p style="white-space:pre-wrap">${escapeHtml(farmer.about_text)}</p>`);
+  if (farmer.description) body.push(`<p style="white-space:pre-wrap">${escapeHtml(clean(farmer.description))}</p>`);
+  if (farmer.delivery_terms) body.push(`<h2>Доставка и самовывоз</h2><p style="white-space:pre-wrap">${escapeHtml(clean(farmer.delivery_terms))}</p>`);
   body.push(`<p>Доставка по ${CITY_NOM}у курьером или самовывоз, оплата при получении. Всего в продаже: ${products.length} ${products.length === 1 ? "товар" : products.length < 5 ? "товара" : "товаров"}.</p>`);
 
   return {
@@ -665,7 +664,7 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<SellerLookup
           description: farmer.description || undefined,
           image: farmer.photo_url ? ogImageUrl(farmer.photo_url) : undefined,
           url: sellerUrl,
-          address: { "@type": "PostalAddress", addressLocality: farmer.city || CITY_NOM, addressCountry: "BY" },
+          address: { "@type": "PostalAddress", addressLocality: farmer.city || farmer.village || CITY_NOM, addressCountry: "BY" },
         },
         {
           "@context": "https://schema.org",
