@@ -22,6 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# локальное состояние Supabase CLI (создаётся при link/pull), не для репы
-supabase/.temp/
