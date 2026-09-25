@@ -212,20 +212,30 @@ export default function SellerDelivery() {
         </div>
 
         <div className="space-y-4 rounded-xl bg-card p-4">
-          {/* Самовывоз */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-5 w-5 text-primary" />
-              <div>
-                <h2 className="font-medium text-foreground">Самовывоз</h2>
-                <p className="text-xs text-muted-foreground">Покупатель забирает заказ у вас</p>
-              </div>
-            </div>
-            <Switch checked={pickupEnabled} onCheckedChange={setPickupEnabled} />
-          </div>
+          {/* График работы, лимит заказов и стоп-даты */}
+          <PickupSettingsSection
+            pickupSlots={pickupSlots}
+            onPickupSlotsChange={setPickupSlots}
+            maxOrdersPerDay={maxOrdersPerDay}
+            onMaxOrdersChange={setMaxOrdersPerDay}
+            busyDates={busyDates}
+            onBusyDatesChange={setBusyDates}
+          />
 
-          {pickupEnabled && (
-            <>
+          {/* Самовывоз */}
+          <div className="pt-4 border-t border-border">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2">
+                <MapPin className="mt-0.5 h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="font-medium text-foreground">Самовывоз</h2>
+                  <p className="text-xs text-muted-foreground">Покупатель забирает заказ у вас</p>
+                </div>
+              </div>
+              <Switch checked={pickupEnabled} onCheckedChange={setPickupEnabled} />
+            </div>
+
+            {pickupEnabled && (
               <div className="pt-4 border-t border-border">
                 <h3 className="font-medium text-foreground mb-3">Адрес для самовывоза</h3>
                 <div className="space-y-3">
@@ -244,17 +254,8 @@ export default function SellerDelivery() {
                   <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
                 </div>
               </div>
-
-              <PickupSettingsSection
-                pickupSlots={pickupSlots}
-                onPickupSlotsChange={setPickupSlots}
-                maxOrdersPerDay={maxOrdersPerDay}
-                onMaxOrdersChange={setMaxOrdersPerDay}
-                busyDates={busyDates}
-                onBusyDatesChange={setBusyDates}
-              />
-            </>
-          )}
+            )}
+          </div>
 
           {/* Собственная доставка */}
           <div className="pt-4 border-t border-border">

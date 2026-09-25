@@ -69,7 +69,7 @@ export default function PickupSettingsSection({
   };
 
   return (
-    <div className="pt-4 border-t border-border space-y-6">
+    <div className="space-y-6">
       <h3 className="font-medium text-foreground">График работы и выдачи заказов</h3>
 
       {/* Schedule */}
