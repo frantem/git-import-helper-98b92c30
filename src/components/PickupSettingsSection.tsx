@@ -49,8 +49,6 @@ interface PickupSettingsSectionProps {
   onMaxOrdersChange: (val: number) => void;
   busyDates: Date[];
   onBusyDatesChange: (dates: Date[]) => void;
-  vacationDates: Date[];
-  onVacationDatesChange: (dates: Date[]) => void;
 }
 
 export { DEFAULT_PICKUP_SLOTS };
@@ -62,8 +60,6 @@ export default function PickupSettingsSection({
   onMaxOrdersChange,
   busyDates,
   onBusyDatesChange,
-  vacationDates,
-  onVacationDatesChange,
 }: PickupSettingsSectionProps) {
   const updateSlot = (day: string, field: keyof PickupSlot, value: boolean | string) => {
     onPickupSlotsChange({
@@ -151,15 +147,6 @@ export default function PickupSettingsSection({
             mode="multiple"
             selected={busyDates}
             onSelect={(dates) => onBusyDatesChange(dates || [])}
-            className="rounded-md border"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">🏖️ Отпуск (Магазин закрыт)</Label>
-          <Calendar
-            mode="multiple"
-            selected={vacationDates}
-            onSelect={(dates) => onVacationDatesChange(dates || [])}
             className="rounded-md border"
           />
         </div>

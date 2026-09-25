@@ -21,7 +21,6 @@ interface DeliveryDraft {
   pickupSlots: PickupSlots;
   maxOrdersPerDay: number;
   busyDates: string[];
-  vacationDates: string[];
 }
 
 
@@ -42,7 +41,6 @@ export default function SellerDelivery() {
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
   const [busyDates, setBusyDates] = useState<Date[]>([]);
-  const [vacationDates, setVacationDates] = useState<Date[]>([]);
 
   const draftKey = user ? `seller_delivery_draft_${user.id}` : null;
 
@@ -56,10 +54,9 @@ export default function SellerDelivery() {
       pickupSlots,
       maxOrdersPerDay,
       busyDates: busyDates.filter((d) => !isNaN(d.getTime())).map((d) => d.toISOString()),
-      vacationDates: vacationDates.filter((d) => !isNaN(d.getTime())).map((d) => d.toISOString()),
     };
     localStorage.setItem(draftKey, JSON.stringify(snapshot));
-  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryTerms, address, pickupSlots, maxOrdersPerDay, busyDates, vacationDates]);
+  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryTerms, address, pickupSlots, maxOrdersPerDay, busyDates]);
 
   useEffect(() => {
     if (!dataLoaded || !draftKey) return;
@@ -101,7 +98,6 @@ export default function SellerDelivery() {
       let slots: PickupSlots = f.pickup_slots ? (f.pickup_slots as PickupSlots) : DEFAULT_PICKUP_SLOTS;
       let maxOrders = f.max_orders_per_day != null ? Number(f.max_orders_per_day) : 5;
       let busy: Date[] = f.busy_dates ? (f.busy_dates as string[]).map((d) => new Date(d + "T00:00:00")) : [];
-      let vacation: Date[] = f.vacation_dates ? (f.vacation_dates as string[]).map((d) => new Date(d + "T00:00:00")) : [];
 
       const saved = localStorage.getItem(`seller_delivery_draft_${user.id}`);
       if (saved) {
@@ -114,7 +110,6 @@ export default function SellerDelivery() {
           if (draft.pickupSlots) slots = draft.pickupSlots;
           if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
           if (draft.busyDates) busy = draft.busyDates.map((s) => new Date(s));
-          if (draft.vacationDates) vacation = draft.vacationDates.map((s) => new Date(s));
         } catch {}
       }
 
@@ -125,7 +120,6 @@ export default function SellerDelivery() {
       setPickupSlots(slots);
       setMaxOrdersPerDay(maxOrders);
       setBusyDates(busy);
-      setVacationDates(vacation);
 
       setIsLoading(false);
       setDataLoaded(true);
@@ -152,7 +146,6 @@ export default function SellerDelivery() {
       const formatDate = (d: Date) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const validBusy = busyDates.filter((d) => !isNaN(d.getTime()));
-      const validVacation = vacationDates.filter((d) => !isNaN(d.getTime()));
 
       const { error } = await supabase
         .from("farmers")
@@ -166,7 +159,6 @@ export default function SellerDelivery() {
           pickup_slots: pickupSlots as any,
           max_orders_per_day: maxOrdersPerDay,
           busy_dates: validBusy.map(formatDate) as any,
-          vacation_dates: validVacation.map(formatDate) as any,
         } as any)
         .eq("id", farmerId);
 
@@ -260,8 +252,6 @@ export default function SellerDelivery() {
                 onMaxOrdersChange={setMaxOrdersPerDay}
                 busyDates={busyDates}
                 onBusyDatesChange={setBusyDates}
-                vacationDates={vacationDates}
-                onVacationDatesChange={setVacationDates}
               />
             </>
           )}

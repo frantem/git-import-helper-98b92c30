@@ -134,7 +134,6 @@ export interface PickupReadyDateResult {
 interface SellerSchedule {
   pickupSlots: PickupSlots | null;
   busyDates: string[] | null;
-  vacationDates: string[] | null;
   /** Минимальный срок приёма заказа до начала окна выдачи (часы). По умолчанию 0. */
   orderLeadTimeHours?: number;
 }
@@ -173,7 +172,6 @@ function isSellerDayAvailable(checkDate: Date, schedule: SellerSchedule): boolea
   const slot = slots[dayKey];
   if (!slot || !slot.active) return false;
   if (dateInList(schedule.busyDates, checkDate)) return false;
-  if (dateInList(schedule.vacationDates, checkDate)) return false;
   return true;
 }
 
@@ -389,7 +387,6 @@ export function calculatePickupTime(
   pickupSlots: PickupSlots | null | undefined,
   maxOrdersPerDay: number,
   busyDates: string[] | null | undefined,
-  vacationDates: string[] | null | undefined,
   orderCounts: OrderCounts,
   farmerId: string,
   orderLeadTimeHours?: number,
@@ -411,7 +408,6 @@ export function calculatePickupTime(
   const schedule: SellerSchedule = {
     pickupSlots,
     busyDates: busyDates ?? null,
-    vacationDates: vacationDates ?? null,
     orderLeadTimeHours: lead,
   };
 
@@ -486,7 +482,6 @@ export function calculatePickupReadyDate(
   prepTimeMinutes: number,
   pickupSlots: PickupSlots | null | undefined,
   busyDates: string[] | null | undefined,
-  vacationDates: string[] | null | undefined,
   orderLeadTimeHours?: number,
 ): PickupReadyDateResult | null {
   return findEarliestReady(
@@ -494,7 +489,6 @@ export function calculatePickupReadyDate(
     {
       pickupSlots: pickupSlots ?? null,
       busyDates: busyDates ?? null,
-      vacationDates: vacationDates ?? null,
       orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)),
     },
     { requireMinPickupWindow: true },
@@ -503,7 +497,7 @@ export function calculatePickupReadyDate(
 
 /**
  * Краткая метка ближайшей доступной даты самовывоза: "Сегодня" / "Завтра" / "DD.MM".
- * Учитывает prep + lead + график продавца + max_orders_per_day + busy/vacation.
+ * Учитывает prep + lead + график продавца + max_orders_per_day + busy.
  * Возвращает "Нет в наличии" если в горизонте поиска нет ни одного валидного окна.
  * Возвращает null, если у продавца не настроен график (вызывающий код покажет fallback).
  */
@@ -512,7 +506,6 @@ export function calculatePickupDateLabel(
   pickupSlots: PickupSlots | null | undefined,
   maxOrdersPerDay: number,
   busyDates: string[] | null | undefined,
-  vacationDates: string[] | null | undefined,
   orderCounts: OrderCounts,
   farmerId: string,
   orderLeadTimeHours?: number,
@@ -526,7 +519,6 @@ export function calculatePickupDateLabel(
     pickupSlots,
     maxOrdersPerDay,
     busyDates,
-    vacationDates,
     orderCounts,
     farmerId,
     orderLeadTimeHours,
@@ -642,13 +634,12 @@ export function calculateDeliveryTimePerSeller(
   prepTimeMinutes: number,
   pickupSlots: PickupSlots | null,
   busyDates: string[] | null,
-  vacationDates: string[] | null,
   adminSettings: AdminDeliverySettings,
   pickupPointEndMinutes?: number,
   orderLeadTimeHours?: number,
 ): DeliveryTimeResult {
   return calculateDeliveryTime(
-    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, vacationDates, orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)) } }],
+    [{ prepTimeMinutes, schedule: { pickupSlots, busyDates, orderLeadTimeHours: Math.max(0, Math.floor(orderLeadTimeHours ?? 0)) } }],
     adminSettings,
     pickupPointEndMinutes,
   );

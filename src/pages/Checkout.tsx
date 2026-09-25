@@ -55,7 +55,6 @@ interface SellerPickupSettings {
   pickup_slots: PickupSlots | null;
   max_orders_per_day: number;
   busy_dates: string[] | null;
-  vacation_dates: string[] | null;
   pickup_enabled?: boolean | null;
   delivery_enabled?: boolean | null;
   delivery_terms?: string | null;
@@ -137,7 +136,6 @@ export default function Checkout() {
         schedule: {
           pickupSlots: (s?.pickup_slots as PickupSlots | null) ?? null,
           busyDates: s?.busy_dates ?? null,
-          vacationDates: s?.vacation_dates ?? null,
           orderLeadTimeHours: maxLead,
         },
       };
@@ -421,7 +419,6 @@ export default function Checkout() {
               s?.pickup_slots as PickupSlots | null ?? null,
               s?.max_orders_per_day ?? 5,
               s?.busy_dates ?? null,
-              s?.vacation_dates ?? null,
               orderCountsMap,
               fid,
               maxLead
@@ -785,7 +782,6 @@ export default function Checkout() {
                   settings?.pickup_slots as PickupSlots | null | undefined,
                   settings?.max_orders_per_day ?? 5,
                   settings?.busy_dates,
-                  settings?.vacation_dates,
                   orderCountsMap,
                   fid,
                   maxLead

@@ -16,7 +16,6 @@ interface SellerPickupSettings {
   pickup_slots: PickupSlots | null;
   max_orders_per_day: number;
   busy_dates: string[] | null;
-  vacation_dates: string[] | null;
 }
 
 const HORIZON_DAYS = 30;
@@ -97,7 +96,6 @@ export function usePickupLabels(products: PickupProduct[]): Map<string, string> 
         s.pickup_slots,
         s.max_orders_per_day,
         s.busy_dates,
-        s.vacation_dates,
         counts,
         product.farmer_id,
         product.order_lead_time_hours || 0,
