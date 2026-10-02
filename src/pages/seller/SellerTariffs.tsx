@@ -42,7 +42,7 @@ const FEATURES: Array<{ label: string; free: Cell; standard: Cell; pro: Cell }> 
 
 /** Цены в копейках */
 const PRICING: Record<"standard" | "pro", { 1: number; 6: number; discount: string }> = {
-  standard: { 1: 1500, 6: 9000, discount: "−48%" },
+  standard: { 1: 1500, 6: 13740, discount: "−35%" },
   pro: { 1: 2500, 6: 15000, discount: "−49%" },
 };
 
