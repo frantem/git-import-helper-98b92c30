@@ -120,6 +120,8 @@ export function SEO({
     if (image) {
       setMeta("og:image", image);
       setMeta("twitter:image", image, true);
+      document.querySelector("meta[property='og:image']")?.setAttribute("data-page-image", "true");
+      document.querySelector("meta[name='twitter:image']")?.setAttribute("data-page-image", "true");
     }
 
     setCanonical(pageCanonical);
@@ -127,6 +129,8 @@ export function SEO({
     setRobots(!!noindex);
 
     return () => {
+      document.querySelector("meta[property='og:image']")?.removeAttribute("data-page-image");
+      document.querySelector("meta[name='twitter:image']")?.removeAttribute("data-page-image");
       document.title = DEFAULT_TITLE;
       setMeta("description", DEFAULT_DESCRIPTION, true);
       setMeta("og:title", DEFAULT_TITLE);
