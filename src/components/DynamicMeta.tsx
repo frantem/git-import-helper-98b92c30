@@ -22,10 +22,10 @@ export function DynamicMeta() {
       if (ogImage) {
         const ogUrl = cdnImage(ogImage, "og");
         const ogMeta = document.querySelector("meta[property='og:image']") as HTMLMetaElement;
-        if (ogMeta) ogMeta.content = ogUrl;
+        if (ogMeta && !ogMeta.hasAttribute("data-page-image")) ogMeta.content = ogUrl;
 
         const twitterMeta = document.querySelector("meta[name='twitter:image']") as HTMLMetaElement;
-        if (twitterMeta) twitterMeta.content = ogUrl;
+        if (twitterMeta && !twitterMeta.hasAttribute("data-page-image")) twitterMeta.content = ogUrl;
       }
 
       // Google verification
