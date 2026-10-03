@@ -258,12 +258,17 @@ export default function ForSellers() {
               </div>
               <figure>
                 <div className="max-h-[520px] overflow-hidden rounded-lg border border-brand-deep-foreground/20 bg-card shadow-2xl">
-                  <img
-                    src={sellerPageScreenshot}
-                    alt="Страница фермерского хозяйства Княжеское подворье с товарами и корзиной"
+                  <video
+                    src="/media/knyazhetsky-page.mp4"
+                    poster={sellerPageScreenshot}
+                    aria-label="Страница фермерского хозяйства Княжеское подворье с товарами и корзиной"
                     width="430"
                     height="932"
-                    loading="lazy"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
                     className="h-auto w-full object-cover object-top md:-mt-12"
                   />
                 </div>
