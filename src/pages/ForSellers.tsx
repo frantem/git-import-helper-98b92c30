@@ -99,8 +99,9 @@ export default function ForSellers() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background">
       <SEO
-        title="Бесплатный сайт для продавцов Витебска — Locus"
+        title="Бесплатный сайт для малого бизнеса"
         description="Личный сайт с корзиной, доставкой и базой клиентов для фермеров, пекарей, кондитеров и сыроваров Витебска. Подключение за 1 день."
+        image="https://locusfood.by/media/for-sellers-og.jpg"
         canonical="https://locusfood.by/for-sellers"
         jsonLd={serviceJsonLd}
       />

@@ -686,7 +686,7 @@ async function sellerMeta(supabase: any, idOrSlug: string): Promise<SellerLookup
 
 const STATIC_PAGES: Record<string, { title: string; description: string; h1: string }> = {
   "/for-sellers": {
-    title: `Бесплатный сайт для продавцов Витебска — ${SITE_NAME}`,
+    title: `Бесплатный сайт для малого бизнеса`,
     description: `Личный сайт с корзиной, доставкой и базой клиентов для фермеров, пекарей, кондитеров и сыроваров Витебска. Подключение за 1 день.`,
     h1: `Хватит терять клиентов в переписках`,
   },
@@ -725,6 +725,7 @@ function staticPageMeta(pathname: string): PageMeta | null {
       title: page.title,
       description: page.description,
       canonical: `${DOMAIN}${pathname}`,
+      ogImage: `${DOMAIN}/media/for-sellers-og.jpg`,
       h1: page.h1,
       bodyContent: `<p>Бесплатный личный сайт с корзиной, доставкой и базой клиентов — специально для мастеров Витебска.</p>
         <h2>Что получает продавец</h2>
