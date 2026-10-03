@@ -247,7 +247,7 @@ export default function ForSellers() {
                   ))}
                 </div>
                 <h2 className="mt-6 font-serif text-4xl font-bold leading-tight md:text-5xl">
-                  Уже пользуются 30+ мастеров Витебска
+                  Более 40 продавцов уже сделали себе сайт
                 </h2>
                 <p className="mt-4 max-w-md text-brand-deep-foreground/80">
                     Кондитеры, пекари, сыровары, пасечники... уже подключили свой сайт и принимают заказы.
@@ -280,7 +280,7 @@ export default function ForSellers() {
             <div className="border-y-4 border-primary bg-[hsl(var(--seller-bg))] px-5 py-10 text-center md:px-12 md:py-14">
               <p className="text-sm font-bold uppercase text-primary">Начните без риска</p>
               <h2 className="mx-auto mt-3 max-w-3xl font-serif text-3xl font-bold leading-tight md:text-5xl">
-                Базовый сайт — бесплатно навсегда
+                Современный сайт — бесплатно и легко
               </h2>
               <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-secondary-foreground">
                  Обычно такой сайт стоит от $300 и требует недель ожидания, согласований, доработок у разработчика. У нас — бесплатно и за 1 день.
