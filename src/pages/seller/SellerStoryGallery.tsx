@@ -77,7 +77,7 @@ export default function SellerStoryGallery() {
               </div>
             </div>
             <div className="p-3">
-              <h2 className="font-bold">О продукте</h2>
+              <h2 className="font-bold">Новинка</h2>
               <p className="text-xs text-muted-foreground">1–2 товара: описание и рейтинг</p>
             </div>
           </Link>
