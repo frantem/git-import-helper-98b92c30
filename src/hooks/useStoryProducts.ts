@@ -12,14 +12,16 @@ export function useStoryProducts() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<StoryProduct[]>([]);
+  const [seller, setSeller] = useState<{ name: string; photoUrl: string | null } | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     if (role !== "seller" && role !== "admin") { navigate("/"); return; }
     (async () => {
-      const { data: farmer } = await supabase.from("farmers").select("id").eq("user_id", user.id).maybeSingle();
+      const { data: farmer } = await supabase.from("farmers").select("id, name, photo_url").eq("user_id", user.id).maybeSingle();
       if (!farmer) { setIsLoading(false); return; }
+      setSeller({ name: farmer.name, photoUrl: farmer.photo_url });
       const { data } = await supabase
         .from("products")
         .select("id, title, description, composition, price, old_price, unit, image_url, farmer_id, prep_time_minutes, order_lead_time_hours")
@@ -32,5 +34,5 @@ export function useStoryProducts() {
     })();
   }, [user, role, authLoading, navigate]);
 
-  return { products, isLoading: authLoading || isLoading };
+  return { products, seller, isLoading: authLoading || isLoading };
 }

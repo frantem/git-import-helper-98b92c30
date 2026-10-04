@@ -33,6 +33,7 @@ const SellerTariffs = lazy(() => import("./pages/seller/SellerTariffs"));
 const SellerStoryGallery = lazy(() => import("./pages/seller/SellerStoryGallery"));
 const SellerStoryStock = lazy(() => import("./pages/seller/SellerStoryStock"));
 const SellerStoryAbout = lazy(() => import("./pages/seller/SellerStoryAbout"));
+const SellerStoryMenu = lazy(() => import("./pages/seller/SellerStoryMenu"));
 
 
 
@@ -96,6 +97,7 @@ const App = () => (
                   <Route path="/seller/story" element={<SellerStoryGallery />} />
                   <Route path="/seller/story/stock" element={<SellerStoryStock />} />
                   <Route path="/seller/story/about" element={<SellerStoryAbout />} />
+                  <Route path="/seller/story/menu" element={<SellerStoryMenu />} />
 
 
                   

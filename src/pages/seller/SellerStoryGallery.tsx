@@ -20,7 +20,7 @@ export default function SellerStoryGallery() {
         </div>
         <p className="mb-4 text-sm text-muted-foreground">Выберите шаблон</p>
 
-        <div className="grid grid-cols-2 gap-3 md:gap-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
           {/* Шаблон «В наличии» */}
           <Link
             to="/seller/story/stock"
@@ -79,6 +79,39 @@ export default function SellerStoryGallery() {
             <div className="p-3">
               <h2 className="font-bold">Новинка</h2>
               <p className="text-xs text-muted-foreground">1–2 товара: описание и рейтинг</p>
+            </div>
+          </Link>
+
+          {/* Шаблон «Меню» */}
+          <Link
+            to="/seller/story/menu"
+            className="group overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md"
+          >
+            <div className="relative aspect-[9/16] overflow-hidden bg-gradient-to-b from-[#c8734f] via-[#a95a3b] to-[#7d3f29] p-2.5">
+              <div className="mb-2 flex items-center justify-between gap-2 text-white">
+                <div className="text-[9px] font-extrabold leading-tight">Доступно<br />для заказа</div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="h-7 w-7 rounded-full border-2 border-white/80 bg-white/90" />
+                  <div className="h-1 w-8 rounded bg-white/80" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <div key={index} className="flex h-10 overflow-hidden rounded bg-white/95 p-1">
+                    <div className="flex-1 space-y-0.5 pt-0.5">
+                      <div className="h-1 w-3/4 rounded bg-black/70" />
+                      <div className="h-0.5 w-full rounded bg-black/20" />
+                      <div className="h-0.5 w-2/3 rounded bg-black/20" />
+                      <div className="mt-1 h-1 w-1/3 rounded bg-black/60" />
+                    </div>
+                    <div className="h-8 w-8 shrink-0 rounded bg-black/10" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-3">
+              <h2 className="font-bold">Меню</h2>
+              <p className="text-xs text-muted-foreground">До 8 товаров с описанием и составом</p>
             </div>
           </Link>
         </div>
