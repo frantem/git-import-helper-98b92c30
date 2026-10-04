@@ -21,7 +21,7 @@ import type { StoryProduct } from "@/components/seller/story/StoryProductCard";
 import { cn } from "@/lib/utils";
 
 const MAX_SELECTED = 2;
-const DEFAULT_HEADING = "Новинка";
+const DEFAULT_HEADING = "Новинка:";
 
 const THEMES: { id: AboutTheme; label: string }[] = [
   { id: "photoTop", label: "Фото сверху" },
@@ -58,7 +58,7 @@ export default function SellerStoryAbout() {
   return (
     <>
       <StoryEditorLayout
-        title="О продукте"
+        title="Новинка"
         isLoading={isLoading}
         hasProducts={products.length > 0}
         exporting={exporting}
