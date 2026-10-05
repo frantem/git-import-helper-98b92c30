@@ -22,7 +22,7 @@ const DEFAULT_HEADING = "Доступно для заказа";
 export default function SellerStoryMenu() {
   const { products, seller, isLoading } = useStoryProducts();
   const bg = useStoryBackground();
-  const { canvasRef, exporting, canShareFiles, resultUrl, closeResult, handleDownload, handleShare } = useStoryExport();
+  const { canvasRef, exporting, handleDownload } = useStoryExport();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [heading, setHeading] = useState(DEFAULT_HEADING);
 
@@ -49,12 +49,8 @@ export default function SellerStoryMenu() {
         isLoading={isLoading}
         hasProducts={products.length > 0}
         exporting={exporting}
-        canShareFiles={canShareFiles}
         canExport={selected.length > 0}
         onDownload={handleDownload}
-        onShare={handleShare}
-        resultUrl={resultUrl}
-        onCloseResult={closeResult}
         canvas={<MenuStoryCanvas ref={canvasRef} background={bg.background} products={selected} heading={heading} seller={seller} />}
       >
         <StoryProductPicker products={products} selectedIds={selectedIds} max={MAX_SELECTED} onToggle={toggle} />
