@@ -3,10 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Share2, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { STORY_W, STORY_H } from "./StoryCanvas";
-import { StoryResultDialog } from "./StoryResultDialog";
-import type { ExportKind } from "@/hooks/useStoryExport";
+import { isIOS, type ExportKind } from "@/hooks/useStoryExport";
 
 interface Props {
   title: string;
@@ -17,12 +16,8 @@ interface Props {
   /** Секции настроек */
   children: ReactNode;
   exporting: ExportKind;
-  canShareFiles: boolean;
   canExport: boolean;
   onDownload: () => void;
-  onShare: () => void;
-  resultUrl?: string | null;
-  onCloseResult?: () => void;
 }
 
 /**
@@ -31,8 +26,7 @@ interface Props {
  */
 export function StoryEditorLayout({
   title, isLoading, hasProducts, canvas, children,
-  exporting, canShareFiles, canExport, onDownload, onShare,
-  resultUrl = null, onCloseResult,
+  exporting, canExport, onDownload,
 }: Props) {
   const navigate = useNavigate();
   const previewWrapRef = useRef<HTMLDivElement>(null);
@@ -103,18 +97,15 @@ export function StoryEditorLayout({
               </div>
 
               <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border/60 bg-[#faf5ea]/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
-                <div className={`grid gap-2 ${canShareFiles ? "grid-cols-2" : "grid-cols-1"}`}>
-                  <Button size="lg" className="md:h-10" onClick={onDownload} disabled={!!exporting || !canExport}>
-                    {exporting === "download" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    Скачать
-                  </Button>
-                  {canShareFiles && (
-                    <Button size="lg" variant="outline" className="md:h-10" onClick={onShare} disabled={!!exporting || !canExport}>
-                      {exporting === "share" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                      Поделиться
-                    </Button>
-                  )}
-                </div>
+                <Button size="lg" className="w-full md:h-10" onClick={onDownload} disabled={!!exporting || !canExport}>
+                  {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                  Скачать
+                </Button>
+                {isIOS() && (
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Файл сохранится в Загрузки. Чтобы добавить в Фото: откройте его и нажмите «Сохранить изображение».
+                  </p>
+                )}
               </div>
             </div>
 
@@ -123,12 +114,6 @@ export function StoryEditorLayout({
         )}
       </main>
       <BottomNavigation />
-      <StoryResultDialog
-        url={resultUrl}
-        canShareFiles={canShareFiles}
-        onShare={onShare}
-        onClose={() => onCloseResult?.()}
-      />
     </div>
   );
 }
