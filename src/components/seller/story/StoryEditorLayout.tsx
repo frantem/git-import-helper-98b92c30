@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2, X } from "lucide-react";
 import { STORY_W, STORY_H } from "./StoryCanvas";
 import { isIOS, type ExportKind } from "@/hooks/useStoryExport";
 
@@ -18,6 +18,8 @@ interface Props {
   exporting: ExportKind;
   canExport: boolean;
   onDownload: () => void;
+  previewUrl?: string | null;
+  onClosePreview?: () => void;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props {
  */
 export function StoryEditorLayout({
   title, isLoading, hasProducts, canvas, children,
-  exporting, canExport, onDownload,
+  exporting, canExport, onDownload, previewUrl, onClosePreview,
 }: Props) {
   const navigate = useNavigate();
   const previewWrapRef = useRef<HTMLDivElement>(null);
@@ -103,7 +105,7 @@ export function StoryEditorLayout({
                 </Button>
                 {isIOS() && (
                   <p className="mt-2 text-center text-xs text-muted-foreground">
-                    Файл сохранится в Загрузки. Чтобы добавить в Фото: откройте его и нажмите «Сохранить изображение».
+                    Откроется меню — выберите «Сохранить изображение», и картинка появится в Фото.
                   </p>
                 )}
               </div>
@@ -114,6 +116,22 @@ export function StoryEditorLayout({
         )}
       </main>
       <BottomNavigation />
+      {previewUrl && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-black/90 p-4">
+          <button
+            type="button"
+            onClick={onClosePreview}
+            aria-label="Закрыть"
+            className="absolute right-3 top-[calc(0.75rem+env(safe-area-inset-top))] rounded-full bg-white/15 p-2 text-white"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <p className="text-center text-sm font-medium text-white">
+            Удерживайте палец на картинке → «Сохранить в Фото»
+          </p>
+          <img src={previewUrl} alt="Сторис" className="max-h-[80svh] w-auto rounded-xl" style={{ WebkitTouchCallout: "default" } as React.CSSProperties} />
+        </div>
+      )}
     </div>
   );
 }

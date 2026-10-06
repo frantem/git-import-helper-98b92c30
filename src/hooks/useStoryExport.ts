@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { domToBlob } from "modern-screenshot";
 import { toast } from "sonner";
 import { STORY_W, STORY_H } from "@/components/seller/story/StoryCanvas";
@@ -20,14 +20,25 @@ const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
     new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
   ]);
 
-/** Экспорт холста сторис в PNG и мгновенное скачивание файла. */
-export function useStoryExport(): {
+const FILE_NAME = "locus-story.png";
+
+/**
+ * Экспорт холста сторис в PNG.
+ * На iPhone картинка готовится заранее в фоне (по `changeKey`), чтобы при нажатии
+ * «Скачать» сразу открыть системное меню с «Сохранить изображение».
+ */
+export function useStoryExport(changeKey = ""): {
   canvasRef: RefObject<HTMLDivElement>;
   exporting: ExportKind;
   handleDownload: () => Promise<void>;
+  previewUrl: string | null;
+  closePreview: () => void;
 } {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState<ExportKind>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const readyFile = useRef<{ key: string; file: File } | null>(null);
+  const ios = isIOS();
 
   const renderPng = useCallback(async (): Promise<Blob> => {
     const node = canvasRef.current;
@@ -60,21 +71,68 @@ export function useStoryExport(): {
       timeout: 8000,
       fetch: { requestInit: { mode: "cors" as RequestMode, cache: "force-cache" as RequestCache } },
     };
-    // Safari: первый прогон прогревает кеш картинок.
     if (isSafari()) await withTimeout(domToBlob(node, opts), 20000).catch(() => undefined);
     const blob = await withTimeout(domToBlob(node, opts), 20000);
     if (!blob || blob.size < 1000) throw new Error("empty blob");
     return blob;
   }, []);
 
+  // Фоновая подготовка на iPhone
+  useEffect(() => {
+    if (!ios) return;
+    readyFile.current = null;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const blob = await renderPng();
+        if (!cancelled) readyFile.current = { key: changeKey, file: new File([blob], FILE_NAME, { type: "image/png" }) };
+      } catch (e) {
+        console.error(e);
+      }
+    }, 800);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [changeKey, ios, renderPng]);
+
+  const showPreview = (blob: Blob) => {
+    setPreviewUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(blob);
+    });
+  };
+
   const handleDownload = useCallback(async () => {
+    if (ios) {
+      const ready = readyFile.current?.key === changeKey ? readyFile.current.file : null;
+      if (ready && navigator.canShare?.({ files: [ready] })) {
+        try {
+          await navigator.share({ files: [ready] });
+          return;
+        } catch (e) {
+          if ((e as Error)?.name === "AbortError") return;
+          showPreview(ready);
+          return;
+        }
+      }
+      if (ready) {
+        showPreview(ready);
+        return;
+      }
+    }
     setExporting("download");
     try {
       const blob = await renderPng();
+      if (ios) {
+        readyFile.current = { key: changeKey, file: new File([blob], FILE_NAME, { type: "image/png" }) };
+        showPreview(blob);
+        return;
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "locus-story.png";
+      a.download = FILE_NAME;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -85,7 +143,14 @@ export function useStoryExport(): {
     } finally {
       setExporting(null);
     }
-  }, [renderPng]);
+  }, [ios, changeKey, renderPng]);
 
-  return { canvasRef, exporting, handleDownload };
+  const closePreview = useCallback(() => {
+    setPreviewUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return null;
+    });
+  }, []);
+
+  return { canvasRef, exporting, handleDownload, previewUrl, closePreview };
 }

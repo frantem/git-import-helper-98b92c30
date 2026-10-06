@@ -22,7 +22,6 @@ const DEFAULT_HEADING = "В наличии";
 export default function SellerStoryStock() {
   const { products, isLoading } = useStoryProducts();
   const bg = useStoryBackground();
-  const { canvasRef, exporting, handleDownload } = useStoryExport();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [heading, setHeading] = useState(DEFAULT_HEADING);
@@ -32,6 +31,10 @@ export default function SellerStoryStock() {
     [selectedIds, products],
   );
   const pickupLabels = usePickupLabels(selected);
+
+  const { canvasRef, exporting, handleDownload, previewUrl, closePreview } = useStoryExport(
+    `${selectedIds.join(',')}|${bg.background.id}|${heading}`,
+  );
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -53,6 +56,8 @@ export default function SellerStoryStock() {
         exporting={exporting}
         canExport={selected.length > 0}
         onDownload={handleDownload}
+        previewUrl={previewUrl}
+        onClosePreview={closePreview}
         canvas={
           <StoryCanvas
             ref={canvasRef}
