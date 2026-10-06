@@ -22,13 +22,16 @@ const DEFAULT_HEADING = "Доступно для заказа";
 export default function SellerStoryMenu() {
   const { products, seller, isLoading } = useStoryProducts();
   const bg = useStoryBackground();
-  const { canvasRef, exporting, handleDownload } = useStoryExport();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [heading, setHeading] = useState(DEFAULT_HEADING);
 
   const selected = useMemo(
     () => selectedIds.map((id) => products.find((product) => product.id === id)).filter(Boolean) as StoryProduct[],
     [selectedIds, products],
+  );
+
+  const { canvasRef, exporting, handleDownload, previewUrl, closePreview } = useStoryExport(
+    `${selectedIds.join(',')}|${bg.background.id}|${heading}`,
   );
 
   const toggle = (id: string) => {
@@ -51,6 +54,8 @@ export default function SellerStoryMenu() {
         exporting={exporting}
         canExport={selected.length > 0}
         onDownload={handleDownload}
+        previewUrl={previewUrl}
+        onClosePreview={closePreview}
         canvas={<MenuStoryCanvas ref={canvasRef} background={bg.background} products={selected} heading={heading} seller={seller} />}
       >
         <StoryProductPicker products={products} selectedIds={selectedIds} max={MAX_SELECTED} onToggle={toggle} />

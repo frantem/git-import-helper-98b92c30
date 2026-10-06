@@ -31,7 +31,6 @@ const THEMES: { id: AboutTheme; label: string }[] = [
 export default function SellerStoryAbout() {
   const { products, isLoading } = useStoryProducts();
   const bg = useStoryBackground();
-  const { canvasRef, exporting, handleDownload } = useStoryExport();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [theme, setTheme] = useState<AboutTheme>("photoFull");
@@ -43,6 +42,10 @@ export default function SellerStoryAbout() {
     [selectedIds, products],
   );
   const ratings = useProductRatings(selectedIds);
+
+  const { canvasRef, exporting, handleDownload, previewUrl, closePreview } = useStoryExport(
+    `${selectedIds.join(',')}|${bg.background.id}|${heading}|${theme}|${showRating}|${Object.keys(ratings).length}`,
+  );
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -64,6 +67,8 @@ export default function SellerStoryAbout() {
         exporting={exporting}
         canExport={selected.length > 0}
         onDownload={handleDownload}
+        previewUrl={previewUrl}
+        onClosePreview={closePreview}
         canvas={
           <AboutStoryCanvas
             ref={canvasRef}
