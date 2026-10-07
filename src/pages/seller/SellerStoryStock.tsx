@@ -32,7 +32,7 @@ export default function SellerStoryStock() {
   );
   const pickupLabels = usePickupLabels(selected);
 
-  const { canvasRef, exporting, handleDownload, previewUrl, closePreview } = useStoryExport(
+  const { canvasRef, exporting, handleDownload, previewUrl, previewMode, closePreview } = useStoryExport(
     `${selectedIds.join(',')}|${bg.background.id}|${heading}`,
   );
 
@@ -58,6 +58,7 @@ export default function SellerStoryStock() {
         onDownload={handleDownload}
         previewUrl={previewUrl}
         onClosePreview={closePreview}
+        previewMode={previewMode}
         canvas={
           <StoryCanvas
             ref={canvasRef}

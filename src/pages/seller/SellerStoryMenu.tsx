@@ -30,7 +30,7 @@ export default function SellerStoryMenu() {
     [selectedIds, products],
   );
 
-  const { canvasRef, exporting, handleDownload, previewUrl, closePreview } = useStoryExport(
+  const { canvasRef, exporting, handleDownload, previewUrl, previewMode, closePreview } = useStoryExport(
     `${selectedIds.join(',')}|${bg.background.id}|${heading}`,
   );
 
@@ -56,6 +56,7 @@ export default function SellerStoryMenu() {
         onDownload={handleDownload}
         previewUrl={previewUrl}
         onClosePreview={closePreview}
+        previewMode={previewMode}
         canvas={<MenuStoryCanvas ref={canvasRef} background={bg.background} products={selected} heading={heading} seller={seller} />}
       >
         <StoryProductPicker products={products} selectedIds={selectedIds} max={MAX_SELECTED} onToggle={toggle} />
