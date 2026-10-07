@@ -5,7 +5,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Loader2, X } from "lucide-react";
 import { STORY_W, STORY_H } from "./StoryCanvas";
-import { isIOS, type ExportKind } from "@/hooks/useStoryExport";
+import { isIOS, chromeIntentUrl, type ExportKind, type PreviewMode } from "@/hooks/useStoryExport";
 
 interface Props {
   title: string;
@@ -19,6 +19,7 @@ interface Props {
   canExport: boolean;
   onDownload: () => void;
   previewUrl?: string | null;
+  previewMode?: PreviewMode;
   onClosePreview?: () => void;
 }
 
@@ -28,7 +29,7 @@ interface Props {
  */
 export function StoryEditorLayout({
   title, isLoading, hasProducts, canvas, children,
-  exporting, canExport, onDownload, previewUrl, onClosePreview,
+  exporting, canExport, onDownload, previewUrl, previewMode = "android", onClosePreview,
 }: Props) {
   const navigate = useNavigate();
   const previewWrapRef = useRef<HTMLDivElement>(null);
@@ -126,10 +127,20 @@ export function StoryEditorLayout({
           >
             <X className="h-6 w-6" />
           </button>
-          <p className="text-center text-sm font-medium text-white">
-            Удерживайте палец на картинке → «Сохранить в Фото»
+          <p className="max-w-xs text-center text-sm font-medium text-white">
+            {previewMode === "ios"
+              ? "Удерживайте палец на картинке → «Сохранить в Фото»"
+              : "Если файл не появился — удерживайте палец на картинке → «Скачать изображение»"}
           </p>
-          <img src={previewUrl} alt="Сторис" className="max-h-[80svh] w-auto rounded-xl" style={{ WebkitTouchCallout: "default" } as React.CSSProperties} />
+          <img src={previewUrl} alt="Сторис" className="max-h-[70svh] w-auto rounded-xl" style={{ WebkitTouchCallout: "default" } as React.CSSProperties} />
+          {previewMode === "inapp" && (
+            <a
+              href={chromeIntentUrl()}
+              className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black"
+            >
+              Открыть в Chrome
+            </a>
+          )}
         </div>
       )}
     </div>

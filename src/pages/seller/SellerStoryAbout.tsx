@@ -43,7 +43,7 @@ export default function SellerStoryAbout() {
   );
   const ratings = useProductRatings(selectedIds);
 
-  const { canvasRef, exporting, handleDownload, previewUrl, closePreview } = useStoryExport(
+  const { canvasRef, exporting, handleDownload, previewUrl, previewMode, closePreview } = useStoryExport(
     `${selectedIds.join(',')}|${bg.background.id}|${heading}|${theme}|${showRating}|${Object.keys(ratings).length}`,
   );
 
@@ -69,6 +69,7 @@ export default function SellerStoryAbout() {
         onDownload={handleDownload}
         previewUrl={previewUrl}
         onClosePreview={closePreview}
+        previewMode={previewMode}
         canvas={
           <AboutStoryCanvas
             ref={canvasRef}
