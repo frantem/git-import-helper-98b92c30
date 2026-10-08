@@ -33,6 +33,8 @@ pull request'ы. Поэтому ветки и PR не нужны: **коммит
 
 ## Архитектура сторис
 
+- Keep the `/for-sellers` marketing theme scoped to its root CSS class and compose its illustrative previews locally; this prevents the marketing redesign from changing the storefront or authenticated seller tools.
+
 - Каждый шаблон сторис имеет отдельный маршрут и холст, но переиспользует общие выбор товаров, фон и экспорт — так шаблоны развиваются независимо без дублирования основной логики.
 - Экспорт сторис рендерится заранее в фоне, а на Android файл отдаётся по публичной https-ссылке с `download` из папки продавца в хранилище — встроенные браузеры (Telegram и др.) игнорируют скачивание blob-ссылок, а действие по нажатию должно выполняться без задержки.
 

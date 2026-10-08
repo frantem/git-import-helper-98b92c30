@@ -192,3 +192,44 @@
   --seller-accent: 45 70% 47%;
   --seller-accent-foreground: 0 0% 100%;
 }
+
+/* Local marketing theme: keep the shop and seller editors unchanged. */
+.for-sellers-theme {
+  --background: 165 30% 4%;
+  --foreground: 120 12% 97%;
+  --card: 160 22% 9%;
+  --card-foreground: 120 12% 97%;
+  --secondary: 160 22% 12%;
+  --secondary-foreground: 150 12% 77%;
+  --muted: 160 18% 15%;
+  --muted-foreground: 150 9% 65%;
+  --border: 160 13% 22%;
+  --primary: 78 92% 45%;
+  --primary-foreground: 160 30% 5%;
+  --accent: 78 92% 45%;
+  --accent-foreground: 160 30% 5%;
+  --ring: 78 92% 45%;
+  --brand-deep: 160 29% 16%;
+  --brand-deep-foreground: 120 12% 97%;
+  --sellers-overlay: linear-gradient(90deg, hsl(165 30% 4% / .9), hsl(165 30% 4% / .45) 48%, hsl(165 30% 4% / .03)), linear-gradient(0deg, hsl(165 30% 4% / .8), transparent 45%);
+  --sellers-story: 330 24% 85%;
+  --sellers-story-ink: 160 25% 12%;
+  --radius: 0.5rem;
+  font-family: 'Manrope', var(--font-sans);
+  letter-spacing: 0;
+}
+.sellers-hero-shade { background: var(--sellers-overlay); }
+.sellers-story { background: hsl(var(--sellers-story)); color: hsl(var(--sellers-story-ink)); }
+.sellers-heading { font-weight: 500; line-height: 1.08; text-wrap: balance; }
+.sellers-reveal { animation: sellers-reveal .75s ease-out both; }
+@keyframes sellers-reveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 767px) {
+  .for-sellers-theme { --sellers-overlay: linear-gradient(90deg, hsl(165 30% 4% / .78), hsl(165 30% 4% / .25)), linear-gradient(0deg, hsl(165 30% 4% / .95), transparent 80%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sellers-reveal { animation: none; }
+  .for-sellers-theme * { scroll-behavior: auto; }
+}
