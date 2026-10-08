@@ -85,7 +85,7 @@ export default function ForSellers() {
         <h1 className="sellers-heading max-w-[640px] text-4xl sm:text-5xl md:text-6xl lg:text-7xl">Locus.<br />Ваш бизнес.<br />Ваш собственный сайт.</h1>
         <p className="mt-6 max-w-[400px] text-base leading-relaxed text-foreground/85 md:text-lg">Вы создаёте хорошие продукты.<br />Дайте покупателям простой способ их заказать.</p>
         <div className="mt-8 flex flex-wrap items-center gap-3"><ApplicationButton /><Button asChild variant="outline" size="lg" className="h-12 rounded-full border-foreground/40 bg-transparent px-5 text-foreground hover:bg-foreground/10 hover:text-foreground"><a href="#real-store">Посмотреть пример<ArrowDown className="h-4 w-4" /></a></Button></div>
-        <p className="mt-4 text-xs text-foreground/65">Заявка за 2 минуты. Подключение за 1 день.</p>
+        <p className="mt-4 text-xs text-foreground/65">Заявка за 2 минуты.</p>
       </div>
     </section>
 
