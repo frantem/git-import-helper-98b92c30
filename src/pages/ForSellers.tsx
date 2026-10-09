@@ -82,7 +82,7 @@ export default function ForSellers() {
       </header>
       <div className={`${sectionClass} sellers-reveal flex flex-1 flex-col justify-center pb-16 pt-14 md:pb-24`}>
         <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Для тех, кто создаёт своими руками</p>
-        <h1 className="sellers-heading max-w-[640px] text-4xl sm:text-5xl md:text-6xl lg:text-7xl">Locus.<br />Ваш бизнес.<br />Ваш собственный сайт.</h1>
+        <h1 className="sellers-heading max-w-[640px] text-4xl sm:text-5xl md:text-6xl lg:text-7xl">Создайте<br />себе сайт <br />с ИИ помощником</h1>
         <p className="mt-6 max-w-[400px] text-base leading-relaxed text-foreground/85 md:text-lg">Вы создаёте хорошие продукты.<br />Дайте покупателям простой способ их заказать.</p>
         <div className="mt-8 flex flex-wrap items-center gap-3"><ApplicationButton /><Button asChild variant="outline" size="lg" className="h-12 rounded-full border-foreground/40 bg-transparent px-5 text-foreground hover:bg-foreground/10 hover:text-foreground"><a href="#real-store">Посмотреть пример<ArrowDown className="h-4 w-4" /></a></Button></div>
         <p className="mt-4 text-xs text-foreground/65">Заявка за 2 минуты.</p>
