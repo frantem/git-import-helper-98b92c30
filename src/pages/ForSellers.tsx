@@ -12,6 +12,8 @@ const applicationPath = "/seller-application";
 const sellerPageScreenshot = "/media/knyazhetsky-page.jpg";
 const sellerPageVideo = "/media/knyazhetsky-page.mp4";
 const exampleSiteImage = "/media/for-sellers-example-site.jpg";
+const storyNovinkaImage = "/media/story-example-novinka.jpg";
+const storyAvailableImage = "/media/story-example-available.jpg";
 const sectionClass = "mx-auto w-full max-w-6xl px-5 md:px-10";
 
 const interviewProblems = [
@@ -46,13 +48,10 @@ function StorePreview() {
 function StoryPreview() {
   return <div className="sellers-story flex h-full items-center justify-center gap-3 overflow-hidden px-5 py-6">
     <div className="relative h-[260px] w-[146px] shrink-0 -rotate-6 overflow-hidden rounded-lg bg-card shadow-xl">
-      <img src={pastryImage} alt="Иллюстрация фото для сторис" width={1200} height={912} loading="lazy" className="h-full w-full object-cover" />
-      <div className="absolute inset-x-2 bottom-3 bg-background/90 p-3 text-foreground"><p className="text-base font-semibold">Новинка:</p><p className="mt-1 text-[11px]">Ваши десерты</p></div>
+      <img src={storyNovinkaImage} alt="Готовое изображение для сторис: новинка" width={440} height={782} loading="lazy" className="h-full w-full object-cover" />
     </div>
     <div className="relative h-[260px] w-[146px] shrink-0 rotate-6 overflow-hidden rounded-lg bg-brand-deep shadow-xl">
-      <p className="px-4 pb-3 pt-5 text-lg font-semibold leading-tight text-brand-deep-foreground">Доступно<br />для заказа</p>
-      <img src={cheeseImage} alt="Иллюстрация товаров для сторис" width={1200} height={912} loading="lazy" className="mx-3 h-[125px] w-[122px] rounded object-cover" />
-      <p className="px-4 pt-3 text-sm text-brand-deep-foreground">Ваши продукты</p>
+      <img src={storyAvailableImage} alt="Готовое изображение для сторис: доступно для заказа" width={440} height={782} loading="lazy" className="h-full w-full object-cover" />
     </div>
   </div>;
 }
