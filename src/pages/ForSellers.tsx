@@ -11,6 +11,7 @@ import pastryImage from "@/assets/sellers-pastry.jpg";
 const applicationPath = "/seller-application";
 const sellerPageScreenshot = "/media/knyazhetsky-page.jpg";
 const sellerPageVideo = "/media/knyazhetsky-page.mp4";
+const exampleSiteImage = "/media/for-sellers-example-site.jpg";
 const sectionClass = "mx-auto w-full max-w-6xl px-5 md:px-10";
 
 const interviewProblems = [
@@ -38,7 +39,7 @@ function StorePreview() {
   return <div className="flex h-full items-start justify-center overflow-hidden bg-secondary px-8 pt-8">
     <div className="w-full max-w-[230px] overflow-hidden rounded-t-3xl border-[5px] border-border bg-background">
       <div className="flex h-6 items-center justify-center"><span className="h-2 w-16 rounded-full bg-muted" /></div>
-      <img src={sellerPageScreenshot} alt="Реальный сайт Княжеского подворья на Locus" width={430} height={932} loading="lazy" className="block w-full" />
+      <img src={exampleSiteImage} alt="Пример сайта продавца на Locus" width={800} height={1597} loading="lazy" className="block w-full" />
     </div>
   </div>;
 }
