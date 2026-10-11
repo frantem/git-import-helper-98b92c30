@@ -39,7 +39,7 @@ function StorePreview() {
   return <div className="flex h-full items-start justify-center overflow-hidden bg-secondary px-8 pt-8">
     <div className="w-full max-w-[230px] overflow-hidden rounded-t-3xl border-[5px] border-border bg-background">
       <div className="flex h-6 items-center justify-center"><span className="h-2 w-16 rounded-full bg-muted" /></div>
-      <img src={exampleSiteImage} alt="Пример сайта продавца на Locus" width={800} height={1597} loading="lazy" className="block w-full" />
+      <img src={exampleSiteImage} alt="Пример страницы продавца на Locus" width={412} height={751} loading="lazy" className="block w-full" />
     </div>
   </div>;
 }
