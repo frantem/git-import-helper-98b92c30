@@ -82,7 +82,7 @@ export default function ForSellers() {
       </header>
       <div className={`${sectionClass} sellers-reveal flex flex-1 flex-col justify-center pb-16 pt-14 md:pb-24`}>
         <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Для тех, кто создаёт своими руками</p>
-        <h1 className="sellers-heading max-w-[640px] text-4xl sm:text-5xl md:text-6xl lg:text-7xl">Создайте<br />себе сайт <br />с AI-помощником</h1>
+        <h1 className="sellers-heading max-w-[640px] text-4xl sm:text-5xl md:text-6xl lg:text-7xl">Создай сайт <br />с AI-помощником</h1>
         <p className="mt-6 max-w-[400px] text-base leading-relaxed text-foreground/85 md:text-lg">Вы создаёте хорошие продукты.<br />Дайте покупателям простой способ их заказать.</p>
         <div className="mt-8 flex flex-wrap items-center gap-3"><ApplicationButton /><Button asChild variant="outline" size="lg" className="h-12 rounded-full border-foreground/40 bg-transparent px-5 text-foreground hover:bg-foreground/10 hover:text-foreground"><a href="#real-store">Посмотреть пример<ArrowDown className="h-4 w-4" /></a></Button></div>
         <p className="mt-4 text-xs text-foreground/65">Заявка за 2 минуты.</p>
@@ -92,7 +92,7 @@ export default function ForSellers() {
     <main>
       <section id="possibilities" className="scroll-mt-8 py-16 md:py-24">
         <div className={sectionClass}>
-          <p className="mb-5 text-xs font-semibold uppercase text-primary">AI-ПОМОШНИК БЕРЁТ НА СЕБЯ ЧАСТЬ РУТИНЫ</p>
+          <p className="mb-5 text-xs font-semibold uppercase text-primary">AI-ПОМОЩНИК БЕРЁТ НА СЕБЯ ЧАСТЬ РУТИНЫ</p>
           <h2 className="sellers-heading max-w-4xl text-3xl md:text-5xl">Готовьте. Создавайте. Выращивайте.<br /><span className="text-muted-foreground">А заказы пусть приходят на сайт.</span></h2>
           <div className="mt-10 grid gap-x-5 gap-y-9 md:mt-14 md:grid-cols-3">
             {[{ title: "Сайт, на котором заказывают", text: "Ваше название, товары и корзина. Одна ссылка вместо десятков ответов о цене и наличии.", visual: <StorePreview /> }, { title: "Всё важное — в одном месте", text: "Товары, заказы, база клиентов — в кабинете продавца.", visual: <CabinetPreview /> }, { title: "Сторис без вечера за экраном", text: "Готовые шаблоны с вашими товарами. Выберите нужное и сохраните изображение для соцсетей.", visual: <StoryPreview /> }].map(item => <article key={item.title}><div className="h-[330px] overflow-hidden rounded-lg">{item.visual}</div><h3 className="mt-5 text-lg font-semibold">{item.title}</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.text}</p></article>)}
