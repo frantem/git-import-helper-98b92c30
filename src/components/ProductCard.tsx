@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Star, Heart } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
@@ -8,16 +8,6 @@ import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { usePrefetchProduct } from "@/hooks/useProduct";
-
-function formatPrepTime(prepMinutes?: number, leadHours?: number): { label: string; isInStock: boolean } {
-  const totalMinutes = (prepMinutes || 0) + (leadHours || 0) * 60;
-  if (totalMinutes === 0) return { label: "В наличии", isInStock: true };
-  if (totalMinutes < 60) return { label: `~${totalMinutes}мин.`, isInStock: false };
-  const hours = Math.round(totalMinutes / 60);
-  if (hours < 24) return { label: `~${hours}ч.`, isInStock: false };
-  const days = Math.round(hours / 24);
-  return { label: `~${days}дн.`, isInStock: false };
-}
 
 interface ProductCardProps {
   product: Product;
@@ -109,6 +99,8 @@ export const ProductCard = memo(function ProductCard({
     product.rating !== null && product.rating !== undefined && product.rating > 0 && product.reviews > 0;
 
   const unitLabel = product.unit?.replace(/[,\s]+$/, "").trim();
+  // Единственный текст статуса, который остаётся: товара нет в наличии
+  const isOutOfStock = pickupLabel === "Нет в наличии";
 
   const saveAnchor = (e?: React.MouseEvent | React.TouchEvent) => {
     try {
@@ -138,12 +130,12 @@ export const ProductCard = memo(function ProductCard({
       onClick={saveAnchor}
       onTouchStart={saveAnchor}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md",
+        "group relative flex flex-col overflow-hidden rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md",
         className,
       )}
     >
       <div className="relative">
-        <div className="aspect-square overflow-hidden rounded-t-2xl bg-secondary">
+        <div className="aspect-square overflow-hidden rounded-t-xl bg-secondary">
           <OptimizedImage
             src={product.image}
             alt={product.name}
@@ -153,7 +145,13 @@ export const ProductCard = memo(function ProductCard({
             className="h-full w-full"
           />
 
-          {product.isNew && !product.discount && (
+          {isOutOfStock && (
+            <div className="absolute inset-x-0 bottom-0 bg-foreground/75 py-1 text-center text-[10px] font-semibold text-background">
+              Нет в наличии
+            </div>
+          )}
+
+          {product.isNew && !product.discount && !isOutOfStock && (
             <div className="absolute left-2 top-2 rounded-lg bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
               NEW
             </div>
@@ -177,81 +175,42 @@ export const ProductCard = memo(function ProductCard({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-2.5">
-        <h3 className="mb-1 line-clamp-2 min-h-[2.4em] text-[13px] font-medium leading-snug text-foreground">
+      <div className="flex flex-1 flex-col p-3">
+        <h3 className="mt-2 line-clamp-2 text-[14px] font-semibold leading-[1.25] text-foreground">
           {product.name}
         </h3>
 
-        <div className="mt-0.5">
-          <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
-            <span className={cn("text-[17px] font-bold leading-none", isLowestPrice ? "text-[#d41111]" : "text-foreground")}>
-              {priceFormatted.formatted}
-              <BynSymbol />
-            </span>
-            {unitLabel && (
-              <span className="rounded-md bg-secondary px-1 py-0.5 text-[9.5px] leading-none text-foreground/70">
-                за {unitLabel}
-              </span>
-            )}
-          </div>
-
-          {oldPriceFormatted && (
-            <span className="mt-0.5 block text-[10px] text-muted-foreground line-through">
-              {oldPriceFormatted.formatted}
-              <BynSymbol />
-            </span>
+        <div className="mt-1 flex items-baseline gap-1.5">
+          <span className={cn("shrink-0 whitespace-nowrap text-[16px] font-bold leading-none", isLowestPrice ? "text-[#d41111]" : "text-foreground")}>
+            {priceFormatted.formatted}
+            <BynSymbol />
+          </span>
+          {unitLabel && (
+            <span className="min-w-0 truncate text-[10px] leading-none text-muted-foreground">за {unitLabel}</span>
           )}
         </div>
-
-        <div className="mt-1">
-          {(() => {
-            if (pickupLabel) {
-              // Дата ближайшего самовывоза приходит как «20.10» — без «с» её читают как цену
-              const isDate = /^\d{1,2}\.\d{1,2}$/.test(pickupLabel);
-              const label = isDate ? `с ${pickupLabel}` : pickupLabel;
-              const isUnavailable = pickupLabel === "Нет в наличии";
-              const isFast = pickupLabel === "Сегодня" || pickupLabel === "Завтра";
-              return (
-                <span
-                  className={cn(
-                    "block text-[10px] leading-tight",
-                    isUnavailable ? "text-[#d41111]" : isFast ? "text-green-700" : "text-foreground/75",
-                  )}
-                >
-                  {label}
-                </span>
-              );
-            }
-            const prep = formatPrepTime(product.prep_time_minutes, product.order_lead_time_hours);
-            return (
-              <span className={cn("block text-[10px] leading-tight", prep.isInStock ? "text-green-700" : "text-foreground/75")}>
-                {prep.label}
-              </span>
-            );
-          })()}
-
-          {showRating && (
-            <div className="mt-0.5 flex items-center gap-1">
-              <Star className="h-2.5 w-2.5 fill-accent text-accent" />
-              <span className="text-[10px] font-medium text-foreground">{product.rating.toFixed(1)}</span>
-              <span className="text-[9.5px] text-muted-foreground">({product.reviews})</span>
-            </div>
-          )}
-        </div>
+        {oldPriceFormatted && (
+          <span className="mt-0.5 block text-[10px] leading-none text-muted-foreground line-through">
+            {oldPriceFormatted.formatted}
+            <BynSymbol />
+          </span>
+        )}
 
         {quantity === 0 ? (
           <button
             onClick={handleAddToCart}
+            disabled={isOutOfStock}
             className={cn(
-              "mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[hsl(var(--seller-deep))] text-[13px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.95]",
+              "mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[hsl(var(--seller-deep))] text-[13px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.97]",
               justAdded && "scale-[0.96]",
+              isOutOfStock && "pointer-events-none bg-muted text-muted-foreground",
             )}
           >
-            <ShoppingCart className="h-4 w-4" />
-            В корзину
+            {!isOutOfStock && <ShoppingCart className="h-4 w-4" />}
+            {isOutOfStock ? "Нет в наличии" : "В корзину"}
           </button>
         ) : (
-          <div className="cart-pop mt-2 flex h-9 items-center justify-between rounded-xl border border-[hsl(var(--seller-deep))]/15 bg-[hsl(var(--seller-deep))]/[0.06] px-1">
+          <div className="cart-pop mt-2 flex h-9 items-center justify-between rounded-lg border border-[hsl(var(--seller-deep))]/15 bg-[hsl(var(--seller-deep))]/[0.06] px-1">
             <button
               onClick={handleDecrease}
               aria-label="Убрать одну штуку"

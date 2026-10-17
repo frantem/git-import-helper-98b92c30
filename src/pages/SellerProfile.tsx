@@ -313,7 +313,7 @@ export default function SellerProfile() {
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
       />
 
-      <main className="container mx-auto bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
+      <main className="mx-auto w-full bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
         {/* 2. Условия получения — до каталога, чтобы снять страх доставки */}
         <SellerDelivery
           deliveryEnabled={farmer.delivery_enabled}
@@ -324,7 +324,7 @@ export default function SellerProfile() {
           addressDetails={farmer.address_details}
         />
 
-        <div className="px-3 pt-2.5">
+        <div className="px-3 pt-2">
           {/* 3. Хиты продавца */}
           <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} />
 
@@ -340,11 +340,11 @@ export default function SellerProfile() {
             ) : (
               groupedProducts.map((group) => (
                 <section key={group.slug} className="mb-5">
-                  <h2 className="mb-2 font-serif text-[17px] font-bold text-foreground md:text-2xl">
+                  <h2 className="mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl">
                     {group.emoji ? `${group.emoji} ` : ""}
                     {group.name}
                   </h2>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
                     {group.items.map((product, index) => (
                       <ProductCard
                         key={product.id}

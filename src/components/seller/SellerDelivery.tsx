@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
+import { ChevronRight, Store, Truck, Wallet } from "lucide-react";
 
 interface SellerDeliveryProps {
   deliveryEnabled?: boolean | null;
@@ -11,90 +11,54 @@ interface SellerDeliveryProps {
   addressDetails?: string | null;
 }
 
-/** Одна строка условий: иконка + заголовок + пояснение. */
-function Row({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))]/8 text-[hsl(var(--seller-deep))]">
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-semibold leading-tight text-foreground">{title}</p>
-        <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">{text}</p>
-      </div>
-    </div>
-  );
+/** Достаём сумму из свободного текста продавца: «бесплатно от 30 руб.» → «от 30 BYN». */
+function pickupAmount(terms?: string | null): string | null {
+  const match = terms?.match(/от\s+(\d+(?:[.,]\d+)?)/i);
+  return match ? `от ${match[1].replace(".", ",")} BYN` : null;
 }
 
 /**
- * Условия получения — сразу под шапкой, до каталога.
+ * Условия получения — одна горизонтальная полоса высотой 44 px.
  *
- * Показываем только то, что продавец реально включил в кабинете:
- * курьер, самовывоз и адрес. Суммы не выдумываем — выводим текст продавца.
+ * Полный текст продавца и адрес остаются на странице доставки,
+ * а под шапкой видны только короткие факты: курьер, самовывоз, оплата.
  */
 export const SellerDelivery = memo(function SellerDelivery({
   deliveryEnabled,
   deliveryTerms,
   pickupEnabled = true,
-  city,
-  street,
-  addressDetails,
 }: SellerDeliveryProps) {
   const hasCourier = !!deliveryEnabled;
   const hasPickup = pickupEnabled !== false;
-  const pickupAddress = [city?.trim(), street?.trim(), addressDetails?.trim()]
-    .filter(Boolean)
-    .join(", ");
-
   if (!hasCourier && !hasPickup) return null;
+
+  const amount = pickupAmount(deliveryTerms);
 
   return (
     <section className="px-3 pt-1.5">
-      <div className="rounded-2xl bg-card p-2.5 shadow-sm ring-1 ring-black/[0.04]">
-        <div className="space-y-2">
-          {hasCourier && (
-            <Row
-              icon={<Truck className="h-3.5 w-3.5" />}
-              title="Курьер"
-              text={deliveryTerms?.trim() || "Условия и стоимость доставки уточнит продавец при подтверждении заказа"}
-            />
-          )}
-          {hasPickup && (
-            <Row
-              icon={<Store className="h-3.5 w-3.5" />}
-              title="Самовывоз"
-              text={pickupAddress || "Адрес продавец пришлёт после оформления заказа"}
-            />
-          )}
-          <Row
-            icon={<Wallet className="h-3.5 w-3.5" />}
-            title="Оплата при получении"
-            text="Курьеру или на месте — без предоплаты"
-          />
-        </div>
-
-        <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-1.5">
-          <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-emerald-700">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Проверено Locus
+      <Link
+        to="/delivery"
+        aria-label="Условия доставки и самовывоза"
+        className="flex h-11 items-center gap-2.5 overflow-hidden rounded-xl bg-card px-3 shadow-sm ring-1 ring-black/[0.04]"
+      >
+        {hasCourier && (
+          <span className="inline-flex min-w-0 items-center gap-1 text-[10.5px] font-medium leading-none text-foreground/85">
+            <Truck className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--seller-deep))]" />
+            <span className="truncate">{amount ? `Курьер ${amount}` : "Курьер"}</span>
           </span>
-          <Link
-            to="/delivery"
-            className="inline-flex items-center gap-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
-          >
-            Подробнее
-            <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-      </div>
+        )}
+        {hasPickup && (
+          <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-medium leading-none text-foreground/85">
+            <Store className="h-3.5 w-3.5 text-[hsl(var(--seller-deep))]" />
+            Самовывоз
+          </span>
+        )}
+        <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-medium leading-none text-foreground/85">
+          <Wallet className="h-3.5 w-3.5 text-[hsl(var(--seller-deep))]" />
+          Оплата на месте
+        </span>
+        <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+      </Link>
     </section>
   );
 });
