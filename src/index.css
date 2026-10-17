@@ -229,7 +229,23 @@
 @media (max-width: 767px) {
   .for-sellers-theme { --sellers-overlay: linear-gradient(90deg, hsl(165 30% 4% / .78), hsl(165 30% 4% / .25)), linear-gradient(0deg, hsl(165 30% 4% / .95), transparent 80%); }
 }
+.sellers-grid {
+  background-image:
+    linear-gradient(to right, hsl(0 0% 100% / .05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(0 0% 100% / .05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 55% 25%, #000 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 70% at 55% 25%, #000 30%, transparent 100%);
+}
+.sellers-float { animation: sellers-float 7s ease-in-out infinite; }
+@keyframes sellers-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .sellers-reveal { animation: none; }
+  .sellers-float { animation: none; }
   .for-sellers-theme * { scroll-behavior: auto; }
 }
