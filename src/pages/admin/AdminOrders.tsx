@@ -145,6 +145,8 @@ export default function AdminOrders() {
         payment_method,
         confirmation_method,
         referrer_farmer_id,
+        guest_name,
+        guest_phone,
         pickup_point:pickup_points(name, address, working_hours),
         order_items(
           id,
@@ -212,7 +214,12 @@ export default function AdminOrders() {
 
       const ordersWithBuyers = data.map(order => ({
         ...order,
-        buyer: profilesMap.get(order.buyer_id) || null,
+        // Гостевой заказ с витрины: профиля нет, контакты лежат в самом заказе
+        buyer:
+          profilesMap.get(order.buyer_id) ||
+          (order.guest_name
+            ? { full_name: order.guest_name, phone: order.guest_phone ?? null }
+            : null),
         referrer_farmer_name: (order as any).referrer_farmer_id ? referrerMap.get((order as any).referrer_farmer_id) || null : null,
       }));
 

@@ -57,15 +57,24 @@ Deno.serve(async (req) => {
       .from("orders")
       .select(`id, buyer_id, total_amount, delivery_type, delivery_address, delivery_cost, delivery_date,
         estimated_delivery_time, payment_method, notes,
+        guest_name, guest_phone, guest_contact_method,
         pickup_point:pickup_points(name, address)`)
       .eq("id", orderId)
       .single();
     if (orderErr || !order) throw orderErr || new Error("Order not found");
 
-    // Buyer
-    const { data: buyer } = await supabase
-      .from("profiles").select("full_name").eq("user_id", order.buyer_id).maybeSingle();
-    const buyerName = (buyer?.full_name || "клиент").trim();
+    // Покупатель: авторизованный или гость с витрины продавца
+    const { data: buyer } = order.buyer_id
+      ? await supabase.from("profiles").select("full_name").eq("user_id", order.buyer_id).maybeSingle()
+      : { data: null };
+    const buyerName = (((order as any).guest_name) || buyer?.full_name || "клиент").trim();
+    const buyerPhone = String((order as any).guest_phone || "").trim();
+    const contactMethod = String((order as any).guest_contact_method || "").trim();
+    const contactLabel =
+      contactMethod === "telegram" ? "Telegram" :
+      contactMethod === "viber" ? "Viber" :
+      contactMethod === "whatsapp" ? "WhatsApp" :
+      contactMethod === "call" ? "звонок" : "";
 
     // Items
     const { data: items } = await supabase
@@ -151,6 +160,11 @@ Deno.serve(async (req) => {
       adminLines.push(paymentLine);
     }
 
+    if (buyerPhone) {
+      adminLines.push(``);
+      adminLines.push(`Телефон покупателя: ${buyerPhone}`);
+    }
+
     if (order.notes) {
       adminLines.push(``);
       adminLines.push(`Комментарий: ${order.notes}`);
@@ -184,6 +198,8 @@ Deno.serve(async (req) => {
 
       const sellerLines = [
         `Новый заказ!`,
+        `Покупатель: ${buyerName}${buyerPhone ? `, ${buyerPhone}` : ""}`,
+        ...(contactLabel ? [`Связь: ${contactLabel}`] : []),
         ...myItems.map(itemLine),
         ``,
         sellerDeliveryWord,

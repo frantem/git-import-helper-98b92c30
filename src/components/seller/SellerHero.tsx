@@ -68,12 +68,12 @@ export const SellerHero = memo(function SellerHero({
             <img
               src={cdnImage(avatarUrl, "thumb")}
               alt={name}
-              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-[hsl(var(--seller-accent))]/40"
+              className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-[hsl(var(--seller-accent))]/40"
               loading="eager"
               decoding="async"
             />
           ) : (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-[15px] font-bold text-primary-foreground">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-[16px] font-bold text-primary-foreground">
               {name.trim().charAt(0).toUpperCase()}
             </span>
           )}

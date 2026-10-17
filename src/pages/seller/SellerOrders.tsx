@@ -115,7 +115,7 @@ export default function SellerOrders() {
       .select(`
         id, quantity, unit_price, status, confirmed_at, variant_label, custom_fields,
         product:products(id, title, slug),
-        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, notes, estimated_delivery_time, payment_method, confirmation_method, buyer_id, referrer_farmer_id,
+        order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, notes, estimated_delivery_time, payment_method, confirmation_method, buyer_id, referrer_farmer_id, guest_name, guest_phone,
           pickup_point:pickup_points(name, address, working_hours)
         )
       `)
@@ -169,6 +169,9 @@ export default function SellerOrders() {
     const result: SellerOrder[] = Array.from(orderMap.values())
       .map(e => {
         const buyer = profileMap.get(e.order.buyer_id) || null;
+        // Гость с витрины продавца: профиля может не быть, телефон — в заказе
+        const guestName = (e.order as any).guest_name as string | null;
+        const guestPhone = (e.order as any).guest_phone as string | null;
         return {
           id: e.order.id,
           created_at: e.order.created_at,
@@ -182,7 +185,11 @@ export default function SellerOrders() {
           confirmation_method: e.order.confirmation_method ?? null,
           referrer_farmer_name: e.order.referrer_farmer_id ? (referrerMap.get(e.order.referrer_farmer_id) || null) : null,
           pickup_point: e.order.pickup_point,
-          buyer: buyer ? { full_name: buyer.full_name, phone: buyer.phone } : null,
+          buyer: buyer
+            ? { full_name: buyer.full_name, phone: buyer.phone }
+            : guestName
+              ? { full_name: guestName, phone: guestPhone }
+              : null,
           items: e.items,
           itemsTotal: e.total,
         };

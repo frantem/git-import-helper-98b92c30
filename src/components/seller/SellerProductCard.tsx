@@ -147,7 +147,7 @@ export const SellerProductCard = memo(function SellerProductCard({
 
           {isOutOfStock && (
             <div className="absolute inset-x-0 bottom-0 bg-foreground/75 py-1 text-center text-[10px] font-semibold text-background">
-              Нет в наличии
+              Распродано
             </div>
           )}
 

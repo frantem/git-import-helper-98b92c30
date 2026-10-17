@@ -19,6 +19,7 @@ import { SellerPosts } from "@/components/seller/SellerPosts";
 import { SellerPromos } from "@/components/seller/SellerPromos";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
+import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
 
 const THEMES = ["forest", "terracotta", "night", "sand"] as const;
 
@@ -96,6 +97,7 @@ export default function SellerProfile() {
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const pickupLabels = usePickupLabels(products as never);
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
   const { data: pageContent } = useSellerPage(farmer?.id);
@@ -387,8 +389,24 @@ export default function SellerProfile() {
       </main>
       </div>
 
-      {/* 9. Плавающая корзина */}
-      <SellerStickyCart farmerId={farmer.id} />
+      {/* 9. Плавающая корзина и быстрое оформление без регистрации */}
+      <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} />
+
+      {checkoutOpen && (
+        <SellerGuestCheckout
+          farmer={{
+            id: farmer.id,
+            name: farmer.name,
+            deliveryEnabled: farmer.delivery_enabled,
+            pickupEnabled: farmer.pickup_enabled,
+            city: farmer.city,
+            street: farmer.street,
+            addressDetails: farmer.address_details,
+            contacts: farmer.contacts,
+          }}
+          onClose={() => setCheckoutOpen(false)}
+        />
+      )}
       <BottomNavigation />
     </div>
   );
