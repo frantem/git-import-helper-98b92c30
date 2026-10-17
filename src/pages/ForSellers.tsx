@@ -162,23 +162,21 @@ export default function ForSellers() {
             <div className="sellers-reveal">
               <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-primary/[0.07] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary md:text-[11px]">
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Для кондитеров, сыроваров, пекарей и ремесленников
+                ДЛЯ КОНДИТЕРОВ, СЫРОВАРОВ, ПЕКАРНЕЙ...
               </p>
 
               <h1 className="sellers-heading text-[34px] leading-[1.06] sm:text-5xl lg:text-[54px]">
-                Сайт, который берёт рутину на себя.
+                Сайт, который берёт рутину на себя
               </h1>
 
               <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                Делает сторис, наводит порядок в заказах и автоматически собирает базу ваших
-                постоянных клиентов.
+                Создаёт контент, наводит порядок в заказах и автоматически собирает базу Ваших постоянных клиентов.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <ApplicationButton label="Попробовать бесплатно" />
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-primary" />
-                  Без привязки карты
                 </span>
               </div>
 
