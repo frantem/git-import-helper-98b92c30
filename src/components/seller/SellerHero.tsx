@@ -1,123 +1,142 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BadgeCheck, MapPin, Package } from "lucide-react";
+import { ArrowLeft, MapPin, MessageCircle, Package, Star } from "lucide-react";
 import { cdnImage } from "@/lib/imageCdn";
+import { cn } from "@/lib/utils";
+
+/** «1 заказ / 2 заказа / 5 заказов» */
+function ordersWord(n: number) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "заказ";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "заказа";
+  return "заказов";
+}
 
 interface SellerHeroProps {
   name: string;
-  /** Одна конкретная фраза-доказательство уникальности. */
+  /** Короткая фраза-доказательство: одна строка, не больше двух. */
   uniqueFact?: string | null;
   locationLabel?: string | null;
+  rating?: number | null;
+  reviewCount?: number;
   ordersCount?: number | null;
-  mediaUrl?: string | null;
-  mediaType?: string | null;
-  /** Фолбэк-картинка (аватар продавца), если медиа не задано. */
-  fallbackImage?: string | null;
-  /** id секции каталога для CTA-скролла. */
-  catalogAnchorId?: string;
+  /** Количество активных товаров — от него зависит статус «принимает заказы». */
+  productsCount?: number;
+  avatarUrl?: string | null;
+  /** Готовая ссылка на мессенджер продавца (tel:, viber:, t.me, wa.me). */
+  contactHref?: string | null;
 }
 
 /**
- * Первый блок страницы продавца: фото или видео на всю ширину,
- * поверх — имя бренда, факт уникальности, бейджи доверия и CTA в каталог.
+ * Компактная шапка страницы продавца.
+ *
+ * Задача — отдать первый экран товарам: здесь только имя, статус, рейтинг
+ * и кнопка связи. Высота ~110 px вместо прежнего баннера на 420 px,
+ * поэтому на телефоне 393×852 под шапкой сразу видны карточки еды.
  */
 export const SellerHero = memo(function SellerHero({
   name,
   uniqueFact,
   locationLabel,
+  rating,
+  reviewCount = 0,
   ordersCount,
-  mediaUrl,
-  mediaType,
-  fallbackImage,
-  catalogAnchorId = "seller-catalog",
+  productsCount = 0,
+  avatarUrl,
+  contactHref,
 }: SellerHeroProps) {
-  const [videoFailed, setVideoFailed] = useState(false);
-  const isVideo = mediaType === "video" && !!mediaUrl && !videoFailed;
-  const imageSrc = mediaType === "image" && mediaUrl ? mediaUrl : fallbackImage || null;
-
   const navigate = useNavigate();
-
-  const scrollToCatalog = () => {
-    document.getElementById(catalogAnchorId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const cleanLocation = locationLabel?.replace(/^📍\s*/, "");
+  const cleanLocation = locationLabel?.replace(/^📍\s*/, "").trim();
+  const showRating = !!rating && rating > 0;
+  const acceptsOrders = productsCount > 0;
 
   return (
-    <section className="relative overflow-hidden rounded-b-3xl bg-brand-deep">
-      {/* Медиа-фон */}
-      <div className="absolute inset-0">
-        {isVideo ? (
-          <video
-            src={mediaUrl!}
-            className="h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster={fallbackImage ? cdnImage(fallbackImage, "banner") : undefined}
-            onError={() => setVideoFailed(true)}
-          />
-        ) : imageSrc ? (
-          <img
-            src={cdnImage(imageSrc, "banner")}
-            alt={name}
-            className="h-full w-full object-cover"
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
-        ) : null}
-        {/* Более низкий градиент: читаемость текста без затемнения всего фото */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
-      </div>
+    <section className="px-3 pt-2">
+      <div className="rounded-2xl bg-card px-3 py-2.5 shadow-sm ring-1 ring-black/[0.04]">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Назад"
+            className="-ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground transition-colors active:bg-secondary/70"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
 
-      {/* Кнопка «назад» поверх медиа */}
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        aria-label="Назад"
-        className="absolute left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-primary-foreground backdrop-blur-md transition-colors hover:bg-black/50 md:left-6"
-        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </button>
-
-      {/* Контент */}
-      <div className="relative flex min-h-[420px] flex-col justify-end p-4 pt-16 md:min-h-[480px] md:p-8">
-        <h1 className="font-serif font-bold leading-tight text-primary-foreground text-[28px] md:text-5xl">
-          {name}
-        </h1>
-
-        <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-primary-foreground/90 md:max-w-xl md:text-base">
-          {uniqueFact?.trim() || "[УНИКАЛЬНЫЙ_ФАКТ_ПРОДАВЦА]"}
-        </p>
-
-        {/* Бейджи доверия */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-medium text-primary-foreground backdrop-blur-md">
-            <BadgeCheck className="h-3.5 w-3.5" /> Проверено LOCUS
-          </span>
-          {cleanLocation && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-medium text-primary-foreground backdrop-blur-md">
-              <MapPin className="h-3.5 w-3.5" /> {cleanLocation}
+          {avatarUrl ? (
+            <img
+              src={cdnImage(avatarUrl, "thumb")}
+              alt={name}
+              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-[hsl(var(--seller-accent))]/40"
+              loading="eager"
+              decoding="async"
+            />
+          ) : (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-[15px] font-bold text-primary-foreground">
+              {name.trim().charAt(0).toUpperCase()}
             </span>
           )}
-          {!!ordersCount && ordersCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-medium text-primary-foreground backdrop-blur-md">
-              <Package className="h-3.5 w-3.5" /> {ordersCount} выполненных заказов
-            </span>
+
+          <div className="min-w-0 flex-1">
+            <h1 className="line-clamp-2 text-[16.5px] font-bold leading-snug text-foreground">
+              {name}
+            </h1>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-tight">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 font-semibold",
+                  acceptsOrders ? "text-emerald-700" : "text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    acceptsOrders ? "bg-emerald-600" : "bg-muted-foreground",
+                  )}
+                />
+                {acceptsOrders ? "Принимает заказы" : "Нет товаров"}
+              </span>
+              {cleanLocation && (
+                <span className="inline-flex items-center gap-0.5 text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  {cleanLocation}
+                </span>
+              )}
+              {showRating && (
+                <span className="inline-flex items-center gap-0.5 font-medium text-foreground">
+                  <Star className="h-3 w-3 fill-accent text-accent" />
+                  {rating!.toFixed(1)}
+                  {reviewCount > 0 && (
+                    <span className="font-normal text-muted-foreground">({reviewCount})</span>
+                  )}
+                </span>
+              )}
+              {!!ordersCount && ordersCount > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-muted-foreground">
+                  <Package className="h-3 w-3" />
+                  {ordersCount} {ordersWord(ordersCount)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {contactHref && (
+            <a
+              href={contactHref}
+              aria-label="Написать продавцу"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-primary-foreground transition-transform active:scale-95"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </a>
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={scrollToCatalog}
-          className="mt-4 w-full rounded-2xl bg-[hsl(var(--seller-accent))] px-6 py-3 text-[15px] font-bold text-[hsl(var(--seller-accent-foreground))] transition-transform active:scale-[0.98] md:w-auto md:self-start"
-        >
-          Смотреть каталог
-        </button>
+        {uniqueFact?.trim() && (
+          <p className="mt-2 line-clamp-2 pl-[42px] text-[11.5px] leading-snug text-muted-foreground">
+            {uniqueFact}
+          </p>
+        )}
       </div>
     </section>
   );

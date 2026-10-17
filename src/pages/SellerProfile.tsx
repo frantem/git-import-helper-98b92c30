@@ -18,8 +18,23 @@ import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerPosts } from "@/components/seller/SellerPosts";
 import { SellerPromos } from "@/components/seller/SellerPromos";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
+import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 
 const THEMES = ["forest", "terracotta", "night", "sand"] as const;
+
+/** Одна ссылка для быстрой связи: мессенджер важнее телефона. */
+function sellerContactHref(contacts?: SellerContacts | null): string | null {
+  if (!contacts) return null;
+  const telegram = contacts.telegram?.trim();
+  if (telegram) return `https://t.me/${telegram.replace(/^@/, "")}`;
+  const whatsapp = contacts.whatsapp?.trim();
+  if (whatsapp) return `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
+  const viber = contacts.viber?.trim();
+  if (viber) return `viber://chat?number=${viber.replace(/\D/g, "")}`;
+  const phone = contacts.phone?.trim();
+  if (phone) return `tel:${phone.replace(/[^\d+]/g, "")}`;
+  return null;
+}
 
 interface Farmer {
   id: string;
@@ -36,8 +51,14 @@ interface Farmer {
   posts_block_title?: string | null;
   unique_fact?: string | null;
   delivery_terms?: string | null;
+  delivery_enabled?: boolean | null;
+  pickup_enabled?: boolean | null;
+  street?: string | null;
+  address_details?: string | null;
   contacts?: SellerContacts | null;
   theme?: string | null;
+  plan?: string | null;
+  trial_ends_at?: string | null;
 }
 
 interface Product {
@@ -117,7 +138,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors.
       const safeCols =
-        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, posts_block_title, unique_fact, delivery_terms, contacts, theme, plan, trial_ends_at";
+        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, posts_block_title, unique_fact, delivery_terms, delivery_enabled, pickup_enabled, street, address_details, contacts, theme, plan, trial_ends_at";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -263,6 +284,9 @@ export default function SellerProfile() {
   const themeName = THEMES.includes((farmer.theme || "") as never) ? farmer.theme : "forest";
   const sellerSlug = farmer.slug || farmer.id;
   const locationLabel = farmer.city?.trim() || farmer.village?.trim() || null;
+  const canShowContacts =
+    !!farmer.plan && farmer.plan !== "free" &&
+    (!farmer.trial_ends_at || new Date(farmer.trial_ends_at).getTime() > Date.now());
 
   return (
     <div className={`seller-theme-${themeName} min-h-screen bg-background pb-16 md:pb-0`}>
@@ -275,84 +299,96 @@ export default function SellerProfile() {
       />
       <Header />
 
-      {/* 1. Hero */}
+      <div className="mx-auto w-full max-w-6xl">
+      {/* 1. Компактная шапка: имя, статус, рейтинг, связь */}
       <SellerHero
         name={farmer.name}
         uniqueFact={farmer.unique_fact}
         locationLabel={locationLabel}
+        rating={averageRating ?? farmer.rating}
+        reviewCount={totalReviewCount}
         ordersCount={ordersCount}
-        mediaUrl={farmer.hero_media_url}
-        mediaType={farmer.hero_media_type}
-        fallbackImage={farmer.photo_url}
+        productsCount={products.length}
+        avatarUrl={farmer.photo_url}
+        contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
       />
 
-      <main className="container mx-auto bg-[hsl(var(--seller-bg))] px-3 py-4">
-        {/* 2. О нас */}
-        <SellerAbout
-          name={farmer.name}
-          aboutText={farmer.description}
-          photoUrl={farmer.photo_url}
+      <main className="container mx-auto bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
+        {/* 2. Условия получения — до каталога, чтобы снять страх доставки */}
+        <SellerDelivery
+          deliveryEnabled={farmer.delivery_enabled}
+          deliveryTerms={farmer.delivery_terms}
+          pickupEnabled={farmer.pickup_enabled}
+          city={farmer.city}
+          street={farmer.street}
+          addressDetails={farmer.address_details}
         />
 
-        {/* 3. Хиты */}
-        <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} />
+        <div className="px-3 pt-2.5">
+          {/* 3. Хиты продавца */}
+          <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} />
 
-        {/* 4. Доставка и самовывоз */}
-        <SellerDelivery note={farmer.delivery_terms} />
+          {/* 4. Акции и наборы */}
+          <SellerPromos promos={pageContent?.promos || []} />
 
-        {/* Посты-статьи продавца */}
-        <SellerPosts
-          posts={pageContent?.posts || []}
-          blockTitle={farmer.posts_block_title}
-        />
+          {/* 5. Каталог по категориям */}
+          <div id="seller-catalog" className="scroll-mt-2">
+            {products.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                У продавца пока нет товаров
+              </div>
+            ) : (
+              groupedProducts.map((group) => (
+                <section key={group.slug} className="mb-5">
+                  <h2 className="mb-2 font-serif text-[17px] font-bold text-foreground md:text-2xl">
+                    {group.emoji ? `${group.emoji} ` : ""}
+                    {group.name}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+                    {group.items.map((product, index) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product as never}
+                        pickupLabel={pickupLabels.get(product.id)}
+                        hasRequiredFields={requiredFieldIds.has(product.id)}
+                        priority={index < 2}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
+          </div>
 
-        {/* Иконки контактов — только на платных тарифах (Standard/Pro) */}
-        {(farmer as any).plan && (farmer as any).plan !== "free" &&
-          (!(farmer as any).trial_ends_at ||
-            new Date((farmer as any).trial_ends_at).getTime() > Date.now()) && (
-          <SellerContactIcons contacts={farmer.contacts} />
-        )}
+          {/* 6. О продавце — после товаров: сначала еда, потом история */}
+          <SellerAbout
+            name={farmer.name}
+            aboutText={farmer.description}
+            photoUrl={farmer.photo_url}
+          />
 
-        {/* 5. Акции и наборы */}
-        <SellerPromos promos={pageContent?.promos || []} />
+          {/* Посты-статьи продавца */}
+          <SellerPosts
+            posts={pageContent?.posts || []}
+            blockTitle={farmer.posts_block_title}
+          />
 
-        {/* 6. Полный каталог по категориям */}
-        <div id="seller-catalog" className="scroll-mt-4">
-          {products.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              У продавца пока нет товаров
-            </div>
-          ) : (
-            groupedProducts.map((group) => (
-              <section key={group.slug} className="mb-6">
-                <h2 className="mb-3 font-serif text-lg font-bold text-foreground md:text-2xl">
-                  {group.emoji ? `${group.emoji} ` : ""}
-                  {group.name}
-                </h2>
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                  {group.items.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product as never}
-                      pickupLabel={pickupLabels.get(product.id)}
-                      hasRequiredFields={requiredFieldIds.has(product.id)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))
-          )}
+          {/* 7. Иконки контактов — только на платных тарифах */}
+          {canShowContacts && <SellerContactIcons contacts={farmer.contacts} />}
+
+          {/* 8. Футер доверия */}
+          <SellerTrustFooter
+            name={farmer.name}
+            sellerSlug={sellerSlug}
+            rating={averageRating}
+            reviewCount={totalReviewCount}
+          />
         </div>
-
-        {/* 7. Футер доверия */}
-        <SellerTrustFooter
-          name={farmer.name}
-          sellerSlug={sellerSlug}
-          rating={averageRating}
-          reviewCount={totalReviewCount}
-        />
       </main>
+      </div>
 
+      {/* 9. Плавающая корзина */}
+      <SellerStickyCart farmerId={farmer.id} />
       <BottomNavigation />
     </div>
   );
