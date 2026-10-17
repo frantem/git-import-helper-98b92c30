@@ -7,11 +7,11 @@ const STEP_DURATION = 4500;
 
 const steps = [
   {
-    short: "Сайт",
+    short: " Сайт",
     caption: "Ваш личный сайт готов. Ссылку можно сразу ставить в шапку профиля Instagram.",
   },
   {
-    short: "Сторис",
+    short: "Контент",
     caption: "Больше не нужно часами сидеть в Canva. Сайт сам делает продающие сторис из ваших товаров.",
   },
   {
@@ -275,7 +275,7 @@ export function StoryDemoPhone() {
                 : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
             }`}
           >
-            {index + 1}. {item.short}
+            {item.short}
           </button>
         ))}
       </div>
