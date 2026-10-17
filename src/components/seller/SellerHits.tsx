@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ProductCard } from "@/components/ProductCard";
+import { SellerProductCard } from "@/components/seller/SellerProductCard";
 import type { Product } from "@/data/products";
 
 interface SellerHitsProps {
@@ -25,7 +25,7 @@ export const SellerHits = memo(function SellerHits({ products, requiredFieldIds 
 
       <div className="-mx-3 grid auto-cols-[45%] grid-flow-col items-stretch gap-2 overflow-x-auto px-3 pb-1 scrollbar-hide md:mx-0 md:auto-cols-auto md:grid-flow-row md:grid-cols-4 md:gap-3 md:overflow-visible md:px-0">
         {products.map((product, index) => (
-          <ProductCard
+          <SellerProductCard
             key={product.id}
             product={product}
             hasRequiredFields={requiredFieldIds?.has(product.id)}

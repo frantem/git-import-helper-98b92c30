@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { ProductCard } from "@/components/ProductCard";
+import { SellerProductCard } from "@/components/seller/SellerProductCard";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -346,7 +346,7 @@ export default function SellerProfile() {
                   </h2>
                   <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
                     {group.items.map((product, index) => (
-                      <ProductCard
+                      <SellerProductCard
                         key={product.id}
                         product={product as never}
                         pickupLabel={pickupLabels.get(product.id)}
