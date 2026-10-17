@@ -1,10 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowDownRight,
   ArrowRight,
   Check,
-  ChevronRight,
   Clock3,
   Download,
   Instagram,
@@ -21,6 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { Reveal } from "@/components/motion/Reveal";
+import { useRevealOnScroll } from "@/components/motion/useMotion";
+import { AiSearchScene } from "@/components/sellers/AiSearchScene";
 import bakeryImage from "@/assets/sellers-bakery.jpg";
 import cheeseImage from "@/assets/sellers-cheese.jpg";
 import pastryImage from "@/assets/sellers-pastry.jpg";
@@ -48,25 +50,6 @@ const serviceJsonLd = {
     url: "https://locusfood.by/seller-application",
   },
 };
-
-const aiAnswers = {
-  google: {
-    title: "Режим ИИ",
-    answer:
-      "В Витебске торты ручной работы можно заказать у кондитера «Своё Подворье». На сайте есть каталог с ценами и наличием, доставка по городу и самовывоз.",
-    source: "Своё Подворье — кондитерская мастерская",
-    url: "locusfood.by/seller/svoe-podvorye",
-    meta: "3 источника · каталог, цены, доставка",
-  },
-  alice: {
-    title: "Алиса",
-    answer:
-      "Могу предложить «Княжеское подворье» — домашние сыры и выпечка. Посмотреть ассортимент и оформить заказ можно на её странице: самовывоз в Витебске или доставка.",
-    source: "Княжеское подворье — фермерское хозяйство",
-    url: "locusfood.by/seller/knyazhetsky",
-    meta: "Ответ по данным сайта · актуально сегодня",
-  },
-} as const;
 
 const aiProofPoints: Array<[string, string]> = [
   ["Семантическая разметка", "JSON-LD: товары, цены, наличие, адрес"],
@@ -133,75 +116,6 @@ function PhoneShell({ children, className = "" }: { children: ReactNode; classNa
   );
 }
 
-function AiSearchMock() {
-  const [tab, setTab] = useState<keyof typeof aiAnswers>("google");
-  const active = aiAnswers[tab];
-  const tabs = [
-    ["google", "Google · ИИ"],
-    ["alice", "Алиса"],
-  ] as const;
-
-  return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
-      <div role="tablist" aria-label="Пример ответа ИИ" className="flex items-center gap-1 border-b border-border px-3 py-2.5 md:px-5">
-        {tabs.map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
-              tab === key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-        <span className="ml-auto hidden items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          живой пример
-        </span>
-      </div>
-
-      <div className="p-4 md:p-6">
-        <div className="flex items-center gap-3 rounded-full border border-border bg-background px-4 py-3">
-          <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate text-sm text-foreground/90">
-            Где в Витебске заказать торт ручной работы?
-          </span>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4 md:p-5">
-          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-            <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />
-            {active.title}
-          </p>
-          <p className="mt-3 text-[15px] leading-relaxed text-foreground/90">{active.answer}</p>
-
-          <div className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-background p-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Store aria-hidden="true" className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{active.source}</p>
-              <p className="truncate text-xs text-primary">{active.url}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">{active.meta}</p>
-            </div>
-            <ChevronRight aria-hidden="true" className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
-          </div>
-        </div>
-
-        <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-          Ответ собран из данных сайта: каталог, цены, наличие, адрес самовывоза.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function StoryMenuCard() {
   const rows = [
     { image: cheeseImage, name: "Брынза", price: "18,00" },
@@ -210,7 +124,7 @@ function StoryMenuCard() {
   ];
 
   return (
-    <div className="sellers-story relative flex h-[260px] w-[146px] shrink-0 flex-col overflow-hidden rounded-xl shadow-xl">
+    <div className="sellers-story motion-reveal relative flex h-[260px] w-[146px] shrink-0 flex-col overflow-hidden rounded-xl shadow-xl" data-reveal data-reveal-delay="80">
       <div className="px-3 pb-2 pt-4">
         <p className="text-[9px] font-semibold uppercase tracking-[0.16em] opacity-55">Меню</p>
         <p className="mt-1 text-[15px] font-semibold leading-tight">Своё Подворье</p>
@@ -239,6 +153,8 @@ function StoryMenuCard() {
 }
 
 export default function ForSellers() {
+  useRevealOnScroll();
+
   useEffect(() => {
     if (document.querySelector("link[data-sellers-font]")) return;
     const link = document.createElement("link");
@@ -328,7 +244,7 @@ export default function ForSellers() {
               </ul>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[400px]">
+            <div className="motion-reveal relative mx-auto w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[400px]" data-reveal data-reveal-delay="160">
               <div aria-hidden="true" className="absolute inset-0 -z-10 scale-95 rounded-full bg-primary/20 blur-[70px]" />
 
               <PhoneShell className="sellers-float">
@@ -378,7 +294,7 @@ export default function ForSellers() {
         {/* 02. Готовность к AI-поиску */}
         <section id="ai" className="scroll-mt-20 border-t border-border py-16 md:py-24">
           <div className={sectionClass}>
-            <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-16">
+            <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-16">
               <div>
                 <SectionLabel index="01">ИИ-поиск</SectionLabel>
                 <h2 className="sellers-heading max-w-xl text-3xl md:text-4xl lg:text-[42px]">
@@ -403,7 +319,9 @@ export default function ForSellers() {
                 </ul>
               </div>
 
-              <AiSearchMock />
+              <Reveal delay={140} className="lg:pl-2">
+                <AiSearchScene />
+              </Reveal>
             </div>
           </div>
         </section>
@@ -444,7 +362,7 @@ export default function ForSellers() {
                 </div>
               </div>
 
-              <div className="order-1 lg:order-2">
+              <div className="motion-reveal order-1 lg:order-2" data-reveal data-reveal-delay="100">
                 <div className="mx-auto max-w-[360px] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_40px_80px_-40px_rgba(10,30,20,0.45)]">
                   <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2.5">
                     <span aria-hidden="true" className="flex gap-1.5">
@@ -508,7 +426,7 @@ export default function ForSellers() {
 
               <div className="-mx-5 overflow-x-auto px-5 pb-2 scrollbar-hide md:mx-0 md:overflow-visible md:px-0">
                 <div className="flex snap-x snap-mandatory items-center gap-4 md:justify-center md:gap-5">
-                  <div className="relative h-[260px] w-[146px] shrink-0 snap-center -rotate-6 overflow-hidden rounded-xl shadow-xl">
+                  <div className="motion-reveal relative h-[260px] w-[146px] shrink-0 snap-center -rotate-6 overflow-hidden rounded-xl shadow-xl" data-reveal>
                     <img
                       src={storyNovinkaImage}
                       alt="Шаблон сторис «Новинка» с фото товара и характеристиками"
@@ -519,7 +437,7 @@ export default function ForSellers() {
                     />
                   </div>
                   <StoryMenuCard />
-                  <div className="relative h-[260px] w-[146px] shrink-0 rotate-6 overflow-hidden rounded-xl shadow-xl">
+                  <div className="motion-reveal relative h-[260px] w-[146px] shrink-0 rotate-6 overflow-hidden rounded-xl shadow-xl" data-reveal data-reveal-delay="160">
                     <img
                       src={storyAvailableImage}
                       alt="Шаблон сторис «Доступно для заказа» с сеткой товаров"
@@ -567,7 +485,7 @@ export default function ForSellers() {
                 </ul>
               </div>
 
-              <div className="relative mx-auto w-full max-w-[330px]">
+              <div className="motion-reveal relative mx-auto w-full max-w-[330px]" data-reveal data-reveal-delay="100">
                 <div className="rounded-[2rem] border border-border bg-card px-5 pb-6 pt-5 shadow-2xl sm:pb-20">
                   <div className="flex items-center gap-3">
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary/30 text-sm font-bold text-primary-foreground">
@@ -739,7 +657,7 @@ export default function ForSellers() {
             </div>
 
             <div className="mt-10 grid gap-5 lg:grid-cols-2">
-              <article className="rounded-2xl border border-border bg-card p-6">
+              <article className="motion-reveal rounded-2xl border border-border bg-card p-6" data-reveal>
                 <div className="flex items-center gap-2 text-primary">
                   <Users aria-hidden="true" className="h-4 w-4" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em]">База клиентов</p>
@@ -773,7 +691,7 @@ export default function ForSellers() {
                 </div>
               </article>
 
-              <article className="rounded-2xl border border-border bg-card p-6">
+              <article className="motion-reveal rounded-2xl border border-border bg-card p-6" data-reveal>
                 <div className="flex items-center gap-2 text-primary">
                   <Search aria-hidden="true" className="h-4 w-4" />
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em]">Поиск</p>
@@ -854,7 +772,7 @@ export default function ForSellers() {
               </p>
             </div>
 
-            <figure className="mx-auto w-full max-w-[330px]">
+            <figure className="motion-reveal mx-auto w-full max-w-[330px]" data-reveal data-reveal-delay="100">
               <PhoneShell>
                 <video
                   src={sellerPageVideo}
