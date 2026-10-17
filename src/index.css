@@ -258,6 +258,33 @@
   from { opacity: 0; transform: translate3d(0, 6px, 0); }
   to { opacity: 1; transform: none; }
 }
+.demo-screen { animation: demo-screen-in .42s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes demo-screen-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: none; }
+}
+.demo-chip { animation: demo-chip-in .5s cubic-bezier(.22, 1, .36, 1) .85s both; }
+@keyframes demo-chip-in {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.demo-toast { animation: demo-toast-in .45s cubic-bezier(.22, 1, .36, 1) 1.8s both; }
+@keyframes demo-toast-in {
+  from { opacity: 0; scale: .92; }
+  to { opacity: 1; scale: 1; }
+}
+.demo-push { animation: demo-push-in .72s cubic-bezier(.22, 1.25, .36, 1) .3s both; }
+@keyframes demo-push-in {
+  0% { opacity: 0; transform: translateY(-120%) scale(.94); }
+  55% { opacity: 1; transform: translateY(5px) scale(1.01); }
+  75% { transform: translateY(-2px) scale(1); }
+  100% { opacity: 1; transform: none; }
+}
+.demo-caption { animation: demo-caption-in .35s ease-out both; }
+@keyframes demo-caption-in {
+  from { opacity: 0; translate: 0 4px; }
+  to { opacity: 1; translate: 0 0; }
+}
 @keyframes thinking {
   0%, 100% { opacity: .35; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-2px); }
@@ -266,6 +293,7 @@
   .motion-reveal { opacity: 1; translate: 0 0; transition: none; }
   .thinking-dot { animation: none; }
   .scene-in { animation: none; }
+  .demo-screen, .demo-chip, .demo-toast, .demo-push, .demo-caption { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sellers-reveal { animation: none; }
