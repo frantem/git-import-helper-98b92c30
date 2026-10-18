@@ -6,10 +6,14 @@ export interface Product {
   discount?: number;
   image: string;
   category: string;
+  categoryName?: string | null;
   rating: number;
   reviews: number;
   seller: string;
   description: string;
+  composition?: string | null;
+  shelfLife?: string | null;
+  warning?: string | null;
   inStock: boolean;
   deliveryDays: number;
   unit: string;

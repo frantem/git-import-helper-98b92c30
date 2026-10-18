@@ -13,6 +13,7 @@ import { SellerHero } from "@/components/seller/SellerHero";
 import { SellerAbout } from "@/components/seller/SellerAbout";
 import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
 import { SellerHits } from "@/components/seller/SellerHits";
+import { SellerProductSheet } from "@/components/seller/SellerProductSheet";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerPosts } from "@/components/seller/SellerPosts";
 import { SellerPromos } from "@/components/seller/SellerPromos";
@@ -98,6 +99,7 @@ export default function SellerProfile() {
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
   const pickupLabels = usePickupLabels(products as never);
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
   const { data: pageContent } = useSellerPage(farmer?.id);
@@ -188,7 +190,9 @@ export default function SellerProfile() {
         .from("products")
         .select(`
           id, title, slug, price, old_price, image_url, unit, is_new, is_featured, farmer_id,
-          category_id, prep_time_minutes, order_lead_time_hours, categories(name, slug, emoji, sort_order)
+          category_id, prep_time_minutes, order_lead_time_hours,
+          description, composition, shelf_life,
+          categories(name, slug, emoji, sort_order)
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
@@ -235,7 +239,9 @@ export default function SellerProfile() {
             rating: ratings ? ratings.sum / ratings.count : null,
             reviews: ratings?.count || 0,
             seller: farmerData.name,
-            description: "",
+            description: (p as any).description || "",
+            composition: (p as any).composition ?? null,
+            shelfLife: (p as any).shelf_life ?? null,
             inStock: true,
             deliveryDays: 2,
             unit: p.unit,
@@ -331,7 +337,7 @@ export default function SellerProfile() {
 
         <div className="px-3 pt-2">
           {/* 3. Хиты продавца */}
-          <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} />
+          <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} onOpenProduct={(p) => setSheetProduct(p as never)} />
 
           {/* 4. Акции и наборы */}
           <SellerPromos promos={pageContent?.promos || []} />
@@ -357,6 +363,7 @@ export default function SellerProfile() {
                         pickupLabel={pickupLabels.get(product.id)}
                         hasRequiredFields={requiredFieldIds.has(product.id)}
                         priority={index < 2}
+                        onOpen={() => setSheetProduct(product)}
                       />
                     ))}
                   </div>
@@ -394,6 +401,12 @@ export default function SellerProfile() {
 
       {/* 9. Плавающая корзина и быстрое оформление без регистрации */}
       <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} />
+
+      <SellerProductSheet
+        product={sheetProduct}
+        onClose={() => setSheetProduct(null)}
+        farmerName={farmer.name}
+      />
 
       {checkoutOpen && (
         <SellerGuestCheckout

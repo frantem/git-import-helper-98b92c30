@@ -7,6 +7,8 @@ interface SellerHitsProps {
   products: Product[];
   /** Товары с обязательными полями — их нужно открыть на странице товара. */
   requiredFieldIds?: Set<string>;
+  /** Открыть быстрый просмотр товара, не уходя с витрины. */
+  onOpenProduct?: (product: Product) => void;
 }
 
 /**
@@ -15,7 +17,7 @@ interface SellerHitsProps {
  * На телефоне это горизонтальная лента с прилипанием: покупка в один тап
  * и счётчик количества работают одинаково в обоих блоках.
  */
-export const SellerHits = memo(function SellerHits({ products, requiredFieldIds }: SellerHitsProps) {
+export const SellerHits = memo(function SellerHits({ products, requiredFieldIds, onOpenProduct }: SellerHitsProps) {
   if (products.length === 0) return null;
 
   return (
@@ -36,6 +38,7 @@ export const SellerHits = memo(function SellerHits({ products, requiredFieldIds 
             product={product}
             hasRequiredFields={requiredFieldIds?.has(product.id)}
             priority={index < 2}
+            onOpen={onOpenProduct ? () => onOpenProduct(product) : undefined}
             className="snap-start"
           />
         ))}

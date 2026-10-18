@@ -4,6 +4,8 @@ import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2, ChevronRight } f
 
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
+import { useSellerNavContext } from "@/hooks/useSellerNavContext";
 import { ProductReviews } from "@/components/ProductReviews";
 import { useCart } from "@/contexts/CartContext";
 import { CartItemCustomField, CartItemAddon } from "@/contexts/CartContext";
@@ -47,6 +49,19 @@ export default function Product() {
   } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  // Пришли с витрины продавца — держим опыт моно-магазина
+  const sellerCtx = useSellerNavContext();
+  const sellerSlug = sellerCtx?.sellerSlug ?? null;
+  const [sellerCheckout, setSellerCheckout] = useState<{
+    id: string;
+    name: string;
+    deliveryEnabled: boolean | null;
+    pickupEnabled: boolean | null;
+    city?: string | null;
+    street?: string | null;
+    addressDetails?: string | null;
+    contacts?: Record<string, string> | null;
+  } | null>(null);
   const {
     addToCart,
     items,
@@ -404,7 +419,7 @@ export default function Product() {
         <main className="container mx-auto flex items-center justify-center px-4 py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        <BottomNavigation />
+        {!sellerSlug && <BottomNavigation />}
       </div>;
   }
   if (!product) {
@@ -416,7 +431,7 @@ export default function Product() {
             <Button variant="default">Вернуться в каталог</Button>
           </Link>
         </main>
-        <BottomNavigation />
+        {!sellerSlug && <BottomNavigation />}
       </div>;
   }
 
@@ -435,7 +450,7 @@ export default function Product() {
   const displayRating = reviews.length > 0 ? averageRating : product.rating || null;
   const displayReviewCount = reviews.length > 0 ? reviews.length : product.reviews || 0;
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!allCustomFieldsFilled) {
       toast.error("Заполните все обязательные поля");
       return;
@@ -444,6 +459,27 @@ export default function Product() {
       const added = addToCart(product as any, cartVariantData, cartCustomFields, cartAddons);
       if (!added) return;
     }
+
+    // С витрины продавца — сразу быстрый заказ без регистрации
+    if (sellerSlug && product?.farmer_id) {
+      const { data } = await supabase
+        .from("farmers")
+        .select("id, name, delivery_enabled, pickup_enabled, city, contacts")
+        .eq("id", product.farmer_id)
+        .maybeSingle();
+      if (data) {
+        setSellerCheckout({
+          id: data.id,
+          name: data.name,
+          deliveryEnabled: data.delivery_enabled,
+          pickupEnabled: data.pickup_enabled,
+          city: data.city,
+          contacts: (data.contacts as Record<string, string> | null) ?? null,
+        });
+        return;
+      }
+    }
+
     navigate("/cart");
   };
   const handleAddToCart = () => {
@@ -473,6 +509,10 @@ export default function Product() {
     }
   };
   const handleGoBack = () => {
+    if (sellerSlug) {
+      navigate(`/seller/${sellerSlug}`);
+      return;
+    }
     if (window.history.length > 1) {
       navigate(-1);
     } else {
@@ -650,10 +690,11 @@ export default function Product() {
             <button
               type="button"
               onClick={handleGoBack}
-              aria-label="Назад"
-              className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-primary-foreground backdrop-blur-md transition-colors hover:bg-black/50 md:hidden"
+              aria-label={sellerSlug ? "В магазин продавца" : "Назад"}
+              className="absolute left-4 top-4 z-10 flex h-10 items-center justify-center gap-1.5 rounded-full bg-black/35 px-3 text-primary-foreground backdrop-blur-md transition-colors hover:bg-black/50 md:hidden"
             >
               <ArrowLeft className="h-5 w-5" />
+              {sellerSlug && <span className="text-[12px] font-semibold">В магазин</span>}
             </button>
 
             {allImages.length > 1 ? <Carousel className="w-full">
@@ -955,7 +996,14 @@ export default function Product() {
           </section>
       </main>
 
-      <BottomNavigation />
+      {!sellerSlug && <BottomNavigation />}
+
+      {sellerCheckout && (
+        <SellerGuestCheckout
+          farmer={sellerCheckout as never}
+          onClose={() => setSellerCheckout(null)}
+        />
+      )}
     </div>;
 }
 

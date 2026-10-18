@@ -1,13 +1,12 @@
 import { memo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Heart } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { usePrefetchProduct } from "@/hooks/useProduct";
 
 interface SellerProductCardProps {
   product: Product;
@@ -19,6 +18,8 @@ interface SellerProductCardProps {
   pickupLabel?: string;
   /** Mark above-the-fold cards for eager loading + high fetch priority (LCP). */
   priority?: boolean;
+  /** Открыть карточку товара шторкой, не уходя с витрины. */
+  onOpen?: () => void;
 }
 
 /**
@@ -37,10 +38,10 @@ export const SellerProductCard = memo(function SellerProductCard({
   isLowestPrice = false,
   pickupLabel,
   priority = false,
+  onOpen,
 }: SellerProductCardProps) {
   const { items, addToCart, updateQuantity, removeFromCart, getItemKey } = useCart();
   const navigate = useNavigate();
-  const prefetchProduct = usePrefetchProduct();
   const [justAdded, setJustAdded] = useState(false);
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(product.id);
@@ -123,12 +124,17 @@ export const SellerProductCard = memo(function SellerProductCard({
   };
 
   return (
-    <Link
-      to={`/product/${product.slug || product.id}`}
+    <div
+      role="button"
+      tabIndex={0}
       data-product-id={product.id}
-      onMouseEnter={() => prefetchProduct(product.id)}
-      onClick={saveAnchor}
-      onTouchStart={saveAnchor}
+      onClick={() => onOpen?.()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen?.();
+        }
+      }}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md",
         className,
@@ -231,6 +237,6 @@ export const SellerProductCard = memo(function SellerProductCard({
           </div>
         )}
       </div>
-    </Link>
+    </div>
   );
 });

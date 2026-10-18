@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
+import { OptimizedImage } from "@/components/ui/optimized-image";
+import { cleanSellerName } from "@/lib/sellerName";
 import { cn } from "@/lib/utils";
 import type { SellerContacts } from "@/components/seller/SellerTrustFooter";
 
@@ -72,7 +74,7 @@ function errorText(code?: string) {
  * на сервере, продавец получает уведомление в Telegram.
  */
 export function SellerGuestCheckout({ farmer, onClose }: SellerGuestCheckoutProps) {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, getItemKey } = useCart();
 
   const courierAvailable = !!farmer.deliveryEnabled;
   const [delivery, setDelivery] = useState<DeliveryType>(courierAvailable ? "courier" : "self");
@@ -193,7 +195,7 @@ export function SellerGuestCheckout({ farmer, onClose }: SellerGuestCheckoutProp
             <p className="text-[15px] font-bold leading-tight text-foreground">
               {order ? "Заказ принят" : "Оформление заказа"}
             </p>
-            <p className="text-[11px] text-muted-foreground">{farmer.name}</p>
+            <p className="text-[11px] text-muted-foreground">{cleanSellerName(farmer.name)}</p>
           </div>
           <button
             type="button"
@@ -236,6 +238,44 @@ export function SellerGuestCheckout({ farmer, onClose }: SellerGuestCheckoutProp
           </div>
         ) : (
           <div className="space-y-3.5 px-4 pt-3">
+            {/* Что покупатель оплачивает — до полей, чтобы не было сюрпризов */}
+            <div className="rounded-xl bg-secondary/70 p-2.5">
+              <p className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Ваш заказ
+              </p>
+              <ul className="max-h-36 space-y-2 overflow-y-auto pr-1">
+                {items.map((item) => {
+                  const linePrice = (item.variant?.price ?? item.product.price) * item.quantity;
+                  return (
+                    <li key={getItemKey(item)} className="flex items-center gap-2">
+                      <OptimizedImage
+                        src={item.product.image}
+                        alt={item.product.name}
+                        preset="thumb"
+                        className="h-11 w-11 shrink-0 overflow-hidden rounded-lg"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-[13px] font-medium leading-tight text-foreground">
+                          {item.product.name}
+                        </p>
+                        <p className="text-[11px] leading-tight text-muted-foreground">
+                          {item.variant?.unit || item.product.unit || "шт."} · × {item.quantity}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[12.5px] font-semibold text-foreground">
+                        {formatPrice(linePrice).formatted}
+                        <BynSymbol className="ml-0.5 inline-block h-2.5 w-2.5 align-baseline" />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
+                <span className="text-[11.5px] text-muted-foreground">Сумма товаров</span>
+                <span className="text-[13px] font-bold text-foreground">{price.formatted} BYN</span>
+              </div>
+            </div>
+
             <label className="block">
               <span className="mb-1 block text-[11px] font-medium text-muted-foreground">Ваше имя</span>
               <input
@@ -359,8 +399,7 @@ export function SellerGuestCheckout({ farmer, onClose }: SellerGuestCheckoutProp
                 </>
               ) : (
                 <>
-                  Подтвердить заказ на {price.formatted}
-                  <BynSymbol className="h-3 w-3" />
+                  Подтвердить заказ на {price.formatted} BYN
                 </>
               )}
             </button>

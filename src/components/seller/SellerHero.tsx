@@ -1,6 +1,5 @@
 import { memo } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Instagram, MapPin, MessageCircle, Package, Star } from "lucide-react";
+import { Instagram, MapPin, MessageCircle, Package, Star } from "lucide-react";
 import { cleanSellerName } from "@/lib/sellerName";
 import { cdnImage } from "@/lib/imageCdn";
 import { cn } from "@/lib/utils";
@@ -50,7 +49,6 @@ export const SellerHero = memo(function SellerHero({
   contactHref,
   instagram,
 }: SellerHeroProps) {
-  const navigate = useNavigate();
   const cleanLocation = locationLabel?.replace(/^📍\s*/, "").trim();
   const displayName = cleanSellerName(name);
   const instagramHandle = instagram?.trim().replace(/^@/, "").replace(/\/$/, "") || null;
@@ -61,15 +59,6 @@ export const SellerHero = memo(function SellerHero({
     <section className="px-3 pt-2">
       <div className="rounded-2xl bg-card px-3 py-2.5 shadow-sm ring-1 ring-black/[0.04]">
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Назад"
-            className="-ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground transition-colors active:bg-secondary/70"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-
           {avatarUrl ? (
             <img
               src={cdnImage(avatarUrl, "thumb")}
