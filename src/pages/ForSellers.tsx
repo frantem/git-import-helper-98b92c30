@@ -41,19 +41,19 @@ const routineItems = [
       "Выбрали товары — сайт за 10 секунд собрал макет 9:16 с фото и ценами. Нажали «Скачать» — и сторис в блоге.",
   },
   {
-    title: "Чистый директ без каши",
+    title: "Чистый директ",
     before: "Бесконечные «а сколько стоит?», «а что в наличии?», потерянные сообщения.",
     after:
       "Покупатель видит актуальное наличие, составы и оформляет заказ по ссылке в шапке профиля.",
   },
   {
     title: "Ни один заказ не потеряется",
-    before: "Блокноты с почеркушками, заметки в телефоне, скриншоты чеков.",
-    after: "Чёткий кабинет: кто заказал, когда заберёт, куда доставить и какой телефон.",
+    before: "Блокнот, заметки в телефоне,\u00a0 что-то в памяти.",
+    after: "Чёткий кабинет: кто заказал, когда заберёт, куда доставить, какой телефон, имя покупателя, как связаться.",
   },
   {
     title: "Клиенты всегда с вами",
-    before: "Контакты разбросаны по соцсетям и телефонной книге.",
+    before: "Контакты разбросаны по разным соцсетям и телефонной книге.",
     after: "Автоматическая база: имена, телефоны, история покупок и любимые товары.",
   },
 ];
@@ -62,18 +62,18 @@ const benefitItems = [
   { title: "Личный сайт", text: "Прямая ссылка для шапки Instagram, Telegram и постоянных покупателей." },
   {
     title: "Новые клиенты из каталога",
-    text: "Ваши товары попадают на витрину Locusfood в вашем городе.",
+    text: "Ваши товары попадают на маркетплейс Locusfood.",
   },
   {
     title: "Никаких забот об IT",
-    text: "Сайт летает быстро, оптимизирован под телефоны и обновляется без вашего участия.",
+    text: "Сайт быстрый, оптимизирован под телефоны и обновляется без вашего участия.",
   },
 ];
 
 const startSteps = [
-  { title: "Заполните короткую заявку", text: "2 минуты, с телефона.", icon: Clock3 },
-  { title: "Загрузите свои товары", text: "Название, фото и цены — можно с телефона.", icon: Store },
-  { title: "Принимайте заказы", text: "Поставьте ссылку в блог и получайте заказы в кабинете.", icon: Zap },
+  { title: "Заполните короткую заявку", text: "30 секунд", icon: Clock3 },
+  { title: "Загрузите свои товары", text: "Название, фото и цены — с телефона", icon: Store },
+  { title: "Принимайте заказы", text: "Поставьте ссылку в блог и получайте заказы в кабинете", icon: Zap },
 ];
 
 function SectionLabel({ index, children }: { index: string; children: ReactNode }) {
@@ -195,13 +195,12 @@ export default function ForSellers() {
         <section id="routine" className="scroll-mt-20 border-t border-border py-16 md:py-24">
           <div className={sectionClass}>
             <div className="max-w-2xl">
-              <SectionLabel index="01">Было и стало</SectionLabel>
+              <SectionLabel index="">Было и стало</SectionLabel>
               <h2 className="sellers-heading text-3xl md:text-4xl lg:text-[42px]">
-                Хватит тратить вечера на рутину
+                4 задачи которые уже решает locus
               </h2>
               <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
-                Четыре вещи, которые съедают время каждый день — и как они выглядят, когда сайт
-                работает за вас.
+                {"\n"}
               </p>
             </div>
 
@@ -213,7 +212,7 @@ export default function ForSellers() {
                   delay={index * 70}
                   className="rounded-2xl border border-border bg-card p-5 md:p-6"
                 >
-                  <p className="text-[11px] font-semibold text-primary">0{index + 1}</p>
+                  <p className="text-[11px] font-semibold text-primary">{"\n"}</p>
                   <h3 className="mt-3 text-lg font-semibold">{item.title}</h3>
                   <div className="mt-4 border-t border-border pt-3">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60">
@@ -238,13 +237,12 @@ export default function ForSellers() {
           <div className={sectionClass}>
             <div className="grid gap-12 lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-16">
               <div>
-                <SectionLabel index="02">Двойная выгода</SectionLabel>
+                <SectionLabel index="">Двойная выгода</SectionLabel>
                 <h2 className="sellers-heading max-w-xl text-3xl md:text-4xl lg:text-[42px]">
-                  Свой сайт и витрина на Locusfood
+                  Свой сайт и Ваши товары на Locusfood
                 </h2>
                 <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
-                  Один кабинет — две точки продаж: личная ссылка для соцсетей и каталог, куда
-                  покупатели приходят сами.
+                  Один раз создать свои товары — а получить две точки продаж: сайт и маркетплейс, куда покупатели приходят сами.
                 </p>
 
                 <div className="mt-8 border-t border-border">
@@ -302,7 +300,7 @@ export default function ForSellers() {
                   </div>
                 </div>
                 <p className="mt-4 text-center text-xs text-muted-foreground">
-                  Ваши товары видят те, кто ищет фермерские продукты в вашем городе
+                  {"\n"}
                 </p>
               </div>
             </div>
@@ -375,7 +373,7 @@ export default function ForSellers() {
             <div className="max-w-2xl">
               <SectionLabel index="04">Условия</SectionLabel>
               <h2 className="sellers-heading text-3xl md:text-4xl lg:text-[42px]">
-                Попробуйте бесплатно. Без риска.
+                Попробуйте бесплатно
               </h2>
             </div>
 
@@ -383,11 +381,11 @@ export default function ForSellers() {
               <div className="grid md:grid-cols-[0.85fr_1.15fr]">
                 <div className="border-b border-border bg-primary/[0.07] p-7 md:border-b-0 md:border-r md:p-9">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                    Пробный период
+                    {"\n"}
                   </p>
                   <p className="mt-4 text-5xl font-bold leading-none md:text-6xl">0 BYN</p>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    Первый месяц — полный доступ
+                    Первый месяц — бесплатно
                   </p>
                   <ul className="mt-6 space-y-2 border-t border-border/60 pt-4">
                     {["Сайт и витрина", "Сторис-генератор", "Кабинет заказов", "База клиентов"].map((item) => (
@@ -419,7 +417,7 @@ export default function ForSellers() {
                   </div>
 
                   <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-                    Дешевле чашки кофе в неделю. Без привязки карты при регистрации.
+                    Без привязки карты
                   </p>
 
                   <div className="mt-6">
@@ -464,7 +462,7 @@ export default function ForSellers() {
                 Locus
               </p>
               <h2 className="sellers-heading max-w-xl text-4xl md:text-5xl">
-                Занимайтесь любимым делом. Рутину оставьте сайту.
+                Занимайтесь любимым делом. Рутину оставьте locus.
               </h2>
             </div>
             <Button
