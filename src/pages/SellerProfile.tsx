@@ -1,6 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { SellerProductCard } from "@/components/seller/SellerProductCard";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
@@ -20,6 +19,7 @@ import { SellerPromos } from "@/components/seller/SellerPromos";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
+import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
 
 const THEMES = ["forest", "terracotta", "night", "sand"] as const;
 
@@ -258,19 +258,18 @@ export default function SellerProfile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto flex items-center justify-center px-4 py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        <BottomNavigation />
       </div>
     );
   }
 
   if (!farmer) {
     return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-xl font-bold text-foreground mb-2">Продавец не найден</h1>
@@ -278,7 +277,6 @@ export default function SellerProfile() {
             Вернуться в каталог
           </Link>
         </main>
-        <BottomNavigation />
       </div>
     );
   }
@@ -291,7 +289,7 @@ export default function SellerProfile() {
     (!farmer.trial_ends_at || new Date(farmer.trial_ends_at).getTime() > Date.now());
 
   return (
-    <div className={`seller-theme-${themeName} min-h-screen bg-background pb-16 md:pb-0`}>
+    <div className={`seller-theme-${themeName} min-h-screen bg-background pb-0`}>
       <SEO
         title={`${farmer.name} — фермерские продукты на Locus`}
         description={
@@ -313,6 +311,7 @@ export default function SellerProfile() {
         productsCount={products.length}
         avatarUrl={farmer.photo_url}
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
+        instagram={farmer.contacts?.instagram}
       />
 
       <main className="mx-auto w-full bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
@@ -324,6 +323,10 @@ export default function SellerProfile() {
           city={farmer.city}
           street={farmer.street}
           addressDetails={farmer.address_details}
+        />
+
+        <SellerCategoryTabs
+          categories={groupedProducts.map((g) => ({ slug: g.slug, name: g.name, emoji: g.emoji }))}
         />
 
         <div className="px-3 pt-2">
@@ -341,7 +344,7 @@ export default function SellerProfile() {
               </div>
             ) : (
               groupedProducts.map((group) => (
-                <section key={group.slug} className="mb-5">
+                <section key={group.slug} id={catSectionId(group.slug)} className="mb-5 scroll-mt-3">
                   <h2 className="mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl">
                     {group.emoji ? `${group.emoji} ` : ""}
                     {group.name}
@@ -407,7 +410,6 @@ export default function SellerProfile() {
           onClose={() => setCheckoutOpen(false)}
         />
       )}
-      <BottomNavigation />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { cn } from "@/lib/utils";
 import { SellerProductCard } from "@/components/seller/SellerProductCard";
 import type { Product } from "@/data/products";
 
@@ -23,7 +24,12 @@ export const SellerHits = memo(function SellerHits({ products, requiredFieldIds 
         Хиты продаж
       </h2>
 
-      <div className="-mx-3 grid auto-cols-[45%] grid-flow-col items-stretch gap-2 overflow-x-auto px-3 pb-1 scrollbar-hide md:mx-0 md:auto-cols-auto md:grid-flow-row md:grid-cols-4 md:gap-3 md:overflow-visible md:px-0">
+      <div
+        className={cn(
+          "-mx-3 grid auto-cols-[45%] grid-flow-col items-stretch gap-2 overflow-x-auto px-3 pb-1 scrollbar-hide md:mx-0 md:auto-cols-auto md:grid-flow-row md:gap-3 md:overflow-visible md:px-0",
+          products.length >= 4 ? "md:grid-cols-4" : "md:grid-cols-3",
+        )}
+      >
         {products.map((product, index) => (
           <SellerProductCard
             key={product.id}

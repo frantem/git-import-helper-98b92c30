@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, MessageCircle, Package, Star } from "lucide-react";
+import { ArrowLeft, Instagram, MapPin, MessageCircle, Package, Star } from "lucide-react";
+import { cleanSellerName } from "@/lib/sellerName";
 import { cdnImage } from "@/lib/imageCdn";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,8 @@ interface SellerHeroProps {
   avatarUrl?: string | null;
   /** Готовая ссылка на мессенджер продавца (tel:, viber:, t.me, wa.me). */
   contactHref?: string | null;
+  /** Ник в Instagram из контактов продавца. */
+  instagram?: string | null;
 }
 
 /**
@@ -45,9 +48,12 @@ export const SellerHero = memo(function SellerHero({
   productsCount = 0,
   avatarUrl,
   contactHref,
+  instagram,
 }: SellerHeroProps) {
   const navigate = useNavigate();
   const cleanLocation = locationLabel?.replace(/^📍\s*/, "").trim();
+  const displayName = cleanSellerName(name);
+  const instagramHandle = instagram?.trim().replace(/^@/, "").replace(/\/$/, "") || null;
   const showRating = !!rating && rating > 0;
   const acceptsOrders = productsCount > 0;
 
@@ -67,20 +73,20 @@ export const SellerHero = memo(function SellerHero({
           {avatarUrl ? (
             <img
               src={cdnImage(avatarUrl, "thumb")}
-              alt={name}
+              alt={displayName}
               className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-[hsl(var(--seller-accent))]/40"
               loading="eager"
               decoding="async"
             />
           ) : (
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-[16px] font-bold text-primary-foreground">
-              {name.trim().charAt(0).toUpperCase()}
+              {displayName.trim().charAt(0).toUpperCase()}
             </span>
           )}
 
           <div className="min-w-0 flex-1">
             <h1 className="line-clamp-2 text-[16.5px] font-bold leading-snug text-foreground">
-              {name}
+              {displayName}
             </h1>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-tight">
               <span
@@ -111,6 +117,18 @@ export const SellerHero = memo(function SellerHero({
                     <span className="font-normal text-muted-foreground">({reviewCount})</span>
                   )}
                 </span>
+              )}
+              {instagramHandle && (
+                <a
+                  href={`https://instagram.com/${instagramHandle}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex max-w-[110px] items-center gap-0.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Instagram className="h-3 w-3 shrink-0" />
+                  <span className="truncate">@{instagramHandle}</span>
+                </a>
               )}
               {!!ordersCount && ordersCount > 0 && (
                 <span className="inline-flex items-center gap-0.5 text-muted-foreground">

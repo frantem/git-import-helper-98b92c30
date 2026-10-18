@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Star, ChevronRight } from "lucide-react";
+import { cleanSellerName } from "@/lib/sellerName";
 
 export interface SellerContacts {
   phone?: string | null;
@@ -43,7 +44,7 @@ export const SellerTrustFooter = memo(function SellerTrustFooter({
       </Link>
 
       <p className="mt-2 text-[11px] text-muted-foreground">
-        {name} — витрина продавца на площадке LOCUS.
+        {cleanSellerName(name)} — витрина продавца на площадке LOCUS.
       </p>
     </section>
   );

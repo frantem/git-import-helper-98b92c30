@@ -6,9 +6,9 @@ import { BynSymbol } from "@/components/ui/byn-symbol";
 /**
  * Плавающая панель корзины.
  *
- * Появляется, как только в корзине есть товар этого продавца, и держится
- * над нижней навигацией. Один тап — сразу оформление, без возврата наверх
- * к иконке корзины.
+ * Появляется, как только в корзине есть товар этого продавца, и прижата
+ * к нижнему краю экрана (навигации маркетплейса на витрине нет).
+ * Один тап — сразу оформление.
  */
 export function SellerStickyCart({ farmerId, onCheckout }: { farmerId: string; onCheckout: () => void }) {
   const { totalItems, totalPrice, cartFarmerId } = useCart();
@@ -21,8 +21,8 @@ export function SellerStickyCart({ farmerId, onCheckout }: { farmerId: string; o
   return (
     <>
       {/* Отступ, чтобы панель не перекрывала конец страницы */}
-      <div aria-hidden className="h-16 md:h-20" />
-      <div className="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom,0px))] z-40 px-3 pb-2 md:bottom-5 md:pb-0">
+      <div aria-hidden className="h-20 md:h-24" />
+      <div className="fixed inset-x-0 bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))] z-40 px-3 md:bottom-5">
         <button
           type="button"
           onClick={onCheckout}

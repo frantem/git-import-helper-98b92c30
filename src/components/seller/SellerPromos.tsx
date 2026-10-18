@@ -47,7 +47,7 @@ export const SellerPromos = memo(function SellerPromos({ promos }: SellerPromosP
 
   return (
     <section className="mb-6">
-      <h2 className="mb-3 font-serif text-lg font-bold text-foreground md:text-2xl">
+      <h2 className="mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl">
         Акции и наборы
       </h2>
 
