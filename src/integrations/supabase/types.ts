@@ -489,7 +489,7 @@ export type Database = {
       }
       orders: {
         Row: {
-          buyer_id: string
+          buyer_id: string | null
           confirmation_method: string
           created_at: string
           delivery_address: string | null
@@ -497,6 +497,9 @@ export type Database = {
           delivery_date: string | null
           delivery_type: string
           estimated_delivery_time: string | null
+          guest_contact_method: string | null
+          guest_name: string | null
+          guest_phone: string | null
           id: string
           notes: string | null
           payment_method: string
@@ -507,7 +510,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          buyer_id: string
+          buyer_id?: string | null
           confirmation_method?: string
           created_at?: string
           delivery_address?: string | null
@@ -515,6 +518,9 @@ export type Database = {
           delivery_date?: string | null
           delivery_type?: string
           estimated_delivery_time?: string | null
+          guest_contact_method?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           notes?: string | null
           payment_method?: string
@@ -525,7 +531,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          buyer_id?: string
+          buyer_id?: string | null
           confirmation_method?: string
           created_at?: string
           delivery_address?: string | null
@@ -533,6 +539,9 @@ export type Database = {
           delivery_date?: string | null
           delivery_type?: string
           estimated_delivery_time?: string | null
+          guest_contact_method?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           notes?: string | null
           payment_method?: string
@@ -1291,6 +1300,19 @@ export type Database = {
       confirm_order_items_for_farmer: {
         Args: { _farmer_id: string; _order_id: string }
         Returns: number
+      }
+      create_guest_order: {
+        Args: {
+          p_address?: string
+          p_comment?: string
+          p_contact_method?: string
+          p_delivery_type: string
+          p_farmer_id: string
+          p_items: Json
+          p_name: string
+          p_phone: string
+        }
+        Returns: Json
       }
       ensure_unique_product_slug: {
         Args: { _base: string; _self_id: string }
