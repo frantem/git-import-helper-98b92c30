@@ -1,27 +1,31 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, Clock3, ShieldCheck, Store, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Beef,
+  Cake,
+  Carrot,
+  Check,
+  Milk,
+  Sparkles,
+  UtensilsCrossed,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import { Reveal } from "@/components/motion/Reveal";
 import { useRevealOnScroll } from "@/components/motion/useMotion";
 import { StoryDemoPhone } from "@/components/sellers/StoryDemoPhone";
-import bakeryImage from "@/assets/sellers-bakery.jpg";
-import cheeseImage from "@/assets/sellers-cheese.jpg";
-import pastryImage from "@/assets/sellers-pastry.jpg";
 
 const applicationPath = "/seller-application";
-const sellerPageScreenshot = "/media/knyazhetsky-page.jpg";
-const sellerPageVideo = "/media/knyazhetsky-page.mp4";
-const sectionClass = "mx-auto w-full max-w-6xl px-5 md:px-10";
+const sectionClass = "mx-auto w-full max-w-6xl px-4 sm:px-5 md:px-10";
 
 const serviceJsonLd = {
   "@context": "https://schema.org",
   "@type": "Service",
-  name: "Сайт для мастеров на Locus",
+  name: "Сайт для производителей еды на Locus",
   description:
-    "Сайт для кондитеров, сыроваров, пекарей и ремесленников: генератор сторис, кабинет заказов и база клиентов. Бесплатный первый месяц.",
+    "Личный сайт-витрина для кондитеров, сыроваров, фермеров и кухонь: заказы без переписки, генератор сторис, база клиентов. Первый месяц бесплатно.",
   provider: { "@type": "Organization", name: "Locus", url: "https://locusfood.by" },
   areaServed: { "@type": "City", name: "Витебск" },
   offers: {
@@ -29,86 +33,59 @@ const serviceJsonLd = {
     price: "0",
     priceCurrency: "BYN",
     url: "https://locusfood.by/seller-application",
-    description: "Первый месяц бесплатно, далее от 9,90 BYN в месяц",
+    description:
+      "Первый месяц 0 BYN, далее 9,90 BYN при оплате за 6 месяцев или 14,90 BYN помесячно",
   },
 };
 
-const routineItems = [
+/** Второй блок: зачем делу сайт. */
+const whySite = [
   {
-    title: "Сторис без мучений",
-    before: "1,5 часа перед сном в Canva или фоторедакторах.",
-    after:
-      "Выбрали товары — сайт за 10 секунд собрал макет 9:16 с фото и ценами. Нажали «Скачать» — и сторис в блоге.",
+    title: "Покупатели не любят ждать",
+    text: "Всё больше клиентов заказывают ночью или на бегу. Если ответа в переписке нет в течение 15 минут — человек часто просто уходит к другому. На сайте заказ оформляется в 2 клика.",
   },
   {
-    title: "Чистый директ",
-    before: "Бесконечные «а сколько стоит?», «а что в наличии?», потерянные сообщения.",
-    after:
-      "Покупатель видит актуальное наличие, составы и оформляет заказ по ссылке в шапке профиля.",
+    title: "Всегда актуальные цены и наличие",
+    text: "Больше не нужно перепечатывать прайс в сообщениях и объяснять: «это уже закончилось, а вот то осталось». Покупатель всегда видит только актуальное наличие.",
   },
   {
-    title: "Ни один заказ не потеряется",
-    before: "Блокнот, заметки в телефоне,\u00a0 что-то в памяти.",
-    after: "Чёткий кабинет: кто заказал, когда заберёт, куда доставить, какой телефон, имя покупателя, как связаться.",
-  },
-  {
-    title: "Клиенты всегда с вами",
-    before: "Контакты разбросаны по разным соцсетям и телефонной книге.",
-    after: "Автоматическая база: имена, телефоны, история покупок и любимые товары.",
+    title: "Заказы из поиска и нейросетей",
+    text: "Торты, сыры и мясо всё чаще ищут в Google, Яндексе и через ИИ-поисковики. У сайта правильная разметка — ваши товары находят за пределами соцсетей.",
   },
 ];
 
-const benefitItems = [
-  { title: "Личный сайт", text: "Прямая ссылка для шапки Instagram, Telegram и постоянных покупателей." },
+/** Третий блок: чем Locus отличается от конструкторов. */
+const whyLocus = [
   {
-    title: "Новые клиенты из каталога",
-    text: "Ваши товары попадают на маркетплейс Locusfood.",
+    title: "Просто, как подать объявление на Kufar",
+    text: "Никаких мучений с кодом и сложными конструкторами. Вы добавляете товары и цены со смартфона за 10 минут — и сразу получаете красивый, готовый к работе сайт.",
   },
   {
-    title: "Никаких забот об IT",
-    text: "Сайт быстрый, оптимизирован под телефоны и обновляется без вашего участия.",
+    title: "Помощник, а не просто витрина",
+    text: "Locus берет рутину на себя: в пару кликов собирает готовые картинки для сторис с вашими товарами и сохраняет базу покупателей с историей заказов.",
+  },
+  {
+    title: "Никаких забот о хостинге и обновлениях",
+    text: "Вам не нужно нанимать программистов или платить за серверы. Мы постоянно обновляем платформу, ускоряем загрузку и делаем так, чтобы у вас заказывали чаще.",
   },
 ];
 
-const startSteps = [
-  { title: "Заполните короткую заявку", text: "30 секунд", icon: Clock3 },
-  { title: "Загрузите свои товары", text: "Название, фото и цены — с телефона", icon: Store },
-  { title: "Принимайте заказы", text: "Поставьте ссылку в блог и получайте заказы в кабинете", icon: Zap },
+/** Четвёртый блок: кому подходит. */
+const audience = [
+  { icon: Cake, title: "Домашние кондитеры и пекарни" },
+  { icon: Milk, title: "Сыровары и крафтовые сыры" },
+  { icon: Carrot, title: "Фермерские хозяйства, овощи и ягоды" },
+  { icon: Beef, title: "Мясо, птица, копчения и деликатесы" },
+  { icon: Sparkles, title: "Мёд, чаи и полезные сладости" },
+  { icon: UtensilsCrossed, title: "Полуфабрикаты и готовая кухня" },
 ];
 
-function SectionLabel({ index, children }: { index: string; children: ReactNode }) {
-  return (
-    <p className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em]">
-      <span className="text-primary">{index}</span>
-      <span aria-hidden="true" className="h-px w-8 bg-primary/40" />
-      <span className="text-muted-foreground">{children}</span>
-    </p>
-  );
-}
-
-function ApplicationButton({ label, className = "" }: { label: string; className?: string }) {
-  return (
-    <Button asChild size="lg" className={`h-12 rounded-full px-6 text-sm font-semibold ${className}`}>
-      <Link to={applicationPath}>
-        {label}
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-    </Button>
-  );
-}
-
-function PhoneShell({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-[2.2rem] border-[6px] border-white/10 bg-card shadow-2xl ${className}`}>
-      <div className="relative overflow-hidden rounded-[1.75rem] bg-background">
-        <div aria-hidden="true" className="flex h-6 items-center justify-center">
-          <span className="h-1.5 w-14 rounded-full bg-white/15" />
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
+const includedItems = [
+  "Личный сайт-витрина",
+  "Генератор сторис",
+  "Уведомления о заказах",
+  "База клиентов",
+];
 
 export default function ForSellers() {
   useRevealOnScroll();
@@ -125,63 +102,77 @@ export default function ForSellers() {
   return (
     <div className="for-sellers-theme min-h-screen overflow-x-clip bg-background text-foreground">
       <SEO
-        title="Сайт для мастеров, который берёт рутину на себя — Locus"
-        description="Сайт для кондитеров, сыроваров и пекарей: сторис за 10 секунд, кабинет заказов и база клиентов. Первый месяц бесплатно, запуск за день."
+        title="Сайт для продавцов еды: заказы без переписки — Locus"
+        description="Личный сайт-витрина для кондитеров, сыроваров и фермеров: заказы в 2 клика, генератор сторис, база клиентов. Первый месяц 0 BYN, запуск за 1 день с телефона."
         image="https://locusfood.by/media/for-sellers-og.jpg"
         canonical="https://locusfood.by/for-sellers"
         jsonLd={serviceJsonLd}
       />
 
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
-        <div className={`${sectionClass} flex h-16 items-center justify-between gap-4`}>
-          <Link to="/" aria-label="Locus — на главную" className="text-2xl font-extrabold italic">
+        <div className={`${sectionClass} flex h-14 items-center justify-between gap-3 md:h-16`}>
+          <Link to="/" aria-label="Locus — на главную" className="text-[22px] font-extrabold italic md:text-2xl">
             Locus<span className="text-primary">.</span>
           </Link>
+
           <nav aria-label="Разделы страницы" className="hidden items-center gap-1 md:flex">
-            <Button asChild variant="ghost" size="sm"><a href="#routine">Было и стало</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="#benefit">Выгода</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="#pricing">Тарифы</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="#start">Как начать</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#why">Зачем сайт</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#locus">Почему Locus</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#audience">Кому подходит</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#pricing">Тариф</a></Button>
           </nav>
+
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link to="/auth">Войти</Link></Button>
-            <ApplicationButton label="Создать бесплатно" className="h-10 px-4 text-xs md:px-5 md:text-sm" />
+            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+              <Link to="/auth">Войти</Link>
+            </Button>
+            <Button asChild size="sm" className="h-9 rounded-full px-4 text-xs font-semibold">
+              <Link to={applicationPath}>
+                Создать сайт
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </div>
         </div>
       </header>
 
       <main>
-        {/* 1. Hero с интерактивным демо */}
+        {/* 1. Первый экран: оффер и живое демо */}
         <section className="relative isolate overflow-hidden">
           <div aria-hidden="true" className="sellers-grid absolute inset-0 -z-20" />
           <div
             aria-hidden="true"
-            className="absolute -top-40 right-[-10%] -z-10 h-[520px] w-[520px] rounded-full bg-primary/15 blur-[120px]"
+            className="pointer-events-none absolute -top-40 right-[-14%] -z-10 h-[420px] w-[420px] rounded-full bg-primary/15 blur-[120px]"
           />
-          <div className={`${sectionClass} grid gap-12 pb-16 pt-12 md:pb-24 md:pt-16 lg:grid-cols-[1.06fr_0.94fr] lg:items-center lg:gap-14`}>
-            <div className="sellers-reveal">
-              <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-primary/[0.07] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary md:text-[11px]">
-                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary" />
-                ДЛЯ КОНДИТЕРОВ, СЫРОВАРОВ, ПЕКАРНЕЙ...
-              </p>
 
-              <h1 className="sellers-heading text-[34px] leading-[1.06] sm:text-5xl lg:text-[54px]">
-                Сайт, который берёт рутину на себя
+          <div
+            className={`${sectionClass} grid gap-8 pb-12 pt-8 md:gap-12 md:pb-20 md:pt-14 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-14`}
+          >
+            <div className="motion-reveal" data-reveal>
+              <h1 className="sellers-heading text-[29px] leading-[1.08] sm:text-[38px] lg:text-[50px]">
+                Принимайте заказы в один клик, пока вы заняты
               </h1>
 
-              <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                Создаёт контент, наводит порядок в заказах и автоматически собирает базу Ваших постоянных клиентов.
+              <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground md:mt-5 md:text-base">
+                Клиенты больше не хотят ждать ответов в директе — они хотят зайти, выбрать и оформить
+                заказ за минуту. Дайте им удобный сайт без программистов и сложных настроек.
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <ApplicationButton label="Попробовать бесплатно" />
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-primary" />
-                </span>
+              <div className="mt-6 md:mt-8">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-12 w-full rounded-full px-6 text-[15px] font-semibold sm:w-auto"
+                >
+                  <Link to={applicationPath}>
+                    Создать свой сайт
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
 
-              <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80">
-                Запуск за 1 день с телефона
+              <p className="mt-3 text-[12px] leading-snug text-muted-foreground md:text-[12.5px]">
+                Бесплатный тест на 30 дней • Запуск за 1 день с телефона
               </p>
             </div>
 
@@ -191,205 +182,133 @@ export default function ForSellers() {
           </div>
         </section>
 
-        {/* 2. Раньше vs с Locus */}
-        <section id="routine" className="scroll-mt-20 border-t border-border py-16 md:py-24">
+        {/* 2. Зачем делу сайт */}
+        <section id="why" className="scroll-mt-16 border-t border-border py-12 md:py-20">
           <div className={sectionClass}>
-            <div className="max-w-2xl">
-              <SectionLabel index="">Было и стало</SectionLabel>
-              <h2 className="sellers-heading text-3xl md:text-4xl lg:text-[42px]">
-                4 задачи которые уже решает locus
+            <Reveal>
+              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
+                Зачем Вам сайт?
               </h2>
-              <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
-                {"\n"}
+              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Соцсети привлекают внимание, а сайт закрывает продажи и бережёт ваше время.
               </p>
-            </div>
+            </Reveal>
 
-            <div className="mt-10 grid gap-4 md:grid-cols-2 md:gap-5">
-              {routineItems.map((item, index) => (
+            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-3 md:gap-4">
+              {whySite.map((item, index) => (
                 <Reveal
                   key={item.title}
                   as="article"
                   delay={index * 70}
-                  className="rounded-2xl border border-border bg-card p-5 md:p-6"
+                  className="rounded-2xl border border-border bg-card p-4 md:p-6"
                 >
-                  <p className="text-[11px] font-semibold text-primary">{"\n"}</p>
-                  <h3 className="mt-3 text-lg font-semibold">{item.title}</h3>
-                  <div className="mt-4 border-t border-border pt-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60">
-                      Было
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.before}</p>
-                  </div>
-                  <div className="mt-4 border-t border-border pt-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                      С Locus
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed text-foreground/90">{item.after}</p>
-                  </div>
+                  <p className="text-[11px] font-semibold tracking-[0.14em] text-primary">
+                    0{index + 1}
+                  </p>
+                  <h3 className="mt-2 text-[15.5px] font-semibold leading-snug md:text-lg">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground md:text-sm">
+                    {item.text}
+                  </p>
                 </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 3. Двойная выгода */}
-        <section id="benefit" className="scroll-mt-20 border-t border-border bg-secondary/40 py-16 md:py-24">
+        {/* 3. Почему Locus */}
+        <section id="locus" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
           <div className={sectionClass}>
-            <div className="grid gap-12 lg:grid-cols-[1fr_0.92fr] lg:items-center lg:gap-16">
-              <div>
-                <SectionLabel index="">Двойная выгода</SectionLabel>
-                <h2 className="sellers-heading max-w-xl text-3xl md:text-4xl lg:text-[42px]">
-                  Свой сайт и Ваши товары на Locusfood
-                </h2>
-                <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
-                  Один раз создать свои товары — а получить две точки продаж: сайт и маркетплейс, куда покупатели приходят сами.
-                </p>
-
-                <div className="mt-8 border-t border-border">
-                  {benefitItems.map((item) => (
-                    <div key={item.title} className="flex items-start gap-4 border-b border-border py-4">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                        <Check className="h-3.5 w-3.5" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold">{item.title}</p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{item.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="motion-reveal" data-reveal data-reveal-delay="100">
-                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                    <span className="text-sm font-bold italic">
-                      Locus<span className="text-primary">.</span>
-                    </span>
-                    <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] text-muted-foreground">
-                      Каталог · Витебск
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5 p-3">
-                    {[cheeseImage, pastryImage, bakeryImage].map((image, index) => (
-                      <div key={index} className="overflow-hidden rounded-lg">
-                        <img
-                          src={image}
-                          alt=""
-                          width={120}
-                          height={120}
-                          loading="lazy"
-                          className="aspect-square w-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-2 px-3 pb-3">
-                    {[
-                      ["Сыр Белпер Кнолле", "8,50 BYN"],
-                      ["Качотта с пажитником", "16,00 BYN"],
-                    ].map(([name, price]) => (
-                      <div
-                        key={name}
-                        className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-xs"
-                      >
-                        <span className="truncate">{name}</span>
-                        <span className="shrink-0 font-semibold">{price}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <p className="mt-4 text-center text-xs text-muted-foreground">
-                  {"\n"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Социальное доказательство */}
-        <section id="sellers" className="scroll-mt-20 bg-brand-deep py-16 md:py-24">
-          <div className={`${sectionClass} grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20`}>
-            <div>
-              <SectionLabel index="03">Продавцы</SectionLabel>
-              <h2 className="sellers-heading max-w-xl text-3xl md:text-4xl lg:text-[44px]">
-                Более 40 продавцов уже открыли свои сайты
+            <Reveal>
+              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
+                Почему именно Locus?
               </h2>
-              <p className="mt-5 max-w-md text-[15px] leading-relaxed text-brand-deep-foreground/70">
-                Кондитеры, фермеры, сыровары, пекарни и ремесленники. У каждого — своя ссылка,
-                которую можно отправить покупателю.
+              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Мы создали платформу специально для тех, кто производит и продаёт еду.
               </p>
+            </Reveal>
 
-              <ul className="mt-7 flex flex-wrap gap-x-3 gap-y-2 text-[11px] font-medium uppercase tracking-[0.12em] text-brand-deep-foreground/55">
-                {["Кондитеры", "Фермеры", "Сыровары", "Пекарни", "Ремесленники"].map((tag, index) => (
-                  <li key={tag} className="flex items-center gap-3">
-                    {index > 0 && <span aria-hidden="true" className="h-1 w-1 rounded-full bg-primary/60" />}
-                    {tag}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <ApplicationButton label="Хочу свой сайт" />
-                <Button
-                  asChild
-                  variant="link"
-                  className="h-auto p-0 text-brand-deep-foreground hover:text-brand-deep-foreground/80"
+            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-3 md:gap-4">
+              {whyLocus.map((item, index) => (
+                <Reveal
+                  key={item.title}
+                  as="article"
+                  delay={index * 70}
+                  className="rounded-2xl border border-border bg-card p-4 md:p-6"
                 >
-                  <Link to="/seller/knyazhetsky">
-                    Открыть «Княжеское подворье»
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
+                    <Check className="h-4 w-4" />
+                  </span>
+                  <h3 className="mt-3 text-[15.5px] font-semibold leading-snug md:text-lg">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground md:text-sm">
+                    {item.text}
+                  </p>
+                </Reveal>
+              ))}
             </div>
-
-            <figure className="motion-reveal mx-auto w-full max-w-[330px]" data-reveal data-reveal-delay="100">
-              <PhoneShell>
-                <video
-                  src={sellerPageVideo}
-                  poster={sellerPageScreenshot}
-                  aria-label="Видео страницы продавца «Княжеское подворье» на Locus"
-                  width={430}
-                  height={932}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  className="block aspect-[430/750] w-full object-cover object-top"
-                />
-              </PhoneShell>
-              <figcaption className="mt-4 text-center text-xs leading-relaxed text-brand-deep-foreground/60">
-                Страница фермерского хозяйства «Княжеское подворье»
-              </figcaption>
-            </figure>
           </div>
         </section>
 
-        {/* 5. Прозрачные условия */}
-        <section id="pricing" className="scroll-mt-20 py-16 md:py-24">
+        {/* 4. Кому подходит */}
+        <section id="audience" className="scroll-mt-16 border-t border-border py-12 md:py-20">
           <div className={sectionClass}>
-            <div className="max-w-2xl">
-              <SectionLabel index="04">Условия</SectionLabel>
-              <h2 className="sellers-heading text-3xl md:text-4xl lg:text-[42px]">
+            <Reveal>
+              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
+                Подходит для любого кулинарного дела
+              </h2>
+              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
+                От домашних мастеров до небольших производств и фермерских хозяйств.
+              </p>
+            </Reveal>
+
+            <div className="mt-7 grid grid-cols-2 gap-2.5 md:mt-10 md:grid-cols-3 md:gap-3">
+              {audience.map(({ icon: Icon, title }, index) => (
+                <Reveal
+                  key={title}
+                  delay={index * 50}
+                  className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 md:flex-row md:items-center md:gap-3 md:p-4"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                    <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
+                  </span>
+                  <p className="text-[13px] font-medium leading-snug md:text-sm">{title}</p>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 5. Тариф и заявка */}
+        <section id="pricing" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
+          <div className={sectionClass}>
+            <Reveal>
+              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
                 Попробуйте бесплатно
               </h2>
-            </div>
+              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Первые 30 дней — полный доступ за 0 BYN. Оцените, насколько это упростит жизнь вам и
+                понравится клиентам.
+              </p>
+            </Reveal>
 
-            <Reveal delay={80} className="mt-10 overflow-hidden rounded-3xl border border-border bg-card">
-              <div className="grid md:grid-cols-[0.85fr_1.15fr]">
-                <div className="border-b border-border bg-primary/[0.07] p-7 md:border-b-0 md:border-r md:p-9">
+            <Reveal
+              delay={80}
+              className="mt-7 overflow-hidden rounded-2xl border border-border bg-card md:mt-10"
+            >
+              <div className="grid md:grid-cols-[0.9fr_1.1fr]">
+                <div className="border-b border-border bg-primary/[0.07] p-5 md:border-b-0 md:border-r md:p-7">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
-                    {"\n"}
+                    Первый месяц
                   </p>
-                  <p className="mt-4 text-5xl font-bold leading-none md:text-6xl">0 BYN</p>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    Первый месяц — бесплатно
-                  </p>
-                  <ul className="mt-6 space-y-2 border-t border-border/60 pt-4">
-                    {["Сайт и витрина", "Сторис-генератор", "Кабинет заказов", "База клиентов"].map((item) => (
-                      <li key={item} className="flex items-center gap-2 text-xs text-foreground/80">
+                  <p className="mt-2 text-[44px] font-bold leading-none md:text-[52px]">0 BYN</p>
+                  <p className="mt-2 text-[13.5px] text-muted-foreground">Первый месяц бесплатно</p>
+
+                  <ul className="mt-4 space-y-1.5 border-t border-border/60 pt-3">
+                    {includedItems.map((item) => (
+                      <li key={item} className="flex items-center gap-2 text-[13px] text-foreground/85">
                         <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
                         {item}
                       </li>
@@ -397,84 +316,48 @@ export default function ForSellers() {
                   </ul>
                 </div>
 
-                <div className="p-7 md:p-9">
+                <div className="p-5 md:p-7">
                   <div className="space-y-3">
-                    <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
+                    <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
                       <div>
-                        <p className="text-sm font-semibold">9,90 BYN / мес</p>
-                        <p className="text-xs text-muted-foreground">при оплате на 6 месяцев</p>
+                        <p className="text-[15px] font-semibold">9,90 BYN / мес</p>
+                        <p className="mt-0.5 text-[12px] text-muted-foreground">
+                          при оплате за 6 месяцев
+                        </p>
                       </div>
                       <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-semibold text-primary">
-                        выгоднее
+                        Выгодно
                       </span>
                     </div>
-                    <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
-                      <div>
-                        <p className="text-sm font-semibold">14,90 BYN / мес</p>
-                        <p className="text-xs text-muted-foreground">оплата помесячно</p>
-                      </div>
+
+                    <div className="border-b border-border pb-3">
+                      <p className="text-[15px] font-semibold">14,90 BYN / мес</p>
+                      <p className="mt-0.5 text-[12px] text-muted-foreground">при помесячной оплате</p>
                     </div>
                   </div>
 
-                  <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-                    Без привязки карты
+                  <p className="mt-3 text-[12.5px] leading-relaxed text-muted-foreground">
+                    Без скрытых списаний и привязки банковской карты
                   </p>
 
-                  <div className="mt-6">
-                    <ApplicationButton label="Создать сайт бесплатно" />
+                  <div className="mt-5">
+                    <Button
+                      asChild
+                      size="lg"
+                      className="h-12 w-full rounded-full px-6 text-[15px] font-semibold"
+                    >
+                      <Link to={applicationPath}>
+                        Оставить заявку на сайт
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <p className="mt-2.5 text-center text-[12px] leading-snug text-muted-foreground">
+                      Перезвоним, ответим на вопросы и поможем загрузить первые товары.
+                    </p>
                   </div>
                 </div>
               </div>
             </Reveal>
-          </div>
-        </section>
-
-        {/* 6. Старт за три шага */}
-        <section id="start" className="scroll-mt-20 border-t border-border bg-secondary/40 py-16 md:py-24">
-          <div className={sectionClass}>
-            <div className="max-w-2xl">
-              <SectionLabel index="05">Старт</SectionLabel>
-              <h2 className="sellers-heading text-3xl md:text-4xl lg:text-[42px]">
-                Три простых шага
-              </h2>
-            </div>
-
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {startSteps.map(({ title, text, icon: Icon }, index) => (
-                <Reveal key={title} delay={index * 80} className="border-t border-border pt-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-primary">0{index + 1}</span>
-                    <Icon aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <h3 className="mt-5 text-xl font-semibold">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* 7. Финальный CTA */}
-        <section className="bg-primary py-14 text-primary-foreground md:py-20">
-          <div className={`${sectionClass} flex flex-col items-start justify-between gap-8 md:flex-row md:items-center`}>
-            <div>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] opacity-70">
-                Locus
-              </p>
-              <h2 className="sellers-heading max-w-xl text-4xl md:text-5xl">
-                Занимайтесь любимым делом. Рутину оставьте locus.
-              </h2>
-            </div>
-            <Button
-              asChild
-              size="lg"
-              className="h-14 shrink-0 rounded-full bg-background px-8 text-base font-semibold text-foreground hover:bg-background/90"
-            >
-              <Link to={applicationPath}>
-                Создать свой сайт бесплатно
-                <ArrowRight className="h-5 w-5" />
-              </Link>
-            </Button>
           </div>
         </section>
       </main>
