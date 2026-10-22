@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, Check, Download } from "lucide-react";
 import { useInView, usePrefersReducedMotion } from "@/components/motion/useMotion";
-import cheeseImage from "@/assets/sellers-cheese.jpg";
 
 const DEFAULT_STEP_MS = 4500;
-/** Первый шаг — запись настоящей витрины: даём видео доиграть. */
-const SITE_STEP_MS = 8000;
+
+/** Видео-шаги: длительность под запись, чтобы она успевала доиграть. */
+const DEMO_VIDEOS = [
+  {
+    src: "/media/seller-site-demo.mp4",
+    poster: "/media/seller-site-demo.jpg",
+    label: "Запись витрины продавца на Locus",
+    duration: 8000,
+  },
+  {
+    src: "/media/seller-content-demo.mp4",
+    poster: "/media/seller-content-demo.jpg",
+    label: "Запись генератора сторис на Locus",
+    duration: 9500,
+  },
+];
 
 const steps = [
   {
@@ -21,42 +34,6 @@ const steps = [
     caption: "Никаких потерянных переписок: заказ сформирован, контакты сохранены, сумма посчитана.",
   },
 ];
-
-function StoryScreen() {
-  return (
-    <div className="relative h-full w-full overflow-hidden bg-[hsl(35_42%_86%)] text-[hsl(158_32%_12%)]">
-      <img src={cheeseImage} alt="" className="h-[52%] w-full object-cover" />
-
-      <div className="px-3 pt-2">
-        <p className="text-[7.5px] font-semibold uppercase tracking-[0.16em] opacity-55">Новинка</p>
-        <p className="mt-0.5 text-[15px] font-semibold leading-tight">Белпер Кнолле</p>
-        <p className="mt-1 text-[9px] opacity-75">120 г · крафтовый сыр</p>
-        <p className="mt-1 text-[13px] font-bold">8,50 BYN</p>
-
-        <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[hsl(158_32%_14%)] px-2.5 py-1 text-[7.5px] font-medium text-[hsl(40_45%_92%)]">
-          Жми, чтобы заказать
-        </span>
-      </div>
-
-      <div className="absolute inset-x-3 bottom-11 flex items-center justify-between">
-        <span className="text-[7px] uppercase tracking-[0.14em] opacity-50">Своё Подворье · Витебск</span>
-        <span className="text-[7px] opacity-50">9:16</span>
-      </div>
-
-      <div className="absolute inset-x-2.5 bottom-2.5">
-        <div className="flex items-center justify-between rounded-lg bg-white/85 px-2 py-1.5 backdrop-blur">
-          <span className="text-[8px] font-semibold">Скачать сторис</span>
-          <Download className="h-3 w-3" />
-        </div>
-      </div>
-
-      <div className="demo-toast absolute inset-x-2.5 bottom-[10px] flex items-center gap-1.5 rounded-lg bg-[hsl(150_42%_32%)] px-2.5 py-2 text-[8px] font-medium text-white shadow-lg">
-        <Check className="h-2.5 w-2.5" />
-        Сохранено в галерею
-      </div>
-    </div>
-  );
-}
 
 function OrderScreen() {
   return (
@@ -90,8 +67,18 @@ function OrderScreen() {
   );
 }
 
-/** Запись реальной витрины продавца вместо нарисованного макета. */
-function SiteVideo({ active }: { active: boolean }) {
+/** Запись реального экрана вместо нарисованного макета. */
+function DemoVideo({
+  active,
+  src,
+  poster,
+  label,
+}: {
+  active: boolean;
+  src: string;
+  poster: string;
+  label: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -112,13 +99,13 @@ function SiteVideo({ active }: { active: boolean }) {
   return (
     <video
       ref={videoRef}
-      src="/media/seller-site-demo.mp4"
-      poster="/media/seller-site-demo.jpg"
+      src={src}
+      poster={poster}
       muted
       loop
       playsInline
       preload="metadata"
-      aria-label="Запись витрины продавца на Locus"
+      aria-label={label}
       className="h-full w-full object-cover object-top"
     />
   );
@@ -136,7 +123,7 @@ export function StoryDemoPhone() {
 
     let frame = 0;
     const start = performance.now();
-    const duration = step === 0 ? SITE_STEP_MS : DEFAULT_STEP_MS;
+    const duration = DEMO_VIDEOS[step]?.duration ?? DEFAULT_STEP_MS;
 
     const tick = (now: number) => {
       const progress = Math.min(1, (now - start) / duration);
@@ -162,8 +149,9 @@ export function StoryDemoPhone() {
     setStep(next);
   };
 
-  const Screen = step === 1 ? StoryScreen : OrderScreen;
-  const siteVideoActive = step === 0 && inView && !paused && !reduced;
+  const Screen = OrderScreen;
+  const demoVideo = DEMO_VIDEOS[step];
+  const videoActive = inView && !paused && !reduced;
 
   return (
     <div ref={ref} className="flex w-full flex-col items-center">
@@ -205,7 +193,11 @@ export function StoryDemoPhone() {
           </div>
 
           <div key={step} className="demo-screen h-full pt-9">
-            {step === 0 ? <SiteVideo active={siteVideoActive} /> : <Screen />}
+            {demoVideo ? (
+              <DemoVideo active={videoActive} src={demoVideo.src} poster={demoVideo.poster} label={demoVideo.label} />
+            ) : (
+              <Screen />
+            )}
           </div>
         </div>
       </div>
