@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, Download, Star } from "lucide-react";
+import { Bell, Check, Download } from "lucide-react";
 import { useInView, usePrefersReducedMotion } from "@/components/motion/useMotion";
 import cheeseImage from "@/assets/sellers-cheese.jpg";
 
-const STEP_DURATION = 4500;
+const DEFAULT_STEP_MS = 4500;
+/** Первый шаг — запись настоящей витрины: даём видео доиграть. */
+const SITE_STEP_MS = 8000;
 
 const steps = [
   {
@@ -19,96 +21,6 @@ const steps = [
     caption: "Никаких потерянных переписок: заказ сформирован, контакты сохранены, сумма посчитана.",
   },
 ];
-
-function StoreScreen() {
-  const products = [
-    { name: "Сыр Белпер Кнолле", weight: "120 г", price: "8,50", image: cheeseImage, crop: "object-center" },
-    { name: "Качотта с пажитником", weight: "250 г", price: "16,00", image: cheeseImage, crop: "object-[65%_35%]" },
-    { name: "Брынза домашняя", weight: "400 г", price: "18,00", image: cheeseImage, crop: "object-[35%_70%]" },
-  ];
-
-  return (
-    <div className="relative flex h-full flex-col px-3">
-      <div className="flex items-center gap-2">
-        <img
-          src={cheeseImage}
-          alt=""
-          className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/20"
-        />
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold leading-tight text-white">Своё Подворье</p>
-          <p className="text-[8px] leading-tight text-white/55">Работает в Витебске</p>
-        </div>
-        <span className="ml-auto flex items-center gap-0.5 text-[9px] font-semibold text-primary">
-          <Star className="h-2.5 w-2.5 fill-current" />
-          5.0
-        </span>
-      </div>
-
-      <p className="mt-2 text-[7.5px] uppercase tracking-[0.14em] text-white/40">
-        Крафтовые сыры и деликатесы
-      </p>
-
-      <div className="mt-2 space-y-1.5">
-        {products.map((product) => (
-          <div
-            key={product.name}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-1.5"
-          >
-            <img
-              src={product.image}
-              alt=""
-              className={`h-10 w-10 shrink-0 rounded-lg object-cover ${product.crop}`}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[9px] font-medium leading-tight text-white">{product.name}</p>
-              <p className="text-[7.5px] leading-tight text-white/45">{product.weight}</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight text-white">
-                {product.price} BYN
-              </p>
-            </div>
-            <span className="shrink-0 rounded-full bg-primary px-2 py-1 text-[7.5px] font-semibold text-primary-foreground">
-              В корзину
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 flex gap-1">
-        {["Сыры", "Выпечка", "Мёд"].map((tag, index) => (
-          <span
-            key={tag}
-            className={`rounded-full px-2 py-0.5 text-[7.5px] ${
-              index === 0 ? "bg-primary/20 text-primary" : "bg-white/[0.06] text-white/55"
-            }`}
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-
-      <div className="mt-2 rounded-lg bg-primary/10 px-2 py-1.5">
-        <p className="text-[7.5px] font-semibold text-primary">Доставка по Витебску — завтра</p>
-        <p className="text-[7px] text-white/45">Бесплатно от 30 BYN</p>
-      </div>
-
-      <div className="mt-auto rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-        <div className="flex items-center justify-between text-[7.5px] text-white/50">
-          <span>Корзина</span>
-          <span>2 товара · 24,50 BYN</span>
-        </div>
-      </div>
-
-      <div className="demo-chip absolute inset-x-2.5 bottom-11 rounded-xl border border-primary/40 bg-[hsl(160_30%_12%)]/95 p-2 shadow-lg backdrop-blur">
-        <p className="text-[7.5px] leading-snug text-white/85">
-          <span className="font-semibold text-primary">Ваш сайт готов</span>
-          <br />
-          locusfood.by/seller/svoe-podvorye
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function StoryScreen() {
   return (
@@ -178,6 +90,40 @@ function OrderScreen() {
   );
 }
 
+/** Запись реальной витрины продавца вместо нарисованного макета. */
+function SiteVideo({ active }: { active: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (active) {
+      try {
+        video.currentTime = 0;
+      } catch {
+        /* метаданные ещё не загрузились */
+      }
+      void video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [active]);
+
+  return (
+    <video
+      ref={videoRef}
+      src="/media/seller-site-demo.mp4"
+      poster="/media/seller-site-demo.jpg"
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-label="Запись витрины продавца на Locus"
+      className="h-full w-full object-cover object-top"
+    />
+  );
+}
+
 export function StoryDemoPhone() {
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -190,9 +136,10 @@ export function StoryDemoPhone() {
 
     let frame = 0;
     const start = performance.now();
+    const duration = step === 0 ? SITE_STEP_MS : DEFAULT_STEP_MS;
 
     const tick = (now: number) => {
-      const progress = Math.min(1, (now - start) / STEP_DURATION);
+      const progress = Math.min(1, (now - start) / duration);
       if (fillRef.current) fillRef.current.style.transform = `scaleX(${progress})`;
       if (progress >= 1) {
         setStep((current) => (current + 1) % steps.length);
@@ -215,7 +162,8 @@ export function StoryDemoPhone() {
     setStep(next);
   };
 
-  const Screen = step === 0 ? StoreScreen : step === 1 ? StoryScreen : OrderScreen;
+  const Screen = step === 1 ? StoryScreen : OrderScreen;
+  const siteVideoActive = step === 0 && inView && !paused && !reduced;
 
   return (
     <div ref={ref} className="flex w-full flex-col items-center">
@@ -257,7 +205,7 @@ export function StoryDemoPhone() {
           </div>
 
           <div key={step} className="demo-screen h-full pt-9">
-            <Screen />
+            {step === 0 ? <SiteVideo active={siteVideoActive} /> : <Screen />}
           </div>
         </div>
       </div>
