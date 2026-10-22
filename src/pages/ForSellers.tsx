@@ -150,7 +150,7 @@ export default function ForSellers() {
           >
             <div className="motion-reveal" data-reveal>
               <h1 className="sellers-heading text-[29px] leading-[1.08] sm:text-[38px] lg:text-[50px]">
-                Создайте легко сайт
+                Свой интернет-магазин — легко
               </h1>
 
               <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground md:mt-5 md:text-base">
