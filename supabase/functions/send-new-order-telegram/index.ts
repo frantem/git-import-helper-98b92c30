@@ -65,10 +65,11 @@ Deno.serve(async (req) => {
 
     // Покупатель: авторизованный или гость с витрины продавца
     const { data: buyer } = order.buyer_id
-      ? await supabase.from("profiles").select("full_name").eq("user_id", order.buyer_id).maybeSingle()
+      ? await supabase.from("profiles").select("full_name, phone").eq("user_id", order.buyer_id).maybeSingle()
       : { data: null };
     const buyerName = (((order as any).guest_name) || buyer?.full_name || "клиент").trim();
-    const buyerPhone = String((order as any).guest_phone || "").trim();
+    // гость вводит телефон в форме, у авторизованного он лежит в профиле
+    const buyerPhone = String((order as any).guest_phone || buyer?.phone || "").trim();
     const contactMethod = String((order as any).guest_contact_method || "").trim();
     const contactLabel =
       contactMethod === "telegram" ? "Telegram" :
