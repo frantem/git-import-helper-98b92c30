@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Instagram, Plus, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Instagram, Menu, Plus, Send, X } from "lucide-react";
 import { SEO } from "@/components/SEO";
+import { SellerVideoCard } from "@/components/sellers/SellerVideoCard";
 
 import bakery from "@/assets/sellers-bakery.jpg";
 import cheese from "@/assets/sellers-cheese.jpg";
@@ -224,36 +225,6 @@ function PrepMock() {
 /*  Данные страницы                                                    */
 /* ------------------------------------------------------------------ */
 
-const heroSlides = [
-  {
-    img: bakery,
-    handle: "@anna.bakery",
-    followers: "2.4k подписчиков",
-    city: "Витебск",
-    quote: "«Анна испекла больше 3000 буханок за первый год на Locus»",
-    author: "Анна К., пекарня на закваске",
-    pos: "68% 50%",
-  },
-  {
-    img: cheese,
-    handle: "@syrovarnya.locus",
-    followers: "1.1k подписчиков",
-    city: "Полоцк",
-    quote: "«Сыр разбирают за вечер, переписка больше не нужна»",
-    author: "Дмитрий П., сыроварня",
-    pos: "50% 50%",
-  },
-  {
-    img: pastry,
-    handle: "@tortik.vitebsk",
-    followers: "3.8k подписчиков",
-    city: "Витебск",
-    quote: "«Заказы приходят сами, я только пеку и выдаю»",
-    author: "Марина С., кондитер",
-    pos: "50% 50%",
-  },
-];
-
 const steps = [
   {
     title: "Покупатели подписываются на вашу витрину",
@@ -377,7 +348,7 @@ const faq = [
 /* ------------------------------------------------------------------ */
 
 export default function ForSellers() {
-  const [slide, setSlide] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const testimonialsRef = useRef<HTMLDivElement>(null);
 
@@ -392,19 +363,12 @@ export default function ForSellers() {
     document.head.appendChild(link);
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 7000);
-    return () => clearInterval(t);
-  }, []);
-
-  const active = heroSlides[slide];
-
   const scrollTestimonials = (dir: number) => {
     testimonialsRef.current?.scrollBy({ left: dir * 360, behavior: "smooth" });
   };
 
   return (
-    <div className="hp-page min-h-screen overflow-x-clip">
+    <div className="hp-page for-sellers-theme min-h-screen overflow-x-clip">
       <SEO
         title="Свой сайт для продажи еды — Locus"
         description="Личный сайт-витрина для кондитеров, сыроваров и фермеров: заказы без переписки, напоминания клиентам и база покупателей. Первый месяц бесплатно."
@@ -414,121 +378,92 @@ export default function ForSellers() {
       />
 
       {/* ---------------------------- Шапка ---------------------------- */}
-      <header className="sticky top-0 z-40 border-b border-[#E7E2D8] bg-[#F6F3EC]/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-[#E7E2D8] bg-[#FAF8F5]/90 backdrop-blur-md">
         <Container className="flex h-[64px] items-center justify-between gap-4 md:h-[70px]">
-          <Link to="/" aria-label="Locus — на главную" className="font-['Fraunces'] text-[24px] leading-none tracking-[-0.03em]">
-            Locus<span className="text-[#FB4545]">.</span>
+          <Link
+            to="/"
+            aria-label="Locus — на главную"
+            className="font-['Fraunces'] text-[24px] leading-none tracking-[-0.03em] text-[#1A1A1A]"
+          >
+            Locus<span className="text-[#E5453D]">.</span>
           </Link>
-
-          <nav aria-label="Разделы страницы" className="hidden items-center gap-7 text-[14px] text-[#3D3A35] md:flex">
-            <a href="#how" className="hover:text-[#FB4545]">Как это работает</a>
-            <a href="#reviews" className="hover:text-[#FB4545]">Отзывы</a>
-            <a href="#included" className="hover:text-[#FB4545]">Что входит</a>
-            <a href="#faq" className="hover:text-[#FB4545]">Вопросы</a>
-          </nav>
 
           <div className="flex items-center gap-2">
             <Link
               to="/auth"
-              className="hidden rounded-full bg-[#E9E7E1] px-5 py-2.5 text-[12.5px] font-medium text-[#141414] transition hover:bg-[#DEDBD3] sm:inline-flex"
+              className="inline-flex rounded-full bg-[#ECE7DE] px-5 py-2 text-sm font-medium text-[#1A1A1A] transition-colors hover:bg-[#E2DDD3]"
             >
               Войти
             </Link>
-            <Link
-              to={applicationPath}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#FB4545] px-5 py-2.5 text-[12.5px] font-medium text-white transition hover:bg-[#E83C3C]"
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
+              aria-expanded={menuOpen}
+              className="-mr-2 rounded-full p-2 text-[#1A1A1A] transition-colors hover:bg-[#ECE7DE]"
             >
-              Создать сайт
-            </Link>
+              {menuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+            </button>
           </div>
         </Container>
+
+        {menuOpen && (
+          <Container className="pb-4">
+            <nav aria-label="Разделы страницы" className="flex flex-col overflow-hidden rounded-2xl border border-[#E7E2D8] bg-white/80 p-1">
+              {[
+                { href: "#how", label: "Как это работает" },
+                { href: "#reviews", label: "Отзывы" },
+                { href: "#included", label: "Что входит" },
+                { href: "#faq", label: "Вопросы" },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-[14px] font-medium text-[#1A1A1A] transition-colors hover:bg-[#ECE7DE]"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </Container>
+        )}
       </header>
 
       <main>
         {/* ---------------------------- Hero ---------------------------- */}
-        <section className="relative">
-          <Container className="grid items-center gap-10 pb-14 pt-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16 lg:pb-24 lg:pt-16">
+        <section className="bg-[#FAF8F5] text-[#1A1A1A]">
+          <Container className="grid gap-9 pb-14 pt-8 md:pt-10 lg:grid-cols-[1fr_360px] lg:items-center lg:gap-16 lg:pb-24 lg:pt-14">
             <div>
-              <Pill>Платформа для домашней еды</Pill>
-              <h1 className="mt-6 font-['Fraunces'] text-[40px] leading-[1.02] tracking-[-0.025em] sm:text-[54px] lg:text-[68px]">
-                Продавайте еду с телефона, а не в переписке
+              <h1 className="font-['Fraunces'] text-[37px] leading-[1.02] tracking-[-0.025em] sm:text-[50px] lg:text-[62px]">
+                Свой сайт и приём заказов — прямо с телефона
               </h1>
-              <p className="mt-5 max-w-[520px] text-[16px] leading-[1.55] text-[#6E6A63] sm:text-[17px]">
-                Locus — личный сайт вашей кухни, пекарни или фермы. Покупатели сами выбирают
-                товары и оформляют заказ, а вы получаете его с контактами и адресом.
+
+              <p className="mt-5 max-w-[520px] text-[16px] leading-[1.55] text-[#555555] sm:text-[17px]">
+                Покажите покупателям товары и цены по одной ссылке. Принимайте заказы без суеты
+                в переписках.
               </p>
-              <Link
-                to={applicationPath}
-                className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-[#FB4545] px-7 text-[15px] font-medium text-white transition hover:bg-[#E83C3C]"
-              >
-                Создать свой сайт
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <p className="mt-4 text-[12.5px] leading-snug text-[#8A857D]">
-                1 месяц бесплатно · Без привязки карты · Настройка за пару минут
-              </p>
+
+              <div className="mt-7 md:mt-8">
+                <Link
+                  to={applicationPath}
+                  className="inline-flex h-[56px] w-full items-center justify-center rounded-full bg-[#E5453D] px-8 text-base font-semibold text-white shadow-sm transition-colors hover:bg-[#D43830] sm:w-auto"
+                >
+                  Создать свой сайт
+                </Link>
+              </div>
             </div>
 
-            {/* Карточка-карусель */}
             <div className="w-full">
-              <div className="relative mx-auto aspect-[4/5] w-full max-w-[520px] overflow-hidden rounded-[26px] bg-[#141414]">
-                <img
-                  src={active.img}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                  style={{ objectPosition: active.pos }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/80" />
-
-                <div className="absolute inset-x-0 top-0 flex items-start justify-between p-5">
-                  <div className="flex items-center gap-2.5">
-                    <img src={active.img} alt="" className="h-9 w-9 rounded-full border border-white/60 object-cover" />
-                    <div className="text-white">
-                      <p className="text-[13px] font-medium leading-tight">{active.handle}</p>
-                      <p className="text-[11px] text-white/75">{active.followers}</p>
-                    </div>
-                  </div>
-                  <span className="rounded-full border border-white/40 bg-black/25 px-3 py-1 text-[11px] text-white backdrop-blur-sm">
-                    {active.city}
-                  </span>
-                </div>
-
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <p className="font-['Fraunces'] text-[21px] leading-[1.25] text-white sm:text-[23px]">
-                    {active.quote}
-                  </p>
-                  <p className="mt-3 text-[12px] text-white/75">{active.author}</p>
-                </div>
-              </div>
-
-              <div className="mx-auto mt-5 flex max-w-[520px] items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {heroSlides.map((_, i) => (
-                    <button
-                      key={i}
-                      aria-label={`Слайд ${i + 1}`}
-                      onClick={() => setSlide(i)}
-                      className={`h-[3px] rounded-full transition-all ${i === slide ? "w-10 bg-[#FB4545]" : "w-10 bg-[#D8D2C6]"}`}
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    aria-label="Предыдущий"
-                    onClick={() => setSlide((s) => (s - 1 + heroSlides.length) % heroSlides.length)}
-                    className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#FB4545] shadow-[0_1px_4px_rgba(20,20,20,0.10)] ring-1 ring-[#E7E2D8] transition hover:bg-[#FB4545] hover:text-white"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    aria-label="Следующий"
-                    onClick={() => setSlide((s) => (s + 1) % heroSlides.length)}
-                    className="grid h-9 w-9 place-items-center rounded-full bg-[#FB4545] text-white shadow-[0_1px_4px_rgba(20,20,20,0.10)] transition hover:bg-[#E83C3C]"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+              <SellerVideoCard
+                videoSrc="/media/seller-site-demo.mp4"
+                poster="/media/seller-site-demo.jpg"
+                avatarSrc={cheese}
+                handle="@svoe_podvorie"
+                subtitle="Витебск • Домашний сыр"
+                location="г. Витебск"
+                caption="Своё Подворье: 40+ заказов в неделю через сайт без блокнотов"
+              />
             </div>
           </Container>
         </section>
