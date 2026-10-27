@@ -6,9 +6,16 @@ import {
   Cake,
   Carrot,
   Check,
+  ClipboardList,
+  Image as ImageIcon,
+  LayoutDashboard,
   Milk,
+  Smartphone,
   Sparkles,
+  Store,
+  Users,
   UtensilsCrossed,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
@@ -16,6 +23,7 @@ import { SEO } from "@/components/SEO";
 import { Reveal } from "@/components/motion/Reveal";
 import { useRevealOnScroll } from "@/components/motion/useMotion";
 import { StoryDemoPhone } from "@/components/sellers/StoryDemoPhone";
+import { FaqAccordion } from "@/components/sellers/FaqAccordion";
 
 const applicationPath = "/seller-application";
 const sectionClass = "mx-auto w-full max-w-6xl px-4 sm:px-5 md:px-10";
@@ -25,7 +33,7 @@ const serviceJsonLd = {
   "@type": "Service",
   name: "Сайт для производителей еды на Locus",
   description:
-    "Личный сайт-витрина для кондитеров, сыроваров, фермеров и кухонь: заказы без переписки, генератор сторис, база клиентов. Первый месяц бесплатно.",
+    "Личный сайт-витрина для кондитеров, сыроваров, фермеров и домашних кухонь: заказы без переписки, генератор сторис, база клиентов. Первый месяц бесплатно.",
   provider: { "@type": "Organization", name: "Locus", url: "https://locusfood.by" },
   areaServed: { "@type": "City", name: "Витебск" },
   offers: {
@@ -38,53 +46,106 @@ const serviceJsonLd = {
   },
 };
 
-/** Второй блок: зачем делу сайт. */
-const whySite = [
+/** Блок 2: ниши. */
+const niches = [
+  { icon: Cake, label: "Кондитеры и пекари" },
+  { icon: Milk, label: "Сыровары" },
+  { icon: Carrot, label: "Фермеры" },
+  { icon: Beef, label: "Мясо и копчения" },
+  { icon: Sparkles, label: "Мёд и чаи" },
+  { icon: UtensilsCrossed, label: "Домашняя кулинария" },
+];
+
+/** Блок 3: до / после. */
+const beforeList = [
+  "Прайс перепечатывается в каждом чате заново",
+  "«А что осталось?» — по десять раз в день",
+  "Заказы в блокнотах, заметках и переписке",
+  "Адрес и телефон теряются среди сообщений",
+];
+
+const afterList = [
+  "Одна ссылка с актуальным наличием и ценами",
+  "Покупатель оформляет заказ сам, без ожидания ответа",
+  "Контакты, дата и адрес — в карточке заказа",
+  "История покупок и база клиентов под рукой",
+];
+
+/** Блок 4: как это работает. */
+const steps = [
   {
-    title: "Покупатели не любят ждать",
-    text: "Всё больше клиентов заказывают ночью или на бегу. Если ответа в переписке нет в течение 15 минут — человек часто просто уходит к другому. На сайте заказ оформляется в 2 клика.",
+    icon: Smartphone,
+    title: "Добавьте товары с телефона",
+    text: "Название, фото и цена — за пару минут, без компьютера.",
   },
   {
-    title: "Всегда актуальные цены и наличие",
-    text: "Больше не нужно перепечатывать прайс в сообщениях и объяснять: «это уже закончилось, а вот то осталось». Покупатель всегда видит только актуальное наличие.",
+    icon: Store,
+    title: "Поставьте ссылку в соцсети",
+    text: "Instagram, Viber, Telegram или Kufar — одна ссылка на ваш сайт.",
   },
   {
-    title: "Заказы из поиска и нейросетей",
-    text: "Торты, сыры и мясо всё чаще ищут в Google, Яндексе и через ИИ-поисковики. У сайта правильная разметка — ваши товары находят за пределами соцсетей.",
+    icon: ClipboardList,
+    title: "Покупатель заказывает сам",
+    text: "Выбирает товар, количество и способ получения без переписки.",
+  },
+  {
+    icon: Check,
+    title: "Заказ приходит в кабинет",
+    text: "С контактами, датой и адресом — остаётся только собрать.",
   },
 ];
 
-/** Третий блок: чем Locus отличается от конструкторов. */
-const whyLocus = [
+/** Блок 5: возможности платформы. */
+const features = [
   {
-    title: "Просто, как подать объявление на Kufar",
-    text: "Никаких мучений с кодом и сложными конструкторами. Вы добавляете товары и цены со смартфона за 10 минут — и сразу получаете красивый, готовый к работе сайт.",
+    icon: Store,
+    title: "Простая витрина",
+    text: "Удобный каталог с быстрым выбором с телефона.",
   },
   {
-    title: "Помощник, а не просто витрина",
-    text: "Locus берет рутину на себя: в пару кликов собирает готовые картинки для сторис с вашими товарами и сохраняет базу покупателей с историей заказов.",
+    icon: LayoutDashboard,
+    title: "Личный кабинет",
+    text: "Статусы заказов, даты выдачи и телефоны клиентов.",
   },
   {
-    title: "Никаких забот о хостинге и обновлениях",
-    text: "Вам не нужно нанимать программистов или платить за серверы. Мы постоянно обновляем платформу, ускоряем загрузку и делаем так, чтобы у вас заказывали чаще.",
+    icon: Users,
+    title: "База покупателей",
+    text: "История заказов и контакты постоянных клиентов.",
+  },
+  {
+    icon: ImageIcon,
+    title: "Генератор сторис",
+    text: "Готовые картинки товаров для соцсетей в пару кликов.",
   },
 ];
 
-/** Четвёртый блок: кому подходит. */
-const audience = [
-  { icon: Cake, title: "Домашние кондитеры и пекарни" },
-  { icon: Milk, title: "Сыровары и крафтовые сыры" },
-  { icon: Carrot, title: "Фермерские хозяйства, овощи и ягоды" },
-  { icon: Beef, title: "Мясо, птица, копчения и деликатесы" },
-  { icon: Sparkles, title: "Мёд, чаи и полезные сладости" },
-  { icon: UtensilsCrossed, title: "Полуфабрикаты и готовая кухня" },
-];
-
-const includedItems = [
-  "Личный сайт-витрина",
-  "Генератор сторис",
-  "Уведомления о заказах",
-  "База клиентов",
+/** Блок 7: FAQ. */
+const faq = [
+  {
+    question: "Кому подходит сервис?",
+    answer:
+      "Самозанятым, ремесленникам, личным подсобным хозяйствам, ИП и небольшим производствам — всем, кто делает еду и продаёт её напрямую.",
+  },
+  {
+    question: "Нужен ли компьютер для работы?",
+    answer:
+      "Нет. Товары, цены, фото и заказы ведутся с телефона — сайт настраивается за пару минут прямо из браузера.",
+  },
+  {
+    question: "Нужно ли сразу привязывать банковскую карту?",
+    answer:
+      "Нет. Первый месяц бесплатный и без карты: сначала пробуете, потом решаете, нужен ли платный тариф.",
+  },
+  {
+    question: "Как я буду получать деньги за заказы?",
+    answer:
+      "Покупатель платит вам напрямую — при получении или переводом. Locus не держит деньги и не берёт комиссию с заказов.",
+  },
+  {
+    question: "Что будет после окончания бесплатного месяца?",
+    answer:
+      "Ничего не списывается само: вы решаете — продолжить на платном тарифе или поставить сайт на паузу. Товары и заказы сохраняются.",
+  },
 ];
 
 export default function ForSellers() {
@@ -102,8 +163,8 @@ export default function ForSellers() {
   return (
     <div className="for-sellers-theme min-h-screen overflow-x-clip bg-background text-foreground">
       <SEO
-        title="Сайт для продавцов еды: заказы без переписки — Locus"
-        description="Личный сайт-витрина для кондитеров, сыроваров и фермеров: заказы в 2 клика, генератор сторис, база клиентов. Первый месяц 0 BYN, запуск за 1 день с телефона."
+        title="Свой сайт для продажи еды — Locus"
+        description="Личный сайт-витрина для кондитеров, сыроваров и фермеров: заказы без переписки, генератор сторис и база клиентов. Первый месяц бесплатно, настройка с телефона."
         image="https://locusfood.by/media/for-sellers-og.jpg"
         canonical="https://locusfood.by/for-sellers"
         jsonLd={serviceJsonLd}
@@ -116,10 +177,10 @@ export default function ForSellers() {
           </Link>
 
           <nav aria-label="Разделы страницы" className="hidden items-center gap-1 md:flex">
-            <Button asChild variant="ghost" size="sm"><a href="#why">Зачем сайт</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="#locus">Почему Locus</a></Button>
-            <Button asChild variant="ghost" size="sm"><a href="#audience">Кому подходит</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#compare">До и после</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#how">Как работает</a></Button>
             <Button asChild variant="ghost" size="sm"><a href="#pricing">Тариф</a></Button>
+            <Button asChild variant="ghost" size="sm"><a href="#faq">Вопросы</a></Button>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -137,7 +198,7 @@ export default function ForSellers() {
       </header>
 
       <main>
-        {/* 1. Первый экран: оффер и живое демо */}
+        {/* Блок 1. Hero */}
         <section className="relative isolate overflow-hidden">
           <div aria-hidden="true" className="sellers-grid absolute inset-0 -z-20" />
           <div
@@ -150,12 +211,12 @@ export default function ForSellers() {
           >
             <div className="motion-reveal" data-reveal>
               <h1 className="sellers-heading text-[29px] leading-[1.08] sm:text-[38px] lg:text-[50px]">
-                Свой интернет-магазин — легко
+                Продавайте еду с телефона, а не в переписке
               </h1>
 
               <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground md:mt-5 md:text-base">
-                Клиенты больше не хотят ждать ответов в директе — они хотят зайти, выбрать и оформить
-                заказ за минуту. Дайте им удобный сайт без программистов и сложных настроек.
+                Locus — личный сайт вашей кухни, пекарни или фермы. Покупатели сами выбирают товары
+                и оформляют заказ, а вы получаете его с контактами и адресом.
               </p>
 
               <div className="mt-6 md:mt-8">
@@ -172,7 +233,7 @@ export default function ForSellers() {
               </div>
 
               <p className="mt-3 text-[12px] leading-snug text-muted-foreground md:text-[12.5px]">
-                Бесплатный тест на 30 дней • Запуск за 1 день с телефона
+                1 месяц бесплатно • Без привязки карты • Настройка за пару минут
               </p>
             </div>
 
@@ -182,181 +243,271 @@ export default function ForSellers() {
           </div>
         </section>
 
-        {/* 2. Зачем делу сайт */}
-        <section id="why" className="scroll-mt-16 border-t border-border py-12 md:py-20">
+        {/* Блок 2. Ниши */}
+        <section id="audience" className="scroll-mt-16 border-t border-border py-10 md:py-16">
           <div className={sectionClass}>
             <Reveal>
-              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
-                Зачем Вам сайт?
+              <h2 className="sellers-heading text-[24px] leading-[1.14] sm:text-[30px] md:text-[38px]">
+                Сделано для локальных мастеров
               </h2>
-              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
-                Соцсети привлекают внимание, а сайт закрывает продажи и бережёт ваше время.
+              <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Решение создано специально для производителей еды и небольших хозяйств.
               </p>
             </Reveal>
 
-            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-3 md:gap-4">
-              {whySite.map((item, index) => (
+            <div className="mt-6 flex flex-wrap gap-2 md:mt-8 md:gap-2.5">
+              {niches.map(({ icon: Icon, label }, index) => (
                 <Reveal
-                  key={item.title}
-                  as="article"
-                  delay={index * 70}
-                  className="rounded-2xl border border-border bg-card p-4 md:p-6"
+                  key={label}
+                  delay={index * 40}
+                  className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2"
                 >
-                  <p className="text-[11px] font-semibold tracking-[0.14em] text-primary">
-                    0{index + 1}
-                  </p>
-                  <h3 className="mt-2 text-[15.5px] font-semibold leading-snug md:text-lg">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground md:text-sm">
-                    {item.text}
-                  </p>
+                  <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="text-[13px] font-medium md:text-[13.5px]">{label}</span>
                 </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 3. Почему Locus */}
-        <section id="locus" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
+        {/* Блок 3. До / после */}
+        <section id="compare" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
           <div className={sectionClass}>
             <Reveal>
               <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
-                Почему именно Locus?
+                Как обычно — и как с Locus
               </h2>
-              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
-                Мы создали платформу специально для тех, кто производит и продаёт еду.
+              <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Одна и та же работа — принимать заказы. Разница в спокойствии и в клиентах, которые не ушли.
               </p>
             </Reveal>
 
-            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-3 md:gap-4">
-              {whyLocus.map((item, index) => (
-                <Reveal
-                  key={item.title}
-                  as="article"
-                  delay={index * 70}
-                  className="rounded-2xl border border-border bg-card p-4 md:p-6"
-                >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-                    <Check className="h-4 w-4" />
-                  </span>
-                  <h3 className="mt-3 text-[15.5px] font-semibold leading-snug md:text-lg">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground md:text-sm">
-                    {item.text}
-                  </p>
-                </Reveal>
-              ))}
+            <div className="mt-7 grid gap-3 md:mt-10 md:grid-cols-2 md:gap-4">
+              <Reveal className="rounded-2xl border border-border bg-card p-4 md:p-6">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-destructive">
+                  <X aria-hidden="true" className="h-4 w-4" />
+                  Как обычно в мессенджерах
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {beforeList.map((item) => (
+                    <li key={item} className="flex gap-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                      <span aria-hidden="true" className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-destructive/60" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+
+              <Reveal delay={80} className="rounded-2xl border border-primary/30 bg-primary/[0.06] p-4 md:p-6">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-primary">
+                  <Check aria-hidden="true" className="h-4 w-4" />
+                  С Locus
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {afterList.map((item) => (
+                    <li key={item} className="flex gap-2 text-[13.5px] leading-relaxed text-foreground/85">
+                      <Check aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
             </div>
           </div>
         </section>
 
-        {/* 4. Кому подходит */}
-        <section id="audience" className="scroll-mt-16 border-t border-border py-12 md:py-20">
+        {/* Блок 4. Как это работает */}
+        <section id="how" className="scroll-mt-16 border-t border-border py-12 md:py-20">
           <div className={sectionClass}>
             <Reveal>
               <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
-                Подходит для любого кулинарного дела
+                Как это работает
               </h2>
-              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
-                От домашних мастеров до небольших производств и фермерских хозяйств.
+              <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Четыре шага от первого товара до готового заказа.
               </p>
             </Reveal>
 
-            <div className="mt-7 grid grid-cols-2 gap-2.5 md:mt-10 md:grid-cols-3 md:gap-3">
-              {audience.map(({ icon: Icon, title }, index) => (
+            <div className="mt-7 md:mt-10">
+              <div className="grid gap-4 md:grid-cols-4 md:gap-4">
+                {steps.map(({ icon: Icon, title, text }, index) => (
+                  <Reveal key={title} delay={index * 60} className="relative">
+                    <div className="relative flex items-start gap-3 md:block">
+                      {index < steps.length - 1 && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-[44px] top-[22px] hidden h-px w-[calc(100%-6px)] bg-border md:block"
+                        />
+                      )}
+                      <span className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary">
+                        <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
+                      </span>
+                      <div className="min-w-0 md:mt-3">
+                        <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          Шаг {index + 1}
+                        </p>
+                        <h3 className="mt-1 text-[14.5px] font-semibold leading-snug md:text-[15.5px]">
+                          {title}
+                        </h3>
+                        <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{text}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Блок 5. Возможности */}
+        <section id="features" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
+          <div className={sectionClass}>
+            <Reveal>
+              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
+                Что внутри
+              </h2>
+              <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Всё для продаж — без программистов и лишних сервисов.
+              </p>
+            </Reveal>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 md:mt-10 md:gap-4">
+              {features.map(({ icon: Icon, title, text }, index) => (
                 <Reveal
                   key={title}
-                  delay={index * 50}
-                  className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 md:flex-row md:items-center md:gap-3 md:p-4"
+                  as="article"
+                  delay={index * 60}
+                  className="rounded-2xl border border-border bg-card p-4 md:p-5"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
                     <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
                   </span>
-                  <p className="text-[13px] font-medium leading-snug md:text-sm">{title}</p>
+                  <h3 className="mt-3 text-[15px] font-semibold leading-snug md:text-base">{title}</h3>
+                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground">{text}</p>
                 </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 5. Тариф и заявка */}
-        <section id="pricing" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
+        {/* Блок 6. Тарифы */}
+        <section id="pricing" className="scroll-mt-16 border-t border-border py-12 md:py-20">
           <div className={sectionClass}>
             <Reveal>
               <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
-                Попробуйте бесплатно
+                Прозрачный тариф
               </h2>
-              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground md:text-[15px]">
-                Первые 30 дней — полный доступ за 0 BYN. Оцените, насколько это упростит жизнь вам и
-                понравится клиентам.
+              <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Начните бесплатно — платите, только если решите остаться.
               </p>
             </Reveal>
 
-            <Reveal
-              delay={80}
-              className="mt-7 overflow-hidden rounded-2xl border border-border bg-card md:mt-10"
-            >
+            <Reveal delay={80} className="mt-7 overflow-hidden rounded-2xl border border-border bg-card md:mt-10">
               <div className="grid md:grid-cols-[0.9fr_1.1fr]">
                 <div className="border-b border-border bg-primary/[0.07] p-5 md:border-b-0 md:border-r md:p-7">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
                     Первый месяц
                   </p>
                   <p className="mt-2 text-[44px] font-bold leading-none md:text-[52px]">0 BYN</p>
-                  <p className="mt-2 text-[13.5px] text-muted-foreground">Первый месяц бесплатно</p>
+                  <p className="mt-2 text-[13.5px] text-muted-foreground">Полный доступ, без карты</p>
 
                   <ul className="mt-4 space-y-1.5 border-t border-border/60 pt-3">
-                    {includedItems.map((item) => (
-                      <li key={item} className="flex items-center gap-2 text-[13px] text-foreground/85">
-                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        {item}
-                      </li>
-                    ))}
+                    {["Личный сайт-витрина", "Генератор сторис", "Кабинет заказов", "База клиентов"].map(
+                      (item) => (
+                        <li key={item} className="flex items-center gap-2 text-[13px] text-foreground/85">
+                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                          {item}
+                        </li>
+                      ),
+                    )}
                   </ul>
                 </div>
 
                 <div className="p-5 md:p-7">
-                  <div className="space-y-3">
-                    <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
-                      <div>
-                        <p className="text-[15px] font-semibold">9,90 BYN / мес</p>
-                        <p className="mt-0.5 text-[12px] text-muted-foreground">
-                          при оплате за 6 месяцев
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-semibold text-primary">
-                        Выгодно
-                      </span>
+                  <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
+                    <div>
+                      <p className="text-[15px] font-semibold">9,90 BYN / мес</p>
+                      <p className="mt-0.5 text-[12px] text-muted-foreground">при оплате за 6 месяцев</p>
                     </div>
-
-                    <div className="border-b border-border pb-3">
-                      <p className="text-[15px] font-semibold">14,90 BYN / мес</p>
-                      <p className="mt-0.5 text-[12px] text-muted-foreground">при помесячной оплате</p>
-                    </div>
+                    <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-semibold text-primary">
+                      Выгодно
+                    </span>
                   </div>
 
-                  <p className="mt-3 text-[12.5px] leading-relaxed text-muted-foreground">
-                    Без скрытых списаний и привязки банковской карты
+                  <div className="border-b border-border py-3">
+                    <p className="text-[15px] font-semibold">14,90 BYN / мес</p>
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">при помесячной оплате</p>
+                  </div>
+
+                  <p className="mt-3 flex items-center gap-2 text-[13.5px] font-semibold text-foreground">
+                    <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
+                    0% комиссии с ваших заказов
                   </p>
 
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <Button
                       asChild
                       size="lg"
                       className="h-12 w-full rounded-full px-6 text-[15px] font-semibold"
                     >
                       <Link to={applicationPath}>
-                        Оставить заявку на сайт
+                        Создать свой сайт
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
                     <p className="mt-2.5 text-center text-[12px] leading-snug text-muted-foreground">
-                      Перезвоним, ответим на вопросы и поможем загрузить первые товары.
+                      Без скрытых списаний и привязки карты
                     </p>
                   </div>
                 </div>
               </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* Блок 7. FAQ */}
+        <section id="faq" className="scroll-mt-16 border-t border-border bg-secondary/40 py-12 md:py-20">
+          <div className={sectionClass}>
+            <Reveal>
+              <h2 className="sellers-heading text-[26px] leading-[1.12] sm:text-[32px] md:text-[40px]">
+                Частые вопросы
+              </h2>
+            </Reveal>
+
+            <Reveal delay={60} className="mt-6 md:mt-8">
+              <FaqAccordion items={faq} />
+            </Reveal>
+          </div>
+        </section>
+
+        {/* Блок 8. Финальный CTA */}
+        <section className="border-t border-border py-12 md:py-20">
+          <div className={`${sectionClass} text-center`}>
+            <Reveal>
+              <h2 className="sellers-heading mx-auto max-w-2xl text-[27px] leading-[1.1] sm:text-[34px] md:text-[44px]">
+                Начните продавать с сайта уже сегодня
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">
+                Первый месяц бесплатно: загрузите товары, поставьте ссылку в профиль и принимайте
+                заказы без переписок.
+              </p>
+
+              <div className="mt-6 flex justify-center md:mt-8">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-12 w-full rounded-full px-6 text-[15px] font-semibold sm:w-auto sm:px-8"
+                >
+                  <Link to={applicationPath}>
+                    Создать свой сайт
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                1 месяц бесплатно • Без привязки карты • Настройка за пару минут
+              </p>
             </Reveal>
           </div>
         </section>
