@@ -313,3 +313,19 @@
   .sellers-float { animation: none; }
   .for-sellers-theme * { scroll-behavior: auto; }
 }
+
+/* ------------------------------------------------------------------ */
+/* For Sellers — светлая редакционная тема (референс: hotplate.com)    */
+/* ------------------------------------------------------------------ */
+.hp-page {
+  --hp-bg: #f6f3ec;
+  --hp-ink: #141414;
+  --hp-muted: #6e6a63;
+  --hp-line: #e7e2d8;
+  --hp-red: #fb4545;
+  background-color: var(--hp-bg);
+  color: var(--hp-ink);
+  font-family: "Instrument Sans", "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.hp-page ::selection { background: #fb4545; color: #fff; }
