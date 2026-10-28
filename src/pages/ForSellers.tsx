@@ -408,7 +408,7 @@ export default function ForSellers() {
 
       {/* ---------------------------- Шапка ---------------------------- */}
       <header className="sticky top-0 z-40 bg-[#FCFBF9]/90 backdrop-blur-md">
-        <Container className="flex h-[68px] items-center justify-between gap-4 md:h-[76px]">
+        <Container className="flex h-[64px] items-center justify-between gap-4 md:h-[76px]">
           <Link
             to="/"
             aria-label="Locus — на главную"
@@ -427,13 +427,13 @@ export default function ForSellers() {
           <div className="flex items-center gap-2">
             <Link
               to="/auth"
-              className="hidden rounded-full px-5 py-2.5 text-[13.5px] font-medium text-[#1A1A1A] transition-colors hover:bg-[#EFEBE3] sm:inline-flex"
+              className="inline-flex rounded-full bg-[#E9E7E1] px-4 py-2 text-[13px] font-medium text-[#1A1A1A] transition-colors hover:bg-[#DEDBD3] sm:px-5 sm:py-2.5 sm:text-[13.5px]"
             >
               Войти
             </Link>
             <Link
               to={applicationPath}
-              className="inline-flex items-center rounded-full bg-[#E5453D] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#D43830]"
+              className="hidden items-center rounded-full bg-[#E5453D] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#D43830] sm:inline-flex"
             >
               Начать продавать
             </Link>
@@ -475,23 +475,25 @@ export default function ForSellers() {
       <main>
         {/* ---------------------------- Hero ---------------------------- */}
         <section className="bg-[#FCFBF9] text-[#1A1A1A]">
-          <Container className="grid gap-10 pb-14 pt-8 md:pt-12 lg:grid-cols-[1fr_412px] lg:items-center lg:gap-20 lg:pb-24 lg:pt-14">
+          <Container className="grid gap-7 pb-12 pt-5 sm:gap-10 sm:pb-14 sm:pt-8 md:pt-12 lg:grid-cols-[1fr_412px] lg:items-center lg:gap-20 lg:pb-24 lg:pt-14">
             <div className="max-w-[660px]">
-              <Pill>№1 платформа для домашней еды</Pill>
+              <div className="hidden sm:block">
+                <Pill>№1 платформа для домашней еды</Pill>
+              </div>
 
-              <h1 className="mt-6 font-['Fraunces'] text-[40px] leading-[1.02] tracking-[-0.03em] sm:text-[52px] lg:text-[64px]">
+              <h1 className="font-['Fraunces'] text-[33px] leading-[1.04] tracking-[-0.03em] sm:mt-6 sm:text-[52px] sm:leading-[1.02] lg:text-[64px]">
                 Свой сайт и приём заказов — прямо с телефона
               </h1>
 
-              <p className="mt-5 max-w-[520px] text-[17px] leading-[1.5] text-[#6E6A63] sm:text-[19px]">
+              <p className="mt-3.5 max-w-[520px] text-[15.5px] leading-[1.45] text-[#6E6A63] sm:mt-5 sm:text-[19px] sm:leading-[1.5]">
                 Покажите покупателям товары и цены по одной ссылке. Принимайте заказы без суеты
                 в переписках.
               </p>
 
-              <div className="mt-7 md:mt-9">
+              <div className="mt-5 sm:mt-7 md:mt-9">
                 <Link
                   to={applicationPath}
-                  className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#E5453D] px-7 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#D43830] sm:h-11 sm:w-auto"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#E5453D] px-7 text-[14.5px] font-semibold text-white shadow-sm transition-colors hover:bg-[#D43830] sm:h-11 sm:w-auto sm:text-[15px]"
                 >
                   Начать продавать
                 </Link>
