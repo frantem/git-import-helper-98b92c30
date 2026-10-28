@@ -225,6 +225,45 @@ function PrepMock() {
 /*  Данные страницы                                                    */
 /* ------------------------------------------------------------------ */
 
+type HeroSlide = {
+  videoSrc?: string;
+  poster?: string;
+  imageSrc?: string;
+  avatarSrc?: string;
+  handle: string;
+  subtitle: string;
+  location: string;
+  caption: string;
+};
+
+/** Кадры карусели первого экрана: ролик продавца и две витрины. */
+const heroSlides: HeroSlide[] = [
+  {
+    imageSrc: bakery,
+    avatarSrc: bakery,
+    handle: "@anna.bakery",
+    subtitle: "Витебск • Хлеб на закваске",
+    location: "г. Витебск",
+    caption: "Анна испекла 3000 буханок за первый год на Locus",
+  },
+  {
+    imageSrc: pastry,
+    avatarSrc: pastry,
+    handle: "@tortik.vitebsk",
+    subtitle: "Витебск • Домашние десерты",
+    location: "г. Витебск",
+    caption: "Заказы приходят сами — остаётся только печь",
+  },
+  {
+    imageSrc: cheese,
+    avatarSrc: cheese,
+    handle: "@svoe_podvorie",
+    subtitle: "Витебск • Домашний сыр",
+    location: "г. Витебск",
+    caption: "Сыр разбирают за вечер — переписка больше не нужна",
+  },
+];
+
 const steps = [
   {
     title: "Покупатели подписываются на вашу витрину",
@@ -349,6 +388,7 @@ const faq = [
 
 export default function ForSellers() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [heroSlide, setHeroSlide] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const testimonialsRef = useRef<HTMLDivElement>(null);
 
@@ -378,8 +418,8 @@ export default function ForSellers() {
       />
 
       {/* ---------------------------- Шапка ---------------------------- */}
-      <header className="sticky top-0 z-40 border-b border-[#E7E2D8] bg-[#FAF8F5]/90 backdrop-blur-md">
-        <Container className="flex h-[64px] items-center justify-between gap-4 md:h-[70px]">
+      <header className="sticky top-0 z-40 bg-[#FCFBF9]/90 backdrop-blur-md">
+        <Container className="flex h-[68px] items-center justify-between gap-4 md:h-[76px]">
           <Link
             to="/"
             aria-label="Locus — на главную"
@@ -388,19 +428,32 @@ export default function ForSellers() {
             Locus<span className="text-[#E5453D]">.</span>
           </Link>
 
+          <nav aria-label="Разделы страницы" className="hidden items-center gap-8 text-[14px] text-[#3D3A35] lg:flex">
+            <a href="#how" className="transition-colors hover:text-[#E5453D]">Как это работает</a>
+            <a href="#reviews" className="transition-colors hover:text-[#E5453D]">Отзывы</a>
+            <a href="#included" className="transition-colors hover:text-[#E5453D]">Что входит</a>
+            <a href="#faq" className="transition-colors hover:text-[#E5453D]">Вопросы</a>
+          </nav>
+
           <div className="flex items-center gap-2">
             <Link
               to="/auth"
-              className="inline-flex rounded-full bg-[#ECE7DE] px-5 py-2 text-sm font-medium text-[#1A1A1A] transition-colors hover:bg-[#E2DDD3]"
+              className="hidden rounded-full px-5 py-2.5 text-[13.5px] font-medium text-[#1A1A1A] transition-colors hover:bg-[#EFEBE3] sm:inline-flex"
             >
               Войти
+            </Link>
+            <Link
+              to={applicationPath}
+              className="inline-flex items-center rounded-full bg-[#E5453D] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#D43830]"
+            >
+              Начать продавать
             </Link>
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
               aria-expanded={menuOpen}
-              className="-mr-2 rounded-full p-2 text-[#1A1A1A] transition-colors hover:bg-[#ECE7DE]"
+              className="-mr-2 rounded-full p-2 text-[#1A1A1A] transition-colors hover:bg-[#EFEBE3] lg:hidden"
             >
               {menuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
             </button>
@@ -408,7 +461,7 @@ export default function ForSellers() {
         </Container>
 
         {menuOpen && (
-          <Container className="pb-4">
+          <Container className="pb-4 lg:hidden">
             <nav aria-label="Разделы страницы" className="flex flex-col overflow-hidden rounded-2xl border border-[#E7E2D8] bg-white/80 p-1">
               {[
                 { href: "#how", label: "Как это работает" },
@@ -432,38 +485,65 @@ export default function ForSellers() {
 
       <main>
         {/* ---------------------------- Hero ---------------------------- */}
-        <section className="bg-[#FAF8F5] text-[#1A1A1A]">
-          <Container className="grid gap-9 pb-14 pt-8 md:pt-10 lg:grid-cols-[1fr_360px] lg:items-center lg:gap-16 lg:pb-24 lg:pt-14">
-            <div>
-              <h1 className="font-['Fraunces'] text-[37px] leading-[1.02] tracking-[-0.025em] sm:text-[50px] lg:text-[62px]">
+        <section className="bg-[#FCFBF9] text-[#1A1A1A]">
+          <Container className="grid gap-10 pb-14 pt-8 md:pt-12 lg:grid-cols-[1fr_412px] lg:items-center lg:gap-20 lg:pb-24 lg:pt-14">
+            <div className="max-w-[660px]">
+              <Pill>№1 платформа для домашней еды</Pill>
+
+              <h1 className="mt-6 font-['Fraunces'] text-[40px] leading-[1.02] tracking-[-0.03em] sm:text-[52px] lg:text-[64px]">
                 Свой сайт и приём заказов — прямо с телефона
               </h1>
 
-              <p className="mt-5 max-w-[520px] text-[16px] leading-[1.55] text-[#555555] sm:text-[17px]">
+              <p className="mt-5 max-w-[520px] text-[17px] leading-[1.5] text-[#6E6A63] sm:text-[19px]">
                 Покажите покупателям товары и цены по одной ссылке. Принимайте заказы без суеты
                 в переписках.
               </p>
 
-              <div className="mt-7 md:mt-8">
+              <div className="mt-7 md:mt-9">
                 <Link
                   to={applicationPath}
-                  className="inline-flex h-[56px] w-full items-center justify-center rounded-full bg-[#E5453D] px-8 text-base font-semibold text-white shadow-sm transition-colors hover:bg-[#D43830] sm:w-auto"
+                  className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#E5453D] px-7 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#D43830] sm:h-11 sm:w-auto"
                 >
-                  Создать свой сайт
+                  Начать продавать
                 </Link>
               </div>
             </div>
 
             <div className="w-full">
-              <SellerVideoCard
-                videoSrc="/media/seller-site-demo.mp4"
-                poster="/media/seller-site-demo.jpg"
-                avatarSrc={cheese}
-                handle="@svoe_podvorie"
-                subtitle="Витебск • Домашний сыр"
-                location="г. Витебск"
-                caption="Своё Подворье: 40+ заказов в неделю через сайт без блокнотов"
-              />
+              <SellerVideoCard {...heroSlides[heroSlide]} />
+
+              <div className="mt-5 flex items-center justify-center gap-4">
+                <button
+                  type="button"
+                  aria-label="Предыдущий слайд"
+                  onClick={() => setHeroSlide((i) => (i - 1 + heroSlides.length) % heroSlides.length)}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#E5453D] ring-1 ring-[#E7E2D8] transition-colors hover:bg-[#E5453D] hover:text-white"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  {heroSlides.map((slide, i) => (
+                    <button
+                      key={slide.handle}
+                      type="button"
+                      aria-label={`Слайд ${i + 1}`}
+                      aria-current={i === heroSlide}
+                      onClick={() => setHeroSlide(i)}
+                      className={`h-[3px] rounded-full transition-all ${i === heroSlide ? "w-8 bg-[#E5453D]" : "w-8 bg-[#DCD6C9] hover:bg-[#C9C2B2]"}`}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Следующий слайд"
+                  onClick={() => setHeroSlide((i) => (i + 1) % heroSlides.length)}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-[#E5453D] text-white transition-colors hover:bg-[#D43830]"
+                >
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           </Container>
         </section>

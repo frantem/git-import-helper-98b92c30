@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 
 export interface SellerVideoCardProps {
-  /** Ссылка на вертикальный ролик продавца (9:16). Меняется одной строкой. */
-  videoSrc: string;
-  /** Кадр-заглушка: показывается до старта и при отключённой анимации. */
-  poster: string;
+  /** Ссылка на вертикальный ролик продавца. Меняется одной строкой. */
+  videoSrc?: string;
+  /** Фотография витрины — показывается, если видео не задано. */
+  imageSrc?: string;
+  poster?: string;
   /** Аватар продавца; если не задан — показываем инициалы. */
   avatarSrc?: string;
   handle: string;
@@ -15,13 +16,14 @@ export interface SellerVideoCardProps {
 }
 
 /**
- * Вертикальная видео-карточка в стиле Reels: оверлеи продавца, бейдж города
- * и подпись снизу. Живёт только на лендинге /for-sellers.
+ * Карточка-«полароид» в стиле Hotplate: белая рамка, кадр 4:5.5,
+ * оверлеи продавца прямо на кадре, без плашек. Только для /for-sellers.
  */
 export function SellerVideoCard({
   videoSrc,
-  avatarSrc,
+  imageSrc,
   poster,
+  avatarSrc,
   handle,
   subtitle,
   location,
@@ -50,9 +52,9 @@ export function SellerVideoCard({
   };
 
   return (
-    <div className="relative mx-auto w-full max-w-[360px] overflow-hidden rounded-[28px] border border-black/5 bg-black/5 shadow-xl">
-      <div className="relative aspect-[9/16] w-full bg-[#E7E1D6]">
-        <div className="absolute inset-0 overflow-hidden">
+    <div className="rounded-[24px] bg-white p-2 shadow-[0_24px_60px_rgba(20,20,20,0.14)] ring-1 ring-black/5">
+      <div className="relative aspect-[4/5.5] w-full overflow-hidden rounded-[16px] bg-[#EDEAE2]">
+        {videoSrc ? (
           <video
             ref={videoRef}
             src={videoSrc}
@@ -62,44 +64,50 @@ export function SellerVideoCard({
             loop
             autoPlay={!reduced}
             preload="metadata"
-            className="absolute left-0 top-[-6%] h-[106%] w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-bottom"
             onPlay={() => setPaused(false)}
             onPause={() => setPaused(true)}
           />
-        </div>
+        ) : (
+          <img src={imageSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
 
-        {/* Верхний оверлей: продавец и город */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 bg-black/75 px-3 pb-6 pt-3 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              {avatarSrc ? (
-                <img
-                  src={avatarSrc}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/50"
-                />
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-[10px] font-bold text-[#1A1A1A]"
-                >
-                  СП
-                </span>
-              )}
-              <div className="min-w-0">
-                <p className="truncate text-[12.5px] font-semibold leading-tight text-white">{handle}</p>
-                <p className="truncate text-[11px] leading-tight text-white/80">{subtitle}</p>
-              </div>
+        {/* Градиенты под текст */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/40 to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/70 via-black/25 to-transparent"
+        />
+
+        {/* Продавец и город */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {avatarSrc ? (
+              <img src={avatarSrc} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-[12px] font-bold text-[#1A1A1A]"
+              >
+                ЛК
+              </span>
+            )}
+            <div className="min-w-0 text-white">
+              <p className="truncate text-[14.5px] font-semibold leading-tight">{handle}</p>
+              <p className="truncate text-[11.5px] leading-tight text-white/80">{subtitle}</p>
             </div>
-
-            <span className="shrink-0 rounded-full bg-black/60 px-3 py-1 text-[11px] font-medium text-white backdrop-blur">
-              {location}
-            </span>
           </div>
+
+          <span className="shrink-0 rounded-full bg-black/35 px-2.5 py-1 text-[10.5px] font-medium text-white backdrop-blur-sm sm:px-3 sm:py-1.5 sm:text-[11.5px]">
+            {location}
+          </span>
         </div>
 
-        {/* Пауза: кнопка воспроизведения */}
-        {paused && (
+        {/* Воспроизведение */}
+        {videoSrc && paused && (
           <button
             type="button"
             onClick={toggle}
@@ -110,15 +118,14 @@ export function SellerVideoCard({
           </button>
         )}
 
-        {/* Нижний оверлей: подпись */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-3 pt-10">
-          <p className="rounded-2xl bg-white/95 px-3.5 py-2.5 text-[13px] font-semibold leading-snug text-[#1A1A1A] shadow-sm backdrop-blur">
+        {/* Подпись */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-5">
+          <p className="text-[21px] font-semibold leading-[1.16] text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.35)] sm:text-[23px]">
             {caption}
           </p>
         </div>
 
-        {/* Клик по видео — пауза/продолжить */}
-        {!paused && (
+        {videoSrc && !paused && (
           <button
             type="button"
             onClick={toggle}
