@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Instagram, Menu, Plus, Send, X } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { SellerVideoCard } from "@/components/sellers/SellerVideoCard";
+import { CardCarousel, FeatureCard, ReviewCard } from "@/components/sellers/CardCarousel";
 
 import bakery from "@/assets/sellers-bakery.jpg";
 import cheese from "@/assets/sellers-cheese.jpg";
@@ -50,17 +51,6 @@ function StepTape({ n }: { n: number }) {
       <span className="font-['Caveat'] text-[26px] font-semibold leading-none tracking-wide text-[#141414]">
         ШАГ {n}
       </span>
-    </div>
-  );
-}
-
-function SectionTitle({ pill, children }: { pill: string; children: ReactNode }) {
-  return (
-    <div>
-      <Pill>{pill}</Pill>
-      <h2 className="mt-6 max-w-[900px] font-['Fraunces'] text-[34px] leading-[1.06] tracking-[-0.02em] sm:text-[44px] lg:text-[56px]">
-        {children}
-      </h2>
     </div>
   );
 }
@@ -305,6 +295,7 @@ const testimonials = [
   {
     img: bakery,
     handle: "@anna.bakery",
+    followers: "1,8 тыс. подписчиков",
     city: "Витебск",
     quote: "«Раньше я собирала заказы в директе и путалась. Сейчас открываю дроп — и всё видно»",
     author: "Анна, пекарня",
@@ -312,6 +303,7 @@ const testimonials = [
   {
     img: cheese,
     handle: "@syrovarnya.locus",
+    followers: "940 подписчиков",
     city: "Полоцк",
     quote: "«Клиенты возвращаются сами: им приходит напоминание, когда я открываю заказы»",
     author: "Дмитрий, сыроварня",
@@ -319,6 +311,7 @@ const testimonials = [
   {
     img: pastry,
     handle: "@tortik.vitebsk",
+    followers: "3,1 тыс. подписчиков",
     city: "Витебск",
     quote: "«Мне не нужно быть онлайн весь день. Заказы копятся, я пеку по списку»",
     author: "Марина, кондитер",
@@ -326,6 +319,7 @@ const testimonials = [
   {
     img: bakery,
     handle: "@hleb.nadvinna",
+    followers: "760 подписчиков",
     city: "Новополоцк",
     quote: "«Первый месяц бесплатно — я просто попробовала. Теперь это мой основной канал»",
     author: "Сергей, пекарь",
@@ -390,7 +384,6 @@ export default function ForSellers() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const testimonialsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = "hp-fonts";
@@ -402,10 +395,6 @@ export default function ForSellers() {
       "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=Caveat:wght@600&display=swap";
     document.head.appendChild(link);
   }, []);
-
-  const scrollTestimonials = (dir: number) => {
-    testimonialsRef.current?.scrollBy({ left: dir * 360, behavior: "smooth" });
-  };
 
   return (
     <div className="hp-page for-sellers-theme min-h-screen overflow-x-clip">
@@ -586,78 +575,34 @@ export default function ForSellers() {
         </section>
 
         {/* ---------------------------- Отзывы ---------------------------- */}
-        <section id="reviews" className="scroll-mt-[70px] pb-16 lg:pb-24">
+        <section id="reviews" className="scroll-mt-[70px] bg-[#FCFBF9] py-14 lg:py-20">
           <Container>
-            <div className="flex flex-wrap items-end justify-between gap-6">
-              <SectionTitle pill="К нам приходят за результатом">
-                Нам доверяют тысячи домашних кухонь
-              </SectionTitle>
-              <div className="flex items-center gap-2 pb-2">
-                <button
-                  aria-label="Назад"
-                  onClick={() => scrollTestimonials(-1)}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-[#FBE3E1] text-[#FB4545] transition hover:bg-[#FB4545] hover:text-white"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <button
-                  aria-label="Вперёд"
-                  onClick={() => scrollTestimonials(1)}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-[#FB4545] text-white transition hover:bg-[#E83C3C]"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={testimonialsRef}
-              className="-mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 [scrollbar-width:none] md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 [&::-webkit-scrollbar]:hidden"
-            >
+            <CardCarousel pill="К нам приходят за результатом" title="Нам доверяют тысячи домашних кухонь">
               {testimonials.map((t) => (
-                <article
+                <ReviewCard
                   key={t.handle}
-                  className="relative aspect-[340/470] w-[300px] shrink-0 snap-start overflow-hidden rounded-[12px] bg-[#141414] sm:w-[340px]"
-                >
-                  <img src={t.img} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/5 to-black/85" />
-                  <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
-                    <div className="flex items-center gap-2">
-                      <img src={t.img} alt="" className="h-8 w-8 rounded-full border border-white/60 object-cover" />
-                      <span className="text-[12px] font-medium text-white">{t.handle}</span>
-                    </div>
-                    <span className="rounded-full bg-black/25 px-2.5 py-1 text-[10px] text-white backdrop-blur-sm">
-                      {t.city}
-                    </span>
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <p className="text-[16px] leading-[1.35] text-white">{t.quote}</p>
-                    <p className="mt-2 text-[11.5px] text-white/70">— {t.author}</p>
-                  </div>
-                </article>
+                  img={t.img}
+                  handle={t.handle}
+                  followers={t.followers}
+                  city={t.city}
+                  quote={t.quote}
+                  author={t.author}
+                />
               ))}
-            </div>
+            </CardCarousel>
           </Container>
         </section>
 
         {/* --------------------------- Что входит --------------------------- */}
-        <section id="included" className="scroll-mt-[70px] bg-[#EFEDE7] py-16 lg:py-24">
+        <section id="included" className="scroll-mt-[70px] bg-[#EFEDE7] py-14 lg:py-20">
           <Container>
-            <SectionTitle pill="Платформа">Что входит в Locus?</SectionTitle>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <CardCarousel pill="Платформа" title="Что входит в Locus?">
               {features.map((f) => (
-                <article key={f.title} className="overflow-hidden rounded-[14px] bg-white shadow-[0_1px_0_rgba(20,20,20,0.04)] ring-1 ring-[#E7E2D8]">
-                  <div className="relative h-[280px] overflow-hidden bg-[#EDEAE2]">
-                    <div className="absolute left-4 top-4 w-[420px] origin-top-left scale-[0.68]">{f.mock}</div>
-                  </div>
-                  <div className="border-t border-[#F0EDE6] p-5">
-                    <h3 className="font-['Fraunces'] text-[24px] leading-[1.1] tracking-[-0.01em]">{f.title}</h3>
-                    <p className="mt-2 text-[13.5px] leading-[1.45] text-[#6E6A63]">{f.text}</p>
-                  </div>
-                </article>
+                <FeatureCard key={f.title} title={f.title}>
+                  {f.mock}
+                </FeatureCard>
               ))}
-            </div>
+            </CardCarousel>
           </Container>
         </section>
 
