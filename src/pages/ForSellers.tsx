@@ -478,11 +478,11 @@ export default function ForSellers() {
           <Container className="grid gap-7 pb-12 pt-5 sm:gap-10 sm:pb-14 sm:pt-8 md:pt-12 lg:grid-cols-[1fr_412px] lg:items-center lg:gap-20 lg:pb-24 lg:pt-14">
             <div className="max-w-[660px]">
               <div className="hidden sm:block">
-                <Pill>№1 платформа для домашней еды</Pill>
+                <Pill>№1 платформа для кондитеров</Pill>
               </div>
 
               <h1 className="font-['Fraunces'] text-[33px] leading-[1.04] tracking-[-0.03em] sm:mt-6 sm:text-[52px] sm:leading-[1.02] lg:text-[64px]">
-                Свой сайт и приём заказов — прямо с телефона
+                Свой сайт и приём заказов с телефона
               </h1>
 
               <p className="mt-3.5 max-w-[520px] text-[15.5px] leading-[1.45] text-[#6E6A63] sm:mt-5 sm:text-[19px] sm:leading-[1.5]">
