@@ -371,8 +371,8 @@ const faq = [
     a: "Да: заказы не теряются, клиент видит актуальное наличие или что можно заказать под заказ, а вы получаете готовый список на выдачу и базу покупателей.",
   },
   {
-    q: "Можно ли продолжать вести Instagram?",
-    a: "Конечно. Locus не заменяет соцсети — он принимает заказы и хранит клиентов, а контент вы публикуете как раньше.",
+    q: "Как я пойму что мне пришёл заказ?",
+    a: "Вы получаете уведомление на почту и в Telegram(и тут же, Вы можете одной кнопкой подтверждать заказы).",
   },
 ];
 
@@ -673,7 +673,7 @@ export default function ForSellers() {
             to={applicationPath}
             className="mt-8 inline-flex h-12 items-center rounded-full bg-white px-6 text-[13.5px] font-medium text-[#141414] transition hover:bg-[#F6F3EC]"
           >
-            Создать сайт сегодня
+            Начать продавать
           </Link>
 
           <div className="mt-16 flex flex-col gap-4 border-t border-white/25 pt-6 text-[12.5px] text-white/85 sm:flex-row sm:items-center sm:justify-between">
