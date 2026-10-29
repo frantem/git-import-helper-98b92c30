@@ -578,7 +578,7 @@ export default function ForSellers() {
         {/* ---------------------------- Отзывы ---------------------------- */}
         <section id="reviews" className="scroll-mt-[70px] bg-[#FCFBF9] py-14 lg:py-20">
           <Container>
-            <CardCarousel pill="Ежемесячно более 100 заказов через сайт" title="Нам доверяют тысячи домашних кухонь">
+            <CardCarousel pill="Ежемесячно более 100 заказов через сайт" title="Уже более 40 поваров и пекарей ">
               {testimonials.map((t) => (
                 <ReviewCard
                   key={t.handle}
