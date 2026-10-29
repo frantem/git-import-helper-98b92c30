@@ -328,7 +328,7 @@ const testimonials = [
 
 const features = [
   {
-    title: "Свой сайт",
+    title: "Свой сайт для приёма заказов",
     text: "Отдельный сайт с вашим именем, меню и историей.",
     mock: <StorefrontMock />,
   },
@@ -338,12 +338,12 @@ const features = [
     mock: <OrdersMock />,
   },
   {
-    title: "Остатки и лимиты",
+    title: "Наличие и подзаказ",
     text: "Сколько порций готовы сделать — столько и продастся.",
     mock: <DropFormMock />,
   },
   {
-    title: "Автонапоминания",
+    title: "Своя база клиентов",
     text: "Клиент получает сообщение до открытия заказов.",
     mock: <PrepMock />,
   },
