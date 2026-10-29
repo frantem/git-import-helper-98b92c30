@@ -501,7 +501,8 @@ export default function ForSellers() {
             <div className="max-w-[660px]">
               <div className="mb-3 inline-block sm:mb-0">
                 <Pill>
-                  №1 платформа для{" "}
+                  №1 платформа для{" "}
+                  <br />
                   <span
                     className={`inline-block transition-all duration-300 ${
                       wordVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
