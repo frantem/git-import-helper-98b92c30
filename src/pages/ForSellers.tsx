@@ -232,7 +232,8 @@ type HeroSlide = {
 /** Кадры карусели первого экрана: ролик продавца и две витрины. */
 const heroSlides: HeroSlide[] = [
   {
-    imageSrc: bakery,
+    videoSrc: "/media/anna-bakery.mp4",
+    poster: bakery,
     avatarSrc: bakery,
     handle: "@anna.bakery",
     subtitle: "Витебск • Хлеб на закваске",
@@ -504,7 +505,7 @@ export default function ForSellers() {
                   №1 платформа для{" "}
                   <br />
                   <span
-                    className={`inline-block transition-all duration-300 ${
+                    className={`ml-1 inline-block transition-all duration-300 ${
                       wordVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
                     }`}
                   >
