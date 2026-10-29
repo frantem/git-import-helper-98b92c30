@@ -328,7 +328,7 @@ const testimonials = [
 
 const features = [
   {
-    title: "Своя витрина",
+    title: "Свой сайт",
     text: "Отдельный сайт с вашим именем, меню и историей.",
     mock: <StorefrontMock />,
   },
