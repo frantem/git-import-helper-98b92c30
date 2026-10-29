@@ -265,10 +265,10 @@ const steps = [
     mock: <StorefrontMock />,
   },
   {
-    title: "Расскажите всем, что теперь у Вас есть сайт",
+    title: "Создавайте фото из ваших товаров",
     bullets: [
       "Пользуйтесь генератором наличия что бы сделать красивые фото",
-      "Выложите их в Instagram, Telegram, Viber",
+      "Выкладывайте их в Instagram, Telegram, Viber",
     ],
     mock: <DropFormMock />,
   },
