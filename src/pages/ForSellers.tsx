@@ -515,7 +515,7 @@ export default function ForSellers() {
               </div>
 
               <h1 className="font-['Fraunces'] text-[33px] leading-[1.04] tracking-[-0.03em] sm:mt-6 sm:text-[52px] sm:leading-[1.02] lg:text-[64px]">
-                Свой сайт и приём заказов с телефона
+                Получайте заказы всегда и везде
               </h1>
 
               <p className="mt-3.5 max-w-[520px] text-[15.5px] leading-[1.45] text-[#6E6A63] sm:mt-5 sm:text-[19px] sm:leading-[1.5]">
@@ -575,7 +575,7 @@ export default function ForSellers() {
         <section id="how" className="scroll-mt-[70px] pb-20 pt-16 lg:pb-28 lg:pt-20">
           <Container>
             <div className="text-center">
-              <Pill>Опыт</Pill>
+              <Pill></Pill>
               <h2 className="mx-auto mt-6 max-w-[820px] font-['Fraunces'] text-[34px] leading-[1.06] tracking-[-0.02em] sm:text-[44px] lg:text-[56px]">
                 Как работает Locus
               </h2>
