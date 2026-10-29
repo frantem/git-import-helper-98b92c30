@@ -338,7 +338,7 @@ const features = [
     mock: <OrdersMock />,
   },
   {
-    title: "Наличие и подзаказ",
+    title: "Создание фото",
     text: "Сколько порций готовы сделать — столько и продастся.",
     mock: <DropFormMock />,
   },
