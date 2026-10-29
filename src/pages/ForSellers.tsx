@@ -215,6 +215,9 @@ function PrepMock() {
 /*  Данные страницы                                                    */
 /* ------------------------------------------------------------------ */
 
+/** Слова в бейдже первого экрана — меняются по кругу. */
+const badgeWords = ["кондитеров", "пекарней", "сыроварен", "фермеров", "поваров", "пасечников"];
+
 type HeroSlide = {
   videoSrc?: string;
   poster?: string;
@@ -383,6 +386,8 @@ const faq = [
 export default function ForSellers() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
+  const [wordIndex, setWordIndex] = useState(0);
+  const [wordVisible, setWordVisible] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
@@ -394,6 +399,23 @@ export default function ForSellers() {
     link.href =
       "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=Caveat:wght@600&display=swap";
     document.head.appendChild(link);
+  }, []);
+
+  // Бейдж первого экрана: слово меняется каждые 5 секунд с плавным переходом.
+  useEffect(() => {
+    let swap: number | undefined;
+    const tick = window.setInterval(() => {
+      setWordVisible(false);
+      swap = window.setTimeout(() => {
+        setWordIndex((i) => (i + 1) % badgeWords.length);
+        setWordVisible(true);
+      }, 300);
+    }, 5000);
+
+    return () => {
+      window.clearInterval(tick);
+      if (swap) window.clearTimeout(swap);
+    };
   }, []);
 
   return (
@@ -477,8 +499,17 @@ export default function ForSellers() {
         <section className="bg-[#FCFBF9] text-[#1A1A1A]">
           <Container className="grid gap-7 pb-12 pt-5 sm:gap-10 sm:pb-14 sm:pt-8 md:pt-12 lg:grid-cols-[1fr_412px] lg:items-center lg:gap-20 lg:pb-24 lg:pt-14">
             <div className="max-w-[660px]">
-              <div className="hidden sm:block">
-                <Pill>№1 платформа для кондитеров</Pill>
+              <div className="mb-3 inline-block sm:mb-0">
+                <Pill>
+                  №1 платформа для{" "}
+                  <span
+                    className={`inline-block transition-all duration-300 ${
+                      wordVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
+                    }`}
+                  >
+                    {badgeWords[wordIndex]}
+                  </span>
+                </Pill>
               </div>
 
               <h1 className="font-['Fraunces'] text-[33px] leading-[1.04] tracking-[-0.03em] sm:mt-6 sm:text-[52px] sm:leading-[1.02] lg:text-[64px]">
