@@ -233,12 +233,12 @@ type HeroSlide = {
 const heroSlides: HeroSlide[] = [
   {
     videoSrc: "/media/anna-bakery.mp4",
-    poster: bakery,
-    avatarSrc: bakery,
-    handle: "@anna.bakery",
-    subtitle: "Витебск • Хлеб на закваске",
+    poster: "/media/avatar.jpg",
+    avatarSrc: "/media/avatar.jpg",
+    handle: "@own_farmstead",
+    subtitle: "2.5k подписчиков",
     location: "г. Витебск",
-    caption: "Анна испекла 3000 буханок за первый год на Locus",
+    caption: "У Александра и Татьяны уже 30% заказывают через сайт",
   },
   {
     imageSrc: pastry,
