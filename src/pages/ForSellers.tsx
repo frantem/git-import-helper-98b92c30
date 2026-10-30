@@ -238,7 +238,7 @@ const heroSlides: HeroSlide[] = [
     handle: "@own_farmstead",
     subtitle: "2.5k подписчиков",
     location: "г. Витебск",
-    caption: "У Александра и Татьяны уже 30% заказывают через сайт",
+    caption: "У Александра и Татьяны уже 30% заказов через сайт",
   },
   {
     imageSrc: pastry,
