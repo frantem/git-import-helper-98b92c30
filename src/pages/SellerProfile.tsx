@@ -343,7 +343,12 @@ export default function SellerProfile() {
 
         <div className="px-3 pt-2">
           {/* 3. Хиты продавца */}
-          <SellerHits products={hits as never} requiredFieldIds={requiredFieldIds} onOpenProduct={(p) => setSheetProduct(p as never)} />
+          <SellerHits
+            products={hits as never}
+            requiredFieldIds={requiredFieldIds}
+            pickupLabels={pickupLabels}
+            onOpenProduct={(p) => setSheetProduct(p as never)}
+          />
 
           {/* 4. Акции и наборы */}
           <SellerPromos promos={pageContent?.promos || []} />

@@ -9,6 +9,8 @@ interface SellerHitsProps {
   requiredFieldIds?: Set<string>;
   /** Открыть быстрый просмотр товара, не уходя с витрины. */
   onOpenProduct?: (product: Product) => void;
+  /** Ближайший день выдачи по товару: id → «Сегодня» / «Завтра» / дата. */
+  pickupLabels?: Map<string, string>;
 }
 
 /**
@@ -17,7 +19,7 @@ interface SellerHitsProps {
  * На телефоне это горизонтальная лента с прилипанием: покупка в один тап
  * и счётчик количества работают одинаково в обоих блоках.
  */
-export const SellerHits = memo(function SellerHits({ products, requiredFieldIds, onOpenProduct }: SellerHitsProps) {
+export const SellerHits = memo(function SellerHits({ products, requiredFieldIds, onOpenProduct, pickupLabels }: SellerHitsProps) {
   if (products.length === 0) return null;
 
   return (
@@ -37,6 +39,7 @@ export const SellerHits = memo(function SellerHits({ products, requiredFieldIds,
             key={product.id}
             product={product}
             hasRequiredFields={requiredFieldIds?.has(product.id)}
+            pickupLabel={pickupLabels?.get(product.id)}
             priority={index < 2}
             onOpen={onOpenProduct ? () => onOpenProduct(product) : undefined}
             className="snap-start"

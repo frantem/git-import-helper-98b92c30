@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Heart } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Heart, Truck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
@@ -7,6 +7,17 @@ import { cn } from "@/lib/utils";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+
+/** «~30мин. / ~3ч. / ~2дн.» — как на главной странице маркетплейса. */
+function formatPrepTime(prepMinutes?: number, leadHours?: number): { label: string; isInStock: boolean } {
+  const totalMinutes = (prepMinutes || 0) + (leadHours || 0) * 60;
+  if (totalMinutes === 0) return { label: "В наличии", isInStock: true };
+  if (totalMinutes < 60) return { label: `~${totalMinutes}мин.`, isInStock: false };
+  const hours = Math.round(totalMinutes / 60);
+  if (hours < 24) return { label: `~${hours}ч.`, isInStock: false };
+  const days = Math.round(hours / 24);
+  return { label: `~${days}дн.`, isInStock: false };
+}
 
 interface SellerProductCardProps {
   product: Product;
@@ -102,6 +113,14 @@ export const SellerProductCard = memo(function SellerProductCard({
   const unitLabel = product.unit?.replace(/[,\s]+$/, "").trim();
   // Единственный текст статуса, который остаётся: товара нет в наличии
   const isOutOfStock = pickupLabel === "Нет в наличии";
+
+  // Время получения: сначала готовый бейдж дня выдачи, иначе расчёт по срокам товара
+  const deliveryTimeText =
+    pickupLabel && pickupLabel !== "Нет в наличии"
+      ? pickupLabel
+      : formatPrepTime(product.prep_time_minutes, product.order_lead_time_hours).label;
+  const isFast =
+    deliveryTimeText === "Сегодня" || deliveryTimeText === "Завтра" || deliveryTimeText === "В наличии";
 
   const saveAnchor = (e?: React.MouseEvent | React.TouchEvent) => {
     try {
@@ -200,6 +219,23 @@ export const SellerProductCard = memo(function SellerProductCard({
             {oldPriceFormatted.formatted}
             <BynSymbol />
           </span>
+        )}
+
+        {!isOutOfStock && (
+          <div className="mt-auto flex items-center gap-1 pt-1.5 text-[11px] leading-tight">
+            <Truck
+              className={cn("h-3 w-3 shrink-0", isFast ? "text-emerald-600" : "text-muted-foreground")}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                "truncate",
+                isFast ? "font-medium text-emerald-700 dark:text-emerald-400" : "text-muted-foreground",
+              )}
+            >
+              {deliveryTimeText}
+            </span>
+          </div>
         )}
 
         {quantity === 0 ? (
