@@ -241,12 +241,13 @@ const heroSlides: HeroSlide[] = [
     caption: "У Александра и Татьяны уже 30% заказов через сайт",
   },
   {
-    imageSrc: pastry,
-    avatarSrc: pastry,
-    handle: "@tortik.vitebsk",
-    subtitle: "Витебск • Домашние десерты",
+    videoSrc: "/media/chocoberry.mp4",
+    poster: "/media/avatar-chocoberry.jpg",
+    avatarSrc: "/media/avatar-chocoberry.jpg",
+    handle: "@chocoberry_vtb",
+    subtitle: "7.6k подписчиков",
     location: "г. Витебск",
-    caption: "Заказы приходят сами — остаётся только печь",
+    caption: "Это гораздо удобнее блокнота!",
   },
   {
     imageSrc: cheese,
