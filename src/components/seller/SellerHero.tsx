@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { Instagram, MapPin, MessageCircle, Package, Star } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronRight, Instagram, MapPin, MessageCircle, Package, Star } from "lucide-react";
 import { cleanSellerName } from "@/lib/sellerName";
 import { cdnImage } from "@/lib/imageCdn";
 import { cn } from "@/lib/utils";
@@ -15,8 +16,10 @@ function ordersWord(n: number) {
 
 interface SellerHeroProps {
   name: string;
-  /** Короткая фраза-доказательство: одна строка, не больше двух. */
-  uniqueFact?: string | null;
+  /** Обложка магазина: hero_media_url или фото первого товара. */
+  coverUrl?: string | null;
+  /** Короткое описание или уникальный факт — до двух строк. */
+  description?: string | null;
   locationLabel?: string | null;
   rating?: number | null;
   reviewCount?: number;
@@ -24,6 +27,8 @@ interface SellerHeroProps {
   /** Количество активных товаров — от него зависит статус «принимает заказы». */
   productsCount?: number;
   avatarUrl?: string | null;
+  /** Слаг продавца для перехода в отзывы. */
+  sellerSlug?: string | null;
   /** Готовая ссылка на мессенджер продавца (tel:, viber:, t.me, wa.me). */
   contactHref?: string | null;
   /** Ник в Instagram из контактов продавца. */
@@ -31,21 +36,21 @@ interface SellerHeroProps {
 }
 
 /**
- * Компактная шапка страницы продавца.
- *
- * Задача — отдать первый экран товарам: здесь только имя, статус, рейтинг
- * и кнопка связи. Высота ~110 px вместо прежнего баннера на 420 px,
- * поэтому на телефоне 393×852 под шапкой сразу видны карточки еды.
+ * Шапка магазина продавца: обложка, наплывающий аватар, имя, рейтинг,
+ * короткое описание и плашка статуса. Держим её компактной, чтобы
+ * на телефоне сразу под шапкой начинались товары.
  */
 export const SellerHero = memo(function SellerHero({
   name,
-  uniqueFact,
+  coverUrl,
+  description,
   locationLabel,
   rating,
   reviewCount = 0,
   ordersCount,
   productsCount = 0,
   avatarUrl,
+  sellerSlug,
   contactHref,
   instagram,
 }: SellerHeroProps) {
@@ -54,96 +59,133 @@ export const SellerHero = memo(function SellerHero({
   const instagramHandle = instagram?.trim().replace(/^@/, "").replace(/\/$/, "") || null;
   const showRating = !!rating && rating > 0;
   const acceptsOrders = productsCount > 0;
+  const reviewsHref = sellerSlug ? `/seller/${sellerSlug}/reviews` : null;
 
   return (
     <section className="px-3 pt-2">
-      <div className="rounded-2xl bg-card px-3 py-2.5 shadow-sm ring-1 ring-black/[0.04]">
-        <div className="flex items-center gap-2.5">
-          {avatarUrl ? (
-            <img
-              src={cdnImage(avatarUrl, "thumb")}
-              alt={displayName}
-              className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-[hsl(var(--seller-accent))]/40"
-              loading="eager"
-              decoding="async"
-            />
-          ) : (
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-[16px] font-bold text-primary-foreground">
-              {displayName.trim().charAt(0).toUpperCase()}
-            </span>
+      {/* Обложка */}
+      <div className="relative overflow-hidden rounded-2xl bg-[hsl(var(--seller-deep))]">
+        {coverUrl ? (
+          <img
+            src={cdnImage(coverUrl, "banner")}
+            alt=""
+            className="h-36 w-full object-cover sm:h-44"
+            loading="eager"
+            decoding="async"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="h-36 w-full bg-[radial-gradient(circle_at_20%_20%,hsl(var(--seller-accent))_0%,transparent_55%),radial-gradient(circle_at_80%_60%,hsl(var(--seller-accent))_0%,transparent_50%)] opacity-70 sm:h-44"
+          />
+        )}
+
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
+          {instagramHandle && (
+            <a
+              href={`https://instagram.com/${instagramHandle}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Instagram @${instagramHandle}`}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-transform active:scale-95"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
           )}
-
-          <div className="min-w-0 flex-1">
-            <h1 className="line-clamp-2 text-[16.5px] font-bold leading-snug text-foreground">
-              {displayName}
-            </h1>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-tight">
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 font-semibold",
-                  acceptsOrders ? "text-emerald-700" : "text-muted-foreground",
-                )}
-              >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    acceptsOrders ? "bg-emerald-600" : "bg-muted-foreground",
-                  )}
-                />
-                {acceptsOrders ? "Принимает заказы" : "Нет товаров"}
-              </span>
-              {cleanLocation && (
-                <span className="inline-flex items-center gap-0.5 text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {cleanLocation}
-                </span>
-              )}
-              {showRating && (
-                <span className="inline-flex items-center gap-0.5 font-medium text-foreground">
-                  <Star className="h-3 w-3 fill-accent text-accent" />
-                  {rating!.toFixed(1)}
-                  {reviewCount > 0 && (
-                    <span className="font-normal text-muted-foreground">({reviewCount})</span>
-                  )}
-                </span>
-              )}
-              {instagramHandle && (
-                <a
-                  href={`https://instagram.com/${instagramHandle}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex max-w-[110px] items-center gap-0.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Instagram className="h-3 w-3 shrink-0" />
-                  <span className="truncate">@{instagramHandle}</span>
-                </a>
-              )}
-              {!!ordersCount && ordersCount > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-muted-foreground">
-                  <Package className="h-3 w-3" />
-                  {ordersCount} {ordersWord(ordersCount)}
-                </span>
-              )}
-            </div>
-          </div>
-
           {contactHref && (
             <a
               href={contactHref}
               aria-label="Написать продавцу"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] text-primary-foreground transition-transform active:scale-95"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-transform active:scale-95"
             >
               <MessageCircle className="h-4 w-4" />
             </a>
           )}
         </div>
+      </div>
 
-        {uniqueFact?.trim() && (
-          <p className="mt-2 line-clamp-2 pl-[42px] text-[11.5px] leading-snug text-muted-foreground">
-            {uniqueFact}
+      {/* Аватар с наплывом на обложку */}
+      <div className="-mt-10 flex justify-center sm:-mt-11">
+        <div className="h-20 w-20 overflow-hidden rounded-full bg-card shadow-md ring-4 ring-card sm:h-[88px] sm:w-[88px]">
+          {avatarUrl ? (
+            <img
+              src={cdnImage(avatarUrl, "thumb")}
+              alt={displayName}
+              className="h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center bg-[hsl(var(--seller-deep))] text-[28px] font-bold text-primary-foreground">
+              {displayName.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <h1 className="mt-2 px-4 text-center text-lg font-bold leading-tight text-foreground sm:text-xl">
+        {displayName}
+      </h1>
+
+      {/* Рейтинг или первый заказ */}
+      {showRating ? (
+        reviewsHref ? (
+          <Link
+            to={reviewsHref}
+            className="mx-auto mt-1 flex items-center justify-center gap-1 text-[13px] font-semibold text-foreground"
+          >
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+            {rating!.toFixed(1)}
+            {reviewCount > 0 && (
+              <span className="font-normal text-muted-foreground">( {reviewCount} )</span>
+            )}
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+          </Link>
+        ) : (
+          <p className="mt-1 flex items-center justify-center gap-1 text-[13px] font-semibold text-foreground">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+            {rating!.toFixed(1)}
           </p>
-        )}
+        )
+      ) : (
+        <p className="mt-1 flex items-center justify-center gap-1 text-[12px] font-medium text-muted-foreground">
+          <Package className="h-3.5 w-3.5" aria-hidden="true" />
+          {ordersCount && ordersCount > 0
+            ? `${ordersCount} ${ordersWord(ordersCount)} на Locus`
+            : "Новый продавец"}
+        </p>
+      )}
+
+      {description?.trim() && (
+        <p className="mx-auto mt-1.5 line-clamp-2 max-w-md px-4 text-center text-[12.5px] leading-snug text-muted-foreground sm:text-sm">
+          {description}
+        </p>
+      )}
+
+      {/* Статус и условия */}
+      <div className="mt-2.5 flex justify-center">
+        <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-secondary/70 px-3.5 py-1.5 text-[11.5px] font-medium text-foreground/90 shadow-sm sm:text-xs">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 shrink-0 rounded-full",
+              acceptsOrders ? "bg-emerald-500" : "bg-muted-foreground",
+            )}
+            aria-hidden="true"
+          />
+          <span className="whitespace-nowrap">{acceptsOrders ? "Принимает заказы" : "Под заказ"}</span>
+
+          {cleanLocation && (
+            <>
+              <span className="text-muted-foreground/50" aria-hidden="true">
+                ·
+              </span>
+              <span className="inline-flex min-w-0 items-center gap-0.5">
+                <MapPin className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="truncate">{cleanLocation}</span>
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </section>
   );

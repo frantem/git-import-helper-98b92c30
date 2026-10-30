@@ -309,13 +309,19 @@ export default function SellerProfile() {
       {/* 1. Компактная шапка: имя, статус, рейтинг, связь */}
       <SellerHero
         name={farmer.name}
-        uniqueFact={farmer.unique_fact}
+        coverUrl={
+          farmer.hero_media_url && farmer.hero_media_type !== "video"
+            ? farmer.hero_media_url
+            : products[0]?.image ?? null
+        }
+        description={farmer.unique_fact || farmer.description}
         locationLabel={locationLabel}
         rating={averageRating ?? farmer.rating}
         reviewCount={totalReviewCount}
         ordersCount={ordersCount}
         productsCount={products.length}
         avatarUrl={farmer.photo_url}
+        sellerSlug={sellerSlug}
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
         instagram={farmer.contacts?.instagram}
       />
