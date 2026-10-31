@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface SellerVideoCardProps {
   /** Ссылка на вертикальный ролик продавца. Меняется одной строкой. */
@@ -96,7 +97,14 @@ export function SellerVideoCard({
               </span>
             )}
             <div className="min-w-0 text-white">
-              <p className="truncate text-[14.5px] font-semibold leading-tight">{handle}</p>
+              <p
+                className={cn(
+                  "truncate font-semibold leading-tight",
+                  handle.length > 18 ? "text-[12px]" : "text-[14.5px]",
+                )}
+              >
+                {handle}
+              </p>
               <p className="truncate text-[11.5px] leading-tight text-white/80">{subtitle}</p>
             </div>
           </div>

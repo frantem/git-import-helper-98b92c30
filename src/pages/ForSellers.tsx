@@ -250,12 +250,13 @@ const heroSlides: HeroSlide[] = [
     caption: "Это гораздо удобнее блокнота!",
   },
   {
-    imageSrc: cheese,
-    avatarSrc: cheese,
-    handle: "@svoe_podvorie",
-    subtitle: "Витебск • Домашний сыр",
+    videoSrc: "/media/vkusno.mp4",
+    poster: "/media/avatar-vkusno.jpg",
+    avatarSrc: "/media/avatar-vkusno.jpg",
+    handle: "@vkusno_kak_doma_vitebsk",
+    subtitle: "4.8k подписчиков",
     location: "г. Витебск",
-    caption: "Сыр разбирают за вечер — переписка больше не нужна",
+    caption: "Меня часто благодарят покупатели, что теперь так просто сделать заказ",
   },
 ];
 
@@ -388,6 +389,8 @@ const faq = [
 export default function ForSellers() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
+  const [heroKey, setHeroKey] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
   const [wordVisible, setWordVisible] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -402,6 +405,20 @@ export default function ForSellers() {
       "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=Caveat:wght@600&display=swap";
     document.head.appendChild(link);
   }, []);
+
+  // Слайды первого экрана листаются сами каждые 5 секунд: пауза при наведении,
+  // в скрытой вкладке и при включённом «уменьшении движения».
+  useEffect(() => {
+    if (heroPaused) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const tick = window.setInterval(() => {
+      if (document.hidden) return;
+      setHeroSlide((i) => (i + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => window.clearInterval(tick);
+  }, [heroPaused, heroKey]);
 
   // Бейдж первого экрана: слово меняется каждые 5 секунд с плавным переходом.
   useEffect(() => {
@@ -532,14 +549,21 @@ export default function ForSellers() {
               </div>
             </div>
 
-            <div className="w-full">
+            <div
+              className="w-full"
+              onMouseEnter={() => setHeroPaused(true)}
+              onMouseLeave={() => setHeroPaused(false)}
+            >
               <SellerVideoCard {...heroSlides[heroSlide]} />
 
               <div className="mt-5 flex items-center justify-center gap-4">
                 <button
                   type="button"
                   aria-label="Предыдущий слайд"
-                  onClick={() => setHeroSlide((i) => (i - 1 + heroSlides.length) % heroSlides.length)}
+                  onClick={() => {
+                    setHeroSlide((i) => (i - 1 + heroSlides.length) % heroSlides.length);
+                    setHeroKey((k) => k + 1);
+                  }}
                   className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#E5453D] ring-1 ring-[#E7E2D8] transition-colors hover:bg-[#E5453D] hover:text-white"
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -552,7 +576,10 @@ export default function ForSellers() {
                       type="button"
                       aria-label={`Слайд ${i + 1}`}
                       aria-current={i === heroSlide}
-                      onClick={() => setHeroSlide(i)}
+                      onClick={() => {
+                        setHeroSlide(i);
+                        setHeroKey((k) => k + 1);
+                      }}
                       className={`h-[3px] rounded-full transition-all ${i === heroSlide ? "w-8 bg-[#E5453D]" : "w-8 bg-[#DCD6C9] hover:bg-[#C9C2B2]"}`}
                     />
                   ))}
@@ -561,7 +588,10 @@ export default function ForSellers() {
                 <button
                   type="button"
                   aria-label="Следующий слайд"
-                  onClick={() => setHeroSlide((i) => (i + 1) % heroSlides.length)}
+                  onClick={() => {
+                    setHeroSlide((i) => (i + 1) % heroSlides.length);
+                    setHeroKey((k) => k + 1);
+                  }}
                   className="grid h-9 w-9 place-items-center rounded-full bg-[#E5453D] text-white transition-colors hover:bg-[#D43830]"
                 >
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
