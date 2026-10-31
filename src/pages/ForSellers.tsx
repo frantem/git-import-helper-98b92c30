@@ -389,7 +389,6 @@ const faq = [
 export default function ForSellers() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
-  const [heroPaused, setHeroPaused] = useState(false);
   const [heroKey, setHeroKey] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
   const [wordVisible, setWordVisible] = useState(true);
@@ -409,7 +408,6 @@ export default function ForSellers() {
   // Слайды первого экрана листаются сами каждые 5 секунд: пауза при наведении,
   // в скрытой вкладке и при включённом «уменьшении движения».
   useEffect(() => {
-    if (heroPaused) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const tick = window.setInterval(() => {
@@ -418,7 +416,7 @@ export default function ForSellers() {
     }, 5000);
 
     return () => window.clearInterval(tick);
-  }, [heroPaused, heroKey]);
+  }, [heroKey]);
 
   // Бейдж первого экрана: слово меняется каждые 5 секунд с плавным переходом.
   useEffect(() => {
@@ -549,12 +547,10 @@ export default function ForSellers() {
               </div>
             </div>
 
-            <div
-              className="w-full"
-              onMouseEnter={() => setHeroPaused(true)}
-              onMouseLeave={() => setHeroPaused(false)}
-            >
-              <SellerVideoCard {...heroSlides[heroSlide]} />
+            <div className="w-full">
+              <div key={heroSlide} className="hp-slide-in">
+                <SellerVideoCard {...heroSlides[heroSlide]} />
+              </div>
 
               <div className="mt-5 flex items-center justify-center gap-4">
                 <button

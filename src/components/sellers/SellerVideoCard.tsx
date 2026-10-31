@@ -23,7 +23,6 @@ export interface SellerVideoCardProps {
 export function SellerVideoCard({
   videoSrc,
   imageSrc,
-  poster,
   avatarSrc,
   handle,
   subtitle,
@@ -32,6 +31,7 @@ export function SellerVideoCard({
 }: SellerVideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
+  const [ready, setReady] = useState(!videoSrc);
   const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
@@ -59,18 +59,29 @@ export function SellerVideoCard({
           <video
             ref={videoRef}
             src={videoSrc}
-            poster={poster}
             playsInline
             muted
             loop
             autoPlay={!reduced}
-            preload="metadata"
-            className="absolute inset-0 h-full w-full object-cover object-bottom"
+            preload="auto"
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover object-bottom transition-opacity duration-300",
+              ready ? "opacity-100" : "opacity-0",
+            )}
+            onLoadedData={() => setReady(true)}
+            onCanPlay={() => setReady(true)}
             onPlay={() => setPaused(false)}
             onPause={() => setPaused(true)}
           />
         ) : (
           <img src={imageSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+
+        {/* Загрузка как в Instagram: тёмный кадр и крутящийся индикатор */}
+        {videoSrc && !ready && (
+          <div aria-hidden="true" className="absolute inset-0 grid place-items-center bg-[#171717]">
+            <span className="hp-spinner" />
+          </div>
         )}
 
         {/* Градиенты под текст */}
