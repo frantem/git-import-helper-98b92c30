@@ -67,6 +67,22 @@ function MockShell({ children }: { children: ReactNode }) {
   );
 }
 
+function LinkShowcaseMock() {
+  return (
+    <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
+      <iframe
+        src="/showcase/link-showcase.html"
+        loading="lazy"
+        scrolling="no"
+        tabIndex={-1}
+        style={{ border: 0, pointerEvents: "none" }}
+        className="block h-full w-full"
+        title="Из Instagram на сайт продавца"
+      />
+    </div>
+  );
+}
+
 function StorefrontMock() {
   const items = [
     { img: pastry, title: "Круассаны с миндалём", price: "9,90 BYN" },
@@ -268,7 +284,7 @@ const steps = [
       "Поставьте ссылку в Instagram, Telegram, Viber",
       "Расскажите покупателям, что теперь у вас есть удобный сайт для приёма заказов",
     ],
-    mock: <StorefrontMock />,
+    mock: <LinkShowcaseMock />,
   },
   {
     title: "Клиенты заказывают сами - без переписок\n",
