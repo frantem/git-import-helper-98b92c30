@@ -713,6 +713,7 @@ export default function ForSellers() {
         </section>
 
         {/* ---------------------------- Отзывы ---------------------------- */}
+        {SHOW_REVIEWS_SECTION && (
         <section id="reviews" className="scroll-mt-[70px] bg-[#FCFBF9] py-14 lg:py-20">
           <Container>
             <CardCarousel pill="Ежемесячно более 100 заказов через сайт" title="Уже более 40 поваров и пекарей ">
