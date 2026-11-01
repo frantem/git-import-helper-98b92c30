@@ -731,6 +731,7 @@ export default function ForSellers() {
             </CardCarousel>
           </Container>
         </section>
+        )}
 
         {/* --------------------------- Что входит --------------------------- */}
         <section id="included" className="scroll-mt-[70px] bg-[#EFEDE7] py-14 lg:py-20">
