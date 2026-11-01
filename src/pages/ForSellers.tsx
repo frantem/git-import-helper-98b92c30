@@ -67,6 +67,22 @@ function MockShell({ children }: { children: ReactNode }) {
   );
 }
 
+function OrderShowcaseMock() {
+  return (
+    <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
+      <iframe
+        src="/showcase/order-showcase.html"
+        loading="lazy"
+        scrolling="no"
+        tabIndex={-1}
+        style={{ border: 0, pointerEvents: "none" }}
+        className="block h-full w-full"
+        title="Покупатель оформляет заказ"
+      />
+    </div>
+  );
+}
+
 function LinkShowcaseMock() {
   return (
     <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
@@ -292,7 +308,7 @@ const steps = [
       "Покупатели 24/7 заходят на ваш сайт и видят наличие, цены, состав - сразу делают заказ",
       "Контакты покупателя приходят вместе с заказом Вам",
     ],
-    mock: <DropFormMock />,
+    mock: <OrderShowcaseMock />,
   },
   {
     title: "Вы выдаёте заказы без стресса",
