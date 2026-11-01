@@ -400,7 +400,14 @@ const features = [
   {
     title: "Свой сайт для приёма заказов",
     text: "Отдельный сайт с вашим именем, меню и историей.",
-    mock: <StorefrontMock />,
+    mock: (
+      <img
+        src="/media/site-preview.jpg"
+        alt="Витрина продавца: шапка магазина, категории и хиты продаж"
+        className="block w-full"
+        loading="lazy"
+      />
+    ),
   },
   {
     title: "Отзывы и лояльность",
