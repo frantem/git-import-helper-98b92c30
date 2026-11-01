@@ -758,7 +758,7 @@ export default function ForSellers() {
                 to={applicationPath}
                 className="mt-6 inline-flex h-11 items-center rounded-full bg-[#FB4545] px-6 text-[13px] font-medium text-white transition hover:bg-[#E83C3C]"
               >
-                Написать команде Locus
+                Начать продавать
               </Link>
             </div>
 
