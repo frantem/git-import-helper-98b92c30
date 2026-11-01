@@ -67,6 +67,22 @@ function MockShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ImageShowcaseMock() {
+  return (
+    <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
+      <iframe
+        src="/showcase/image-showcase.html"
+        loading="lazy"
+        scrolling="no"
+        tabIndex={-1}
+        style={{ border: 0, pointerEvents: "none" }}
+        className="block h-full w-full"
+        title="Красивые изображения из ваших товаров"
+      />
+    </div>
+  );
+}
+
 function IssueShowcaseMock() {
   return (
     <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
@@ -341,7 +357,7 @@ const steps = [
       "Выбираете фон и скачиваете готовое красивое изображение ",
       "Выкладывайте в Instagram, Telegram, Viber",
     ],
-    mock: <PrepMock />,
+    mock: <ImageShowcaseMock />,
   },
 ];
 
