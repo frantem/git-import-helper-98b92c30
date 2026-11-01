@@ -10,6 +10,8 @@ import cheese from "@/assets/sellers-cheese.jpg";
 import pastry from "@/assets/sellers-pastry.jpg";
 
 const applicationPath = "/seller-application";
+// Показать блок отзывов «Уже более 40 поваров и пекарей» — вернуть в true.
+const SHOW_REVIEWS_SECTION = false;
 
 const serviceJsonLd = {
   "@context": "https://schema.org",
@@ -711,6 +713,7 @@ export default function ForSellers() {
         </section>
 
         {/* ---------------------------- Отзывы ---------------------------- */}
+        {SHOW_REVIEWS_SECTION && (
         <section id="reviews" className="scroll-mt-[70px] bg-[#FCFBF9] py-14 lg:py-20">
           <Container>
             <CardCarousel pill="Ежемесячно более 100 заказов через сайт" title="Уже более 40 поваров и пекарей ">
@@ -728,15 +731,14 @@ export default function ForSellers() {
             </CardCarousel>
           </Container>
         </section>
+        )}
 
         {/* --------------------------- Что входит --------------------------- */}
         <section id="included" className="scroll-mt-[70px] bg-[#EFEDE7] py-14 lg:py-20">
           <Container>
             <CardCarousel pill="Платформа" title="Что входит в Locus?">
               {features.map((f) => (
-                <FeatureCard key={f.title} title={f.title} image={f.image}>
-                  {f.mock}
-                </FeatureCard>
+                <FeatureCard key={f.title} title={f.title} image={f.image} />
               ))}
             </CardCarousel>
           </Container>

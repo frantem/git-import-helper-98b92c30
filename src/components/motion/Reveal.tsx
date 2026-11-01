@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, ElementType } from "react";
 import { useInView, usePrefersReducedMotion } from "./useMotion";
 
 type RevealProps = {
@@ -15,7 +15,7 @@ type RevealProps = {
 export function Reveal({ children, delay = 0, className = "", as = "div" }: RevealProps) {
   const reduced = usePrefersReducedMotion();
   const { ref, inView } = useInView<HTMLDivElement>(true);
-  const Tag = as;
+  const Tag = as as ElementType;
 
   return (
     <Tag
