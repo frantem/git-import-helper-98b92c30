@@ -77,7 +77,7 @@ function ImageShowcaseMock() {
         tabIndex={-1}
         style={{ border: 0, pointerEvents: "none" }}
         className="block h-full w-full"
-        title="Красивые изображения из ваших товаров"
+        title="Готовое изображение из товаров"
       />
     </div>
   );
