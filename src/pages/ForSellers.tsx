@@ -738,9 +738,7 @@ export default function ForSellers() {
           <Container>
             <CardCarousel pill="Платформа" title="Что входит в Locus?">
               {features.map((f) => (
-                <FeatureCard key={f.title} title={f.title} image={f.image}>
-                  {f.mock}
-                </FeatureCard>
+                <FeatureCard key={f.title} title={f.title} image={f.image} />
               ))}
             </CardCarousel>
           </Container>
