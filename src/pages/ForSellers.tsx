@@ -810,7 +810,7 @@ export default function ForSellers() {
             to={applicationPath}
             className="mt-8 inline-flex h-12 items-center rounded-full bg-white px-6 text-[13.5px] font-medium text-[#141414] transition hover:bg-[#F6F3EC]"
           >
-            Начать продавать
+            Попробовать
           </Link>
 
           <div className="mt-16 flex flex-col gap-4 border-t border-white/25 pt-6 text-[12.5px] text-white/85 sm:flex-row sm:items-center sm:justify-between">
