@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LOCUS — выдача заказов без стресса</title>
+<style>
+  :root{
+    --green:#234837; --lime:#ABDB09; --cream:#F7F4EC; --ink:#1A1A16;
+    --muted:#7C776A; --line:#EAE5D8; --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#EDEAE2;font-family:Inter,'Helvetica Neue',Arial,sans-serif;
+            overflow:hidden;-webkit-font-smoothing:antialiased}
+  #card{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+        background:radial-gradient(120% 100% at 50% 0%,#F4F1E9 0%,#EDEAE2 62%,#E7E3D8 100%);overflow:hidden}
+  #stage{position:absolute;left:50%;top:50%;width:370px;height:320px;transform-origin:center center;transform:translate(-50%,-50%) scale(1)}
+
+  .panel{position:absolute;left:15px;top:10px;width:340px;height:300px;border-radius:20px;background:var(--cream);
+         overflow:hidden;
+         box-shadow:0 18px 40px rgba(38,34,26,.15),0 3px 10px rgba(38,34,26,.09),0 0 0 1px rgba(38,34,26,.05);
+         padding:12px 12px 10px;display:flex;flex-direction:column}
+
+  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .head .d{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.2px}
+  .head .d b{display:block;font-size:13.5px;color:var(--ink);font-weight:800;letter-spacing:-.2px;margin-top:1px}
+  .pill{background:#E7EFC9;color:#2C4010;font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:999px}
+
+  .list{display:flex;flex-direction:column;gap:4px;flex:1;justify-content:center}
+  .row{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+       border-radius:10px;padding:5px 7px;position:relative;transition:background .25s,border-color .25s}
+  .row .t{font-size:9.5px;font-weight:700;color:var(--muted);width:30px;flex:none;font-variant-numeric:tabular-nums}
+  .row .b{flex:1;min-width:0}
+  .row .w{font-size:10.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .i{font-size:9px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{flex:none;font-size:9px;font-weight:700;padding:5px 8px;border-radius:8px;background:var(--green);color:#fff;
+        white-space:nowrap}
+  .chip.wait{background:#EFEADE;color:#8A8474}
+  .row.done{background:#F1F6DF;border-color:#DDE9B9}
+  .row.done .w,.row.done .i{color:#9AA07F;text-decoration:line-through}
+  .row.done .t{color:#B4BA9A}
+  .okmark{position:absolute;right:8px;top:50%;width:22px;height:22px;margin-top:-11px;border-radius:50%;
+          background:var(--green);display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.5)}
+  .okmark svg{width:12px;height:12px}
+
+  .prep{background:#EFF3DE;border:1px solid #DFE7C2;border-radius:10px;padding:6px 8px;margin-bottom:6px}
+  .prep b{display:block;font-size:8px;letter-spacing:.4px;text-transform:uppercase;color:#7C8A4A;font-weight:800;margin-bottom:2px}
+  .prep span{font-size:9px;color:#3C451D;font-weight:600;line-height:1.25}
+  .foot{margin-top:0}
+  .foot .lbl{display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .foot .lbl b{color:var(--ink);font-weight:800}
+  .track{height:5px;border-radius:99px;background:#E6E1D3;overflow:hidden}
+  .track i{display:block;height:100%;width:0;border-radius:99px;background:var(--lime)}
+
+  #cur{position:absolute;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.38);
+       border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 14px rgba(40,36,28,.22);
+       backdrop-filter:blur(2px);z-index:9;opacity:0;pointer-events:none}
+  #cur:after{content:'';position:absolute;inset:8px;border-radius:50%;background:rgba(80,76,66,.4)}
+  #rip{position:absolute;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(35,72,55,.45);
+       opacity:0;z-index:8;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="card">
+  <div id="stage">
+    <div class="panel" id="panel">
+      <div class="head">
+        <div class="d">Заказы на день<b>Сегодня, 1 ноября</b></div>
+        <div class="pill">6 заказов</div>
+      </div>
+
+      <div class="list">
+        <div class="row" id="r1">
+          <div class="t">10:00</div>
+          <div class="b"><div class="w">Анна К.</div><div class="i">Сулугуни · 1 · Буррата · 2</div></div>
+          <div class="chip" data-chip>Выдать</div>
+          <div class="okmark"><svg viewBox="0 0 24 24" fill="none" stroke="#ABDB09" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        </div>
+        <div class="row" id="r2">
+          <div class="t">12:30</div>
+          <div class="b"><div class="w">Игорь П.</div><div class="i">Качакавалло · 1</div></div>
+          <div class="chip wait">Готовится</div>
+          <div class="okmark"><svg viewBox="0 0 24 24" fill="none" stroke="#ABDB09" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        </div>
+        <div class="row" id="r3">
+          <div class="t">15:00</div>
+          <div class="b"><div class="w">Мария С.</div><div class="i">Сулугуни · 2 · Фета · 1</div></div>
+          <div class="chip" data-chip>Выдать</div>
+          <div class="okmark"><svg viewBox="0 0 24 24" fill="none" stroke="#ABDB09" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        </div>
+        <div class="row" id="r4">
+          <div class="t">18:00</div>
+          <div class="b"><div class="w">Ольга В.</div><div class="i">Брюност · 1</div></div>
+          <div class="chip wait">Готовится</div>
+          <div class="okmark"><svg viewBox="0 0 24 24" fill="none" stroke="#ABDB09" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        </div>
+      </div>
+
+      <div class="prep">
+        <b>Приготовить сегодня</b>
+        <span>Сулугуни 3 · Буррата 2 · Фета 1 · Качакавалло 1 · Брюност 1</span>
+      </div>
+      <div class="foot">
+        <div class="lbl"><span>Выдано</span><span><b id="cnt">0</b> из 6</span></div>
+        <div class="track"><i id="prog"></i></div>
+      </div>
+    </div>
+    <div id="rip"></div>
+    <div id="cur"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const LOOP = 5.0;
+  const stage = document.getElementById('stage');
+  const panel = document.getElementById('panel');
+  const cur = document.getElementById('cur'), rip = document.getElementById('rip');
+  const cnt = document.getElementById('cnt'), prog = document.getElementById('prog');
+  const r1 = document.getElementById('r1'), r3 = document.getElementById('r3');
+
+  const ease = t => { t = Math.max(0, Math.min(1, t)); return t*t*(3-2*t); };
+  const lerp = (a,b,t) => a + (b-a)*t;
+
+  let P1 = {x:0,y:0}, P3 = {x:0,y:0};
+  function measure(){
+    const st = stage.getBoundingClientRect(), k = st.width / 400;
+    const at = el => { const r = el.getBoundingClientRect();
+      return { x:(r.left-st.left)/k + r.width/(2*k), y:(r.top-st.top)/k + r.height/(2*k) }; };
+    P1 = at(r1.querySelector('[data-chip]'));
+    P3 = at(r3.querySelector('[data-chip]'));
+  }
+
+  function setDone(row, on){
+    row.classList.toggle('done', on);
+    row.querySelector('.chip').style.opacity = on ? 0 : 1;
+    row.querySelector('.okmark').style.opacity = on ? 1 : 0;
+    row.querySelector('.okmark').style.transform = 'scale(' + (on ? 1 : 0.5) + ')';
+  }
+
+  function drawFrame(time){
+    const t = ((time % LOOP) + LOOP) % LOOP;
+
+    // появление карточки
+    const inP = t < 0.30 ? ease(t / 0.30) : 1;
+    const outP = t >= 4.60 ? ease((t - 4.60) / 0.32) : 0;
+    panel.style.opacity = inP * (1 - outP);
+
+    // отметки
+    const d1 = t >= 1.62;
+    const d2 = t >= 2.75;
+    setDone(r1, d1); setDone(r3, d2);
+
+    const n = (d1?1:0) + (d2?1:0);
+    cnt.textContent = n;
+    prog.style.width = (n/6*100) + '%';
+    prog.style.transition = 'width .35s ease';
+
+    // курсор
+    let cx = P1.x, cy = P1.y, show = 0, press = 0;
+    if (t >= 0.55 && t < 1.62){
+      const p = ease((t-0.55)/0.85);
+      cx = lerp(P1.x + 60, P1.x, p); cy = lerp(P1.y + 70, P1.y, p);
+      show = Math.min(1, (t-0.55)/0.25);
+    } else if (t >= 1.62 && t < 2.05){
+      show = 1; press = t < 1.74 ? (t-1.62)/0.12 : Math.max(0,1-(t-1.74)/0.2);
+    } else if (t >= 2.05 && t < 2.75){
+      const p = ease((t-2.05)/0.60);
+      cx = lerp(P1.x, P3.x, p); cy = lerp(P1.y, P3.y, p); show = 1;
+    } else if (t >= 2.75 && t < 3.18){
+      show = 1; press = t < 2.87 ? (t-2.75)/0.12 : Math.max(0,1-(t-2.87)/0.2);
+    } else if (t >= 3.5){
+      const p = ease((t-3.5)/0.6);
+      cx = lerp(P3.x, P3.x + 46, p); cy = lerp(P3.y, P3.y - 40, p); show = Math.max(0, 1-(t-3.5)/0.5);
+    }
+
+    cur.style.left = (cx - 11) + 'px';
+    cur.style.top  = (cy - 11) + 'px';
+    cur.style.opacity = show;
+    cur.style.transform = 'scale(' + (1 - 0.2*press) + ')';
+
+    // волны
+    let rt = -1, pt = null;
+    if (t >= 1.62 && t < 2.05){ rt = (t-1.62)/0.43; pt = P1; }
+    else if (t >= 2.75 && t < 3.18){ rt = (t-2.75)/0.43; pt = P3; }
+    if (rt >= 0 && pt){
+      rip.style.left = (pt.x - 15) + 'px'; rip.style.top = (pt.y - 15) + 'px';
+      rip.style.transform = 'scale(' + (0.5 + rt*2.0) + ')';
+      rip.style.opacity = 0.55 * (1-rt);
+    } else rip.style.opacity = 0;
+  }
+
+  window.drawFrame = drawFrame;
+  let start = null, running = true;
+  window.stopLoop = () => { running = false; };
+  function loop(ts){
+    if (!running) return;
+    if (start === null) start = ts;
+    drawFrame((ts - start)/1000);
+    requestAnimationFrame(loop);
+  }
+
+  function fit(){
+    const r = document.getElementById('card').getBoundingClientRect();
+    stage.style.transform = 'translate(-50%,-50%) scale(' + Math.min(r.width/370, r.height/320) + ')';
+  }
+  fit(); window.addEventListener('resize', () => { fit(); measure(); });
+  window.addEventListener('load', () => {
+    measure();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+    setTimeout(measure, 200);
+  });
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

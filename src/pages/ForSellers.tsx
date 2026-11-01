@@ -67,6 +67,22 @@ function MockShell({ children }: { children: ReactNode }) {
   );
 }
 
+function IssueShowcaseMock() {
+  return (
+    <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
+      <iframe
+        src="/showcase/issue-showcase.html"
+        loading="lazy"
+        scrolling="no"
+        tabIndex={-1}
+        style={{ border: 0, pointerEvents: "none" }}
+        className="block h-full w-full"
+        title="Выдача заказов"
+      />
+    </div>
+  );
+}
+
 function OrderShowcaseMock() {
   return (
     <div className="relative aspect-[353/326] overflow-hidden rounded-[20px] bg-[#EDEAE2] sm:aspect-[548/342]">
@@ -316,7 +332,7 @@ const steps = [
       "Готовый список на день: что и сколько приготовить",
       "Все заказы расписаны по календарю, Вы ничего не перепутаете",
     ],
-    mock: <OrdersMock />,
+    mock: <IssueShowcaseMock />,
   },
   {
     title: "Красивые изображения из ваших товаров",
