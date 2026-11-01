@@ -10,6 +10,8 @@ import cheese from "@/assets/sellers-cheese.jpg";
 import pastry from "@/assets/sellers-pastry.jpg";
 
 const applicationPath = "/seller-application";
+// Показать блок отзывов «Уже более 40 поваров и пекарей» — вернуть в true.
+const SHOW_REVIEWS_SECTION = false;
 
 const serviceJsonLd = {
   "@context": "https://schema.org",
