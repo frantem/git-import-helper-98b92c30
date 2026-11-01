@@ -400,19 +400,18 @@ const features = [
   {
     title: "Свой сайт для приёма заказов",
     text: "Отдельный сайт с вашим именем, меню и историей.",
-    mock: (
-      <img
-        src="/media/site-preview.jpg"
-        alt="Витрина продавца: шапка магазина, категории и хиты продаж"
-        className="block w-full"
-        loading="lazy"
-      />
-    ),
+    image: {
+      src: "/media/site-preview.jpg",
+      alt: "Витрина продавца: шапка магазина, категории и хиты продаж",
+    },
   },
   {
     title: "Отзывы и лояльность",
     text: "Клиенты оценивают заказ, а вы видите, кто возвращается.",
-    mock: <OrdersMock />,
+    image: {
+      src: "/media/reviews-preview.jpg",
+      alt: "Отзывы покупателей с оценками и фотографиями",
+    },
   },
   {
     title: "Создание фото",
@@ -729,7 +728,7 @@ export default function ForSellers() {
           <Container>
             <CardCarousel pill="Платформа" title="Что входит в Locus?">
               {features.map((f) => (
-                <FeatureCard key={f.title} title={f.title}>
+                <FeatureCard key={f.title} title={f.title} image={f.image}>
                   {f.mock}
                 </FeatureCard>
               ))}

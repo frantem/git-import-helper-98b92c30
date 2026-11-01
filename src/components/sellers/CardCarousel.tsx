@@ -140,13 +140,31 @@ export function ReviewCard({
 }
 
 /** Карточка возможностей: мокап интерфейса и серифный заголовок под ним. */
-export function FeatureCard({ title, children }: { title: string; children: ReactNode }) {
+export function FeatureCard({
+  title,
+  children,
+  image,
+}: {
+  title: string;
+  children?: ReactNode;
+  /** Готовый скриншот вместо макета — растягиваем на всю рамку. */
+  image?: { src: string; alt: string };
+}) {
   return (
     <article className={`${polaroidClass} w-[240px] sm:w-[300px] lg:w-[330px]`}>
       <div className="relative aspect-[4/3.8] overflow-hidden rounded-[10px] bg-[#EDEAE2]">
-        <div className="absolute inset-x-0 top-0 flex justify-center px-3 pt-4">
-          <div className="w-[400px] shrink-0 origin-top scale-[0.6] sm:scale-[0.72]">{children}</div>
-        </div>
+        {image ? (
+          <img
+            src={image.src}
+            alt={image.alt}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover object-top"
+          />
+        ) : (
+          <div className="absolute inset-x-0 top-0 flex justify-center px-3 pt-4">
+            <div className="w-[400px] shrink-0 origin-top scale-[0.6] sm:scale-[0.72]">{children}</div>
+          </div>
+        )}
       </div>
       <div className="px-3 pb-2 pt-4">
         <h3 className="font-['Fraunces'] text-[21px] leading-[1.1] tracking-[-0.01em]">{title}</h3>
