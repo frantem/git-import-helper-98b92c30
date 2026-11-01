@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, ElementType } from "react";
 import { useInView, usePrefersReducedMotion } from "./useMotion";
 
 type RevealProps = {
