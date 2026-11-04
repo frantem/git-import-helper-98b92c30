@@ -142,39 +142,6 @@ export default function SellerPage() {
     toast.success("Обложка сохранена");
   };
 
-  // ---- Акции ----
-  const addPromo = async () => {
-    if (!farmerId) return;
-    const { data, error } = await supabase
-      .from("seller_promos")
-      .insert({ farmer_id: farmerId, title: "Новая акция", sort_order: promos.length })
-      .select("id, title, description, image_url, link_url, sort_order, is_active")
-      .single();
-    if (error || !data) { toast.error("Не удалось добавить акцию"); return; }
-    setPromos((prev) => [...prev, data as PromoRow]);
-  };
-
-  const savePromo = async (promo: PromoRow) => {
-    const { error } = await supabase
-      .from("seller_promos")
-      .update({
-        title: promo.title,
-        description: promo.description,
-        image_url: promo.image_url,
-        link_url: promo.link_url,
-        sort_order: promo.sort_order,
-        is_active: promo.is_active,
-      })
-      .eq("id", promo.id);
-    if (error) { toast.error("Ошибка сохранения акции"); return; }
-    toast.success("Акция сохранена");
-  };
-
-  const deletePromo = async (id: string) => {
-    const { error } = await supabase.from("seller_promos").delete().eq("id", id);
-    if (error) { toast.error("Не удалось удалить"); return; }
-    setPromos((prev) => prev.filter((p) => p.id !== id));
-  };
 
   if (authLoading || isLoading) {
     return (
