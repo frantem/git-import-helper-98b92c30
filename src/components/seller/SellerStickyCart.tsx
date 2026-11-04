@@ -10,7 +10,16 @@ import { BynSymbol } from "@/components/ui/byn-symbol";
  * к нижнему краю экрана (навигации маркетплейса на витрине нет).
  * Один тап — сразу оформление.
  */
-export function SellerStickyCart({ farmerId, onCheckout }: { farmerId: string; onCheckout: () => void }) {
+export function SellerStickyCart({
+  farmerId,
+  onCheckout,
+  raised = false,
+}: {
+  farmerId: string;
+  onCheckout: () => void;
+  /** Поднять панель над нижним меню маркетплейса */
+  raised?: boolean;
+}) {
   const { totalItems, totalPrice, cartFarmerId } = useCart();
   const visible = cartFarmerId === farmerId && totalItems > 0;
 
@@ -22,7 +31,7 @@ export function SellerStickyCart({ farmerId, onCheckout }: { farmerId: string; o
     <>
       {/* Отступ, чтобы панель не перекрывала конец страницы */}
       <div aria-hidden className="h-20 md:h-24" />
-      <div className="fixed inset-x-0 bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))] z-40 px-3 md:bottom-5">
+      <div className={`fixed inset-x-0 z-40 px-3 md:bottom-5 ${raised ? "bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-5" : "bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))]"}`}>
         <button
           type="button"
           onClick={onCheckout}

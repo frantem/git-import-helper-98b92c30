@@ -15,6 +15,8 @@ import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
+import { BottomNavigation } from "@/components/BottomNavigation";
+import { useVisitorSource } from "@/hooks/useVisitorSource";
 import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
 import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
 
@@ -86,6 +88,10 @@ interface Product {
 export default function SellerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // Посетители маркетплейса видят нижнее меню и на витрине, трафик продавца — нет
+  const visitorSource = useVisitorSource();
+  const withMarketplaceNav = visitorSource !== "seller";
+
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [ordersCount, setOrdersCount] = useState<number | null>(null);
@@ -320,7 +326,7 @@ export default function SellerProfile() {
         instagram={farmer.contacts?.instagram}
       />
 
-      <main className="mx-auto w-full bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
+      <main className={`mx-auto w-full bg-[hsl(var(--seller-bg))] pt-1.5 ${withMarketplaceNav ? "pb-20 md:pb-2" : "pb-2"}`}>
         {/* 2. Условия получения — до каталога, чтобы снять страх доставки */}
         <SellerDelivery
           deliveryEnabled={farmer.delivery_enabled}
@@ -388,7 +394,8 @@ export default function SellerProfile() {
       </div>
 
       {/* 9. Плавающая корзина и быстрое оформление без регистрации */}
-      <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} />
+      <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} raised={withMarketplaceNav} />
+      <BottomNavigation />
 
       {checkoutOpen && (
         <SellerGuestCheckout
