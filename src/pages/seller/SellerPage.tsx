@@ -24,15 +24,6 @@ const THEMES: { value: string; label: string }[] = [
   { value: "sand", label: "Песок" },
 ];
 
-interface PromoRow {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  link_url: string | null;
-  sort_order: number;
-  is_active: boolean;
-}
 
 export default function SellerPage() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -57,8 +48,6 @@ export default function SellerPage() {
     contact_viber: "",
     contact_whatsapp: "",
   });
-
-  const [promos, setPromos] = useState<PromoRow[]>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -86,13 +75,6 @@ export default function SellerPage() {
       contact_viber: ((farmer as any).contacts as any)?.viber || "",
       contact_whatsapp: ((farmer as any).contacts as any)?.whatsapp || "",
     });
-    const { data: promosData } = await supabase
-      .from("seller_promos")
-      .select("id, title, description, image_url, link_url, sort_order, is_active")
-      .eq("farmer_id", farmer.id)
-      .order("sort_order");
-
-    setPromos((promosData as PromoRow[]) || []);
     setIsLoading(false);
   }, [user]);
 
@@ -160,39 +142,6 @@ export default function SellerPage() {
     toast.success("Обложка сохранена");
   };
 
-  // ---- Акции ----
-  const addPromo = async () => {
-    if (!farmerId) return;
-    const { data, error } = await supabase
-      .from("seller_promos")
-      .insert({ farmer_id: farmerId, title: "Новая акция", sort_order: promos.length })
-      .select("id, title, description, image_url, link_url, sort_order, is_active")
-      .single();
-    if (error || !data) { toast.error("Не удалось добавить акцию"); return; }
-    setPromos((prev) => [...prev, data as PromoRow]);
-  };
-
-  const savePromo = async (promo: PromoRow) => {
-    const { error } = await supabase
-      .from("seller_promos")
-      .update({
-        title: promo.title,
-        description: promo.description,
-        image_url: promo.image_url,
-        link_url: promo.link_url,
-        sort_order: promo.sort_order,
-        is_active: promo.is_active,
-      })
-      .eq("id", promo.id);
-    if (error) { toast.error("Ошибка сохранения акции"); return; }
-    toast.success("Акция сохранена");
-  };
-
-  const deletePromo = async (id: string) => {
-    const { error } = await supabase.from("seller_promos").delete().eq("id", id);
-    if (error) { toast.error("Не удалось удалить"); return; }
-    setPromos((prev) => prev.filter((p) => p.id !== id));
-  };
 
   if (authLoading || isLoading) {
     return (
@@ -397,102 +346,6 @@ export default function SellerPage() {
           </div>
         </section>
 
-        {/* Акции */}
-        <section className="mb-6 rounded-2xl bg-card p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-bold">Акции и наборы</h2>
-            <Button size="sm" variant="outline" onClick={addPromo}>
-              <Plus className="mr-1 h-4 w-4" /> Добавить
-            </Button>
-          </div>
-
-          {promos.length === 0 && (
-            <p className="text-sm text-muted-foreground">Пока нет акций</p>
-          )}
-
-          <div className="space-y-4">
-            {promos.map((promo, idx) => (
-              <div key={promo.id} className="rounded-xl border border-border p-3">
-                {promo.image_url && (
-                  <img
-                    src={cdnImage(promo.image_url, "card")}
-                    alt=""
-                    className="mb-2 h-32 w-full rounded-lg object-cover"
-                  />
-                )}
-                <Input
-                  className="mb-2"
-                  value={promo.title}
-                  placeholder="Заголовок"
-                  onChange={(e) =>
-                    setPromos((prev) => prev.map((p, i) => (i === idx ? { ...p, title: e.target.value } : p)))
-                  }
-                />
-                <Textarea
-                  className="mb-2"
-                  rows={3}
-                  value={promo.description || ""}
-                  placeholder="Описание акции или набора"
-                  onChange={(e) =>
-                    setPromos((prev) => prev.map((p, i) => (i === idx ? { ...p, description: e.target.value } : p)))
-                  }
-                />
-                <Input
-                  className="mb-2"
-                  value={promo.link_url || ""}
-                  placeholder="Ссылка, например /product/tort-medovik"
-                  onChange={(e) =>
-                    setPromos((prev) => prev.map((p, i) => (i === idx ? { ...p, link_url: e.target.value } : p)))
-                  }
-                />
-                <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm">
-                    <Upload className="h-4 w-4" /> Фото
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        const url = await uploadFile(f, "image");
-                        if (url) setPromos((prev) => prev.map((p, i) => (i === idx ? { ...p, image_url: url } : p)));
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Switch
-                      checked={promo.is_active}
-                      onCheckedChange={(v) =>
-                        setPromos((prev) => prev.map((p, i) => (i === idx ? { ...p, is_active: v } : p)))
-                      }
-                    />
-                    Показывать
-                  </div>
-                  <Input
-                    type="number"
-                    className="w-20"
-                    value={promo.sort_order}
-                    onChange={(e) =>
-                      setPromos((prev) =>
-                        prev.map((p, i) => (i === idx ? { ...p, sort_order: Number(e.target.value) || 0 } : p))
-                      )
-                    }
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => savePromo(promo)} disabled={uploading}>
-                    Сохранить
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => deletePromo(promo.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
       </main>
       <BottomNavigation />
     </div>

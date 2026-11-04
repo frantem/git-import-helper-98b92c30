@@ -8,14 +8,12 @@ import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { SEO } from "@/components/SEO";
 import { usePickupLabels } from "@/hooks/usePickupLabels";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
-import { useSellerPage } from "@/hooks/useSellerPage";
 import { compareSellerCategories } from "@/lib/sellerCategoryOrder";
 import { SellerHero } from "@/components/seller/SellerHero";
 import { SellerAbout } from "@/components/seller/SellerAbout";
 import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
 import { SellerProductSheet } from "@/components/seller/SellerProductSheet";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
-import { SellerPromos } from "@/components/seller/SellerPromos";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
@@ -99,7 +97,6 @@ export default function SellerProfile() {
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
   const pickupLabels = usePickupLabels(products as never);
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
-  const { data: pageContent } = useSellerPage(farmer?.id);
 
   /** Наборы первыми, остальные категории — в существующем порядке. */
   const groupedProducts = useMemo(() => {
@@ -336,10 +333,7 @@ export default function SellerProfile() {
         />
 
         <div className="px-3 pt-2">
-          {/* 4. Акции и наборы */}
-          <SellerPromos promos={pageContent?.promos || []} />
-
-          {/* 5. Каталог по категориям */}
+          {/* 4. Каталог по категориям */}
           <div id="seller-catalog" className="scroll-mt-2">
             {products.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
