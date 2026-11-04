@@ -24,22 +24,6 @@ const THEMES: { value: string; label: string }[] = [
   { value: "sand", label: "Песок" },
 ];
 
-interface HitRow {
-  id: string;
-  title: string;
-  is_featured: boolean;
-}
-
-interface PostRow {
-  id: string;
-  slug: string | null;
-  title: string;
-  body: string | null;
-  image_url: string | null;
-  sort_order: number;
-  is_active: boolean;
-}
-
 interface PromoRow {
   id: string;
   title: string;
@@ -74,18 +58,13 @@ export default function SellerPage() {
     contact_whatsapp: "",
   });
 
-  const [hits, setHits] = useState<HitRow[]>([]);
-
-  const [postsBlockTitle, setPostsBlockTitle] = useState("");
-  const [posts, setPosts] = useState<PostRow[]>([]);
-
   const [promos, setPromos] = useState<PromoRow[]>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
     const { data: farmer } = await supabase
       .from("farmers")
-      .select("id, slug, hero_media_url, hero_media_type, posts_block_title, unique_fact, contacts, theme")
+      .select("id, slug, hero_media_url, hero_media_type, unique_fact, contacts, theme")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -107,31 +86,13 @@ export default function SellerPage() {
       contact_viber: ((farmer as any).contacts as any)?.viber || "",
       contact_whatsapp: ((farmer as any).contacts as any)?.whatsapp || "",
     });
-    setPostsBlockTitle(farmer.posts_block_title || "");
+    const { data: promosData } = await supabase
+      .from("seller_promos")
+      .select("id, title, description, image_url, link_url, sort_order, is_active")
+      .eq("farmer_id", farmer.id)
+      .order("sort_order");
 
-
-    const [productsRes, postsRes, promosRes] = await Promise.all([
-      supabase
-        .from("products")
-        .select("id, title, is_featured")
-        .eq("farmer_id", farmer.id)
-        .eq("is_deleted", false)
-        .order("title"),
-      supabase
-        .from("seller_posts")
-        .select("id, slug, title, body, image_url, sort_order, is_active")
-        .eq("farmer_id", farmer.id)
-        .order("sort_order"),
-      supabase
-        .from("seller_promos")
-        .select("id, title, description, image_url, link_url, sort_order, is_active")
-        .eq("farmer_id", farmer.id)
-        .order("sort_order"),
-    ]);
-
-    setHits((productsRes.data as HitRow[]) || []);
-    setPosts((postsRes.data as PostRow[]) || []);
-    setPromos((promosRes.data as PromoRow[]) || []);
+    setPromos((promosData as PromoRow[]) || []);
     setIsLoading(false);
   }, [user]);
 
@@ -197,69 +158,6 @@ export default function SellerPage() {
       return;
     }
     toast.success("Обложка сохранена");
-  };
-
-  const featuredCount = hits.filter((h) => h.is_featured).length;
-
-  const toggleHit = async (product: HitRow, value: boolean) => {
-    if (value && featuredCount >= 4) {
-      toast.error("Можно выбрать не больше 4 хитов");
-      return;
-    }
-    const { error } = await supabase
-      .from("products")
-      .update({ is_featured: value })
-      .eq("id", product.id);
-    if (error) { toast.error("Не удалось сохранить"); return; }
-    setHits((prev) => prev.map((h) => (h.id === product.id ? { ...h, is_featured: value } : h)));
-  };
-
-  // ---- Посты ----
-  const savePostsBlockTitle = async () => {
-    if (!farmerId) return;
-    const { error } = await supabase
-      .from("farmers")
-      .update({ posts_block_title: postsBlockTitle.trim() || null })
-      .eq("id", farmerId);
-    if (error) { toast.error("Ошибка сохранения названия блока"); return; }
-    toast.success("Название блока сохранено");
-  };
-
-
-  const addPost = async () => {
-    if (!farmerId) return;
-    const { data, error } = await supabase
-      .from("seller_posts")
-      .insert({ farmer_id: farmerId, title: "Новый пост", sort_order: posts.length })
-      .select("id, slug, title, body, image_url, sort_order, is_active")
-      .single();
-    if (error || !data) { toast.error("Не удалось добавить пост"); return; }
-    setPosts((prev) => [...prev, data as PostRow]);
-  };
-
-  const savePost = async (post: PostRow) => {
-    if (!post.image_url) {
-      toast.error("Добавьте фото — без него пост не публикуется");
-      return;
-    }
-    const { error } = await supabase
-      .from("seller_posts")
-      .update({
-        title: post.title,
-        body: post.body,
-        image_url: post.image_url,
-        sort_order: post.sort_order,
-        is_active: post.is_active,
-      })
-      .eq("id", post.id);
-    if (error) { toast.error("Ошибка сохранения поста"); return; }
-    toast.success("Пост сохранён");
-  };
-
-  const deletePost = async (id: string) => {
-    const { error } = await supabase.from("seller_posts").delete().eq("id", id);
-    if (error) { toast.error("Не удалось удалить"); return; }
-    setPosts((prev) => prev.filter((p) => p.id !== id));
   };
 
   // ---- Акции ----
@@ -496,147 +394,6 @@ export default function SellerPage() {
             <Button onClick={saveHero} disabled={isSaving || uploading} className="w-full">
               {isSaving ? "Сохранение…" : "Сохранить обложку"}
             </Button>
-          </div>
-        </section>
-
-        {/* Хиты */}
-        <section className="mb-6 rounded-2xl bg-card p-4">
-          <h2 className="mb-1 font-bold">Хиты продаж</h2>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Выберите до 4 товаров — они появятся сразу под блоком «О нас» с кнопкой «В корзину».
-            Выбрано: {featuredCount}/4
-          </p>
-
-          {hits.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Пока нет товаров</p>
-          ) : (
-            <div className="space-y-2">
-              {hits.map((h) => (
-                <div key={h.id} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2">
-                  <span className="min-w-0 flex-1 truncate text-sm">{h.title}</span>
-                  <Switch
-                    checked={h.is_featured}
-                    onCheckedChange={(v) => toggleHit(h, v)}
-                    aria-label={`Хит: ${h.title}`}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Посты */}
-        <section className="mb-6 rounded-2xl bg-card p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-bold">Посты про продукты</h2>
-            <Button size="sm" variant="outline" onClick={addPost}>
-              <Plus className="mr-1 h-4 w-4" /> Добавить
-            </Button>
-          </div>
-
-          <div className="mb-4">
-            <Label className="mb-1 block">Название блока на странице</Label>
-            <div className="flex gap-2">
-              <Input
-                value={postsBlockTitle}
-                placeholder="О нас"
-                onChange={(e) => setPostsBlockTitle(e.target.value)}
-              />
-              <Button variant="outline" onClick={savePostsBlockTitle}>Сохранить</Button>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Если оставить пустым, на странице будет «О нас».
-            </p>
-          </div>
-
-          {posts.length === 0 && (
-            <p className="text-sm text-muted-foreground">Пока нет постов</p>
-          )}
-
-
-          <div className="space-y-4">
-            {posts.map((post, idx) => (
-              <div key={post.id} className="rounded-xl border border-border p-3">
-                {post.image_url && (
-                  <img
-                    src={cdnImage(post.image_url, "card")}
-                    alt=""
-                    className="mb-2 h-32 w-full rounded-lg object-cover"
-                  />
-                )}
-                <Input
-                  className="mb-2"
-                  value={post.title}
-                  placeholder="Заголовок"
-                  onChange={(e) =>
-                    setPosts((prev) => prev.map((p, i) => (i === idx ? { ...p, title: e.target.value } : p)))
-                  }
-                />
-                <Textarea
-                  className="mb-2"
-                  rows={6}
-                  value={post.body || ""}
-                  placeholder="Полный текст статьи — он откроется на отдельной странице"
-                  onChange={(e) =>
-                    setPosts((prev) => prev.map((p, i) => (i === idx ? { ...p, body: e.target.value } : p)))
-                  }
-                />
-                {post.slug && (
-                  <a
-                    href={`/seller/${farmerSlug}/post/${post.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mb-2 inline-block text-xs text-primary hover:underline"
-                  >
-                    Открыть страницу статьи: /seller/{farmerSlug}/post/{post.slug}
-                  </a>
-                )}
-                <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm">
-                    <Upload className="h-4 w-4" /> Фото (обязательно)
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        const url = await uploadFile(f, "image");
-                        if (url) setPosts((prev) => prev.map((p, i) => (i === idx ? { ...p, image_url: url } : p)));
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Switch
-                      checked={post.is_active}
-                      onCheckedChange={(v) =>
-                        setPosts((prev) => prev.map((p, i) => (i === idx ? { ...p, is_active: v } : p)))
-                      }
-                    />
-                    Показывать
-                  </div>
-                  <Input
-                    type="number"
-                    className="w-20"
-                    value={post.sort_order}
-                    onChange={(e) =>
-                      setPosts((prev) =>
-                        prev.map((p, i) => (i === idx ? { ...p, sort_order: Number(e.target.value) || 0 } : p))
-                      )
-                    }
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => savePost(post)} disabled={uploading}>
-                    Сохранить
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => deletePost(post.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
 
