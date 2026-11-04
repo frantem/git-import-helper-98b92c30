@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import { deepStrictEqual } from "node:assert/strict";
 import { compareSellerCategories } from "./sellerCategoryOrder";
 
 describe("personal seller category order", () => {
@@ -8,13 +9,13 @@ describe("personal seller category order", () => {
       { name: "Наборы", sort: 100 },
       { name: "Хлеб", sort: 0 },
     ];
-    expect(categories.sort(compareSellerCategories).map((c) => c.name)).toEqual([
+    deepStrictEqual(categories.sort(compareSellerCategories).map((c) => c.name), [
       "Наборы", "Хлеб", "Сыры",
     ]);
   });
 
   it("preserves existing ordering when the seller has no sets", () => {
     const categories = [{ name: "Сыры", sort: 5 }, { name: "Хлеб", sort: 2 }];
-    expect(categories.sort(compareSellerCategories).map((c) => c.name)).toEqual(["Хлеб", "Сыры"]);
+    deepStrictEqual(categories.sort(compareSellerCategories).map((c) => c.name), ["Хлеб", "Сыры"]);
   });
 });
