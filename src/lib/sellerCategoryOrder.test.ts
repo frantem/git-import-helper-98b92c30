@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { describe, it } from "node:test";
 import { deepStrictEqual } from "node:assert/strict";
 import { compareSellerCategories } from "./sellerCategoryOrder";
