@@ -9,13 +9,12 @@ import { SEO } from "@/components/SEO";
 import { usePickupLabels } from "@/hooks/usePickupLabels";
 import { useProductsRequiredFields } from "@/hooks/useProductsRequiredFields";
 import { useSellerPage } from "@/hooks/useSellerPage";
+import { compareSellerCategories } from "@/lib/sellerCategoryOrder";
 import { SellerHero } from "@/components/seller/SellerHero";
 import { SellerAbout } from "@/components/seller/SellerAbout";
 import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
-import { SellerHits } from "@/components/seller/SellerHits";
 import { SellerProductSheet } from "@/components/seller/SellerProductSheet";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
-import { SellerPosts } from "@/components/seller/SellerPosts";
 import { SellerPromos } from "@/components/seller/SellerPromos";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
@@ -50,7 +49,6 @@ interface Farmer {
   rating?: number | null;
   hero_media_url?: string | null;
   hero_media_type?: string | null;
-  posts_block_title?: string | null;
   unique_fact?: string | null;
   delivery_terms?: string | null;
   delivery_enabled?: boolean | null;
@@ -83,7 +81,6 @@ interface Product {
   unit: string;
   slug?: string;
   isNew?: boolean;
-  isFeatured?: boolean;
   farmer_id?: string;
   prep_time_minutes?: number;
   order_lead_time_hours?: number;
@@ -104,10 +101,7 @@ export default function SellerProfile() {
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
   const { data: pageContent } = useSellerPage(farmer?.id);
 
-  /** Хиты: товары, отмеченные продавцом (максимум 4). */
-  const hits = useMemo(() => products.filter((p) => p.isFeatured).slice(0, 4), [products]);
-
-  /** Группировка товаров по категориям (порядок — как в каталоге). */
+  /** Наборы первыми, остальные категории — в существующем порядке. */
   const groupedProducts = useMemo(() => {
     const map = new Map<
       string,
@@ -124,9 +118,10 @@ export default function SellerProfile() {
           items: [],
         });
       }
-      map.get(slug)!.items.push(p);
+      const group = map.get(slug);
+      if (group) group.items.push(p);
     });
-    return Array.from(map.values()).sort((a, b) => a.sort - b.sort);
+    return Array.from(map.values()).sort(compareSellerCategories);
   }, [products]);
 
   useScrollRestoration();
@@ -142,7 +137,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors.
       const safeCols =
-        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, posts_block_title, unique_fact, delivery_terms, delivery_enabled, pickup_enabled, street, address_details, contacts, theme, plan, trial_ends_at";
+        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, unique_fact, delivery_terms, delivery_enabled, pickup_enabled, street, address_details, contacts, theme, plan, trial_ends_at";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -189,7 +184,7 @@ export default function SellerProfile() {
       const { data: productsData } = await supabase
         .from("products")
         .select(`
-          id, title, slug, price, old_price, image_url, unit, is_new, is_featured, farmer_id,
+          id, title, slug, price, old_price, image_url, unit, is_new, farmer_id,
           category_id, prep_time_minutes, order_lead_time_hours,
           description, composition, shelf_life,
           categories(name, slug, emoji, sort_order)
@@ -246,7 +241,6 @@ export default function SellerProfile() {
             deliveryDays: 2,
             unit: p.unit,
             isNew: p.is_new || false,
-            isFeatured: (p as any).is_featured || false,
             farmer_id: p.farmer_id,
             prep_time_minutes: p.prep_time_minutes || 0,
             order_lead_time_hours: (p as any).order_lead_time_hours || 0,
@@ -342,14 +336,6 @@ export default function SellerProfile() {
         />
 
         <div className="px-3 pt-2">
-          {/* 3. Хиты продавца */}
-          <SellerHits
-            products={hits as never}
-            requiredFieldIds={requiredFieldIds}
-            pickupLabels={pickupLabels}
-            onOpenProduct={(p) => setSheetProduct(p as never)}
-          />
-
           {/* 4. Акции и наборы */}
           <SellerPromos promos={pageContent?.promos || []} />
 
@@ -388,12 +374,6 @@ export default function SellerProfile() {
             name={farmer.name}
             aboutText={farmer.description}
             photoUrl={farmer.photo_url}
-          />
-
-          {/* Посты-статьи продавца */}
-          <SellerPosts
-            posts={pageContent?.posts || []}
-            blockTitle={farmer.posts_block_title}
           />
 
           {/* 7. Иконки контактов — только на платных тарифах */}

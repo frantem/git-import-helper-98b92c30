@@ -27,8 +27,7 @@ export interface SellerPageContent {
 }
 
 /**
- * Публичный контент личной страницы продавца (посты + акции).
- * Один параллельный запрос, кэш react-query — не тормозит первый рендер.
+ * Акции личной витрины. Архивные посты не загружаются в каталог.
  */
 export function useSellerPage(farmerId: string | null | undefined) {
   return useQuery<SellerPageContent>({
@@ -36,23 +35,16 @@ export function useSellerPage(farmerId: string | null | undefined) {
     enabled: !!farmerId,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const [postsRes, promosRes] = await Promise.all([
-        supabase
-          .from("seller_posts")
-          .select("id, slug, title, body, image_url, sort_order, is_active")
-          .eq("farmer_id", farmerId!)
-          .eq("is_active", true)
-          .order("sort_order"),
-        supabase
-          .from("seller_promos")
-          .select("id, title, description, image_url, link_url, sort_order, is_active")
-          .eq("farmer_id", farmerId!)
-          .eq("is_active", true)
-          .order("sort_order"),
-      ]);
+      if (!farmerId) return { posts: [], promos: [] };
+      const promosRes = await supabase
+        .from("seller_promos")
+        .select("id, title, description, image_url, link_url, sort_order, is_active")
+        .eq("farmer_id", farmerId)
+        .eq("is_active", true)
+        .order("sort_order");
 
       return {
-        posts: (postsRes.data as SellerPost[]) || [],
+        posts: [],
         promos: (promosRes.data as SellerPromo[]) || [],
       };
     },
