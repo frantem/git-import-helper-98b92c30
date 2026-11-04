@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DynamicMeta } from "@/components/DynamicMeta";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MetaPageTracker } from "@/components/MetaPageTracker";
@@ -17,8 +17,7 @@ import Index from "./pages/Index";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
 const Product = lazy(() => import("./pages/Product"));
-const Cart = lazy(() => import("./pages/Cart"));
-const Checkout = lazy(() => import("./pages/Checkout"));
+const CheckoutUnified = lazy(() => import("./pages/CheckoutUnified"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Orders = lazy(() => import("./pages/Orders"));
@@ -92,8 +91,8 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/catalog" element={<Catalog />} />
                   <Route path="/product/:id" element={<Product />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/cart" element={<Navigate to="/checkout" replace />} />
+                  <Route path="/checkout" element={<CheckoutUnified />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/orders" element={<Orders />} />

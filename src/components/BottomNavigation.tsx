@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { path: "/", icon: Home, label: "Главная" },
   { path: "/catalog", icon: LayoutGrid, label: "Каталог" },
-  { path: "/cart", icon: ShoppingCart, label: "Корзина", showBadge: true },
+  { path: "/checkout", icon: ShoppingCart, label: "Корзина", showBadge: true },
   { path: "/profile", icon: User, label: "Профиль" },
 ];
 

@@ -144,7 +144,11 @@ export function SellerGuestCheckout({ farmer, onClose }: SellerGuestCheckoutProp
 
     const { data, error: rpcError } = await supabase.rpc("create_guest_order" as never, {
       p_farmer_id: farmer.id,
-      p_items: items.map((item) => ({ product_id: item.product.id, quantity: item.quantity })),
+      p_items: items.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        variant_id: item.variant?.id ?? null,
+      })),
       p_name: name.trim(),
       p_phone: `+375${digits}`,
       p_delivery_type: delivery,
