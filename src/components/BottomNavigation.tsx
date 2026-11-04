@@ -3,6 +3,7 @@ import { Home, LayoutGrid, ShoppingCart, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useSellerNavContext } from "@/hooks/useSellerNavContext";
+import { useVisitorSource } from "@/hooks/useVisitorSource";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -27,6 +28,10 @@ export const BottomNavigation = forwardRef<HTMLElement, object>((_props, ref) =>
   const navigate = useNavigate();
   const { totalItems } = useCart();
   const sellerCtx = useSellerNavContext();
+  const visitorSource = useVisitorSource();
+
+  // Посетитель пришёл по личной ссылке продавца — меню не показываем нигде.
+  if (visitorSource === "seller") return null;
 
   const sellerPath = sellerCtx ? `/seller/${sellerCtx.sellerSlug}` : null;
   const onSellerPage = !!sellerPath && location.pathname === sellerPath;

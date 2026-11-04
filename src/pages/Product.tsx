@@ -419,7 +419,7 @@ export default function Product() {
         <main className="container mx-auto flex items-center justify-center px-4 py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        {!sellerSlug && <BottomNavigation />}
+        <BottomNavigation />
       </div>;
   }
   if (!product) {
@@ -431,7 +431,7 @@ export default function Product() {
             <Button variant="default">Вернуться в каталог</Button>
           </Link>
         </main>
-        {!sellerSlug && <BottomNavigation />}
+        <BottomNavigation />
       </div>;
   }
 
@@ -996,7 +996,7 @@ export default function Product() {
           </section>
       </main>
 
-      {!sellerSlug && <BottomNavigation />}
+      <BottomNavigation />
 
       {sellerCheckout && (
         <SellerGuestCheckout

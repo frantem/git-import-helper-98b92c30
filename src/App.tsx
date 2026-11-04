@@ -1,15 +1,16 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DynamicMeta } from "@/components/DynamicMeta";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MetaPageTracker } from "@/components/MetaPageTracker";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { ScrollManager } from "@/components/ScrollManager";
+import { trackVisitorSource } from "@/lib/visitorSource";
 import { CookieBanner } from "@/components/CookieBanner";
 import { CartConflictDialog } from "@/components/CartConflictDialog";
 import Index from "./pages/Index";
@@ -63,6 +64,16 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+
+/** Запоминает, откуда пришёл посетитель: с личной ссылки продавца или с маркетплейса. */
+const VisitorSourceTracker = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    trackVisitorSource(pathname);
+  }, [pathname]);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -73,6 +84,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ScrollManager />
+            <VisitorSourceTracker />
             <MetaPageTracker />
             <ChunkErrorBoundary>
               <Suspense fallback={null}>

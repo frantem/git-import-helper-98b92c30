@@ -8,7 +8,9 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import { installGlobalChunkErrorHandlers } from "./lib/chunkReload";
+import { trackVisitorSource } from "./lib/visitorSource";
 
 installGlobalChunkErrorHandlers();
+trackVisitorSource(window.location.pathname);
 
 createRoot(document.getElementById("root")!).render(<App />);
