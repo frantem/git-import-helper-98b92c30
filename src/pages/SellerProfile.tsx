@@ -97,7 +97,6 @@ export default function SellerProfile() {
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
   const pickupLabels = usePickupLabels(products as never);
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
-  const { data: pageContent } = useSellerPage(farmer?.id);
 
   /** Наборы первыми, остальные категории — в существующем порядке. */
   const groupedProducts = useMemo(() => {
@@ -334,10 +333,7 @@ export default function SellerProfile() {
         />
 
         <div className="px-3 pt-2">
-          {/* 4. Акции и наборы */}
-          <SellerPromos promos={pageContent?.promos || []} />
-
-          {/* 5. Каталог по категориям */}
+          {/* 4. Каталог по категориям */}
           <div id="seller-catalog" className="scroll-mt-2">
             {products.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
