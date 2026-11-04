@@ -33,6 +33,8 @@ pull request'ы. Поэтому ветки и PR не нужны: **коммит
 
 ## Архитектура сторис
 
+- Personal seller storefronts use a seller-only category comparator for ordering; keep marketplace category ordering and shared product cards unchanged.
+
 - Keep the `/for-sellers` marketing theme scoped to its root CSS class and compose its illustrative previews locally; this prevents the marketing redesign from changing the storefront or authenticated seller tools.
 
 - Каждый шаблон сторис имеет отдельный маршрут и холст, но переиспользует общие выбор товаров, фон и экспорт — так шаблоны развиваются независимо без дублирования основной логики.
