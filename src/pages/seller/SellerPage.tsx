@@ -24,15 +24,6 @@ const THEMES: { value: string; label: string }[] = [
   { value: "sand", label: "Песок" },
 ];
 
-interface PromoRow {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  link_url: string | null;
-  sort_order: number;
-  is_active: boolean;
-}
 
 export default function SellerPage() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -57,8 +48,6 @@ export default function SellerPage() {
     contact_viber: "",
     contact_whatsapp: "",
   });
-
-  const [promos, setPromos] = useState<PromoRow[]>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -86,13 +75,6 @@ export default function SellerPage() {
       contact_viber: ((farmer as any).contacts as any)?.viber || "",
       contact_whatsapp: ((farmer as any).contacts as any)?.whatsapp || "",
     });
-    const { data: promosData } = await supabase
-      .from("seller_promos")
-      .select("id, title, description, image_url, link_url, sort_order, is_active")
-      .eq("farmer_id", farmer.id)
-      .order("sort_order");
-
-    setPromos((promosData as PromoRow[]) || []);
     setIsLoading(false);
   }, [user]);
 
