@@ -12,7 +12,6 @@ import { compareSellerCategories } from "@/lib/sellerCategoryOrder";
 import { SellerHero } from "@/components/seller/SellerHero";
 import { SellerAbout } from "@/components/seller/SellerAbout";
 import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
-import { SellerProductSheet } from "@/components/seller/SellerProductSheet";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
@@ -94,7 +93,6 @@ export default function SellerProfile() {
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
   const pickupLabels = usePickupLabels(products as never);
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
 
@@ -280,6 +278,11 @@ export default function SellerProfile() {
 
   const themeName = THEMES.includes((farmer.theme || "") as never) ? farmer.theme : "forest";
   const sellerSlug = farmer.slug || farmer.id;
+
+  // Карточка товара — та же, что на главной странице маркетплейса
+  const openProduct = (product: { slug?: string | null; id: string }) => {
+    navigate(`/product/${product.slug || product.id}`);
+  };
   const locationLabel = farmer.city?.trim() || farmer.village?.trim() || null;
   const canShowContacts =
     !!farmer.plan && farmer.plan !== "free" &&
@@ -354,7 +357,7 @@ export default function SellerProfile() {
                         pickupLabel={pickupLabels.get(product.id)}
                         hasRequiredFields={requiredFieldIds.has(product.id)}
                         priority={index < 2}
-                        onOpen={() => setSheetProduct(product)}
+                        onOpen={() => openProduct(product)}
                       />
                     ))}
                   </div>
@@ -386,12 +389,6 @@ export default function SellerProfile() {
 
       {/* 9. Плавающая корзина и быстрое оформление без регистрации */}
       <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} />
-
-      <SellerProductSheet
-        product={sheetProduct}
-        onClose={() => setSheetProduct(null)}
-        farmerName={farmer.name}
-      />
 
       {checkoutOpen && (
         <SellerGuestCheckout
