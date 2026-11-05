@@ -33,6 +33,8 @@ pull request'ы. Поэтому ветки и PR не нужны: **коммит
 
 ## Архитектура сторис
 
+- Checkout reads receiving methods, delivery terms and pickup address/hours directly from farmers; buyer contact drafts are scoped to guest or auth user ID to avoid mixing accounts.
+
 - Personal seller storefronts use a seller-only category comparator for ordering; keep marketplace category ordering and shared product cards unchanged.
 
 - Keep the `/for-sellers` marketing theme scoped to its root CSS class and compose its illustrative previews locally; this prevents the marketing redesign from changing the storefront or authenticated seller tools.

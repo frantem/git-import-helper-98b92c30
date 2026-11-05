@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Loader2, MessageCircle, Minus, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Loader2, MapPin, MessageCircle, Minus, Plus, Trash2, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/priceUtils";
@@ -10,8 +10,10 @@ import { cleanSellerName } from "@/lib/sellerName";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { cn } from "@/lib/utils";
 import type { SellerContacts } from "@/components/seller/SellerTrustFooter";
-import { BottomNavigation } from "@/components/BottomNavigation";
-import { useVisitorSource } from "@/hooks/useVisitorSource";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import type { PickupSlots } from "@/components/PickupSettingsSection";
+import { buyerDetailsKey, formatPickupSchedule, getReceivingOptions, mergeBuyerDetails, normalizeCheckoutPhone, readBuyerDetails } from "@/lib/checkoutDetails";
 
 type ContactMethod = "call" | "telegram" | "viber" | "whatsapp";
 type DeliveryType = "courier" | "self";
@@ -27,6 +29,7 @@ interface CheckoutFarmer {
   pickup_enabled: boolean | null;
   delivery_terms: string | null;
   contacts: SellerContacts | null;
+  pickup_slots: PickupSlots | null;
 }
 
 const CONTACTS: { id: ContactMethod; label: string }[] = [
@@ -80,8 +83,12 @@ export default function CheckoutUnified() {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart, getItemKey, updateQuantity, removeFromCart, cartFarmerId } = useCart();
 
-  const visitorSource = useVisitorSource();
-  const withNav = visitorSource !== "seller";
+  const { user, isLoading: authLoading } = useAuth();
+  const [detailsOwner, setDetailsOwner] = useState<string | null>(null);
+  const editedFields = useRef(new Set<string>());
+  const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [sellerLoading, setSellerLoading] = useState(true);
+  const [sellerError, setSellerError] = useState(false);
 
   const [farmer, setFarmer] = useState<CheckoutFarmer | null>(null);
   const [delivery, setDelivery] = useState<DeliveryType>("courier");
@@ -96,7 +103,41 @@ export default function CheckoutUnified() {
 
   const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const price = formatPrice(totalPrice);
-  const courierAvailable = !!farmer?.delivery_enabled;
+  const receivingOptions = getReceivingOptions(farmer);
+  const canSubmit = !submitting && !sellerLoading && receivingOptions.includes(delivery);
+  const pickupSchedule = formatPickupSchedule(farmer?.pickup_slots ?? null);
+  const storeUrl = farmer?.slug ? `/seller/${farmer.slug}` : farmer ? `/seller/${farmer.id}` : "/catalog";
+
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+    const owner = buyerDetailsKey(user?.id);
+    const saved = readBuyerDetails(user?.id);
+    editedFields.current.clear();
+    setName(saved.name);
+    setPhone(saved.phone);
+    setAddress(saved.address);
+    setDetailsOwner(owner);
+    if (user) {
+      supabase.from("profiles").select("full_name, phone, delivery_address").eq("user_id", user.id).maybeSingle()
+        .then(({ data }) => {
+          if (cancelled) return;
+          const details = mergeBuyerDetails(saved, data);
+          if (!editedFields.current.has("name")) setName(details.name);
+          if (!editedFields.current.has("phone")) setPhone(details.phone);
+          if (!editedFields.current.has("address")) setAddress(details.address);
+        });
+    }
+    return () => { cancelled = true; };
+  }, [authLoading, user?.id]);
+
+  useEffect(() => {
+    if (authLoading || detailsOwner !== buyerDetailsKey(user?.id)) return;
+    const timer = window.setTimeout(() => {
+      try { localStorage.setItem(detailsOwner, JSON.stringify({ name, phone, address })); } catch { /* Storage may be unavailable. */ }
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [name, phone, address, detailsOwner, authLoading, user?.id]);
 
   useEffect(() => {
     trackMetaEvent("InitiateCheckout", { num_items: itemsCount, value: Math.floor(totalPrice / 100) });
@@ -107,21 +148,28 @@ export default function CheckoutUnified() {
   useEffect(() => {
     if (!cartFarmerId) {
       setFarmer(null);
+      setSellerLoading(false);
       return;
     }
     let cancelled = false;
     const load = async () => {
-      const { data } = await supabase
+      setSellerLoading(true);
+      setSellerError(false);
+      setFarmer(null);
+      const { data, error: loadError } = await supabase
         .from("farmers")
         .select(
-          "id, name, slug, city, street, address_details, delivery_enabled, pickup_enabled, delivery_terms, contacts",
+          "id, name, slug, city, street, address_details, delivery_enabled, pickup_enabled, delivery_terms, contacts, pickup_slots",
         )
         .eq("id", cartFarmerId)
         .maybeSingle();
-      if (!cancelled && data) {
+      if (cancelled) return;
+      setSellerLoading(false);
+      setSellerError(!!loadError || !data);
+      if (data) {
         const row = data as unknown as CheckoutFarmer;
         setFarmer(row);
-        setDelivery(row.delivery_enabled ? "courier" : "self");
+        setDelivery(getReceivingOptions(row)[0] ?? "courier");
       }
     };
     load();
@@ -150,7 +198,7 @@ export default function CheckoutUnified() {
   }, [farmer]);
 
   const submit = async () => {
-    if (submitting || !farmer) return;
+    if (!canSubmit || !farmer) return;
 
     const digits = phone.replace(/\D/g, "");
     if (name.trim().length < 2) {
@@ -206,6 +254,8 @@ export default function CheckoutUnified() {
       content_ids: items.map((it) => it.product.id),
       num_items: itemsCount,
     });
+
+    try { localStorage.setItem(buyerDetailsKey(user?.id), JSON.stringify({ name: name.trim(), phone: digits, address: address.trim() })); } catch { /* Keep ordering available without storage. */ }
 
     clearCart();
     setOrder({ code: result.code, total: result.total });
@@ -277,31 +327,29 @@ export default function CheckoutUnified() {
   }
 
   return (
-    <div className={`mx-auto w-full max-w-5xl px-4 pt-3 md:pb-10 ${withNav ? "pb-40 md:pb-10" : "pb-28"}`}>
-      <button
+    <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] pt-3 md:pb-10">
+      <Button variant="ghost"
         type="button"
         onClick={() => navigate(-1)}
         className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Назад
-      </button>
+      </Button>
+
+      <div className="mb-4">
+        <h1 className="text-[22px] font-bold leading-tight text-foreground">Оформление заказа</h1>
+        {farmer && <p className="mt-0.5 text-[12.5px] text-secondary-foreground">{cleanSellerName(farmer.name)}</p>}
+      </div>
 
       <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr] md:items-start">
         {/* Форма */}
         <div className="order-2 space-y-3.5 md:order-1">
-          <div>
-            <h1 className="text-[22px] font-bold leading-tight text-foreground">Оформление заказа</h1>
-            {farmer && (
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">{cleanSellerName(farmer.name)}</p>
-            )}
-          </div>
-
           <label className="block">
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Ваше имя</span>
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); }}
               placeholder="Анна"
               autoComplete="given-name"
               className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] text-foreground outline-none focus:border-primary"
@@ -313,10 +361,8 @@ export default function CheckoutUnified() {
             <input
               value={formatPhone(phone.replace(/\D/g, ""))}
               onChange={(e) => {
-                let digits = e.target.value.replace(/\D/g, "");
-                if (digits.startsWith("375")) digits = digits.slice(3);
-                else if (digits.startsWith("80")) digits = digits.slice(2);
-                setPhone(digits.slice(0, 9));
+                editedFields.current.add("phone");
+                setPhone(normalizeCheckoutPhone(e.target.value));
               }}
               inputMode="tel"
               autoComplete="tel"
@@ -327,36 +373,46 @@ export default function CheckoutUnified() {
 
           <div>
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Как получить</span>
-            <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-secondary p-1">
-              {[
-                { id: "courier" as const, label: "Курьером", disabled: !courierAvailable },
-                { id: "self" as const, label: "Самовывоз", disabled: farmer?.pickup_enabled === false },
-              ].map((option) => (
-                <button
-                  key={option.id}
+            {sellerLoading && <p className="text-sm text-secondary-foreground" role="status">Загружаем условия продавца…</p>}
+            {sellerError && <p className="text-sm text-destructive" role="alert">Не удалось загрузить условия продавца. Обновите страницу.</p>}
+            {!sellerLoading && !sellerError && !receivingOptions.length && <p className="text-sm text-secondary-foreground">Продавец пока не указал способ получения заказа.</p>}
+            <div className="flex gap-1.5">
+              {receivingOptions.map((option) => (
+                <Button variant="outline"
+                  key={option}
                   type="button"
-                  disabled={option.disabled}
-                  onClick={() => setDelivery(option.id)}
+                  aria-pressed={delivery === option}
+                  onClick={() => setDelivery(option)}
                   className={cn(
-                    "h-10 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-40",
-                    delivery === option.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                    "h-11 flex-1 rounded-lg text-[13px] font-medium",
+                    delivery === option ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
                   )}
                 >
-                  {option.label}
-                </button>
+                  {option === "courier" ? <Truck /> : <MapPin />}
+                  {option === "courier" ? "Доставка" : "Самовывоз"}
+                </Button>
               ))}
             </div>
-            {delivery === "self" && pickupAddress && (
-              <p className="mt-1.5 text-[11.5px] leading-snug text-muted-foreground">Забрать: {pickupAddress}</p>
+            {delivery === "courier" && farmer?.delivery_terms?.trim() && (
+              <div className="mt-3 border-l-2 border-primary pl-3">
+                <p className="mb-1 text-[13px] font-semibold text-foreground">Условия доставки</p>
+                <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-foreground">{farmer.delivery_terms}</p>
+              </div>
+            )}
+            {delivery === "self" && receivingOptions.includes("self") && (pickupAddress || pickupSchedule.length > 0) && (
+              <div className="mt-3 border-l-2 border-primary pl-3 text-[14px] leading-relaxed text-foreground">
+                {pickupAddress && <p className="break-words">Забрать: {pickupAddress}</p>}
+                {pickupSchedule.length > 0 && <div className="mt-1 text-[13px] text-secondary-foreground"><p className="font-medium">График выдачи</p>{pickupSchedule.map((line) => <p key={line}>{line}</p>)}</div>}
+              </div>
             )}
           </div>
 
-          {delivery === "courier" && (
+          {delivery === "courier" && receivingOptions.includes("courier") && (
             <label className="block">
               <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Адрес доставки</span>
               <input
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); }}
                 placeholder="Город, улица, дом, квартира"
                 autoComplete="street-address"
                 className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] text-foreground outline-none focus:border-primary"
@@ -368,7 +424,7 @@ export default function CheckoutUnified() {
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Как удобнее связаться</span>
             <div className="grid grid-cols-4 gap-1.5">
               {CONTACTS.map((option) => (
-                <button
+                <Button variant="outline"
                   key={option.id}
                   type="button"
                   onClick={() => setContact(option.id)}
@@ -380,7 +436,7 @@ export default function CheckoutUnified() {
                   )}
                 >
                   {option.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -398,18 +454,16 @@ export default function CheckoutUnified() {
             />
           </label>
 
-          <p className="text-[11.5px] text-muted-foreground">
-            Оплата при получении: наличными или картой курьеру. Предоплата не нужна.
-          </p>
+          <p className="text-[11.5px] text-secondary-foreground">Без регистрации</p>
 
           {error && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
           )}
 
-          <button
+          <Button
             type="button"
             onClick={submit}
-            disabled={submitting}
+            disabled={!canSubmit}
             className="hidden h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70 md:flex"
           >
             {submitting ? (
@@ -418,25 +472,29 @@ export default function CheckoutUnified() {
                 Отправляем…
               </>
             ) : (
-              <>Подтвердить заказ на {price.formatted} BYN</>
+              <>Заказать · {price.formatted} <BynSymbol className="h-3 w-3" /></>
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Состав заказа */}
         <div className="order-1 md:order-2 md:sticky md:top-4">
           <div className="rounded-2xl border border-border/70 bg-card p-3.5">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-foreground">Ваш заказ</p>
+            <div className="flex items-center justify-between gap-2">
+              <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left md:pointer-events-none">
+                <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="text-[15px] font-bold">{price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
+                <ChevronDown className={cn("transition-transform md:hidden", itemsExpanded && "rotate-180")} />
+              </Button>
               <Link
-                to="/catalog"
+                to={storeUrl}
                 className="text-[12px] font-medium text-muted-foreground underline-offset-2 hover:underline"
               >
                 Добавить
               </Link>
             </div>
 
-            <ul className="max-h-[38vh] space-y-2.5 overflow-y-auto pr-0.5 md:max-h-none">
+            <div id="checkout-items" className={cn("mt-3 md:block", !itemsExpanded && "hidden")}>
+            <ul className="space-y-2.5 pr-0.5">
               {items.map((item) => {
                 const key = getItemKey(item);
                 const linePrice = (item.variant?.price ?? item.product.price) * item.quantity;
@@ -456,7 +514,7 @@ export default function CheckoutUnified() {
                         {item.variant?.unit || item.product.unit || "шт."}
                       </p>
                       <div className="mt-1 flex items-center gap-2">
-                        <button
+                        <Button variant="outline" size="icon"
                           type="button"
                           onClick={() => updateQuantity(key, Math.max(1, item.quantity - 1))}
                           disabled={item.quantity <= 1}
@@ -464,26 +522,26 @@ export default function CheckoutUnified() {
                           className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-foreground disabled:opacity-40"
                         >
                           <Minus className="h-3 w-3" />
-                        </button>
+                        </Button>
                         <span className="min-w-4 text-center text-[12.5px] font-semibold text-foreground">
                           {item.quantity}
                         </span>
-                        <button
+                        <Button variant="outline" size="icon"
                           type="button"
                           onClick={() => updateQuantity(key, item.quantity + 1)}
                           aria-label="Больше"
                           className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-foreground"
                         >
                           <Plus className="h-3 w-3" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="ghost" size="icon"
                           type="button"
                           onClick={() => removeFromCart(key)}
                           aria-label="Удалить"
                           className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                     <span className="shrink-0 self-start text-[13px] font-semibold text-foreground">
@@ -499,19 +557,20 @@ export default function CheckoutUnified() {
               <span className="text-[12.5px] text-muted-foreground">
                 {itemsCount} {itemsCount === 1 ? "товар" : itemsCount < 5 ? "товара" : "товаров"}
               </span>
-              <span className="text-[15px] font-bold text-foreground">{price.formatted} BYN</span>
+              <span className="text-[15px] font-bold text-foreground">{price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span>
+            </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Кнопка на телефоне — всегда под рукой */}
-      <div className={`fixed inset-x-0 z-40 px-3 md:hidden ${withNav ? "bottom-[calc(4.35rem+env(safe-area-inset-bottom,0px))]" : "bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))]"}`}>
-        <button
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:hidden">
+        <Button
           type="button"
           onClick={submit}
-          disabled={submitting}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[14.5px] font-bold text-primary-foreground shadow-[0_10px_30px_-8px_rgba(0,0,0,0.35)] transition-transform active:scale-[0.99] disabled:opacity-70"
+          disabled={!canSubmit}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-[14.5px] font-bold"
         >
           {submitting ? (
             <>
@@ -519,12 +578,11 @@ export default function CheckoutUnified() {
               Отправляем…
             </>
           ) : (
-            <>Подтвердить заказ на {price.formatted} BYN</>
+            <>Заказать · {price.formatted} <BynSymbol className="h-3 w-3" /></>
           )}
-        </button>
+        </Button>
       </div>
 
-      <BottomNavigation />
     </div>
   );
 }
