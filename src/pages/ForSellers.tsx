@@ -616,7 +616,7 @@ export default function ForSellers() {
               </div>
 
               <h1 className="font-['Fraunces'] text-[33px] leading-[1.04] tracking-[-0.03em] sm:mt-6 sm:text-[52px] sm:leading-[1.02] lg:text-[64px]">
-                Получайте заказы всегда и везде
+                Сервис для онлайн заказов в сфере еды
               </h1>
 
               <p className="mt-3.5 max-w-[520px] text-[15.5px] leading-[1.45] text-[#6E6A63] sm:mt-5 sm:text-[19px] sm:leading-[1.5]">
