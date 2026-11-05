@@ -25,7 +25,7 @@ export function setVisitorSource(source: VisitorSource) {
 
 export function subscribeVisitorSource(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => { listeners.delete(listener); };
 }
 
 /**
