@@ -7,18 +7,25 @@ import { supabase } from "@/integrations/supabase/client";
  * - any product_addons row with selection_type = 'radio'
  * Cached for 10 minutes via React Query.
  */
-export function useProductsRequiredFields() {
+export function useProductsRequiredFields(productIds?: string[]) {
+  const scopedIds = productIds ? Array.from(new Set(productIds)).sort() : undefined;
+  const scope = scopedIds ? scopedIds.join(",") : "all";
+
   return useQuery({
-    queryKey: ["products-required-fields"],
+    queryKey: ["products-required-fields", scope],
+    enabled: !scopedIds || scopedIds.length > 0,
     queryFn: async (): Promise<Set<string>> => {
+      const fieldsQuery = (supabase as any)
+        .from("product_custom_fields")
+        .select("product_id");
+      const addonsQuery = (supabase as any)
+        .from("product_addons")
+        .select("product_id")
+        .eq("selection_type", "radio");
+
       const [{ data: fields }, { data: addons }] = await Promise.all([
-        (supabase as any)
-          .from("product_custom_fields")
-          .select("product_id"),
-        (supabase as any)
-          .from("product_addons")
-          .select("product_id")
-          .eq("selection_type", "radio"),
+        scopedIds ? fieldsQuery.in("product_id", scopedIds) : fieldsQuery,
+        scopedIds ? addonsQuery.in("product_id", scopedIds) : addonsQuery,
       ]);
 
       const ids = new Set<string>();

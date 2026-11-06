@@ -327,7 +327,7 @@ export default function CheckoutUnified() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] pt-3 md:pb-10">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-3 md:pb-10">
       <Button variant="ghost"
         type="button"
         onClick={() => navigate(-1)}

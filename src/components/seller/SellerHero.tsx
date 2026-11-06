@@ -26,6 +26,8 @@ interface SellerHeroProps {
   ordersCount?: number | null;
   /** Количество активных товаров — от него зависит статус «принимает заказы». */
   productsCount?: number;
+  /** Не показываем «Под заказ», пока каталог ещё загружается. */
+  productsLoading?: boolean;
   avatarUrl?: string | null;
   /** Слаг продавца для перехода в отзывы. */
   sellerSlug?: string | null;
