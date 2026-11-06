@@ -344,7 +344,11 @@ export default function CheckoutUnified() {
 
       <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr] md:items-start">
         {/* Форма */}
-        <div className="order-2 space-y-3.5 md:order-1">
+        <div className="order-2 space-y-3.5 md:order-1 [&_input]:scroll-mb-28 [&_textarea]:scroll-mb-28" onFocusCapture={(event) => {
+          if (window.innerWidth < 768 && (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) {
+            event.target.scrollIntoView({ block: "center", behavior: "smooth" });
+          }
+        }}>
           <label className="block">
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Ваше имя</span>
             <input
