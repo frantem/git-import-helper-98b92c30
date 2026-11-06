@@ -1,7 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { SellerProductCard } from "@/components/seller/SellerProductCard";
-import { Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
@@ -17,7 +16,6 @@ import { SellerTrustFooter, type SellerContacts } from "@/components/seller/Sell
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { useVisitorSource } from "@/hooks/useVisitorSource";
-import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
 import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
 
 const THEMES = ["forest", "terracotta", "night", "sand"] as const;

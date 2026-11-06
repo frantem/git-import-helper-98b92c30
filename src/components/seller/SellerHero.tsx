@@ -51,6 +51,7 @@ export const SellerHero = memo(function SellerHero({
   reviewCount = 0,
   ordersCount,
   productsCount = 0,
+  productsLoading = false,
   avatarUrl,
   sellerSlug,
   contactHref,

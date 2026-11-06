@@ -356,7 +356,7 @@ export default function CheckoutUnified() {
               onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); }}
               placeholder="Анна"
               autoComplete="given-name"
-              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] text-foreground outline-none focus:border-primary"
+              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
             />
           </label>
 
@@ -371,7 +371,7 @@ export default function CheckoutUnified() {
               inputMode="tel"
               autoComplete="tel"
               placeholder="+375 29 123-45-67"
-              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] tracking-wide text-foreground outline-none focus:border-primary"
+              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] tracking-wide text-foreground outline-none focus:border-primary"
             />
           </label>
 
@@ -419,7 +419,7 @@ export default function CheckoutUnified() {
                 onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); }}
                 placeholder="Город, улица, дом, квартира"
                 autoComplete="street-address"
-                className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] text-foreground outline-none focus:border-primary"
+                className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
               />
             </label>
           )}
