@@ -466,7 +466,7 @@ export default function CheckoutUnified() {
             type="button"
             onClick={submit}
             disabled={!canSubmit}
-            className="hidden h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70 md:flex"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70"
           >
             {submitting ? (
               <>
@@ -474,7 +474,7 @@ export default function CheckoutUnified() {
                 Отправляем…
               </>
             ) : (
-              <>Заказать · {price.formatted} <BynSymbol className="h-3 w-3" /></>
+              <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
             )}
           </Button>
         </div>
@@ -484,7 +484,7 @@ export default function CheckoutUnified() {
           <div className="rounded-2xl border border-border/70 bg-card p-3.5">
             <div className="flex items-center justify-between gap-2">
               <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left md:pointer-events-none">
-                <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="text-[15px] font-bold">{price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
+                <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="mt-0.5 block text-[14px] font-bold">Сумма товаров · {price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
                 <ChevronDown className={cn("transition-transform md:hidden", itemsExpanded && "rotate-180")} />
               </Button>
               <Link

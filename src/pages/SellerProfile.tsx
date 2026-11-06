@@ -97,6 +97,7 @@ export default function SellerProfile() {
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [productsLoadError, setProductsLoadError] = useState(false);
   const pickupLabels = usePickupLabels(products as never);
   const productIds = useMemo(() => products.map((product) => product.id), [products]);
   const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields(productIds);
