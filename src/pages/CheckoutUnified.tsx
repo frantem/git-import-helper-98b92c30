@@ -327,7 +327,7 @@ export default function CheckoutUnified() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] pt-3 md:pb-10">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-3 md:pb-10">
       <Button variant="ghost"
         type="button"
         onClick={() => navigate(-1)}
@@ -356,7 +356,7 @@ export default function CheckoutUnified() {
               onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); }}
               placeholder="Анна"
               autoComplete="given-name"
-              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] text-foreground outline-none focus:border-primary"
+              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
             />
           </label>
 
@@ -371,7 +371,7 @@ export default function CheckoutUnified() {
               inputMode="tel"
               autoComplete="tel"
               placeholder="+375 29 123-45-67"
-              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] tracking-wide text-foreground outline-none focus:border-primary"
+              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] tracking-wide text-foreground outline-none focus:border-primary"
             />
           </label>
 
@@ -419,7 +419,7 @@ export default function CheckoutUnified() {
                 onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); }}
                 placeholder="Город, улица, дом, квартира"
                 autoComplete="street-address"
-                className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px] text-foreground outline-none focus:border-primary"
+                className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
               />
             </label>
           )}
@@ -454,11 +454,9 @@ export default function CheckoutUnified() {
               onChange={(e) => setComment(e.target.value)}
               rows={2}
               placeholder="К какому времени, особенности заказа"
-              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground outline-none focus:border-primary"
+              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] text-foreground outline-none focus:border-primary"
             />
           </label>
-
-          <p className="text-[11.5px] text-secondary-foreground">Без регистрации</p>
 
           {error && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
@@ -468,7 +466,7 @@ export default function CheckoutUnified() {
             type="button"
             onClick={submit}
             disabled={!canSubmit}
-            className="hidden h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70 md:flex"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70"
           >
             {submitting ? (
               <>
@@ -476,7 +474,7 @@ export default function CheckoutUnified() {
                 Отправляем…
               </>
             ) : (
-              <>Заказать · {price.formatted} <BynSymbol className="h-3 w-3" /></>
+              <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
             )}
           </Button>
         </div>
@@ -486,7 +484,7 @@ export default function CheckoutUnified() {
           <div className="rounded-2xl border border-border/70 bg-card p-3.5">
             <div className="flex items-center justify-between gap-2">
               <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left md:pointer-events-none">
-                <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="text-[15px] font-bold">{price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
+                <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="mt-0.5 block text-[14px] font-bold">Сумма товаров · {price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
                 <ChevronDown className={cn("transition-transform md:hidden", itemsExpanded && "rotate-180")} />
               </Button>
               <Link
