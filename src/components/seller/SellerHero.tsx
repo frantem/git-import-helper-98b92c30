@@ -178,7 +178,9 @@ export const SellerHero = memo(function SellerHero({
             )}
             aria-hidden="true"
           />
-          <span className="whitespace-nowrap">{acceptsOrders ? "Принимает заказы" : "Под заказ"}</span>
+          <span className="whitespace-nowrap">
+            {productsLoading ? "Загружаем товары…" : acceptsOrders ? "Принимает заказы" : "Под заказ"}
+          </span>
 
           {cleanLocation && (
             <>

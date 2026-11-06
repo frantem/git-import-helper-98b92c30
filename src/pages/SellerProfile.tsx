@@ -96,9 +96,10 @@ export default function SellerProfile() {
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(true);
   const pickupLabels = usePickupLabels(products as never);
-  const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields();
+  const productIds = useMemo(() => products.map((product) => product.id), [products]);
+  const { data: requiredFieldIds = new Set<string>() } = useProductsRequiredFields(productIds);
 
   /** Наборы первыми, остальные категории — в существующем порядке. */
   const groupedProducts = useMemo(() => {

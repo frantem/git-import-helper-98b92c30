@@ -454,11 +454,9 @@ export default function CheckoutUnified() {
               onChange={(e) => setComment(e.target.value)}
               rows={2}
               placeholder="К какому времени, особенности заказа"
-              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground outline-none focus:border-primary"
+              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-[16px] text-foreground outline-none focus:border-primary"
             />
           </label>
-
-          <p className="text-[11.5px] text-secondary-foreground">Без регистрации</p>
 
           {error && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
