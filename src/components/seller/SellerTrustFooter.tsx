@@ -33,7 +33,7 @@ export const SellerTrustFooter = memo(function SellerTrustFooter({
       >
         <Star className="h-5 w-5 flex-shrink-0 fill-accent text-accent" />
         <div className="flex-1">
-          <p className="text-[14px] font-medium">Все отзывы о нас — на площадке LOCUS</p>
+          <p className="text-[14px] font-medium">Отзывы и оценки</p>
           {rating != null && reviewCount > 0 && (
             <p className="mt-0.5 text-[12px] opacity-80">
               {rating.toFixed(1)} · {reviewCount} отзывов покупателей
