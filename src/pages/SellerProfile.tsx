@@ -128,11 +128,25 @@ export default function SellerProfile() {
   useScrollRestoration();
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
-      if (!id) return;
+      if (!id) {
+        setIsLoading(false);
+        setProductsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setProductsLoading(true);
+      setProductsLoadError(false);
+      setFarmer(null);
+      setProducts([]);
+      setOrdersCount(null);
+      setAverageRating(null);
+      setTotalReviewCount(0);
 
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
       let farmerData: any = null;
       let farmerError: any = null;
 
@@ -152,9 +166,11 @@ export default function SellerProfile() {
         farmerError = res.error;
       }
 
-      if (farmerError) {
+      if (cancelled) return;
+      if (farmerError || !farmerData) {
         console.error("Error fetching farmer:", farmerError);
         setIsLoading(false);
+        setProductsLoading(false);
         return;
       }
 
@@ -164,7 +180,9 @@ export default function SellerProfile() {
         return;
       }
 
+      // Шапка появляется сразу; товары, отзывы и статистика не ждут друг друга.
       setFarmer(farmerData);
+      setIsLoading(false);
 
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get("ref")) {
@@ -173,16 +191,17 @@ export default function SellerProfile() {
         localStorage.setItem("referrer_farmer_ts", Date.now().toString());
       }
 
-      // Публичная статистика продавца (кол-во выполненных заказов)
-      supabase
-        .rpc("get_farmer_public_stats", { _farmer_id: farmerData.id })
-        .then(({ data }) => {
-          const row = Array.isArray(data) ? data[0] : data;
-          if (row?.orders_count != null) setOrdersCount(Number(row.orders_count));
-        });
+      void Promise.resolve(
+        supabase
+          .rpc("get_farmer_public_stats", { _farmer_id: farmerData.id })
+          .then(({ data }) => {
+            if (cancelled) return;
+            const row = Array.isArray(data) ? data[0] : data;
+            if (row?.orders_count != null) setOrdersCount(Number(row.orders_count));
+          }),
+      ).catch((statsError) => console.error("Error fetching farmer stats:", statsError));
 
-      // Fetch active products
-      const { data: productsData } = await supabase
+      const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select(`
           id, title, slug, price, old_price, image_url, unit, is_new, farmer_id,
@@ -195,74 +214,118 @@ export default function SellerProfile() {
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
-      if (productsData) {
-        const productIds = productsData.map((p) => p.id);
-        const { data: reviewsData } = await supabase
-          .from("reviews")
-          .select("product_id, rating")
-          .in("product_id", productIds);
-
-        const productRatings: Record<string, { sum: number; count: number }> = {};
-        reviewsData?.forEach((r) => {
-          if (!productRatings[r.product_id]) {
-            productRatings[r.product_id] = { sum: 0, count: 0 };
-          }
-          productRatings[r.product_id].sum += r.rating;
-          productRatings[r.product_id].count += 1;
-        });
-
-        const allSum = Object.values(productRatings).reduce((s, r) => s + r.sum, 0);
-        const allCount = Object.values(productRatings).reduce((s, r) => s + r.count, 0);
-        setTotalReviewCount(allCount);
-        setAverageRating(allCount > 0 ? allSum / allCount : null);
-
-        const mappedProducts: Product[] = productsData.map((p) => {
-          const ratings = productRatings[p.id];
-          return {
-            id: p.id,
-            name: p.title,
-            slug: (p as any).slug || undefined,
-            price: p.price,
-            oldPrice: p.old_price || undefined,
-            discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
-            image:
-              p.image_url ||
-              "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
-            category: p.categories?.slug || "",
-            categoryName: p.categories?.name || "Другое",
-            categoryEmoji: (p.categories as any)?.emoji ?? null,
-            categorySort: (p.categories as any)?.sort_order ?? 999,
-            rating: ratings ? ratings.sum / ratings.count : null,
-            reviews: ratings?.count || 0,
-            seller: farmerData.name,
-            description: (p as any).description || "",
-            composition: (p as any).composition ?? null,
-            shelfLife: (p as any).shelf_life ?? null,
-            inStock: true,
-            deliveryDays: 2,
-            unit: p.unit,
-            isNew: p.is_new || false,
-            farmer_id: p.farmer_id,
-            prep_time_minutes: p.prep_time_minutes || 0,
-            order_lead_time_hours: (p as any).order_lead_time_hours || 0,
-          };
-        });
-
-        setProducts(mappedProducts);
+      if (cancelled) return;
+      if (productsError) {
+        console.error("Error fetching seller products:", productsError);
+        setProductsLoadError(true);
+        setProductsLoading(false);
+        return;
       }
 
-      setIsLoading(false);
+      const productRows = productsData || [];
+      const mappedProducts: Product[] = productRows.map((p) => ({
+        id: p.id,
+        name: p.title,
+        slug: (p as any).slug || undefined,
+        price: p.price,
+        oldPrice: p.old_price || undefined,
+        discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
+        image:
+          p.image_url ||
+          "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
+        category: p.categories?.slug || "",
+        categoryName: p.categories?.name || "Другое",
+        categoryEmoji: (p.categories as any)?.emoji ?? null,
+        categorySort: (p.categories as any)?.sort_order ?? 999,
+        rating: null,
+        reviews: 0,
+        seller: farmerData.name,
+        description: (p as any).description || "",
+        composition: (p as any).composition ?? null,
+        shelfLife: (p as any).shelf_life ?? null,
+        inStock: true,
+        deliveryDays: 2,
+        unit: p.unit,
+        isNew: p.is_new || false,
+        farmer_id: p.farmer_id,
+        prep_time_minutes: p.prep_time_minutes || 0,
+        order_lead_time_hours: (p as any).order_lead_time_hours || 0,
+      }));
+
+      // Карточки не блокируются запросом отзывов.
+      setProducts(mappedProducts);
+      setProductsLoading(false);
+
+      if (!productRows.length) return;
+
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from("reviews")
+        .select("product_id, rating")
+        .in("product_id", productRows.map((p) => p.id));
+
+      if (cancelled) return;
+      if (reviewsError) {
+        console.error("Error fetching seller reviews:", reviewsError);
+        return;
+      }
+
+      const productRatings: Record<string, { sum: number; count: number }> = {};
+      reviewsData?.forEach((r) => {
+        if (!productRatings[r.product_id]) {
+          productRatings[r.product_id] = { sum: 0, count: 0 };
+        }
+        productRatings[r.product_id].sum += r.rating;
+        productRatings[r.product_id].count += 1;
+      });
+
+      const allSum = Object.values(productRatings).reduce((sum, rating) => sum + rating.sum, 0);
+      const allCount = Object.values(productRatings).reduce((sum, rating) => sum + rating.count, 0);
+      setTotalReviewCount(allCount);
+      setAverageRating(allCount > 0 ? allSum / allCount : null);
+      setProducts((current) => current.map((product) => {
+        const rating = productRatings[product.id];
+        return {
+          ...product,
+          rating: rating ? rating.sum / rating.count : null,
+          reviews: rating?.count || 0,
+        };
+      }));
     };
 
-    fetchData();
-  }, [id]);
+    void fetchData().catch((loadError) => {
+      if (cancelled) return;
+      console.error("Error loading seller storefront:", loadError);
+      setIsLoading(false);
+      setProductsLoading(false);
+      setProductsLoadError(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto flex items-center justify-center px-4 py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <main className="mx-auto w-full max-w-3xl animate-pulse px-3 pt-2" aria-busy="true">
+          <span className="sr-only" role="status">Загружаем магазин…</span>
+          <div className="h-[190px] rounded-3xl bg-secondary sm:h-56" />
+          <div className="mx-auto mt-4 h-4 w-2/3 rounded-full bg-secondary" />
+          <div className="mx-auto mt-3 h-9 w-40 rounded-full bg-secondary" />
+          <div className="mt-5 grid grid-cols-2 gap-2.5">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="overflow-hidden rounded-xl bg-card">
+                <div className="aspect-square bg-secondary" />
+                <div className="space-y-2 p-3">
+                  <div className="h-4 w-4/5 rounded bg-secondary" />
+                  <div className="h-4 w-1/2 rounded bg-secondary" />
+                  <div className="h-9 rounded-lg bg-secondary" />
+                </div>
+              </div>
+            ))}
+          </div>
         </main>
       </div>
     );
@@ -320,6 +383,7 @@ export default function SellerProfile() {
         reviewCount={totalReviewCount}
         ordersCount={ordersCount}
         productsCount={products.length}
+        productsLoading={productsLoading}
         avatarUrl={farmer.photo_url}
         sellerSlug={sellerSlug}
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
@@ -344,12 +408,30 @@ export default function SellerProfile() {
         <div className="px-3 pt-2">
           {/* 4. Каталог по категориям */}
           <div id="seller-catalog" className="scroll-mt-2">
-            {products.length === 0 ? (
+            {productsLoading ? (
+              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3" aria-busy="true">
+                <span className="sr-only" role="status">Загружаем товары…</span>
+                {[0, 1, 2, 3].map((item) => (
+                  <div key={item} className="animate-pulse overflow-hidden rounded-xl bg-card">
+                    <div className="aspect-square bg-secondary" />
+                    <div className="space-y-2 p-3">
+                      <div className="h-4 w-4/5 rounded bg-secondary" />
+                      <div className="h-4 w-1/2 rounded bg-secondary" />
+                      <div className="h-9 rounded-lg bg-secondary" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : productsLoadError ? (
+              <div className="py-8 text-center text-muted-foreground" role="alert">
+                Не удалось загрузить товары. Обновите страницу.
+              </div>
+            ) : products.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 У продавца пока нет товаров
               </div>
             ) : (
-              groupedProducts.map((group) => (
+              groupedProducts.map((group, groupIndex) => (
                 <section key={group.slug} id={catSectionId(group.slug)} className="mb-5 scroll-mt-3">
                   <h2 className="mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl">
                     {group.emoji ? `${group.emoji} ` : ""}
@@ -362,7 +444,7 @@ export default function SellerProfile() {
                         product={product as never}
                         pickupLabel={pickupLabels.get(product.id)}
                         hasRequiredFields={requiredFieldIds.has(product.id)}
-                        priority={index < 2}
+                        priority={groupIndex === 0 && index < 2}
                         onOpen={() => openProduct(product)}
                       />
                     ))}
@@ -393,25 +475,9 @@ export default function SellerProfile() {
       </main>
       </div>
 
-      {/* 9. Плавающая корзина и быстрое оформление без регистрации */}
-      <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} raised={withMarketplaceNav} />
+      {/* 9. Плавающая корзина ведёт на единый checkout для всего сайта */}
+      <SellerStickyCart farmerId={farmer.id} onCheckout={() => navigate("/checkout")} raised={withMarketplaceNav} />
       <BottomNavigation />
-
-      {checkoutOpen && (
-        <SellerGuestCheckout
-          farmer={{
-            id: farmer.id,
-            name: farmer.name,
-            deliveryEnabled: farmer.delivery_enabled,
-            pickupEnabled: farmer.pickup_enabled,
-            city: farmer.city,
-            street: farmer.street,
-            addressDetails: farmer.address_details,
-            contacts: farmer.contacts,
-          }}
-          onClose={() => setCheckoutOpen(false)}
-        />
-      )}
     </div>
   );
 }

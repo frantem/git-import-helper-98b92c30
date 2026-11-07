@@ -86,7 +86,7 @@ export default function CheckoutUnified() {
   const { user, isLoading: authLoading } = useAuth();
   const [detailsOwner, setDetailsOwner] = useState<string | null>(null);
   const editedFields = useRef(new Set<string>());
-  const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [itemsExpanded, setItemsExpanded] = useState(() => window.innerWidth >= 768);
   const [sellerLoading, setSellerLoading] = useState(true);
   const [sellerError, setSellerError] = useState(false);
 
@@ -353,7 +353,7 @@ export default function CheckoutUnified() {
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Ваше имя</span>
             <input
               value={name}
-              onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); }}
+              onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); setError(null); }}
               placeholder="Анна"
               autoComplete="given-name"
               className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
@@ -367,6 +367,7 @@ export default function CheckoutUnified() {
               onChange={(e) => {
                 editedFields.current.add("phone");
                 setPhone(normalizeCheckoutPhone(e.target.value));
+                setError(null);
               }}
               inputMode="tel"
               autoComplete="tel"
@@ -386,7 +387,7 @@ export default function CheckoutUnified() {
                   key={option}
                   type="button"
                   aria-pressed={delivery === option}
-                  onClick={() => setDelivery(option)}
+                  onClick={() => { setDelivery(option); setError(null); }}
                   className={cn(
                     "h-11 flex-1 rounded-lg text-[13px] font-medium",
                     delivery === option ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
@@ -416,7 +417,7 @@ export default function CheckoutUnified() {
               <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Адрес доставки</span>
               <input
                 value={address}
-                onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); }}
+                onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); setError(null); }}
                 placeholder="Город, улица, дом, квартира"
                 autoComplete="street-address"
                 className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
@@ -433,7 +434,7 @@ export default function CheckoutUnified() {
                   type="button"
                   onClick={() => setContact(option.id)}
                   className={cn(
-                    "h-10 rounded-lg border text-[11.5px] font-medium transition-colors",
+                    "h-11 rounded-lg border px-1 text-[11px] font-medium transition-colors",
                     contact === option.id
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-muted-foreground",
@@ -459,7 +460,7 @@ export default function CheckoutUnified() {
           </label>
 
           {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
+            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
           )}
 
           <Button
@@ -477,15 +478,18 @@ export default function CheckoutUnified() {
               <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
             )}
           </Button>
+          <p className="text-center text-[12px] leading-relaxed text-secondary-foreground">
+            Без регистрации. Продавец подтвердит заказ{delivery === "courier" ? ", стоимость доставки" : ""} и способ оплаты.
+          </p>
         </div>
 
         {/* Состав заказа */}
         <div className="order-1 md:order-2 md:sticky md:top-4">
           <div className="rounded-2xl border border-border/70 bg-card p-3.5">
             <div className="flex items-center justify-between gap-2">
-              <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left md:pointer-events-none">
+              <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left">
                 <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="mt-0.5 block text-[14px] font-bold">Сумма товаров · {price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
-                <ChevronDown className={cn("transition-transform md:hidden", itemsExpanded && "rotate-180")} />
+                <ChevronDown className={cn("transition-transform", itemsExpanded && "rotate-180")} />
               </Button>
               <Link
                 to={storeUrl}
@@ -495,8 +499,8 @@ export default function CheckoutUnified() {
               </Link>
             </div>
 
-            <div id="checkout-items" className={cn("mt-3 md:block", !itemsExpanded && "hidden")}>
-            <ul className="space-y-2.5 pr-0.5">
+            <div id="checkout-items" className={cn("mt-3", !itemsExpanded && "hidden")}>
+            <ul className="max-h-[40vh] space-y-2.5 overflow-y-auto pr-0.5 md:max-h-none md:overflow-visible">
               {items.map((item) => {
                 const key = getItemKey(item);
                 const linePrice = (item.variant?.price ?? item.product.price) * item.quantity;
@@ -521,7 +525,7 @@ export default function CheckoutUnified() {
                           onClick={() => updateQuantity(key, Math.max(1, item.quantity - 1))}
                           disabled={item.quantity <= 1}
                           aria-label="Меньше"
-                          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-foreground disabled:opacity-40"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground disabled:opacity-40"
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
@@ -532,7 +536,7 @@ export default function CheckoutUnified() {
                           type="button"
                           onClick={() => updateQuantity(key, item.quantity + 1)}
                           aria-label="Больше"
-                          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-foreground"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground"
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -540,7 +544,7 @@ export default function CheckoutUnified() {
                           type="button"
                           onClick={() => removeFromCart(key)}
                           aria-label="Удалить"
-                          className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground"
+                          className="ml-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -564,25 +568,6 @@ export default function CheckoutUnified() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Кнопка на телефоне — всегда под рукой */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:hidden">
-        <Button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-[14.5px] font-bold"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Отправляем…
-            </>
-          ) : (
-            <>Заказать · {price.formatted} <BynSymbol className="h-3 w-3" /></>
-          )}
-        </Button>
       </div>
 
     </div>
