@@ -353,7 +353,7 @@ export default function CheckoutUnified() {
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Ваше имя</span>
             <input
               value={name}
-              onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); }}
+              onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); setError(null); }}
               placeholder="Анна"
               autoComplete="given-name"
               className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
@@ -367,6 +367,7 @@ export default function CheckoutUnified() {
               onChange={(e) => {
                 editedFields.current.add("phone");
                 setPhone(normalizeCheckoutPhone(e.target.value));
+                setError(null);
               }}
               inputMode="tel"
               autoComplete="tel"
@@ -386,7 +387,7 @@ export default function CheckoutUnified() {
                   key={option}
                   type="button"
                   aria-pressed={delivery === option}
-                  onClick={() => setDelivery(option)}
+                  onClick={() => { setDelivery(option); setError(null); }}
                   className={cn(
                     "h-11 flex-1 rounded-lg text-[13px] font-medium",
                     delivery === option ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
@@ -416,7 +417,7 @@ export default function CheckoutUnified() {
               <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Адрес доставки</span>
               <input
                 value={address}
-                onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); }}
+                onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); setError(null); }}
                 placeholder="Город, улица, дом, квартира"
                 autoComplete="street-address"
                 className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
@@ -433,7 +434,7 @@ export default function CheckoutUnified() {
                   type="button"
                   onClick={() => setContact(option.id)}
                   className={cn(
-                    "h-10 rounded-lg border text-[11.5px] font-medium transition-colors",
+                    "h-11 rounded-lg border px-1 text-[11px] font-medium transition-colors",
                     contact === option.id
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-muted-foreground",
@@ -459,7 +460,7 @@ export default function CheckoutUnified() {
           </label>
 
           {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
+            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
           )}
 
           <Button

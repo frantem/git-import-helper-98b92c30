@@ -34,6 +34,7 @@ pull request'ы. Поэтому ветки и PR не нужны: **коммит
 ## Архитектура сторис
 
 - Checkout reads receiving methods, delivery terms and pickup address/hours directly from farmers; buyer contact drafts are scoped to guest or auth user ID to avoid mixing accounts.
+- Seller storefronts render farmer and product data before reviews and stats; scope auxiliary product queries to loaded product IDs so secondary data never blocks the first catalog paint.
 
 - Personal seller storefronts use a seller-only category comparator for ordering; keep marketplace category ordering and shared product cards unchanged.
 
