@@ -432,7 +432,7 @@ const features = [
     },
   },
   {
-    title: "Ваши товары на маркетплейсе",
+    title: "Возможность выложить товары на locusfood.by",
     text: "Товары видят покупатели всего маркетплейса Locus.",
     image: {
       src: "/media/marketplace-preview.jpg",
