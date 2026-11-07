@@ -628,7 +628,7 @@ export default function ForSellers() {
                   to={applicationPath}
                   className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#E5453D] px-7 text-[14.5px] font-semibold text-white shadow-sm transition-colors hover:bg-[#D43830] sm:h-11 sm:w-auto sm:text-[15px]"
                 >
-                  Начать продавать
+                  Создать свою витрину
                 </Link>
               </div>
             </div>
