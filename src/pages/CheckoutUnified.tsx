@@ -477,6 +477,9 @@ export default function CheckoutUnified() {
               <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
             )}
           </Button>
+          <p className="text-center text-[12px] leading-relaxed text-secondary-foreground">
+            Без регистрации. Продавец подтвердит заказ{delivery === "courier" ? ", стоимость доставки" : ""} и способ оплаты.
+          </p>
         </div>
 
         {/* Состав заказа */}
@@ -564,25 +567,6 @@ export default function CheckoutUnified() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Кнопка на телефоне — всегда под рукой */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:hidden">
-        <Button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-[14.5px] font-bold"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Отправляем…
-            </>
-          ) : (
-            <>Заказать · {price.formatted} <BynSymbol className="h-3 w-3" /></>
-          )}
-        </Button>
       </div>
 
     </div>
