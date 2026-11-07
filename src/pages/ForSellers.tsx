@@ -822,7 +822,7 @@ export default function ForSellers() {
           </Link>
 
           <div className="mt-16 flex flex-col gap-4 border-t border-white/25 pt-6 text-[12.5px] text-white/85 sm:flex-row sm:items-center sm:justify-between">
-            <p>© Locus, 2026 · ИП Котович О. А., УНП 391863210</p>
+            <p>© Locus, 2026 · УНП: CE6154534<br />Котович Артём Владимирович, самозанятый</p>
             <nav className="flex flex-wrap gap-5">
               <Link to="/oferta" className="hover:text-white">Оферта</Link>
               <Link to="/privacy" className="hover:text-white">Политика</Link>
