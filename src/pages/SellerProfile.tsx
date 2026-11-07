@@ -308,8 +308,23 @@ export default function SellerProfile() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto flex items-center justify-center px-4 py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <main className="mx-auto w-full max-w-3xl animate-pulse px-3 pt-2" aria-busy="true">
+          <span className="sr-only" role="status">Загружаем магазин…</span>
+          <div className="h-[190px] rounded-3xl bg-secondary sm:h-56" />
+          <div className="mx-auto mt-4 h-4 w-2/3 rounded-full bg-secondary" />
+          <div className="mx-auto mt-3 h-9 w-40 rounded-full bg-secondary" />
+          <div className="mt-5 grid grid-cols-2 gap-2.5">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="overflow-hidden rounded-xl bg-card">
+                <div className="aspect-square bg-secondary" />
+                <div className="space-y-2 p-3">
+                  <div className="h-4 w-4/5 rounded bg-secondary" />
+                  <div className="h-4 w-1/2 rounded bg-secondary" />
+                  <div className="h-9 rounded-lg bg-secondary" />
+                </div>
+              </div>
+            ))}
+          </div>
         </main>
       </div>
     );
@@ -367,6 +382,7 @@ export default function SellerProfile() {
         reviewCount={totalReviewCount}
         ordersCount={ordersCount}
         productsCount={products.length}
+        productsLoading={productsLoading}
         avatarUrl={farmer.photo_url}
         sellerSlug={sellerSlug}
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
@@ -391,12 +407,30 @@ export default function SellerProfile() {
         <div className="px-3 pt-2">
           {/* 4. Каталог по категориям */}
           <div id="seller-catalog" className="scroll-mt-2">
-            {products.length === 0 ? (
+            {productsLoading ? (
+              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3" aria-busy="true">
+                <span className="sr-only" role="status">Загружаем товары…</span>
+                {[0, 1, 2, 3].map((item) => (
+                  <div key={item} className="animate-pulse overflow-hidden rounded-xl bg-card">
+                    <div className="aspect-square bg-secondary" />
+                    <div className="space-y-2 p-3">
+                      <div className="h-4 w-4/5 rounded bg-secondary" />
+                      <div className="h-4 w-1/2 rounded bg-secondary" />
+                      <div className="h-9 rounded-lg bg-secondary" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : productsLoadError ? (
+              <div className="py-8 text-center text-muted-foreground" role="alert">
+                Не удалось загрузить товары. Обновите страницу.
+              </div>
+            ) : products.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 У продавца пока нет товаров
               </div>
             ) : (
-              groupedProducts.map((group) => (
+              groupedProducts.map((group, groupIndex) => (
                 <section key={group.slug} id={catSectionId(group.slug)} className="mb-5 scroll-mt-3">
                   <h2 className="mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl">
                     {group.emoji ? `${group.emoji} ` : ""}
@@ -409,7 +443,7 @@ export default function SellerProfile() {
                         product={product as never}
                         pickupLabel={pickupLabels.get(product.id)}
                         hasRequiredFields={requiredFieldIds.has(product.id)}
-                        priority={index < 2}
+                        priority={groupIndex === 0 && index < 2}
                         onOpen={() => openProduct(product)}
                       />
                     ))}
@@ -440,25 +474,9 @@ export default function SellerProfile() {
       </main>
       </div>
 
-      {/* 9. Плавающая корзина и быстрое оформление без регистрации */}
-      <SellerStickyCart farmerId={farmer.id} onCheckout={() => setCheckoutOpen(true)} raised={withMarketplaceNav} />
+      {/* 9. Плавающая корзина ведёт на единый checkout для всего сайта */}
+      <SellerStickyCart farmerId={farmer.id} onCheckout={() => navigate("/checkout")} raised={withMarketplaceNav} />
       <BottomNavigation />
-
-      {checkoutOpen && (
-        <SellerGuestCheckout
-          farmer={{
-            id: farmer.id,
-            name: farmer.name,
-            deliveryEnabled: farmer.delivery_enabled,
-            pickupEnabled: farmer.pickup_enabled,
-            city: farmer.city,
-            street: farmer.street,
-            addressDetails: farmer.address_details,
-            contacts: farmer.contacts,
-          }}
-          onClose={() => setCheckoutOpen(false)}
-        />
-      )}
     </div>
   );
 }
