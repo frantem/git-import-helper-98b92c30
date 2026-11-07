@@ -560,7 +560,7 @@ export default function ForSellers() {
               to={applicationPath}
               className="hidden items-center rounded-full bg-[#E5453D] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#D43830] sm:inline-flex"
             >
-              Начать продавать
+              Создать
             </Link>
             <button
               type="button"
@@ -766,7 +766,7 @@ export default function ForSellers() {
                 to={applicationPath}
                 className="mt-6 inline-flex h-11 items-center rounded-full bg-[#FB4545] px-6 text-[13px] font-medium text-white transition hover:bg-[#E83C3C]"
               >
-                Начать продавать
+                Попробовать создать 
               </Link>
             </div>
 
@@ -818,7 +818,7 @@ export default function ForSellers() {
             to={applicationPath}
             className="mt-8 inline-flex h-12 items-center rounded-full bg-white px-6 text-[13.5px] font-medium text-[#141414] transition hover:bg-[#F6F3EC]"
           >
-            Попробовать
+            Создать свой сайт
           </Link>
 
           <div className="mt-16 flex flex-col gap-4 border-t border-white/25 pt-6 text-[12.5px] text-white/85 sm:flex-row sm:items-center sm:justify-between">
