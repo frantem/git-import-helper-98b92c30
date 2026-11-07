@@ -4,7 +4,6 @@ import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2, ChevronRight } f
 
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { SellerGuestCheckout } from "@/components/seller/SellerGuestCheckout";
 import { useSellerNavContext } from "@/hooks/useSellerNavContext";
 import { ProductReviews } from "@/components/ProductReviews";
 import { useCart } from "@/contexts/CartContext";
@@ -52,16 +51,6 @@ export default function Product() {
   // Пришли с витрины продавца — держим опыт моно-магазина
   const sellerCtx = useSellerNavContext();
   const sellerSlug = sellerCtx?.sellerSlug ?? null;
-  const [sellerCheckout, setSellerCheckout] = useState<{
-    id: string;
-    name: string;
-    deliveryEnabled: boolean | null;
-    pickupEnabled: boolean | null;
-    city?: string | null;
-    street?: string | null;
-    addressDetails?: string | null;
-    contacts?: Record<string, string> | null;
-  } | null>(null);
   const {
     addToCart,
     items,
@@ -450,7 +439,7 @@ export default function Product() {
   const displayRating = reviews.length > 0 ? averageRating : product.rating || null;
   const displayReviewCount = reviews.length > 0 ? reviews.length : product.reviews || 0;
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!allCustomFieldsFilled) {
       toast.error("Заполните все обязательные поля");
       return;
@@ -460,27 +449,7 @@ export default function Product() {
       if (!added) return;
     }
 
-    // С витрины продавца — сразу быстрый заказ без регистрации
-    if (sellerSlug && product?.farmer_id) {
-      const { data } = await supabase
-        .from("farmers")
-        .select("id, name, delivery_enabled, pickup_enabled, city, contacts")
-        .eq("id", product.farmer_id)
-        .maybeSingle();
-      if (data) {
-        setSellerCheckout({
-          id: data.id,
-          name: data.name,
-          deliveryEnabled: data.delivery_enabled,
-          pickupEnabled: data.pickup_enabled,
-          city: data.city,
-          contacts: (data.contacts as Record<string, string> | null) ?? null,
-        });
-        return;
-      }
-    }
-
-    navigate("/cart");
+    navigate("/checkout");
   };
   const handleAddToCart = () => {
     if (!allCustomFieldsFilled) {
@@ -998,12 +967,6 @@ export default function Product() {
 
       <BottomNavigation />
 
-      {sellerCheckout && (
-        <SellerGuestCheckout
-          farmer={sellerCheckout as never}
-          onClose={() => setSellerCheckout(null)}
-        />
-      )}
     </div>;
 }
 

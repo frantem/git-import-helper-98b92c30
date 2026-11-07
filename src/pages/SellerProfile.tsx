@@ -128,11 +128,25 @@ export default function SellerProfile() {
   useScrollRestoration();
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
-      if (!id) return;
+      if (!id) {
+        setIsLoading(false);
+        setProductsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setProductsLoading(true);
+      setProductsLoadError(false);
+      setFarmer(null);
+      setProducts([]);
+      setOrdersCount(null);
+      setAverageRating(null);
+      setTotalReviewCount(0);
 
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
       let farmerData: any = null;
       let farmerError: any = null;
 
@@ -152,9 +166,11 @@ export default function SellerProfile() {
         farmerError = res.error;
       }
 
-      if (farmerError) {
+      if (cancelled) return;
+      if (farmerError || !farmerData) {
         console.error("Error fetching farmer:", farmerError);
         setIsLoading(false);
+        setProductsLoading(false);
         return;
       }
 
@@ -164,7 +180,9 @@ export default function SellerProfile() {
         return;
       }
 
+      // Шапка появляется сразу; товары, отзывы и статистика не ждут друг друга.
       setFarmer(farmerData);
+      setIsLoading(false);
 
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get("ref")) {
@@ -173,16 +191,16 @@ export default function SellerProfile() {
         localStorage.setItem("referrer_farmer_ts", Date.now().toString());
       }
 
-      // Публичная статистика продавца (кол-во выполненных заказов)
-      supabase
+      void supabase
         .rpc("get_farmer_public_stats", { _farmer_id: farmerData.id })
         .then(({ data }) => {
+          if (cancelled) return;
           const row = Array.isArray(data) ? data[0] : data;
           if (row?.orders_count != null) setOrdersCount(Number(row.orders_count));
-        });
+        })
+        .catch((statsError) => console.error("Error fetching farmer stats:", statsError));
 
-      // Fetch active products
-      const { data: productsData } = await supabase
+      const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select(`
           id, title, slug, price, old_price, image_url, unit, is_new, farmer_id,
@@ -195,67 +213,96 @@ export default function SellerProfile() {
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
-      if (productsData) {
-        const productIds = productsData.map((p) => p.id);
-        const { data: reviewsData } = await supabase
-          .from("reviews")
-          .select("product_id, rating")
-          .in("product_id", productIds);
-
-        const productRatings: Record<string, { sum: number; count: number }> = {};
-        reviewsData?.forEach((r) => {
-          if (!productRatings[r.product_id]) {
-            productRatings[r.product_id] = { sum: 0, count: 0 };
-          }
-          productRatings[r.product_id].sum += r.rating;
-          productRatings[r.product_id].count += 1;
-        });
-
-        const allSum = Object.values(productRatings).reduce((s, r) => s + r.sum, 0);
-        const allCount = Object.values(productRatings).reduce((s, r) => s + r.count, 0);
-        setTotalReviewCount(allCount);
-        setAverageRating(allCount > 0 ? allSum / allCount : null);
-
-        const mappedProducts: Product[] = productsData.map((p) => {
-          const ratings = productRatings[p.id];
-          return {
-            id: p.id,
-            name: p.title,
-            slug: (p as any).slug || undefined,
-            price: p.price,
-            oldPrice: p.old_price || undefined,
-            discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
-            image:
-              p.image_url ||
-              "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
-            category: p.categories?.slug || "",
-            categoryName: p.categories?.name || "Другое",
-            categoryEmoji: (p.categories as any)?.emoji ?? null,
-            categorySort: (p.categories as any)?.sort_order ?? 999,
-            rating: ratings ? ratings.sum / ratings.count : null,
-            reviews: ratings?.count || 0,
-            seller: farmerData.name,
-            description: (p as any).description || "",
-            composition: (p as any).composition ?? null,
-            shelfLife: (p as any).shelf_life ?? null,
-            inStock: true,
-            deliveryDays: 2,
-            unit: p.unit,
-            isNew: p.is_new || false,
-            farmer_id: p.farmer_id,
-            prep_time_minutes: p.prep_time_minutes || 0,
-            order_lead_time_hours: (p as any).order_lead_time_hours || 0,
-          };
-        });
-
-        setProducts(mappedProducts);
+      if (cancelled) return;
+      if (productsError) {
+        console.error("Error fetching seller products:", productsError);
+        setProductsLoadError(true);
+        setProductsLoading(false);
+        return;
       }
 
-      setIsLoading(false);
+      const productRows = productsData || [];
+      const mappedProducts: Product[] = productRows.map((p) => ({
+        id: p.id,
+        name: p.title,
+        slug: (p as any).slug || undefined,
+        price: p.price,
+        oldPrice: p.old_price || undefined,
+        discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
+        image:
+          p.image_url ||
+          "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
+        category: p.categories?.slug || "",
+        categoryName: p.categories?.name || "Другое",
+        categoryEmoji: (p.categories as any)?.emoji ?? null,
+        categorySort: (p.categories as any)?.sort_order ?? 999,
+        rating: null,
+        reviews: 0,
+        seller: farmerData.name,
+        description: (p as any).description || "",
+        composition: (p as any).composition ?? null,
+        shelfLife: (p as any).shelf_life ?? null,
+        inStock: true,
+        deliveryDays: 2,
+        unit: p.unit,
+        isNew: p.is_new || false,
+        farmer_id: p.farmer_id,
+        prep_time_minutes: p.prep_time_minutes || 0,
+        order_lead_time_hours: (p as any).order_lead_time_hours || 0,
+      }));
+
+      // Карточки не блокируются запросом отзывов.
+      setProducts(mappedProducts);
+      setProductsLoading(false);
+
+      if (!productRows.length) return;
+
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from("reviews")
+        .select("product_id, rating")
+        .in("product_id", productRows.map((p) => p.id));
+
+      if (cancelled) return;
+      if (reviewsError) {
+        console.error("Error fetching seller reviews:", reviewsError);
+        return;
+      }
+
+      const productRatings: Record<string, { sum: number; count: number }> = {};
+      reviewsData?.forEach((r) => {
+        if (!productRatings[r.product_id]) {
+          productRatings[r.product_id] = { sum: 0, count: 0 };
+        }
+        productRatings[r.product_id].sum += r.rating;
+        productRatings[r.product_id].count += 1;
+      });
+
+      const allSum = Object.values(productRatings).reduce((sum, rating) => sum + rating.sum, 0);
+      const allCount = Object.values(productRatings).reduce((sum, rating) => sum + rating.count, 0);
+      setTotalReviewCount(allCount);
+      setAverageRating(allCount > 0 ? allSum / allCount : null);
+      setProducts((current) => current.map((product) => {
+        const rating = productRatings[product.id];
+        return {
+          ...product,
+          rating: rating ? rating.sum / rating.count : null,
+          reviews: rating?.count || 0,
+        };
+      }));
     };
 
-    fetchData();
-  }, [id]);
+    void fetchData().catch((loadError) => {
+      if (cancelled) return;
+      console.error("Error loading seller storefront:", loadError);
+      setIsLoading(false);
+      setProductsLoading(false);
+      setProductsLoadError(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
 
   if (isLoading) {
     return (
