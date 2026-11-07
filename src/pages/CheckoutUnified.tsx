@@ -86,7 +86,7 @@ export default function CheckoutUnified() {
   const { user, isLoading: authLoading } = useAuth();
   const [detailsOwner, setDetailsOwner] = useState<string | null>(null);
   const editedFields = useRef(new Set<string>());
-  const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [itemsExpanded, setItemsExpanded] = useState(() => window.innerWidth >= 768);
   const [sellerLoading, setSellerLoading] = useState(true);
   const [sellerError, setSellerError] = useState(false);
 
@@ -486,9 +486,9 @@ export default function CheckoutUnified() {
         <div className="order-1 md:order-2 md:sticky md:top-4">
           <div className="rounded-2xl border border-border/70 bg-card p-3.5">
             <div className="flex items-center justify-between gap-2">
-              <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left md:pointer-events-none">
+              <Button variant="ghost" onClick={() => setItemsExpanded((value) => !value)} aria-expanded={itemsExpanded} aria-controls="checkout-items" className="h-auto min-h-11 flex-1 justify-between whitespace-normal px-0 text-left">
                 <span><span className="block text-[13px] font-semibold">Ваш заказ · {itemsCount} шт.</span><span className="mt-0.5 block text-[14px] font-bold">Сумма товаров · {price.formatted} <BynSymbol className="inline-block h-3 w-3" /></span></span>
-                <ChevronDown className={cn("transition-transform md:hidden", itemsExpanded && "rotate-180")} />
+                <ChevronDown className={cn("transition-transform", itemsExpanded && "rotate-180")} />
               </Button>
               <Link
                 to={storeUrl}
@@ -498,8 +498,8 @@ export default function CheckoutUnified() {
               </Link>
             </div>
 
-            <div id="checkout-items" className={cn("mt-3 md:block", !itemsExpanded && "hidden")}>
-            <ul className="space-y-2.5 pr-0.5">
+            <div id="checkout-items" className={cn("mt-3", !itemsExpanded && "hidden")}>
+            <ul className="max-h-[40vh] space-y-2.5 overflow-y-auto pr-0.5 md:max-h-none md:overflow-visible">
               {items.map((item) => {
                 const key = getItemKey(item);
                 const linePrice = (item.variant?.price ?? item.product.price) * item.quantity;
@@ -524,7 +524,7 @@ export default function CheckoutUnified() {
                           onClick={() => updateQuantity(key, Math.max(1, item.quantity - 1))}
                           disabled={item.quantity <= 1}
                           aria-label="Меньше"
-                          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-foreground disabled:opacity-40"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground disabled:opacity-40"
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
@@ -535,7 +535,7 @@ export default function CheckoutUnified() {
                           type="button"
                           onClick={() => updateQuantity(key, item.quantity + 1)}
                           aria-label="Больше"
-                          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-foreground"
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground"
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -543,7 +543,7 @@ export default function CheckoutUnified() {
                           type="button"
                           onClick={() => removeFromCart(key)}
                           aria-label="Удалить"
-                          className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground"
+                          className="ml-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
