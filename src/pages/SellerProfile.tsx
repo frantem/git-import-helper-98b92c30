@@ -191,14 +191,15 @@ export default function SellerProfile() {
         localStorage.setItem("referrer_farmer_ts", Date.now().toString());
       }
 
-      void supabase
-        .rpc("get_farmer_public_stats", { _farmer_id: farmerData.id })
-        .then(({ data }) => {
-          if (cancelled) return;
-          const row = Array.isArray(data) ? data[0] : data;
-          if (row?.orders_count != null) setOrdersCount(Number(row.orders_count));
-        })
-        .catch((statsError) => console.error("Error fetching farmer stats:", statsError));
+      void Promise.resolve(
+        supabase
+          .rpc("get_farmer_public_stats", { _farmer_id: farmerData.id })
+          .then(({ data }) => {
+            if (cancelled) return;
+            const row = Array.isArray(data) ? data[0] : data;
+            if (row?.orders_count != null) setOrdersCount(Number(row.orders_count));
+          }),
+      ).catch((statsError) => console.error("Error fetching farmer stats:", statsError));
 
       const { data: productsData, error: productsError } = await supabase
         .from("products")
