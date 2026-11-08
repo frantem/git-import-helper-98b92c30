@@ -5,13 +5,12 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingBag, Settings, Loader2, Users, Lock, CreditCard, ImageIcon, Truck } from "lucide-react";
+import { Package, ShoppingBag, Settings, Loader2, Users, CreditCard, ImageIcon, Truck } from "lucide-react";
 import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 import { useSellerClientsCount } from "@/hooks/useSellerClientsCount";
 import { TrialBanner } from "@/components/seller/TrialBanner";
 
-const PLAN_LABEL = { free: "Free", standard: "Standard", pro: "Pro" } as const;
 
 export default function SellerDashboard() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -98,10 +97,9 @@ export default function SellerDashboard() {
             <div className="flex-1">
               <h3 className="flex items-center gap-2 font-bold">
                 Клиенты
-                {!planState.canUseClients && <Lock className="h-4 w-4 text-muted-foreground" />}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {planState.canUseClients ? "Покупатели и их статусы" : "Доступно на Standard"}
+                Покупатели и их статусы
               </p>
             </div>
             {clientsCount > 0 && (
@@ -116,7 +114,7 @@ export default function SellerDashboard() {
             <div>
               <h3 className="font-bold">Тарифы</h3>
               <p className="text-sm text-muted-foreground">
-                Текущий тариф: {planState.isTrial ? "Standard (пробный)" : PLAN_LABEL[planState.plan]}
+                {planState.isTrial ? `Бесплатный период · ${planState.trialDaysLeft} дн.` : "Один тариф · все возможности"}
               </p>
             </div>
           </Link>

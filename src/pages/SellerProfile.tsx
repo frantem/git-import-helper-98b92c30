@@ -353,9 +353,7 @@ export default function SellerProfile() {
     navigate(`/product/${product.slug || product.id}`);
   };
   const locationLabel = farmer.city?.trim() || farmer.village?.trim() || null;
-  const canShowContacts =
-    !!farmer.plan && farmer.plan !== "free" &&
-    (!farmer.trial_ends_at || new Date(farmer.trial_ends_at).getTime() > Date.now());
+  const canShowContacts = true;
 
   return (
     <div className={`seller-theme-${themeName} min-h-screen bg-background pb-0`}>

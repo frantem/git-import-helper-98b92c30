@@ -33,6 +33,10 @@ pull request'ы. Поэтому ветки и PR не нужны: **коммит
 
 ## Архитектура сторис
 
+- Keep seller subscription pricing and unrestricted feature entitlement in shared pure helpers; retain legacy plan storage values only for compatibility with existing subscription requests.
+- Initialize seller trial dates in the database when a farmer is created; display these stored dates rather than restarting a trial on page visits.
+- Seller and admin product forms share food-detail validation and nullable nutrition parsing so optional nutrition behaves identically on creation and editing.
+
 - Checkout reads receiving methods, delivery terms and pickup address/hours directly from farmers; buyer contact drafts are scoped to guest or auth user ID to avoid mixing accounts.
 - Seller storefronts render farmer and product data before reviews and stats; scope auxiliary product queries to loaded product IDs so secondary data never blocks the first catalog paint.
 

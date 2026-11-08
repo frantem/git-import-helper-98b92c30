@@ -22,7 +22,7 @@ export function TrialBanner({ daysLeft }: TrialBannerProps) {
       <Clock className="h-5 w-5 shrink-0 text-primary" />
       <p className="text-sm font-medium text-foreground">
         Пробный период заканчивается через {daysLeft} {pluralDays(daysLeft)}.{" "}
-        <span className="underline">Выбрать тариф</span>
+        <span className="underline">Продлить доступ</span>
       </p>
     </Link>
   );
