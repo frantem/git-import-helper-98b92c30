@@ -92,7 +92,6 @@ export default function SellerProfile() {
 
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [ordersCount, setOrdersCount] = useState<number | null>(null);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +141,6 @@ export default function SellerProfile() {
       setProductsLoadError(false);
       setFarmer(null);
       setProducts([]);
-      setOrdersCount(null);
       setAverageRating(null);
       setTotalReviewCount(0);
 
@@ -191,17 +189,7 @@ export default function SellerProfile() {
         localStorage.setItem("referrer_farmer_ts", Date.now().toString());
       }
 
-      void Promise.resolve(
-        supabase
-          .rpc("get_farmer_public_stats", { _farmer_id: farmerData.id })
-          .then(({ data }) => {
-            if (cancelled) return;
-            const row = Array.isArray(data) ? data[0] : data;
-            if (row?.orders_count != null) setOrdersCount(Number(row.orders_count));
-          }),
-      ).catch((statsError) => console.error("Error fetching farmer stats:", statsError));
-
-      const { data: productsData, error: productsError } = await supabase
+            const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select(`
           id, title, slug, price, old_price, image_url, unit, is_new, farmer_id,
@@ -379,7 +367,6 @@ export default function SellerProfile() {
         locationLabel={locationLabel}
         rating={averageRating ?? farmer.rating}
         reviewCount={totalReviewCount}
-        ordersCount={ordersCount}
         productsCount={products.length}
         productsLoading={productsLoading}
         avatarUrl={farmer.photo_url}

@@ -1,18 +1,9 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Instagram, MapPin, MessageCircle, Package, Star } from "lucide-react";
+import { ChevronRight, Instagram, MapPin, MessageCircle, Star } from "lucide-react";
 import { cleanSellerName } from "@/lib/sellerName";
 import { cdnImage } from "@/lib/imageCdn";
 import { cn } from "@/lib/utils";
-
-/** «1 заказ / 2 заказа / 5 заказов» */
-function ordersWord(n: number) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "заказ";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "заказа";
-  return "заказов";
-}
 
 interface SellerHeroProps {
   name: string;
@@ -23,7 +14,6 @@ interface SellerHeroProps {
   locationLabel?: string | null;
   rating?: number | null;
   reviewCount?: number;
-  ordersCount?: number | null;
   /** Количество активных товаров — от него зависит статус «принимает заказы». */
   productsCount?: number;
   /** Не показываем «Под заказ», пока каталог ещё загружается. */
@@ -49,7 +39,6 @@ export const SellerHero = memo(function SellerHero({
   locationLabel,
   rating,
   reviewCount = 0,
-  ordersCount,
   productsCount = 0,
   productsLoading = false,
   avatarUrl,
@@ -151,14 +140,7 @@ export const SellerHero = memo(function SellerHero({
                 {rating!.toFixed(1)}
               </p>
             )
-          ) : (
-            <p className="mt-1 flex items-center justify-center gap-1 text-[12px] font-medium text-white/80">
-              <Package className="h-3.5 w-3.5" aria-hidden="true" />
-              {ordersCount && ordersCount > 0
-                ? `${ordersCount} ${ordersWord(ordersCount)} на Locus`
-                : "Новый продавец"}
-            </p>
-          )}
+          ) : null}
         </div>
       </div>
 
