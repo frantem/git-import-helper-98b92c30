@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+import { sellerFeatureAccess } from "@/lib/sellerSubscription";
+
 export type SellerPlan = "free" | "standard" | "pro";
 
 export interface SellerPlanState {
@@ -71,8 +73,7 @@ export function useSellerPlan(): SellerPlanState {
     trialUsed: !!trialStartedAt,
     trialEndsAt,
     trialDaysLeft: trialActive && trialEndsAt ? daysLeft(trialEndsAt) : null,
-    canUseClients: plan !== "free",
-    canShowContacts: plan !== "free",
+    ...sellerFeatureAccess(),
     refetch: () => setNonce((n) => n + 1),
   };
 }

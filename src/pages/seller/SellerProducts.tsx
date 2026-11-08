@@ -1,3 +1,4 @@
+import { hasRequiredFoodDetails, optionalNutrition } from "@/lib/productFoodDetails";
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
@@ -17,10 +18,9 @@ import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
-import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft, Lock } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
-import { useSellerPlan } from "@/hooks/useSellerPlan";
 
 
 
@@ -67,7 +67,6 @@ interface AddonLocal {
 
 export default function SellerProducts() {
   const { user, role, isLoading: authLoading } = useAuth();
-  const { plan } = useSellerPlan();
   const navigate = useNavigate();
 
   const [farmerId, setFarmerId] = useState<string | null>(null);
@@ -188,10 +187,8 @@ export default function SellerProducts() {
     if (!farmerId || savingRef.current) return;
     if (!productForm.title.trim()) { toast.error("Введите название товара"); return; }
     if (selectedCategoryIds.length === 0) { toast.error("Выберите хотя бы одну категорию"); return; }
-    if (!productForm.composition.trim() || !productForm.shelf_life.trim() ||
-        productForm.calories === "" || productForm.protein === "" ||
-        productForm.fat === "" || productForm.carbs === "") {
-      toast.error("Заполните состав, КБЖУ и срок хранения"); return;
+    if (!hasRequiredFoodDetails(productForm)) {
+      toast.error("Заполните состав и срок хранения"); return;
     }
 
     savingRef.current = true;
@@ -208,10 +205,10 @@ export default function SellerProducts() {
         farmer_id: farmerId, prep_time_minutes: productForm.prep_time_minutes || 0,
         order_lead_time_hours: productForm.order_lead_time_hours || 0,
         composition: productForm.composition || null,
-        calories: productForm.calories !== "" ? parseFloat(String(productForm.calories).replace(',', '.')) : null,
-        protein: productForm.protein !== "" ? parseFloat(String(productForm.protein).replace(',', '.')) : null,
-        fat: productForm.fat !== "" ? parseFloat(String(productForm.fat).replace(',', '.')) : null,
-        carbs: productForm.carbs !== "" ? parseFloat(String(productForm.carbs).replace(',', '.')) : null,
+        calories: optionalNutrition(productForm.calories),
+        protein: optionalNutrition(productForm.protein),
+        fat: optionalNutrition(productForm.fat),
+        carbs: optionalNutrition(productForm.carbs),
         shelf_life: productForm.shelf_life || null,
       };
 
@@ -410,24 +407,6 @@ export default function SellerProducts() {
         </div>
 
         <div className="space-y-4">
-          {plan === "free" && (
-            <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
-              <div className="flex items-start gap-2">
-                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    У вас тариф Free
-                  </p>
-                  <p className="mt-1 text-xs text-secondary-foreground">
-                    Подключите Standard — продавайте без комиссии, открывайте контакты клиентов и показывайте свои контакты на странице бренда.
-                  </p>
-                  <Link to="/seller/tariffs">
-                    <Button size="sm" className="mt-3">Подключить Standard</Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="flex justify-between items-center">
             <h2 className="font-medium text-foreground">Товары ({products.length})</h2>
@@ -531,7 +510,7 @@ export default function SellerProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label>КБЖУ <span className="text-destructive">*</span></Label>
+              <Label>КБЖУ <span className="text-muted-foreground">(необязательно)</span></Label>
               <div className="grid grid-cols-4 gap-2">
                 {[
                   { key: "calories", label: "К (ккал)", ph: "320" },
