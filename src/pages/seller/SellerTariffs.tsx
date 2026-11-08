@@ -126,7 +126,7 @@ export default function SellerTariffs() {
           <RadioGroup value={String(period)} onValueChange={(value) => setPeriod(value === "6" ? 6 : 1)} className="gap-3">
             <Label htmlFor="period-six" className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-4">
               <RadioGroupItem value="6" id="period-six" />
-              <span className="flex-1">6 месяцев<span className="block mt-1 text-xs text-muted-foreground"><Money kopecks={990} />/мес</span></span>
+              <span className="flex-1">6 месяцев<span className="block mt-1 text-xs text-muted-foreground"><Money kopecks={SELLER_SUBSCRIPTION.sixMonthsKopecks / 6} />/мес</span></span>
               <Money kopecks={subscriptionAmount(6)} />
             </Label>
             <Label htmlFor="period-one" className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-4">
