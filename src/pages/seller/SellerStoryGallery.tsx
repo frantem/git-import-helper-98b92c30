@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -116,7 +116,7 @@ export default function SellerStoryGallery() {
           </Link>
         </div>
       </main>
-      <BottomNavigation />
+      <SellerBottomNav />
     </div>
   );
 }

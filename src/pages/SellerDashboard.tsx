@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export default function SellerDashboard() {
           <p className="text-muted-foreground mb-4">Свяжитесь с администрацией для создания профиля</p>
           <Button onClick={() => navigate("/profile")}>Вернуться в профиль</Button>
         </main>
-        <BottomNavigation />
+        <SellerBottomNav />
       </div>
     );
   }
@@ -177,7 +177,7 @@ export default function SellerDashboard() {
 
         </div>
       </main>
-      <BottomNavigation />
+      <SellerBottomNav />
     </div>
   );
 }

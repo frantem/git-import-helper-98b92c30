@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2, Phone } from "lucide-react";
@@ -230,7 +230,7 @@ export default function SellerClients() {
           </div>
         )}
       </main>
-      <BottomNavigation />
+      <SellerBottomNav />
     </div>
   );
 }

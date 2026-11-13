@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,7 +139,7 @@ export default function SellerTariffs() {
           </Button></DialogFooter>
         </DialogContent>
       </Dialog>
-      <BottomNavigation />
+      <SellerBottomNav />
     </div>
   );
 }

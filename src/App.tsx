@@ -12,6 +12,7 @@ import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { ScrollManager } from "@/components/ScrollManager";
 import { trackVisitorSource } from "@/lib/visitorSource";
 import { CookieBanner } from "@/components/CookieBanner";
+import Index from "./pages/Index";
 import { CartConflictDialog } from "@/components/CartConflictDialog";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
@@ -87,7 +88,7 @@ const App = () => (
             <ChunkErrorBoundary>
               <Suspense fallback={null}>
                 <Routes>
-                  <Route path="/" element={<ForSellers />} />
+                  <Route path="/" element={<Index />} />
                   <Route path="/catalog" element={<Catalog />} />
                   <Route path="/product/:id" element={<Product />} />
                   <Route path="/cart" element={<Navigate to="/checkout" replace />} />

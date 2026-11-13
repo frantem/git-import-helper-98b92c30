@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Star, Loader2 } from "lucide-react";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -199,7 +198,6 @@ export default function SellerReviews() {
         </DialogContent>
       </Dialog>
 
-      <BottomNavigation />
     </div>
   );
 }

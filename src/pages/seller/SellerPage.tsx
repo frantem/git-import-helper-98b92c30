@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -156,7 +156,7 @@ export default function SellerPage() {
           <h1 className="mb-2 text-xl font-bold">Профиль продавца не найден</h1>
           <Button onClick={() => navigate("/seller")}>В панель продавца</Button>
         </main>
-        <BottomNavigation />
+        <SellerBottomNav />
       </div>
     );
   }
@@ -330,7 +330,7 @@ export default function SellerPage() {
         </section>
 
       </main>
-      <BottomNavigation />
+      <SellerBottomNav />
     </div>
   );
 }

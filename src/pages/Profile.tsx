@@ -188,7 +188,7 @@ export default function Profile() {
 
             <Store className="h-6 w-6 text-primary" />
             <div className="flex-1">
-              <h3 className="font-bold text-foreground">Панель продавца</h3>
+              <h3 className="font-bold text-foreground">Панель управления магазином</h3>
               <p className="text-xs text-muted-foreground">Управление товарами и заказами</p>
             </div>
             {sellerPendingCount > 0 &&
