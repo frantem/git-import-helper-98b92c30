@@ -149,3 +149,7 @@ $$;
 
 revoke all on function public.create_guest_order(uuid, jsonb, text, text, text, text, text, text, text) from public;
 grant execute on function public.create_guest_order(uuid, jsonb, text, text, text, text, text, text, text) to anon, authenticated;
+
+-- Старая сигнатура без способа оплаты больше не нужна: иначе PostgREST
+-- не может выбрать перегрузку при вызове с восемью аргументами.
+drop function if exists public.create_guest_order(uuid, jsonb, text, text, text, text, text, text);

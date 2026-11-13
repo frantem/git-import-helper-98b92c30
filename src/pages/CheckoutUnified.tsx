@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
 import { buyerDetailsKey, deliveryChoices, eripInstructions, EXTENDED_CHECKOUT_READY, formatPickupSchedule, getReceivingOptions, mergeBuyerDetails, normalizeCheckoutPhone, paymentChoices, readBuyerDetails, type PaymentKind } from "@/lib/checkoutDetails";
-import { isApparelStore } from "@/lib/storefrontKind";
 
 type ContactMethod = "call" | "telegram" | "viber" | "whatsapp";
 type DeliveryType = "courier" | "self" | "europochta" | "belpost";
@@ -31,6 +30,7 @@ interface CheckoutFarmer {
   delivery_terms: string | null;
   contacts: SellerContacts | null;
   pickup_slots: PickupSlots | null;
+  store_type: string | null;
 }
 
 const CONTACTS: { id: ContactMethod; label: string }[] = [
@@ -106,12 +106,13 @@ export default function CheckoutUnified() {
   const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const price = formatPrice(totalPrice);
   const receivingOptions = getReceivingOptions(farmer);
-  const apparel = isApparelStore(items.map((item) => item.product));
+  // Витрина вещей определяется типом магазина в базе, а не догадками по товару
+  const apparel = farmer?.store_type === "apparel" || farmer?.store_type === "craft";
   const deliveryList = deliveryChoices({ deliveryEnabled: farmer?.delivery_enabled, isApparel: apparel });
   const activeDelivery = deliveryList.find((option) => option.id === delivery) ?? deliveryList[0];
   const needsAddress = delivery !== "self";
   const paymentList = paymentChoices();
-  const canSubmit = !submitting && !sellerLoading && receivingOptions.includes(delivery);
+  const canSubmit = !submitting && !sellerLoading && deliveryList.some((option) => option.id === delivery);
   const pickupSchedule = formatPickupSchedule(farmer?.pickup_slots ?? null);
   const storeUrl = farmer?.slug ? `/seller/${farmer.slug}` : farmer ? `/seller/${farmer.id}` : "/catalog";
 
@@ -166,7 +167,7 @@ export default function CheckoutUnified() {
       const { data, error: loadError } = await supabase
         .from("farmers")
         .select(
-          "id, name, slug, city, street, address_details, delivery_enabled, pickup_enabled, delivery_terms, contacts, pickup_slots",
+          "id, name, slug, city, street, address_details, delivery_enabled, pickup_enabled, delivery_terms, contacts, pickup_slots, store_type",
         )
         .eq("id", cartFarmerId)
         .maybeSingle();
@@ -395,7 +396,7 @@ export default function CheckoutUnified() {
             {sellerLoading && <p className="text-sm text-secondary-foreground" role="status">Загружаем условия продавца…</p>}
             {sellerError && <p className="text-sm text-destructive" role="alert">Не удалось загрузить условия продавца. Обновите страницу.</p>}
             {!sellerLoading && !sellerError && !receivingOptions.length && <p className="text-sm text-secondary-foreground">Продавец пока не указал способ получения заказа.</p>}
-            <div className="flex gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {deliveryList.map((option) => (
                 <Button variant="outline"
                   key={option.id}
@@ -403,7 +404,7 @@ export default function CheckoutUnified() {
                   aria-pressed={delivery === option.id}
                   onClick={() => { setDelivery(option.id); setError(null); }}
                   className={cn(
-                    "h-11 flex-1 rounded-lg px-2 text-[13px] font-medium",
+                    "h-11 w-full rounded-lg px-2 text-[13px] font-medium",
                     delivery === option.id ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
                   )}
                 >
@@ -426,7 +427,7 @@ export default function CheckoutUnified() {
             )}
           </div>
 
-          {needsAddress && receivingOptions.includes("courier") && (
+          {needsAddress && (
             <label className="block">
               <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">
                 {activeDelivery?.addressLabel || "Адрес доставки"}
@@ -479,21 +480,6 @@ export default function CheckoutUnified() {
             <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-[12.5px] text-destructive">{error}</p>
           )}
 
-          <Button
-            type="button"
-            onClick={submit}
-            disabled={!canSubmit}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Отправляем…
-              </>
-            ) : (
-              <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
-            )}
-          </Button>
           {paymentList.length > 1 && (
             <div>
               <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Как оплатить</span>
@@ -521,6 +507,21 @@ export default function CheckoutUnified() {
             </div>
           )}
 
+          <Button
+            type="button"
+            onClick={submit}
+            disabled={!canSubmit}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-primary-foreground transition-transform active:scale-[0.995] disabled:opacity-70"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Отправляем…
+              </>
+            ) : (
+              <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
+            )}
+          </Button>
           <p className="text-center text-[12px] leading-relaxed text-secondary-foreground">
             Без регистрации. Продавец подтвердит заказ{delivery === "courier" ? ", стоимость доставки" : ""} и способ оплаты.
           </p>

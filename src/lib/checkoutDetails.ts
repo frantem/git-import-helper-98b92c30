@@ -72,7 +72,7 @@ export function formatPickupSchedule(slots: PickupSlots | null): string[] {
  * применена миграция 20261105120000_checkout_delivery_payments.sql.
  * До этого они скрыты, чтобы заказ нельзя было отправить в никуда.
  */
-export const EXTENDED_CHECKOUT_READY = false;
+export const EXTENDED_CHECKOUT_READY = true;
 
 export type DeliveryKind = "self" | "courier" | "europochta" | "belpost";
 export type PaymentKind = "cash" | "erip";

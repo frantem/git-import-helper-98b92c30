@@ -14,8 +14,6 @@ import { SellerContactIcons } from "@/components/seller/SellerContactIcons";
 import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
-import { BottomNavigation } from "@/components/BottomNavigation";
-import { useVisitorSource } from "@/hooks/useVisitorSource";
 import { isApparelStore } from "@/lib/storefrontKind";
 import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
 
@@ -56,6 +54,7 @@ interface Farmer {
   contacts?: SellerContacts | null;
   theme?: string | null;
   plan?: string | null;
+  store_type?: string | null;
   trial_ends_at?: string | null;
 }
 
@@ -87,10 +86,6 @@ interface Product {
 export default function SellerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  // Посетители маркетплейса видят нижнее меню и на витрине, трафик продавца — нет
-  const visitorSource = useVisitorSource();
-  const withMarketplaceNav = visitorSource !== "seller";
-
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [averageRating, setAverageRating] = useState<number | null>(null);
@@ -151,7 +146,7 @@ export default function SellerProfile() {
 
       // Only request columns visible to anonymous visitors.
       const safeCols =
-        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, unique_fact, delivery_terms, delivery_enabled, pickup_enabled, street, address_details, contacts, theme, plan, trial_ends_at";
+        "id, name, description, district, village, photo_url, city, slug, rating, is_blocked, created_at, user_id, hero_media_url, hero_media_type, unique_fact, delivery_terms, delivery_enabled, pickup_enabled, street, address_details, contacts, theme, plan, trial_ends_at, store_type";
 
       if (!isUUID) {
         const res = await supabase.from("farmers").select(safeCols).eq("slug", id).single();
@@ -376,7 +371,7 @@ export default function SellerProfile() {
         instagram={farmer.contacts?.instagram}
       />
 
-      <main className={`mx-auto w-full bg-[hsl(var(--seller-bg))] pt-1.5 ${withMarketplaceNav ? "pb-20 md:pb-2" : "pb-2"}`}>
+      <main className="mx-auto w-full bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
         {/* 2. Условия получения — до каталога, чтобы снять страх доставки */}
         <SellerDelivery
           deliveryEnabled={farmer.delivery_enabled}
@@ -385,7 +380,7 @@ export default function SellerProfile() {
           city={farmer.city}
           street={farmer.street}
           addressDetails={farmer.address_details}
-          isApparel={isApparelStore(products)}
+          isApparel={farmer.store_type === "apparel" || farmer.store_type === "craft" || isApparelStore(products)}
         />
 
         <SellerCategoryTabs
@@ -463,8 +458,7 @@ export default function SellerProfile() {
       </div>
 
       {/* 9. Плавающая корзина ведёт на единый checkout для всего сайта */}
-      <SellerStickyCart farmerId={farmer.id} onCheckout={() => navigate("/checkout")} raised={withMarketplaceNav} />
-      <BottomNavigation />
+      <SellerStickyCart farmerId={farmer.id} onCheckout={() => navigate("/checkout")} />
     </div>
   );
 }
