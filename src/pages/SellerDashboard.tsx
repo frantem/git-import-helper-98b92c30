@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
+import { SellerLaunchChecklist } from "@/components/seller/SellerLaunchChecklist";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,15 @@ import { useSellerPlan } from "@/hooks/useSellerPlan";
 import { useSellerClientsCount } from "@/hooks/useSellerClientsCount";
 import { TrialBanner } from "@/components/seller/TrialBanner";
 
+interface SellerFarmer {
+  id: string;
+  name: string;
+  slug: string | null;
+  pickup_enabled: boolean | null;
+  delivery_enabled: boolean | null;
+  address_details: string | null;
+  pickup_slots: unknown;
+}
 
 export default function SellerDashboard() {
   const { user, role, isLoading: authLoading } = useAuth();
@@ -18,26 +28,44 @@ export default function SellerDashboard() {
   const { sellerPendingCount } = usePendingOrdersCount();
   const { count: clientsCount } = useSellerClientsCount();
   const planState = useSellerPlan();
-  const [farmerName, setFarmerName] = useState<string | null>(null);
+  const [farmer, setFarmer] = useState<SellerFarmer | null>(null);
+  const [productsCount, setProductsCount] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [hiddenWelcome, setHiddenWelcome] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     if (role !== "seller" && role !== "admin") { navigate("/"); return; }
 
-    const fetchFarmer = async () => {
+    const fetchDashboard = async () => {
       const { data } = await supabase
         .from("farmers")
-        .select("name")
+        .select("id, name, slug, pickup_enabled, delivery_enabled, address_details, pickup_slots")
         .eq("user_id", user.id)
         .maybeSingle();
-      setFarmerName(data?.name || null);
+
+      const seller = (data as SellerFarmer | null) ?? null;
+      setFarmer(seller);
+
+      if (seller) {
+        const [{ count: products }, { data: items }] = await Promise.all([
+          supabase
+            .from("products")
+            .select("id", { count: "exact", head: true })
+            .eq("farmer_id", seller.id)
+            .eq("is_deleted", false),
+          supabase.from("order_items").select("order_id").eq("farmer_id", seller.id),
+        ]);
+
+        setProductsCount(products ?? 0);
+        setOrdersCount(new Set((items ?? []).map((item) => (item as { order_id: string }).order_id)).size);
+      }
+
       setIsLoading(false);
     };
-    fetchFarmer();
-  }, [user, role, authLoading]);
+    void fetchDashboard();
+  }, [user, role, authLoading, navigate]);
 
   if (authLoading || isLoading) {
     return (
@@ -47,65 +75,67 @@ export default function SellerDashboard() {
     );
   }
 
-  if (!farmerName) {
+  if (!farmer) {
     return (
       <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
         <Header />
         <main className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-xl font-bold mb-2">Профиль продавца не найден</h1>
-          <p className="text-muted-foreground mb-4">Свяжитесь с администрацией для создания профиля</p>
-          <Button onClick={() => navigate("/profile")}>Вернуться в профиль</Button>
+          <p className="text-muted-foreground mb-4">Создайте витрину — это займёт полторы минуты</p>
+          <Button onClick={() => navigate("/seller-application")}>Создать витрину</Button>
         </main>
         <SellerBottomNav />
       </div>
     );
   }
 
+  const hasDeliveryConfigured = Boolean(
+    farmer.pickup_enabled ||
+      farmer.delivery_enabled ||
+      (farmer.address_details && farmer.address_details.trim().length > 0) ||
+      (Array.isArray(farmer.pickup_slots) ? farmer.pickup_slots.length > 0 : Boolean(farmer.pickup_slots)),
+  );
+
   return (
     <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
       <Header />
       <main className="container mx-auto px-4 py-6">
-        {!hiddenWelcome && new URLSearchParams(window.location.search).get("welcome") === "1" && (
-          <div className="mb-4 rounded-2xl border border-primary/30 bg-white p-4">
-            <p className="text-[15px] font-bold text-foreground">Ваша витрина готова 🎉</p>
-            <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
-              Добавьте 3 первых товара и скопируйте ссылку витрины в Instagram — заказы начнут приходить с уже
-              знакомой аудитории.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={() => navigate("/seller/products")} className="h-9 rounded-lg px-3 text-[13px]">
-                Добавить товар
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setHiddenWelcome(true)}
-                className="h-9 rounded-lg px-3 text-[13px]"
-              >
-                Позже
-              </Button>
-            </div>
-          </div>
-        )}
         {planState.isTrial && planState.trialDaysLeft !== null && planState.trialDaysLeft <= 2 && (
           <TrialBanner daysLeft={planState.trialDaysLeft} />
         )}
 
-        <h1 className="text-2xl font-bold mb-4">{farmerName}</h1>
+        <SellerLaunchChecklist
+          farmerId={farmer.id}
+          storeName={farmer.name}
+          slug={farmer.slug}
+          productsCount={productsCount}
+          hasDeliveryConfigured={hasDeliveryConfigured}
+          ordersCount={ordersCount}
+        />
+
+        <h1 className="text-2xl font-bold mb-4">{farmer.name}</h1>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link to="/seller/products" className="flex items-center gap-4 rounded-xl bg-card p-6">
+          <Link to="/seller/products" className="flex items-center gap-4 rounded-xl bg-card p-6 relative">
             <Package className="h-8 w-8 text-primary" />
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold">Мои товары</h3>
               <p className="text-sm text-muted-foreground">Управление товарами</p>
             </div>
+            {productsCount > 0 && (
+              <span className="bg-primary/10 text-primary text-sm font-bold px-2.5 py-1 rounded-full">
+                {productsCount}
+              </span>
+            )}
           </Link>
 
           <Link to="/seller/orders" className="flex items-center gap-4 rounded-xl bg-card p-6 relative">
             <ShoppingBag className="h-8 w-8 text-primary" />
             <div className="flex-1">
               <h3 className="font-bold">Заказы</h3>
-              <p className="text-sm text-muted-foreground">Заказы с моими товарами</p>
+              <p className="text-sm text-muted-foreground">
+                {ordersCount > 0 ? `Всего заказов: ${ordersCount}` : "Заказы с моими товарами"}
+              </p>
             </div>
             {sellerPendingCount > 0 && (
               <span className="bg-destructive text-destructive-foreground text-sm font-bold px-2.5 py-1 rounded-full">
@@ -117,18 +147,33 @@ export default function SellerDashboard() {
           <Link to="/seller/clients" className="flex items-center gap-4 rounded-xl bg-card p-6 relative">
             <Users className="h-8 w-8 text-primary" />
             <div className="flex-1">
-              <h3 className="flex items-center gap-2 font-bold">
-                Клиенты
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Покупатели и их статусы
-              </p>
+              <h3 className="flex items-center gap-2 font-bold">Клиенты</h3>
+              <p className="text-sm text-muted-foreground">Покупатели и их статусы</p>
             </div>
             {clientsCount > 0 && (
               <span className="bg-primary text-primary-foreground text-sm font-bold px-2.5 py-1 rounded-full">
                 {clientsCount}
               </span>
             )}
+          </Link>
+
+          <Link to="/seller/delivery" className="flex items-center gap-4 rounded-xl bg-card p-6 relative">
+            <Truck className="h-8 w-8 text-primary" />
+            <div className="flex-1">
+              <h3 className="font-bold">Доставка и самовывоз</h3>
+              <p className="text-sm text-muted-foreground">
+                {hasDeliveryConfigured ? "Способы получения настроены" : "Пока не настроено"}
+              </p>
+            </div>
+            {!hasDeliveryConfigured && <span className="h-2 w-2 rounded-full bg-destructive" />}
+          </Link>
+
+          <Link to="/seller/settings" className="flex items-center gap-4 rounded-xl bg-card p-6">
+            <Settings className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold">Настройки</h3>
+              <p className="text-sm text-muted-foreground">Профиль продавца</p>
+            </div>
           </Link>
 
           <Link to="/seller/tariffs" className="flex items-center gap-4 rounded-xl bg-card p-6">
@@ -156,25 +201,6 @@ export default function SellerDashboard() {
               <p className="text-sm text-muted-foreground">Сторис с вашими товарами</p>
             </div>
           </Link>
-
-
-
-          <Link to="/seller/delivery" className="flex items-center gap-4 rounded-xl bg-card p-6">
-            <Truck className="h-8 w-8 text-primary" />
-            <div>
-              <h3 className="font-bold">Доставка и самовывоз</h3>
-              <p className="text-sm text-muted-foreground">Способы получения заказа</p>
-            </div>
-          </Link>
-
-          <Link to="/seller/settings" className="flex items-center gap-4 rounded-xl bg-card p-6">
-            <Settings className="h-8 w-8 text-primary" />
-            <div>
-              <h3 className="font-bold">Настройки</h3>
-              <p className="text-sm text-muted-foreground">Профиль продавца</p>
-            </div>
-          </Link>
-
         </div>
       </main>
       <SellerBottomNav />
