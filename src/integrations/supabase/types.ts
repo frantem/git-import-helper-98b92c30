@@ -222,6 +222,7 @@ export type Database = {
           posts_block_title: string | null
           rating: number | null
           slug: string | null
+          store_type: string
           street: string | null
           tagline: string | null
           telegram_chat_id: string | null
@@ -262,6 +263,7 @@ export type Database = {
           posts_block_title?: string | null
           rating?: number | null
           slug?: string | null
+          store_type?: string
           street?: string | null
           tagline?: string | null
           telegram_chat_id?: string | null
@@ -302,6 +304,7 @@ export type Database = {
           posts_block_title?: string | null
           rating?: number | null
           slug?: string | null
+          store_type?: string
           street?: string | null
           tagline?: string | null
           telegram_chat_id?: string | null
@@ -1310,6 +1313,7 @@ export type Database = {
           p_farmer_id: string
           p_items: Json
           p_name: string
+          p_payment_method?: string
           p_phone: string
         }
         Returns: Json
