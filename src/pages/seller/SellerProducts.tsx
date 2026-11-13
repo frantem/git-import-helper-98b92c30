@@ -70,6 +70,7 @@ export default function SellerProducts() {
   const navigate = useNavigate();
 
   const [farmerId, setFarmerId] = useState<string | null>(null);
+  const [storeType, setStoreType] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   
@@ -108,9 +109,10 @@ export default function SellerProducts() {
 
   const fetchData = async () => {
     const { data: farmer } = await supabase
-      .from("farmers").select("id").eq("user_id", user!.id).maybeSingle();
+      .from("farmers").select("id, store_type").eq("user_id", user!.id).maybeSingle();
     if (!farmer) { setIsLoading(false); return; }
     setFarmerId(farmer.id);
+    setStoreType((farmer as { store_type?: string | null }).store_type ?? null);
 
     const [productsRes, categoriesRes] = await Promise.all([
       supabase.from("products").select("*").eq("farmer_id", farmer.id)
@@ -181,13 +183,15 @@ export default function SellerProducts() {
     );
   };
 
+  const isApparel = storeType === "apparel" || storeType === "craft";
+
   const savingRef = useRef(false);
 
   const handleSaveProduct = async () => {
     if (!farmerId || savingRef.current) return;
     if (!productForm.title.trim()) { toast.error("Введите название товара"); return; }
     if (selectedCategoryIds.length === 0) { toast.error("Выберите хотя бы одну категорию"); return; }
-    if (!hasRequiredFoodDetails(productForm)) {
+    if (!isApparel && !hasRequiredFoodDetails(productForm)) {
       toast.error("Заполните состав и срок хранения"); return;
     }
 
@@ -520,10 +524,28 @@ export default function SellerProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label>Состав <span className="text-destructive">*</span></Label>
-              <Textarea value={productForm.composition} onChange={(e) => setProductForm({ ...productForm, composition: e.target.value })} placeholder="Мука, яйца, сахар, масло сливочное..." />
+              {isApparel ? (
+                <>
+                  <Label>Материал / Состав</Label>
+                  <Textarea
+                    value={productForm.composition}
+                    onChange={(e) => setProductForm({ ...productForm, composition: e.target.value })}
+                    placeholder="100% хлопок, шерсть, натуральная кожа, керамика..."
+                  />
+                </>
+              ) : (
+                <>
+                  <Label>Состав <span className="text-destructive">*</span></Label>
+                  <Textarea
+                    value={productForm.composition}
+                    onChange={(e) => setProductForm({ ...productForm, composition: e.target.value })}
+                    placeholder="Мука, яйца, сахар, масло сливочное..."
+                  />
+                </>
+              )}
             </div>
 
+            {!isApparel && (
             <div className="space-y-2">
               <Label>КБЖУ <span className="text-muted-foreground">(необязательно)</span></Label>
               <div className="grid grid-cols-4 gap-2">
@@ -542,18 +564,21 @@ export default function SellerProducts() {
                 ))}
               </div>
             </div>
+            )}
 
+            {!isApparel && (
             <div className="space-y-2">
               <Label>Срок хранения <span className="text-destructive">*</span></Label>
               <Input value={productForm.shelf_life} onChange={(e) => setProductForm({ ...productForm, shelf_life: e.target.value })} placeholder="3 дня при температуре +4°C" />
             </div>
+            )}
 
             {/* Main price */}
             <div className="space-y-3 p-3 rounded-lg border border-border">
               <Label className="text-base font-medium">Стоимость <span className="text-destructive">*</span></Label>
               <p className="text-xs text-muted-foreground">Основная цена товара.</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder="250 г" className="h-9 w-24" />
+                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder={isApparel ? "1 шт." : "250 г"} className="h-9 w-24" />
                 <div className="flex items-center gap-1">
                   <Input type="text" inputMode="decimal" value={mainPriceInput}
                     onChange={(e) => setMainPriceInput(e.target.value.replace(/[^0-9.,]/g, ''))}
@@ -573,16 +598,21 @@ export default function SellerProducts() {
             {/* Additional Variants */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Дополнительные варианты</Label>
+                <Label>{isApparel ? "Размеры и цвета" : "Дополнительные варианты"}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addVariant}>
                   <Plus className="h-3 w-3 mr-1" />Добавить
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {isApparel
+                  ? "Укажите размер, цвет или комплектацию — например «Размер: M» или «Цвет: Бежевый»."
+                  : "Дополнительная фасовка или объём: 0,5 л, 1 кг."}
+              </p>
               {productVariants.length > 0 && (
                 <div className="space-y-2">
                   {productVariants.map((variant, index) => (
                     <div key={index} className="flex items-center gap-2 p-2 rounded-lg border border-border">
-                      <Input value={variant.label} onChange={(e) => updateVariant(index, 'label', e.target.value)} placeholder="0,5 л" className="h-9 flex-1" />
+                      <Input value={variant.label} onChange={(e) => updateVariant(index, 'label', e.target.value)} placeholder={isApparel ? "Размер: M" : "0,5 л"} className="h-9 flex-1" />
                       <div className="flex items-center gap-1">
                         <Input type="text" inputMode="decimal"
                           value={variantPriceInputs[index] ?? kopecksToRublesString(variant.price)}
@@ -607,6 +637,8 @@ export default function SellerProducts() {
             </div>
 
             {/* Prep time */}
+            {!isApparel && (
+            <>
             <div className="space-y-2">
               <Label>Время приготовления</Label>
               <p className="text-xs text-muted-foreground">Оставьте пустым, если товар уже готов. Это время начнёт отсчёт с момента начала окна, Вашего графика.</p>
@@ -631,6 +663,8 @@ export default function SellerProducts() {
                 <span className="text-sm text-muted-foreground">часов</span>
               </div>
             </div>
+            </>
+            )}
 
             {/* Images */}
             <div className="space-y-2">

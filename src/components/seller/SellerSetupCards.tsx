@@ -66,11 +66,12 @@ export function SellerSetupCards({
     writeFlag(`${id}_done`);
   };
 
-  const storefrontUrl = `${window.location.origin}/seller/${slug || farmerId}`;
+  const fullUrl = `${window.location.origin}/seller/${slug || farmerId}`;
+  const displayUrl = `locusfood.by/${slug || farmerId}`;
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(storefrontUrl);
+      await navigator.clipboard.writeText(fullUrl);
       toast.success("Ссылка скопирована!");
       hide("share");
     } catch {
@@ -97,9 +98,9 @@ export function SellerSetupCards({
       product: productsCount === 0 && !dismissed.product,
       delivery: !hasDeliveryConfigured && !dismissed.delivery,
       share: !dismissed.share,
-      type: !dismissed.type,
+      type: !storeType && !dismissed.type,
     }),
-    [productsCount, hasDeliveryConfigured, dismissed],
+    [productsCount, hasDeliveryConfigured, dismissed, storeType],
   );
 
   const nothingLeft = !visible.product && !visible.delivery && !visible.share && !visible.type;
@@ -202,10 +203,10 @@ export function SellerSetupCards({
             <div className="flex h-9 items-center gap-2 rounded-full bg-white px-3 shadow-sm">
               <span className="h-2.5 w-2.5 rounded-full bg-[#D8D4CB]" />
               <span className="h-2 w-24 rounded-full bg-[#EDEAE3]" />
-              <span className="text-[11px] text-[#8A8478]">locusfood.by</span>
+              <span className="text-[11px] font-medium text-[#8A8478]">locusfood.by</span>
             </div>
             <div className="mt-2 ml-6 flex h-9 items-center gap-2 rounded-full bg-white px-3 shadow-sm">
-              <span className="text-[11px] text-[#8A8478]">/seller/{slug || "vasha-vitrina"}</span>
+              <span className="text-[11px] font-medium text-[#1A1A1A]">/{slug || "vasha-vitrina"}</span>
             </div>
             <button
               type="button"
@@ -221,6 +222,9 @@ export function SellerSetupCards({
             <p className="mt-1.5 text-[13.5px] leading-snug text-[#6B655C]">
               Разместите её в описании Instagram или отправьте клиентам — они смогут оформить заказ без переписок в
               Direct.
+            </p>
+            <p className="mt-2 truncate rounded-lg bg-[#F7F5F0] px-2.5 py-1.5 text-[12px] font-medium text-[#5B564C]">
+              {displayUrl}
             </p>
             <div className="mt-3.5 flex flex-wrap gap-2">
               <button
