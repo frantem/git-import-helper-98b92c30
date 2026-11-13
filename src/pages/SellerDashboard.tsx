@@ -20,6 +20,7 @@ export default function SellerDashboard() {
   const planState = useSellerPlan();
   const [farmerName, setFarmerName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hiddenWelcome, setHiddenWelcome] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -64,6 +65,27 @@ export default function SellerDashboard() {
     <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
       <Header />
       <main className="container mx-auto px-4 py-6">
+        {!hiddenWelcome && new URLSearchParams(window.location.search).get("welcome") === "1" && (
+          <div className="mb-4 rounded-2xl border border-primary/30 bg-white p-4">
+            <p className="text-[15px] font-bold text-foreground">Ваша витрина готова 🎉</p>
+            <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
+              Добавьте 3 первых товара и скопируйте ссылку витрины в Instagram — заказы начнут приходить с уже
+              знакомой аудитории.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={() => navigate("/seller/products")} className="h-9 rounded-lg px-3 text-[13px]">
+                Добавить товар
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setHiddenWelcome(true)}
+                className="h-9 rounded-lg px-3 text-[13px]"
+              >
+                Позже
+              </Button>
+            </div>
+          </div>
+        )}
         {planState.isTrial && planState.trialDaysLeft !== null && planState.trialDaysLeft <= 2 && (
           <TrialBanner daysLeft={planState.trialDaysLeft} />
         )}

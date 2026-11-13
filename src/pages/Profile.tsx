@@ -1,4 +1,4 @@
-import { User, Package, Heart, Settings, ChevronRight, LogOut, Clock, X, Shield, Store } from "lucide-react";
+import { User, Package, Heart, Settings, ChevronRight, LogOut, Clock, X, Shield, Store, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -199,6 +199,21 @@ export default function Profile() {
             <ChevronRight className="h-5 w-5 text-primary" />
           </Link>
         }
+
+        {/* Приглашение создать витрину — для тех, кто ещё не продавец */}
+        {user && role !== "seller" && role !== "admin" && (
+          <Link
+            to="/seller-application"
+            className="mb-4 flex items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4"
+          >
+            <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[14px] font-bold text-foreground">Хотите продавать свои товары?</h3>
+              <p className="text-xs text-muted-foreground">Создать витрину на Locus — 30 дней бесплатно</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-primary" />
+          </Link>
+        )}
 
         {/* Admin section */}
         {user && role === "admin" &&
