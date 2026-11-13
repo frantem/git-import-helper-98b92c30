@@ -114,7 +114,12 @@ Deno.serve(async (req) => {
       return `- ${title}${variant ? " " + variant : ""}${qtySuffix} = ${formatBYN(total)}`;
     };
 
-    const paymentLine = order.payment_method === "card" ? "Карта." : "Наличные.";
+    const paymentLine =
+      order.payment_method === "erip"
+        ? "Способ оплаты: ЕРИП — выставьте счёт покупателю."
+        : order.payment_method === "card"
+          ? "Способ оплаты: карта."
+          : "Способ оплаты: наличные при получении.";
     const dateTimeLine = order.estimated_delivery_time
       ? String(order.estimated_delivery_time)
       : "";
@@ -153,6 +158,9 @@ Deno.serve(async (req) => {
       if (order.delivery_type === "courier") {
         adminLines.push(`Вы выбрали доставку.`);
         if (order.delivery_address) adminLines.push(`Адрес доставки: ${order.delivery_address}`);
+      } else if (order.delivery_type === "europochta" || order.delivery_type === "belpost") {
+        adminLines.push(`Вы выбрали ${order.delivery_type === "europochta" ? "Европочту" : "Белпочту"}.`);
+        if (order.delivery_address) adminLines.push(`Отделение: ${order.delivery_address}`);
       } else {
         const pp = (order.pickup_point as any)?.name || "пункт выдачи";
         adminLines.push(`Вы выбрали самовывоз из «${pp}».`);
@@ -185,6 +193,8 @@ Deno.serve(async (req) => {
     // ============ SELLER MESSAGES ============
     const sellerDeliveryWord =
       order.delivery_type === "courier" ? "Курьер" :
+      order.delivery_type === "europochta" ? `Европочта${order.delivery_address ? `: ${order.delivery_address}` : ""}` :
+      order.delivery_type === "belpost" ? `Белпочта${order.delivery_address ? `: ${order.delivery_address}` : ""}` :
       order.delivery_type === "pickup" ? "Самовывоз из ПВЗ" :
       "Самовывоз у продавца";
 
@@ -206,6 +216,7 @@ Deno.serve(async (req) => {
         sellerDeliveryWord,
       ];
       if (timeForSeller) sellerLines.push(timeForSeller);
+      if (order.payment_method === "erip") sellerLines.push("Оплата: ЕРИП — выставьте счёт покупателю");
       sellerLines.push(``);
       sellerLines.push(`Пожалуйста, подтвердите заказ`);
 

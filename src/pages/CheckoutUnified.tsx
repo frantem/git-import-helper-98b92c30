@@ -13,10 +13,11 @@ import type { SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PickupSlots } from "@/components/PickupSettingsSection";
-import { buyerDetailsKey, formatPickupSchedule, getReceivingOptions, mergeBuyerDetails, normalizeCheckoutPhone, readBuyerDetails } from "@/lib/checkoutDetails";
+import { buyerDetailsKey, deliveryChoices, eripInstructions, EXTENDED_CHECKOUT_READY, formatPickupSchedule, getReceivingOptions, mergeBuyerDetails, normalizeCheckoutPhone, paymentChoices, readBuyerDetails, type PaymentKind } from "@/lib/checkoutDetails";
+import { isApparelStore } from "@/lib/storefrontKind";
 
 type ContactMethod = "call" | "telegram" | "viber" | "whatsapp";
-type DeliveryType = "courier" | "self";
+type DeliveryType = "courier" | "self" | "europochta" | "belpost";
 
 interface CheckoutFarmer {
   id: string;
@@ -92,6 +93,7 @@ export default function CheckoutUnified() {
 
   const [farmer, setFarmer] = useState<CheckoutFarmer | null>(null);
   const [delivery, setDelivery] = useState<DeliveryType>("courier");
+  const [payment, setPayment] = useState<PaymentKind>("cash");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -104,6 +106,11 @@ export default function CheckoutUnified() {
   const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const price = formatPrice(totalPrice);
   const receivingOptions = getReceivingOptions(farmer);
+  const apparel = isApparelStore(items.map((item) => item.product));
+  const deliveryList = deliveryChoices({ deliveryEnabled: farmer?.delivery_enabled, isApparel: apparel });
+  const activeDelivery = deliveryList.find((option) => option.id === delivery) ?? deliveryList[0];
+  const needsAddress = delivery !== "self";
+  const paymentList = paymentChoices();
   const canSubmit = !submitting && !sellerLoading && receivingOptions.includes(delivery);
   const pickupSchedule = formatPickupSchedule(farmer?.pickup_slots ?? null);
   const storeUrl = farmer?.slug ? `/seller/${farmer.slug}` : farmer ? `/seller/${farmer.id}` : "/catalog";
@@ -209,7 +216,7 @@ export default function CheckoutUnified() {
       setError(errorText("PHONE_INVALID"));
       return;
     }
-    if (delivery === "courier" && address.trim().length < 5) {
+    if (delivery !== "self" && address.trim().length < 5) {
       setError(errorText("ADDRESS_REQUIRED"));
       return;
     }
@@ -227,9 +234,10 @@ export default function CheckoutUnified() {
       p_name: name.trim(),
       p_phone: `+375${digits}`,
       p_delivery_type: delivery,
-      p_address: delivery === "courier" ? address.trim() : null,
+      p_address: delivery !== "self" ? address.trim() : null,
       p_comment: comment.trim() || null,
       p_contact_method: contact,
+      ...(EXTENDED_CHECKOUT_READY ? { p_payment_method: payment } : {}),
     } as never);
 
     if (rpcError) {
@@ -295,6 +303,12 @@ export default function CheckoutUnified() {
             ? `${cleanSellerName(farmer.name)} свяжется с вами в ближайшее время.`
             : "Продавец свяжется с вами в ближайшее время."}
         </p>
+
+        {payment === "erip" && (
+          <p className="mt-4 w-full rounded-xl bg-secondary/70 p-3 text-left text-[12px] leading-snug text-foreground">
+            {eripInstructions(order.code)}
+          </p>
+        )}
 
         {contactHref && (
           <a
@@ -382,19 +396,19 @@ export default function CheckoutUnified() {
             {sellerError && <p className="text-sm text-destructive" role="alert">Не удалось загрузить условия продавца. Обновите страницу.</p>}
             {!sellerLoading && !sellerError && !receivingOptions.length && <p className="text-sm text-secondary-foreground">Продавец пока не указал способ получения заказа.</p>}
             <div className="flex gap-1.5">
-              {receivingOptions.map((option) => (
+              {deliveryList.map((option) => (
                 <Button variant="outline"
-                  key={option}
+                  key={option.id}
                   type="button"
-                  aria-pressed={delivery === option}
-                  onClick={() => { setDelivery(option); setError(null); }}
+                  aria-pressed={delivery === option.id}
+                  onClick={() => { setDelivery(option.id); setError(null); }}
                   className={cn(
-                    "h-11 flex-1 rounded-lg text-[13px] font-medium",
-                    delivery === option ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
+                    "h-11 flex-1 rounded-lg px-2 text-[13px] font-medium",
+                    delivery === option.id ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
                   )}
                 >
-                  {option === "courier" ? <Truck /> : <MapPin />}
-                  {option === "courier" ? "Доставка" : "Самовывоз"}
+                  {option.id === "self" ? <MapPin /> : <Truck />}
+                  {option.label}
                 </Button>
               ))}
             </div>
@@ -412,13 +426,15 @@ export default function CheckoutUnified() {
             )}
           </div>
 
-          {delivery === "courier" && receivingOptions.includes("courier") && (
+          {needsAddress && receivingOptions.includes("courier") && (
             <label className="block">
-              <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Адрес доставки</span>
+              <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">
+                {activeDelivery?.addressLabel || "Адрес доставки"}
+              </span>
               <input
                 value={address}
                 onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); setError(null); }}
-                placeholder="Город, улица, дом, квартира"
+                placeholder={activeDelivery?.addressPlaceholder || "Город, улица, дом, квартира"}
                 autoComplete="street-address"
                 className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
               />
@@ -478,6 +494,33 @@ export default function CheckoutUnified() {
               <>Подтвердить заказ · {price.formatted} <BynSymbol className="h-3 w-3" /></>
             )}
           </Button>
+          {paymentList.length > 1 && (
+            <div>
+              <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Как оплатить</span>
+              <div className="flex gap-1.5">
+                {paymentList.map((option) => (
+                  <Button variant="outline"
+                    key={option.id}
+                    type="button"
+                    aria-pressed={payment === option.id}
+                    onClick={() => setPayment(option.id)}
+                    className={cn(
+                      "h-11 flex-1 rounded-lg text-[13px] font-medium",
+                      payment === option.id ? "border-primary bg-primary/10 text-foreground" : "text-secondary-foreground",
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              {payment === "erip" && (
+                <p className="mt-2 text-[12px] leading-snug text-secondary-foreground">
+                  После заказа продавец пришлёт путь оплаты в дереве ЕРИП.
+                </p>
+              )}
+            </div>
+          )}
+
           <p className="text-center text-[12px] leading-relaxed text-secondary-foreground">
             Без регистрации. Продавец подтвердит заказ{delivery === "courier" ? ", стоимость доставки" : ""} и способ оплаты.
           </p>
