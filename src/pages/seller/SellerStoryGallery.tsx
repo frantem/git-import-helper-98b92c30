@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -10,7 +10,7 @@ export default function SellerStoryGallery() {
 
   return (
     <div className="min-h-screen pb-24 md:pb-0 bg-[#faf5ea]">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto max-w-3xl px-4 py-4 md:py-6">
         <div className="mb-4 flex items-center gap-2 md:gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/seller")} aria-label="Назад">

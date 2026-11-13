@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,7 +169,7 @@ export default function SellerClients() {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0 bg-[#faf5ea]">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto px-4 py-6">
         <Link to="/seller" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
           <ArrowLeft className="h-4 w-4" />

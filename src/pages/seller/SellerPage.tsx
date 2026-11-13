@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,7 +151,7 @@ export default function SellerPage() {
   if (!farmerId) {
     return (
       <div className="min-h-screen bg-[#faf5ea] pb-20 md:pb-0">
-        <Header />
+        <SellerTopBar />
         <main className="container mx-auto px-4 py-16 text-center">
           <h1 className="mb-2 text-xl font-bold">Профиль продавца не найден</h1>
           <Button onClick={() => navigate("/seller")}>В панель продавца</Button>
@@ -163,7 +163,7 @@ export default function SellerPage() {
 
   return (
     <div className="min-h-screen bg-[#faf5ea] pb-20 md:pb-0">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto max-w-3xl px-4 py-6">
         <div className="mb-4 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate("/seller")} aria-label="Назад">

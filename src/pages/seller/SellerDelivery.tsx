@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,7 +177,7 @@ export default function SellerDelivery() {
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
+        <SellerTopBar />
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </main>
@@ -189,7 +189,7 @@ export default function SellerDelivery() {
   if (!farmerId) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
+        <SellerTopBar />
         <main className="container mx-auto px-4 py-16 text-center">
           <p className="text-muted-foreground">Профиль продавца не найден</p>
         </main>
@@ -200,7 +200,7 @@ export default function SellerDelivery() {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <div className="flex items-center gap-2 mb-4">
           <Link to="/seller">

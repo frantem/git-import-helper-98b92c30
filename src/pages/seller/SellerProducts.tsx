@@ -1,7 +1,7 @@
 import { hasRequiredFoodDetails, optionalNutrition } from "@/lib/productFoodDetails";
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,7 @@ import { BynSymbol } from "@/components/ui/byn-symbol";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
-import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Camera, X, ArrowLeft, Package } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useDraftState, clearDraft } from "@/hooks/useDraftState";
 
@@ -384,7 +384,7 @@ export default function SellerProducts() {
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
+        <SellerTopBar />
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </main>
@@ -395,7 +395,7 @@ export default function SellerProducts() {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <div className="flex items-center gap-2 mb-4">
           <Link to="/seller">
@@ -417,7 +417,22 @@ export default function SellerProducts() {
           </div>
 
           {products.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">У вас пока нет товаров</div>
+            <div className="rounded-2xl border border-[#EAE7E0] bg-white px-5 py-10 text-center">
+              <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#F1EFEA]">
+                <Package className="h-8 w-8 text-[#1F3A2E]" />
+              </span>
+              <h3 className="mt-4 text-[18px] font-bold text-[#1A1A1A]">Добавьте свои товары</h3>
+              <p className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-snug text-[#6B655C]">
+                Начните с названия, цены и фотографии. Остальное можно добавить позже.
+              </p>
+              <Button
+                className="mt-4 h-10 rounded-full bg-[#161616] px-4 text-[13.5px] font-semibold text-white hover:bg-[#2A2A2A]"
+                onClick={() => { clearDraft("seller_product_draft"); resetProductForm(); setEditingProduct(null); setShowProductForm(true); }}
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Добавить товар
+              </Button>
+            </div>
           ) : (
             <div className="space-y-2">
               {products.map((product) => {

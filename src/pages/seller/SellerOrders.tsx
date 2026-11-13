@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { formatPrice, kopecksToRublesString, parseRublesToKopecks } from "@/lib/
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import {
   ArrowLeft, Package, MapPin, User, Truck, Check, Clock,
-  CheckCircle2, Phone, MessageSquare, Pencil, Trash2, Plus, Save, X,
+  CheckCircle2, Phone, MessageSquare, Pencil, Trash2, Plus, Save, X, ShoppingBag,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -420,7 +420,7 @@ export default function SellerOrders() {
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
+        <SellerTopBar />
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </main>
@@ -435,7 +435,7 @@ export default function SellerOrders() {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
         <div className="flex items-center gap-2 mb-4">
           <Link to="/seller">
@@ -447,7 +447,15 @@ export default function SellerOrders() {
         </div>
 
         {orders.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">Нет заказов</div>
+          <div className="rounded-2xl border border-[#EAE7E0] bg-white px-5 py-10 text-center">
+            <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#F1EFEA]">
+              <ShoppingBag className="h-8 w-8 text-[#1F3A2E]" />
+            </span>
+            <h3 className="mt-4 text-[18px] font-bold text-[#1A1A1A]">Здесь появятся ваши заказы</h3>
+            <p className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-snug text-[#6B655C]">
+              Когда покупатель оформит заказ по вашей ссылке, вы получите уведомление в Telegram и на почту.
+            </p>
+          </div>
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {

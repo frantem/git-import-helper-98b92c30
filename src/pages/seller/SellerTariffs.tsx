@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSellerPlan } from "@/hooks/useSellerPlan";
@@ -87,7 +87,7 @@ export default function SellerTariffs() {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0 bg-background">
-      <Header />
+      <SellerTopBar />
       <main className="container mx-auto max-w-2xl px-4 py-6">
         <Link to="/seller" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
           <ArrowLeft className="h-4 w-4" />Панель продавца
