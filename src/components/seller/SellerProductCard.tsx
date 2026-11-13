@@ -1,9 +1,10 @@
 import { memo, useState } from "react";
-import { Minus, Plus, ShoppingCart, Heart, Truck } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Heart, Package, Truck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
+import { isFoodProduct } from "@/lib/storefrontKind";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
@@ -111,6 +112,9 @@ export const SellerProductCard = memo(function SellerProductCard({
     product.rating !== null && product.rating !== undefined && product.rating > 0 && product.reviews > 0;
 
   const unitLabel = product.unit?.replace(/[,\s]+$/, "").trim();
+  // У вещей и крафта нет сроков готовки — показываем только наличие
+  const food = isFoodProduct(product);
+  const StatusIcon = food ? Truck : Package;
   // Единственный текст статуса, который остаётся: товара нет в наличии
   const isOutOfStock = pickupLabel === "Нет в наличии";
 
@@ -223,7 +227,7 @@ export const SellerProductCard = memo(function SellerProductCard({
 
         {!isOutOfStock && (
           <div className="mt-auto flex items-center gap-1 pt-1.5 text-[11px] leading-tight">
-            <Truck
+            <StatusIcon
               className={cn("h-3 w-3 shrink-0", isFast ? "text-emerald-600" : "text-muted-foreground")}
               aria-hidden="true"
             />

@@ -8,6 +8,8 @@ interface SellerDeliveryProps {
   city?: string | null;
   street?: string | null;
   addressDetails?: string | null;
+  /** Витрина вещей: самовывоз — это шоурум, где можно примерить. */
+  isApparel?: boolean;
 }
 
 function DetailRow({
@@ -40,6 +42,7 @@ function DeliverySheet({
   hasPickup,
   deliveryTerms,
   pickupAddress,
+  isApparel,
 }: {
   open: boolean;
   onClose: () => void;
@@ -47,6 +50,7 @@ function DeliverySheet({
   hasPickup: boolean;
   deliveryTerms?: string | null;
   pickupAddress: string;
+  isApparel?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -96,8 +100,10 @@ function DeliverySheet({
           {hasPickup && (
             <DetailRow
               icon={<Store className="h-4 w-4" />}
-              title="Самовывоз"
-              text={pickupAddress || "Адрес продавец пришлёт после заказа"}
+              title={isApparel ? "Шоурум / магазин" : "Самовывоз"}
+              text={[pickupAddress || "Адрес продавец пришлёт после заказа", isApparel ? "Можно прийти и примерить" : null]
+                .filter(Boolean)
+                .join("\n")}
             />
           )}
           <DetailRow
@@ -134,6 +140,7 @@ export const SellerDelivery = memo(function SellerDelivery({
   city,
   street,
   addressDetails,
+  isApparel,
 }: SellerDeliveryProps) {
   const [open, setOpen] = useState(false);
   const hasCourier = !!deliveryEnabled;
@@ -162,7 +169,7 @@ export const SellerDelivery = memo(function SellerDelivery({
             ) : (
               <>
                 <Store className="h-3.5 w-3.5 text-[hsl(var(--seller-deep))]" />
-                Самовывоз
+                {isApparel ? "Шоурум" : "Самовывоз"}
               </>
             )}
           </span>
@@ -184,6 +191,7 @@ export const SellerDelivery = memo(function SellerDelivery({
         hasPickup={hasPickup}
         deliveryTerms={deliveryTerms}
         pickupAddress={pickupAddress}
+        isApparel={isApparel}
       />
     </>
   );

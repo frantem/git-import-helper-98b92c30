@@ -16,6 +16,7 @@ import { SellerTrustFooter, type SellerContacts } from "@/components/seller/Sell
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { useVisitorSource } from "@/hooks/useVisitorSource";
+import { isApparelStore } from "@/lib/storefrontKind";
 import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
 
 const THEMES = ["forest", "terracotta", "night", "sand"] as const;
@@ -384,6 +385,7 @@ export default function SellerProfile() {
           city={farmer.city}
           street={farmer.street}
           addressDetails={farmer.address_details}
+          isApparel={isApparelStore(products)}
         />
 
         <SellerCategoryTabs
