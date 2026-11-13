@@ -98,7 +98,7 @@ export function deliveryChoices({
   if (deliveryEnabled) {
     list.push({
       id: "courier",
-      label: "Курьер по городу",
+      label: "Доставка",
       addressLabel: "Адрес доставки",
       addressPlaceholder: "Город, улица, дом, квартира",
     });
