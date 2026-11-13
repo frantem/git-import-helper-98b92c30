@@ -528,10 +528,10 @@ export default function ForSellers() {
   return (
     <div className="hp-page for-sellers-theme min-h-screen overflow-x-clip">
       <SEO
-        title="Свой сайт для продажи еды — Locus"
-        description="Личный сайт-витрина для кондитеров, сыроваров и фермеров: заказы без переписки, напоминания клиентам и база покупателей. Первый месяц бесплатно."
+        title="Locus — свой интернет-магазин для локальных брендов"
+        description="Платформа персональных витрин для кондитеров, фермеров, мастеров и брендов одежды: заказы без переписки, своя база клиентов, оплата и доставка. Первый месяц бесплатно."
         image="https://locusfood.by/media/for-sellers-og.jpg"
-        canonical="https://locusfood.by/for-sellers"
+        canonical="https://locusfood.by/"
         jsonLd={serviceJsonLd}
       />
 
@@ -831,6 +831,7 @@ export default function ForSellers() {
               <Link to="/oferta" className="hover:text-white">Оферта</Link>
               <Link to="/privacy" className="hover:text-white">Политика</Link>
               <Link to="/delivery" className="hover:text-white">Доставка</Link>
+              <Link to="/catalog" className="hover:text-white">Локальные витрины Витебска</Link>
             </nav>
           </div>
         </Container>

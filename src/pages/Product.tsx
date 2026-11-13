@@ -485,7 +485,7 @@ export default function Product() {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate("/");
+      navigate("/catalog");
     }
   };
   const copyToClipboard = async (text: string): Promise<boolean> => {

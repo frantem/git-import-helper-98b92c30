@@ -13,7 +13,6 @@ import { ScrollManager } from "@/components/ScrollManager";
 import { trackVisitorSource } from "@/lib/visitorSource";
 import { CookieBanner } from "@/components/CookieBanner";
 import { CartConflictDialog } from "@/components/CartConflictDialog";
-import Index from "./pages/Index";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
 const Product = lazy(() => import("./pages/Product"));
@@ -88,7 +87,7 @@ const App = () => (
             <ChunkErrorBoundary>
               <Suspense fallback={null}>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<ForSellers />} />
                   <Route path="/catalog" element={<Catalog />} />
                   <Route path="/product/:id" element={<Product />} />
                   <Route path="/cart" element={<Navigate to="/checkout" replace />} />
