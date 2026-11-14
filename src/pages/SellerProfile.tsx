@@ -16,6 +16,8 @@ import { SellerTrustFooter, type SellerContacts } from "@/components/seller/Sell
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 import { isApparelStore } from "@/lib/storefrontKind";
 import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
+import { SellerApparelTrust } from "@/components/seller/SellerApparelTrust";
+import { SellerPickupSpots } from "@/components/seller/SellerPickupSpots";
 
 const THEMES = ["forest", "terracotta", "night", "sand"] as const;
 
@@ -336,6 +338,14 @@ export default function SellerProfile() {
     navigate(`/product/${product.slug || product.id}`);
   };
   const locationLabel = farmer.city?.trim() || farmer.village?.trim() || null;
+
+  // Шаблон одежды: доверие к примерке и адреса магазинов
+  const storefrontIsApparel =
+    farmer.store_type === "apparel" || farmer.store_type === "craft" || isApparelStore(products);
+  const pickupLines = (farmer.address_details || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
   const canShowContacts = true;
 
   return (
@@ -369,6 +379,13 @@ export default function SellerProfile() {
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
         instagram={farmer.contacts?.instagram}
       />
+
+      {storefrontIsApparel && (
+        <SellerApparelTrust
+          pickupCount={pickupLines.length}
+          deliveryEnabled={!!farmer.delivery_enabled}
+        />
+      )}
 
       <main className="mx-auto w-full bg-[hsl(var(--seller-bg))] pb-2 pt-1.5">
         {/* 2. Условия получения — до каталога, чтобы снять страх доставки */}
@@ -418,7 +435,13 @@ export default function SellerProfile() {
                     {group.emoji ? `${group.emoji} ` : ""}
                     {group.name}
                   </h2>
-                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
+                  <div
+                    className={
+                      storefrontIsApparel
+                        ? "grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4"
+                        : "grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3"
+                    }
+                  >
                     {group.items.map((product, index) => (
                       <SellerProductCard
                         key={product.id}
@@ -445,6 +468,11 @@ export default function SellerProfile() {
 
           {/* 7. Иконки контактов — только на платных тарифах */}
           {canShowContacts && <SellerContactIcons contacts={farmer.contacts} />}
+
+          {/* 7.5. Где примерить — главный козырь офлайн-магазина */}
+          {storefrontIsApparel && farmer.pickup_enabled && (
+            <SellerPickupSpots lines={pickupLines} city={farmer.city} />
+          )}
 
           {/* 8. Футер доверия */}
           <SellerTrustFooter

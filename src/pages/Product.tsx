@@ -26,7 +26,7 @@ import { trackMetaEvent } from "@/lib/metaPixel";
 import { formatRelativeTime } from "@/lib/pickupUtils";
 import { usePickupLabels } from "@/hooks/usePickupLabels";
 
-import { MapPin } from "lucide-react";
+import { MapPin, Store } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ProductImageLightbox } from "@/components/ProductImageLightbox";
 interface Review {
@@ -103,6 +103,10 @@ export default function Product() {
   const farmerCity = dbProduct?.farmers?.city;
   const storeType = dbProduct?.farmers?.store_type ?? null;
   const isApparel = storeType === "apparel" || storeType === "craft";
+  const pickupLines = (dbProduct?.farmers?.address_details || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
   const farmerLocation = farmerCity ? `г. ${farmerCity}` : "Уточняйте у продавца";
 
   // Set default variant when data loads
@@ -902,6 +906,27 @@ export default function Product() {
                 <span className="font-medium text-foreground">Срок хранения: </span>
                 {dbProduct.shelf_life}
               </p>
+            )}
+
+            {/* Примерка и обмен — только для одежды и крафта */}
+            {isApparel && (dbProduct?.farmers?.pickup_enabled ?? true) && (
+              <div className="mt-4 rounded-xl border border-border bg-card p-3">
+                <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-foreground">
+                  <Store className="h-4 w-4 text-primary" />
+                  Можно примерить перед покупкой
+                </p>
+                {pickupLines.length > 0 && (
+                  <ul className="mt-1.5 space-y-1">
+                    {pickupLines.map((line, index) => (
+                      <li key={`${line}-${index}`} className="flex gap-1.5 text-[12.5px] leading-snug text-muted-foreground">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span className="break-words">{line.replace(/^\d+\.\s*/, "")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-1.5 text-[12px] text-muted-foreground">Обмен в течение 14 дней, если размер не подошёл</p>
+              </div>
             )}
 
             {/* Seller - compact */}
