@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { SellerTopBar } from "@/components/seller/SellerTopBar";
-import { SellerSetupCards } from "@/components/seller/SellerSetupCards";
+import { SellerGamification } from "@/components/seller/SellerGamification";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,10 @@ interface SellerFarmer {
   name: string;
   slug: string | null;
   store_type: string | null;
+  photo_url: string | null;
+  description: string | null;
+  telegram_chat_id: string | null;
+  published_to_marketplace: boolean | null;
   pickup_enabled: boolean | null;
   delivery_enabled: boolean | null;
   address_details: string | null;
@@ -35,6 +39,15 @@ export default function SellerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Раньше шаги можно было скрыть крестиком — эти флаги больше не действуют
+    try {
+      Object.keys(window.localStorage)
+        .filter((key) => key.startsWith("seller_setup_"))
+        .forEach((key) => window.localStorage.removeItem(key));
+    } catch { /* приватный режим */ }
+  }, []);
+
+  useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     if (role !== "seller" && role !== "admin") { navigate("/"); return; }
@@ -42,7 +55,7 @@ export default function SellerDashboard() {
     const fetchDashboard = async () => {
       const { data } = await supabase
         .from("farmers")
-        .select("id, name, slug, store_type, pickup_enabled, delivery_enabled, address_details, pickup_slots")
+        .select("id, name, slug, store_type, photo_url, description, telegram_chat_id, published_to_marketplace, pickup_enabled, delivery_enabled, address_details, pickup_slots")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -119,12 +132,19 @@ export default function SellerDashboard() {
         </h1>
 
         <div className="mt-5">
-          <SellerSetupCards
-            farmerId={farmer.id}
-            slug={farmer.slug}
+          <SellerGamification
+            farmer={{
+              id: farmer.id,
+              name: farmer.name,
+              slug: farmer.slug,
+              photo_url: farmer.photo_url,
+              description: farmer.description,
+              telegram_chat_id: farmer.telegram_chat_id,
+              published_to_marketplace: farmer.published_to_marketplace,
+              store_type: farmer.store_type,
+            }}
             productsCount={productsCount}
             hasDeliveryConfigured={hasDeliveryConfigured}
-            storeType={farmer.store_type}
           />
         </div>
 

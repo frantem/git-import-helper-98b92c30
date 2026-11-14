@@ -73,13 +73,16 @@ export function useProducts() {
           category_id,
           prep_time_minutes,
           order_lead_time_hours,
-          farmers(name),
+          farmers!inner(name, store_type, published_to_marketplace),
           categories(name, slug),
           product_categories(categories(name, slug)),
           product_variants(id, label, price, unit, is_default, sort_order)
         `)
         .eq("is_active", true)
         .eq("is_deleted", false)
+        // В общий каталог попадают только витрины еды, явно включившие публикацию
+        .eq("farmers.store_type", "food")
+        .eq("farmers.published_to_marketplace", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
