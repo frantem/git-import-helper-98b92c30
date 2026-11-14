@@ -1318,6 +1318,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_seller_store: {
+        Args: { p_name: string; p_store_type?: string }
+        Returns: Json
+      }
       ensure_unique_product_slug: {
         Args: { _base: string; _self_id: string }
         Returns: string
@@ -1372,6 +1376,10 @@ export type Database = {
       mark_order_confirmed_if_all: {
         Args: { _order_id: string }
         Returns: boolean
+      }
+      update_seller_store_type: {
+        Args: { p_store_type: string }
+        Returns: Json
       }
     }
     Enums: {
