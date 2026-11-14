@@ -108,8 +108,6 @@ export default function SellerDashboard() {
         <h1 className="text-[27px] font-bold leading-[1.15] tracking-[-0.01em] text-[#1A1A1A] md:text-[32px]">
           {productsCount === 0 && ordersCount === 0 ? (
             <>
-              Добро пожаловать в Locus.
-              <br />
               Давайте настроим витрину{" "}
               <span className="underline decoration-[#D8D4CB] decoration-[3px] underline-offset-4">
                 {farmer.name}
