@@ -1,4 +1,4 @@
-import { MapPin, Store } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 interface SellerPickupSpotsProps {
   lines: string[];
@@ -6,34 +6,28 @@ interface SellerPickupSpotsProps {
 }
 
 /**
- * Блок «Примерить в магазинах» для витрины одежды.
- * Адреса продавец пишет сам, каждую точку с новой строки.
+ * «Примерить в магазинах» — редакционный блок без плашек:
+ * тонкая линия сверху, крупный заголовок, адреса обычным списком.
  */
 export function SellerPickupSpots({ lines, city }: SellerPickupSpotsProps) {
   if (lines.length === 0) return null;
 
   return (
-    <section className="mx-3 mb-4 mt-5 rounded-2xl border border-[#E8E4DB] bg-white p-4">
-      <div className="mb-3 flex items-start gap-2">
-        <Store className="mt-0.5 h-5 w-5 shrink-0 text-[#2F5D45]" aria-hidden="true" />
-        <div>
-          <h2 className="text-[16px] font-bold leading-tight text-[#1A1A1A]">
-            {lines.length > 1 ? "Примерить в наших магазинах" : "Примерить в магазине"}
-          </h2>
-          <p className="mt-0.5 text-[12.5px] leading-snug text-[#7A7469]">
-            Заказ оформляйте онлайн — вещь подождёт вас в удобной точке
-            {city ? `, ${city}` : ""}
-          </p>
-        </div>
-      </div>
+    <section className="mt-8 border-t border-neutral-200 px-4 pb-2 pt-6">
+      <p className="text-[10.5px] font-medium uppercase tracking-[0.16em] text-neutral-500">
+        Офлайн{city ? ` · ${city}` : ""}
+      </p>
+      <h2 className="mt-2 text-[24px] font-normal leading-[1.15] tracking-[-0.02em] text-neutral-900 sm:text-[28px]">
+        {lines.length > 1 ? "Можно примерить в магазинах" : "Можно примерить в магазине"}
+      </h2>
+      <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-neutral-600">
+        Оформите заказ онлайн — вещь подождёт вас в удобной точке.
+      </p>
 
-      <ul className="space-y-2">
+      <ul className="mt-4 divide-y divide-neutral-200 border-y border-neutral-200">
         {lines.map((line, index) => (
-          <li
-            key={`${line}-${index}`}
-            className="flex items-start gap-2.5 rounded-xl bg-[#FAF8F3] px-3 py-2.5 text-[13.5px] leading-snug text-[#1A1A1A]"
-          >
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#B4553A]" aria-hidden="true" />
+          <li key={`${line}-${index}`} className="flex items-start gap-2.5 py-3 text-[13.5px] leading-snug text-neutral-900">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-500" strokeWidth={1.5} aria-hidden="true" />
             <span className="break-words">{line.replace(/^\d+\.\s*/, "")}</span>
           </li>
         ))}

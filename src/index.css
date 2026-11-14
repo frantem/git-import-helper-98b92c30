@@ -192,6 +192,13 @@
   --seller-accent: 45 70% 47%;
   --seller-accent-foreground: 0 0% 100%;
 }
+.seller-apparel {
+  /* Fashion-витрина: нейтральная база, как у COS / Arket / Aritzia */
+  --seller-bg: 0 0% 100%;
+  --seller-deep: 0 0% 9%;
+  --seller-accent: 0 0% 9%;
+  --seller-accent-foreground: 0 0% 100%;
+}
 
 /* Local marketing theme: keep the shop and seller editors unchanged. */
 .for-sellers-theme {

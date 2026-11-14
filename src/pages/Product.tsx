@@ -910,10 +910,10 @@ export default function Product() {
 
             {/* Примерка и обмен — только для одежды и крафта */}
             {isApparel && (dbProduct?.farmers?.pickup_enabled ?? true) && (
-              <div className="mt-4 rounded-xl border border-border bg-card p-3">
-                <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-foreground">
-                  <Store className="h-4 w-4 text-primary" />
-                  Можно примерить перед покупкой
+              <div className="mt-5 border-y border-neutral-200 py-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-neutral-900">
+                  <Store className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  Примерка перед покупкой
                 </p>
                 {pickupLines.length > 0 && (
                   <ul className="mt-1.5 space-y-1">
@@ -925,7 +925,9 @@ export default function Product() {
                     ))}
                   </ul>
                 )}
-                <p className="mt-1.5 text-[12px] text-muted-foreground">Обмен в течение 14 дней, если размер не подошёл</p>
+                <p className="mt-2 text-[12px] leading-relaxed text-neutral-500">
+                  Обмен в течение 14 дней, если размер не подошёл
+                </p>
               </div>
             )}
 

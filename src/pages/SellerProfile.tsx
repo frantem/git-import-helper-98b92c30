@@ -349,7 +349,7 @@ export default function SellerProfile() {
   const canShowContacts = true;
 
   return (
-    <div className={`seller-theme-${themeName} min-h-screen bg-background pb-0`}>
+    <div className={`seller-theme-${themeName} ${storefrontIsApparel ? "seller-apparel" : ""} min-h-screen bg-background pb-0`}>
       <SEO
         title={`${farmer.name} — фермерские продукты на Locus`}
         description={
