@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, ChevronDown, Loader2, MapPin, MessageCircle, Minus, Plus, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Loader2, MapPin, MessageCircle, Minus, Plus, Store, Trash2, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/priceUtils";
@@ -207,6 +207,15 @@ export default function CheckoutUnified() {
       cancelled = true;
     };
   }, [cartFarmerId]);
+
+  const storeLines = useMemo(
+    () =>
+      (farmer?.address_details ?? "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    [farmer?.address_details],
+  );
 
   const pickupAddress = useMemo(
     () =>
@@ -507,7 +516,27 @@ export default function CheckoutUnified() {
                 <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-foreground">{farmer.delivery_terms}</p>
               </div>
             )}
-            {delivery === "self" && receivingOptions.includes("self") && (pickupAddress || pickupSchedule.length > 0) && (
+            {delivery === "self" && receivingOptions.includes("self") && apparel && storeLines.length > 0 && (
+              <div className="mt-3 rounded-xl border border-border bg-secondary/40 p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <Store className="h-4 w-4 text-primary" />
+                  <p className="text-[13.5px] font-semibold text-foreground">
+                    {storeLines.length > 1
+                      ? "Забрать или примерить можно в любом из магазинов:"
+                      : "Забрать или примерить можно по адресу:"}
+                  </p>
+                </div>
+                <ul className="space-y-1.5">
+                  {storeLines.map((line) => (
+                    <li key={line} className="flex gap-2 text-[14px] leading-relaxed text-foreground">
+                      <span aria-hidden="true" className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      <span className="break-words">{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {delivery === "self" && receivingOptions.includes("self") && !apparel && (pickupAddress || pickupSchedule.length > 0) && (
               <div className="mt-3 border-l-2 border-primary pl-3 text-[14px] leading-relaxed text-foreground">
                 {pickupAddress && <p className="break-words">Забрать: {pickupAddress}</p>}
                 {pickupSchedule.length > 0 && <div className="mt-1 text-[13px] text-secondary-foreground"><p className="font-medium">График выдачи</p>{pickupSchedule.map((line) => <p key={line}>{line}</p>)}</div>}

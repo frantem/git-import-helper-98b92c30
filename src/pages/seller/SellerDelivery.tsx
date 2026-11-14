@@ -39,6 +39,7 @@ export default function SellerDelivery() {
   const [address, setAddress] = useState({ city: "", street: "", address_details: "" });
 
   const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
+  const [isApparel, setIsApparel] = useState(false);
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
   const [busyDates, setBusyDates] = useState<Date[]>([]);
 
@@ -87,6 +88,7 @@ export default function SellerDelivery() {
       setFarmerId(farmer.id);
 
       const f = farmer as any;
+      setIsApparel(f.store_type === "apparel" || f.store_type === "craft");
       let pEnabled = f.pickup_enabled ?? true;
       let dEnabled = f.delivery_enabled ?? false;
       let terms = f.delivery_terms || "";
@@ -212,15 +214,17 @@ export default function SellerDelivery() {
         </div>
 
         <div className="space-y-4 rounded-xl bg-card p-4">
-          {/* График работы, лимит заказов и стоп-даты */}
-          <PickupSettingsSection
-            pickupSlots={pickupSlots}
-            onPickupSlotsChange={setPickupSlots}
-            maxOrdersPerDay={maxOrdersPerDay}
-            onMaxOrdersChange={setMaxOrdersPerDay}
-            busyDates={busyDates}
-            onBusyDatesChange={setBusyDates}
-          />
+          {/* График работы, лимит заказов и стоп-даты — только для еды */}
+          {!isApparel && (
+            <PickupSettingsSection
+              pickupSlots={pickupSlots}
+              onPickupSlotsChange={setPickupSlots}
+              maxOrdersPerDay={maxOrdersPerDay}
+              onMaxOrdersChange={setMaxOrdersPerDay}
+              busyDates={busyDates}
+              onBusyDatesChange={setBusyDates}
+            />
+          )}
 
           {/* Самовывоз */}
           <div className="pt-4 border-t border-border">
@@ -228,8 +232,14 @@ export default function SellerDelivery() {
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-medium text-foreground">Самовывоз</h2>
-                  <p className="text-xs text-muted-foreground">Покупатель забирает заказ у вас</p>
+                  <h2 className="font-medium text-foreground">
+                    {isApparel ? "Самовывоз и примерка в магазинах" : "Самовывоз"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {isApparel
+                      ? "Покупатель может забрать заказ или прийти на примерку в ваши магазины"
+                      : "Покупатель забирает заказ у вас"}
+                  </p>
                 </div>
               </div>
               <Switch checked={pickupEnabled} onCheckedChange={setPickupEnabled} />
@@ -237,22 +247,42 @@ export default function SellerDelivery() {
 
             {pickupEnabled && (
               <div className="pt-4 border-t border-border">
-                <h3 className="font-medium text-foreground mb-3">Адрес для самовывоза</h3>
-                <div className="space-y-3">
+                <h3 className="font-medium text-foreground mb-3">
+                  {isApparel ? "Адреса магазинов и режим работы" : "Адрес для самовывоза"}
+                </h3>
+                {isApparel ? (
                   <div className="space-y-2">
-                    <Label>Населённый пункт</Label>
-                    <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="Витебск" />
+                    <Textarea
+                      value={address.address_details}
+                      onChange={(e) => setAddress({ ...address, address_details: e.target.value })}
+                      placeholder={"1. ТЦ «Марко-Сити», пав. 42 (ежедневно 10:00–20:00)\n2. ТЦ «Беларусь», 2 этаж, пав. 15 (10:00–19:00)\n3. ул. Ленина, 12 (10:00–20:00)"}
+                      rows={5}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Укажите каждую точку с новой строки — покупатель увидит их при оформлении заказа.
+                    </p>
+                    <div className="space-y-2 pt-2">
+                      <Label>Город</Label>
+                      <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="Витебск" />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Улица</Label>
-                    <Input value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} placeholder="Центральная" />
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label>Населённый пункт</Label>
+                      <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="Витебск" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Улица</Label>
+                      <Input value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} placeholder="Центральная" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Дом, подъезд, квартира</Label>
+                      <Input value={address.address_details} onChange={(e) => setAddress({ ...address, address_details: e.target.value })} placeholder="д.37, подъезд 2, этаж 2, кв.61" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Дом, подъезд, квартира</Label>
-                    <Input value={address.address_details} onChange={(e) => setAddress({ ...address, address_details: e.target.value })} placeholder="д.37, подъезд 2, этаж 2, кв.61" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -263,8 +293,14 @@ export default function SellerDelivery() {
               <div className="flex items-start gap-2">
                 <Truck className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-medium text-foreground">Доставка</h2>
-                  <p className="text-xs text-muted-foreground">Напишите как Вы можете доставить или отправить заказ покупателю</p>
+                  <h2 className="font-medium text-foreground">
+                    {isApparel ? "Доставка (Европочта, Белпочта, курьер)" : "Доставка"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {isApparel
+                      ? "Отправка заказов по городу и Беларуси"
+                      : "Напишите как Вы можете доставить или отправить заказ покупателю"}
+                  </p>
                 </div>
               </div>
               <Switch checked={deliveryEnabled} onCheckedChange={setDeliveryEnabled} />
@@ -277,7 +313,11 @@ export default function SellerDelivery() {
                   id="delivery-terms"
                   value={deliveryTerms}
                   onChange={(e) => setDeliveryTerms(e.target.value)}
-                  placeholder="Например: 8 руб., только по Витебску, бесплатно от 50 руб., в другие города — Европочтой за отдельную плату"
+                  placeholder={
+                    isApparel
+                      ? "Европочта до отделения — 5 BYN (1-3 дня).\nПри заказе от 100 BYN — доставка бесплатная.\nТакже отправляем Белпочтой."
+                      : "Например: 8 руб., только по Витебску, бесплатно от 50 руб., в другие города — Европочтой за отдельную плату"
+                  }
                   rows={4}
                 />
                 <p className="text-xs text-muted-foreground">

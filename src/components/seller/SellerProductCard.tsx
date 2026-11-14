@@ -32,6 +32,8 @@ interface SellerProductCardProps {
   priority?: boolean;
   /** Открыть карточку товара шторкой, не уходя с витрины. */
   onOpen?: () => void;
+  /** Витрина одежды/крафта: вертикальное фото 3:4 вместо квадрата. */
+  isApparel?: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export const SellerProductCard = memo(function SellerProductCard({
   pickupLabel,
   priority = false,
   onOpen,
+  isApparel = false,
 }: SellerProductCardProps) {
   const { items, addToCart, updateQuantity, removeFromCart, getItemKey } = useCart();
   const navigate = useNavigate();
@@ -164,14 +167,19 @@ export const SellerProductCard = memo(function SellerProductCard({
       )}
     >
       <div className="relative">
-        <div className="aspect-square overflow-hidden rounded-t-xl bg-secondary">
+        <div
+          className={cn(
+            "overflow-hidden rounded-t-xl bg-secondary",
+            isApparel ? "aspect-[3/4]" : "aspect-square",
+          )}
+        >
           <OptimizedImage
             src={product.image}
             alt={product.name}
             preset="card"
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
-            className="h-full w-full"
+            className="h-full w-full object-cover"
           />
 
           {isOutOfStock && (

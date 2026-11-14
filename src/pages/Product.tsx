@@ -101,6 +101,8 @@ export default function Product() {
   // Build farmer location string. Street/address_details are private and only
   // shared with authenticated buyers at checkout; the public product page shows city only.
   const farmerCity = dbProduct?.farmers?.city;
+  const storeType = dbProduct?.farmers?.store_type ?? null;
+  const isApparel = storeType === "apparel" || storeType === "craft";
   const farmerLocation = farmerCity ? `г. ${farmerCity}` : "Уточняйте у продавца";
 
   // Set default variant when data loads
@@ -630,7 +632,7 @@ export default function Product() {
                       <button
                         type="button"
                         onClick={() => setLightboxIndex(index)}
-                        className="relative aspect-square w-full overflow-hidden rounded-b-[28px] bg-card cursor-zoom-in lg:rounded-2xl"
+                        className={cn("relative w-full overflow-hidden rounded-b-[28px] bg-card cursor-zoom-in lg:rounded-2xl", isApparel ? "aspect-[3/4]" : "aspect-square")}
                         aria-label="Открыть фото"
                       >
                         <OptimizedImage src={img} alt={`${product.name} - фото ${index + 1}`} preset="detail" className="h-full w-full" loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} />
@@ -642,7 +644,7 @@ export default function Product() {
               </Carousel> : <button
                 type="button"
                 onClick={() => setLightboxIndex(0)}
-                className="relative aspect-square w-full overflow-hidden rounded-b-[28px] bg-card cursor-zoom-in lg:rounded-2xl"
+                className={cn("relative w-full overflow-hidden rounded-b-[28px] bg-card cursor-zoom-in lg:rounded-2xl", isApparel ? "aspect-[3/4]" : "aspect-square")}
                 aria-label="Открыть фото"
               >
                 <OptimizedImage src={product.image} alt={product.name} preset="detail" className="h-full w-full" loading="eager" fetchPriority="high" />
@@ -728,7 +730,9 @@ export default function Product() {
                 const isInStock = totalMin === 0;
                 return (
                   <span className={cn(isInStock ? "text-green-600" : "text-muted-foreground")}>
-                    {isInStock ? "В наличии" : `Время приготовления: ${formatRelativeTime(totalMin).replace("~", "")}`}
+                    {isApparel || isInStock
+                      ? "В наличии"
+                      : `Время приготовления: ${formatRelativeTime(totalMin).replace("~", "")}`}
                   </span>
                 );
               })()}
@@ -752,12 +756,31 @@ export default function Product() {
                 </span>}
             </div>
 
-            {/* Product Variants selector - only show if more than 1 variant */}
-            {variants.length > 1 && <div className="mt-4 flex flex-wrap gap-2">
-                {variants.map(variant => <button key={variant.id} onClick={() => setSelectedVariantId(variant.id)} className={cn("rounded-lg text-sm font-semibold transition-colors border-2 py-[4px] px-[12px]", selectedVariant?.id === variant.id ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-foreground border-border hover:bg-secondary/80 hover:border-primary/50")}>
-                    {variant.label}
-                  </button>)}
-              </div>}
+            {/* Выбор размера: для одежды — плашки, для еды — варианты фасовки */}
+            {(isApparel ? variants.length > 0 : variants.length > 1) && (
+              <div className="mt-4">
+                {isApparel && (
+                  <p className="mb-2 text-sm font-semibold text-foreground">Выберите размер:</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((variant) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setSelectedVariantId(variant.id)}
+                      className={cn(
+                        "min-w-[52px] rounded-xl border-2 px-3 text-sm font-semibold transition-colors",
+                        isApparel ? "py-2.5" : "py-[4px]",
+                        selectedVariant?.id === variant.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-secondary text-foreground hover:border-primary/50 hover:bg-secondary/80",
+                      )}
+                    >
+                      {variant.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Custom fields */}
             {customFields.length > 0 && <div className="mt-4 space-y-3">
@@ -833,7 +856,7 @@ export default function Product() {
             )}
 
             {/* Nutrition capsules */}
-            {hasNutrition && (
+            {hasNutrition && !isApparel && (
               <div className="mt-5">
                 <h2 className="text-base font-bold text-nutrition-label">КБЖУ на 100 г</h2>
                 <div className="mt-2 grid grid-cols-4 gap-2">
@@ -870,11 +893,11 @@ export default function Product() {
             {/* Composition & shelf life */}
             {dbProduct?.composition && (
               <p className="mt-4 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Состав: </span>
+                <span className="font-medium text-foreground">{isApparel ? "Материал / состав: " : "Состав: "}</span>
                 {dbProduct.composition}
               </p>
             )}
-            {dbProduct?.shelf_life && (
+            {!isApparel && dbProduct?.shelf_life && (
               <p className="mt-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">Срок хранения: </span>
                 {dbProduct.shelf_life}

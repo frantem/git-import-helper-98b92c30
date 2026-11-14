@@ -426,6 +426,7 @@ export default function SellerProfile() {
                         pickupLabel={pickupLabels.get(product.id)}
                         hasRequiredFields={requiredFieldIds.has(product.id)}
                         priority={groupIndex === 0 && index < 2}
+                        isApparel={farmer.store_type === "apparel" || farmer.store_type === "craft" || isApparelStore(products)}
                         onOpen={() => openProduct(product)}
                       />
                     ))}
