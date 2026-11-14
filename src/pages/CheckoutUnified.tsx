@@ -53,10 +53,27 @@ function formatPhone(digits: string) {
   return out;
 }
 
+/** Бессмысленный повтор: «Ййййй», «Еееееее», «аааа». */
+const isRepeatedChars = (str: string) => /^(.)\1+$/iu.test(str.trim()) || /(.)\1{3,}/iu.test(str.trim());
+
+/** Белорусский номер: 9 цифр, код оператора, не все цифры одинаковые. */
+const isValidBelarusPhone = (digits: string) => {
+  if (digits.length !== 9) return false;
+  if (/^(\d)\1{8}$/.test(digits)) return false;
+  const validPrefixes = ["25", "29", "33", "44", "17", "21", "22", "23", "16", "15"];
+  return validPrefixes.some((prefix) => digits.startsWith(prefix));
+};
+
+const ORDER_COOLDOWN_MS = 45_000;
+
 function errorText(code?: string) {
   switch (code) {
     case "NAME_REQUIRED":
       return "Укажите имя — продавец должен знать, к кому обращаться.";
+    case "NAME_INVALID":
+      return "Пожалуйста, укажите настоящее имя.";
+    case "ADDRESS_INVALID":
+      return "Пожалуйста, укажите реальный адрес доставки.";
     case "PHONE_INVALID":
       return "Телефон в формате +375 29 123-45-67.";
     case "ADDRESS_REQUIRED":
@@ -101,6 +118,11 @@ export default function CheckoutUnified() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; address?: string }>({});
+  const [honeypot, setHoneypot] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
   const [order, setOrder] = useState<{ code: string; total: number } | null>(null);
 
   const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -208,20 +230,53 @@ export default function CheckoutUnified() {
   const submit = async () => {
     if (!canSubmit || !farmer) return;
 
+    // Ловушка для ботов: поле скрыто, человек его не заполнит
+    if (honeypot.trim()) return;
+
+    // Защита от повторной отправки подряд
+    try {
+      const last = Number(window.localStorage.getItem("locus_last_order_ts") || 0);
+      if (last && Date.now() - last < ORDER_COOLDOWN_MS) {
+        setError("Вы только что оформили заказ. Пожалуйста, подождите минуту перед повторной отправкой.");
+        return;
+      }
+    } catch { /* приватный режим — проверку пропускаем */ }
+
     const digits = phone.replace(/\D/g, "");
-    if (name.trim().length < 2) {
-      setError(errorText("NAME_REQUIRED"));
-      return;
+    const trimmedName = name.trim();
+    const trimmedAddress = address.trim();
+    const nextErrors: { name?: string; phone?: string; address?: string } = {};
+
+    if (!trimmedName) nextErrors.name = "Укажите ваше имя";
+    else if (trimmedName.length < 2) nextErrors.name = "Имя слишком короткое";
+    else if (isRepeatedChars(trimmedName)) nextErrors.name = "Укажите настоящее имя";
+
+    if (!digits) nextErrors.phone = "Введите 9 цифр номера";
+    else if (digits.length !== 9) nextErrors.phone = "Введите 9 цифр номера";
+    else if (!isValidBelarusPhone(digits)) nextErrors.phone = "Укажите реальный номер РБ (+375 29, 33, 44, 25)";
+
+    if (delivery !== "self") {
+      if (!trimmedAddress) nextErrors.address = "Укажите адрес доставки";
+      else if (trimmedAddress.length < 5) nextErrors.address = "Укажите улицу и дом";
+      else if (isRepeatedChars(trimmedAddress)) nextErrors.address = "Укажите реальный адрес доставки";
     }
-    if (digits.length !== 9) {
-      setError(errorText("PHONE_INVALID"));
-      return;
-    }
-    if (delivery !== "self" && address.trim().length < 5) {
-      setError(errorText("ADDRESS_REQUIRED"));
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(null);
+      const first = nextErrors.name
+        ? nameRef.current
+        : nextErrors.phone
+          ? phoneRef.current
+          : addressRef.current;
+      if (first) {
+        first.scrollIntoView({ behavior: "smooth", block: "center" });
+        first.focus({ preventScroll: true });
+      }
       return;
     }
 
+    setFieldErrors({});
     setSubmitting(true);
     setError(null);
 
@@ -264,7 +319,8 @@ export default function CheckoutUnified() {
       num_items: itemsCount,
     });
 
-    try { localStorage.setItem(buyerDetailsKey(user?.id), JSON.stringify({ name: name.trim(), phone: digits, address: address.trim() })); } catch { /* Keep ordering available without storage. */ }
+    try { localStorage.setItem(buyerDetailsKey(user?.id), JSON.stringify({ name: trimmedName, phone: digits, address: trimmedAddress })); } catch { /* Keep ordering available without storage. */ }
+    try { localStorage.setItem("locus_last_order_ts", String(Date.now())); } catch { /* метка не критична */ }
 
     clearCart();
     setOrder({ code: result.code, total: result.total });
@@ -364,31 +420,63 @@ export default function CheckoutUnified() {
             event.target.scrollIntoView({ block: "center", behavior: "smooth" });
           }
         }}>
+          {/* Ловушка для спам-ботов: скрыта от людей */}
+          <div aria-hidden="true" className="pointer-events-none absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden">
+            <label>
+              Ваш сайт
+              <input
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </label>
+          </div>
+
           <label className="block">
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Ваше имя</span>
             <input
+              ref={nameRef}
               value={name}
-              onChange={(e) => { editedFields.current.add("name"); setName(e.target.value); setError(null); }}
+              onChange={(e) => {
+                editedFields.current.add("name");
+                setName(e.target.value);
+                setError(null);
+                setFieldErrors((prev) => ({ ...prev, name: undefined }));
+              }}
               placeholder="Анна"
               autoComplete="given-name"
-              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
+              aria-invalid={!!fieldErrors.name}
+              className={cn(
+                "h-12 w-full rounded-xl border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary",
+                fieldErrors.name ? "border-destructive focus:border-destructive text-destructive" : "border-border",
+              )}
             />
+            {fieldErrors.name && <p className="mt-1 text-[11.5px] text-destructive">{fieldErrors.name}</p>}
           </label>
 
           <label className="block">
             <span className="mb-1 block text-[11.5px] font-medium text-muted-foreground">Телефон</span>
             <input
+              ref={phoneRef}
               value={formatPhone(phone.replace(/\D/g, ""))}
               onChange={(e) => {
                 editedFields.current.add("phone");
                 setPhone(normalizeCheckoutPhone(e.target.value));
                 setError(null);
+                setFieldErrors((prev) => ({ ...prev, phone: undefined }));
               }}
               inputMode="tel"
               autoComplete="tel"
               placeholder="+375 29 123-45-67"
-              className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] tracking-wide text-foreground outline-none focus:border-primary"
+              aria-invalid={!!fieldErrors.phone}
+              className={cn(
+                "h-12 w-full rounded-xl border bg-background px-3 text-[16px] tracking-wide text-foreground outline-none focus:border-primary",
+                fieldErrors.phone ? "border-destructive focus:border-destructive text-destructive" : "border-border",
+              )}
             />
+            {fieldErrors.phone && <p className="mt-1 text-[11.5px] text-destructive">{fieldErrors.phone}</p>}
           </label>
 
           <div>
@@ -433,12 +521,23 @@ export default function CheckoutUnified() {
                 {activeDelivery?.addressLabel || "Адрес доставки"}
               </span>
               <input
+                ref={addressRef}
                 value={address}
-                onChange={(e) => { editedFields.current.add("address"); setAddress(e.target.value); setError(null); }}
+                onChange={(e) => {
+                  editedFields.current.add("address");
+                  setAddress(e.target.value);
+                  setError(null);
+                  setFieldErrors((prev) => ({ ...prev, address: undefined }));
+                }}
                 placeholder={activeDelivery?.addressPlaceholder || "Город, улица, дом, квартира"}
                 autoComplete="street-address"
-                className="h-12 w-full rounded-xl border border-border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary"
+                aria-invalid={!!fieldErrors.address}
+                className={cn(
+                  "h-12 w-full rounded-xl border bg-background px-3 text-[16px] text-foreground outline-none focus:border-primary",
+                  fieldErrors.address ? "border-destructive focus:border-destructive text-destructive" : "border-border",
+                )}
               />
+              {fieldErrors.address && <p className="mt-1 text-[11.5px] text-destructive">{fieldErrors.address}</p>}
             </label>
           )}
 
