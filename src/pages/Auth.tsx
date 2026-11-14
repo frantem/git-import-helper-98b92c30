@@ -57,7 +57,7 @@ export default function Auth() {
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
-  const goAfterAuth = (fallback = "/profile") => {
+  const goAfterAuth = (fallback = "/seller") => {
     const returnTo = localStorage.getItem("locus-return-to");
     localStorage.removeItem("locus-return-to");
     navigate(returnTo || fallback);
@@ -67,7 +67,7 @@ export default function Auth() {
     if (user && !isReset) {
       const returnTo = localStorage.getItem("locus-return-to");
       localStorage.removeItem("locus-return-to");
-      navigate(returnTo || "/profile");
+      navigate(returnTo || "/seller");
     }
   }, [user, navigate, isReset]);
 

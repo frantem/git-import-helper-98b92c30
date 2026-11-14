@@ -18,7 +18,6 @@ const Product = lazy(() => import("./pages/Product"));
 const CheckoutUnified = lazy(() => import("./pages/CheckoutUnified"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Auth = lazy(() => import("./pages/Auth"));
-const Orders = lazy(() => import("./pages/Orders"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const SellerProducts = lazy(() => import("./pages/seller/SellerProducts"));
 const SellerOrders = lazy(() => import("./pages/seller/SellerOrders"));
@@ -40,10 +39,8 @@ const SellerReviews = lazy(() => import("./pages/SellerReviews"));
 const SellerApplication = lazy(() => import("./pages/SellerApplication"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminSellers = lazy(() => import("./pages/admin/AdminSellers"));
-const AdminSellerApplications = lazy(() => import("./pages/admin/AdminSellerApplications"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 
-const AdminBlocks = lazy(() => import("./pages/admin/AdminBlocks"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminCommission = lazy(() => import("./pages/admin/AdminCommission"));
@@ -88,7 +85,6 @@ const App = () => (
                   <Route path="/checkout" element={<CheckoutUnified />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/orders" element={<Orders />} />
                   <Route path="/seller" element={<SellerDashboard />} />
                   <Route path="/seller/products" element={<SellerProducts />} />
                   <Route path="/seller/orders" element={<SellerOrders />} />
@@ -111,10 +107,8 @@ const App = () => (
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/admin/sellers" element={<AdminSellers />} />
-                  <Route path="/admin/applications" element={<AdminSellerApplications />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
                   
-                  <Route path="/admin/blocks" element={<AdminBlocks />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                   <Route path="/admin/products" element={<AdminProducts />} />
                   <Route path="/admin/commission" element={<AdminCommission />} />

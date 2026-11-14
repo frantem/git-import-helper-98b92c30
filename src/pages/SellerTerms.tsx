@@ -9,7 +9,7 @@ export default function SellerTerms() {
       <SEO title="Условия для продавцов | Locus" description="Договор-оферта на размещение товаров на маркетплейсе LOCUS (locusfood.by)." canonical="https://locusfood.by/seller-terms" />
       <Header />
       <main className="container mx-auto px-3 py-4 max-w-3xl">
-        <PageHeader title="Условия для продавцов" backPath="/profile" />
+        <PageHeader title="Условия для продавцов" backPath="/seller" />
 
         <div className="rounded-2xl bg-card p-4 md:p-6 shadow-sm space-y-6 text-sm text-foreground leading-relaxed">
           <p className="text-xs text-muted-foreground">Договор-оферта на размещение товаров на маркетплейсе LOCUS. Дата публикации: 15 мая 2026 г.</p>

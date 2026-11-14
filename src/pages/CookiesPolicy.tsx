@@ -13,7 +13,7 @@ export default function CookiesPolicy() {
       />
       <Header />
       <main className="container mx-auto px-3 py-4 max-w-3xl">
-        <PageHeader title="Политика использования cookies" backPath="/profile" />
+        <PageHeader title="Политика использования cookies" backPath="/seller" />
 
         <div className="rounded-2xl bg-card p-4 md:p-6 shadow-sm space-y-6 text-sm text-foreground leading-relaxed">
           <p className="text-xs text-muted-foreground">Дата публикации: 15 мая 2026 г.</p>

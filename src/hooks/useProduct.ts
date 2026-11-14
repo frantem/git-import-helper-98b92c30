@@ -64,7 +64,7 @@ export function useProduct(idOrSlug: string | undefined) {
       const isUuid = UUID_RE.test(idOrSlug);
       // Note: farmers.street is restricted to authenticated users (anon cannot SELECT it).
       // Product pages are public — we only request non-sensitive farmer columns here.
-      const baseSelect = `*, farmers(id, name, district, village, photo_url, city), categories(name, emoji)`;
+      const baseSelect = `*, farmers(id, name, district, village, photo_url, city)`;
       let { data: product, error: productError } = await supabase
         .from("products")
         .select(baseSelect)
@@ -156,7 +156,7 @@ export function usePrefetchProduct() {
         const [productRes, imagesRes, variantsRes, addonsRes] = await Promise.all([
           supabase
             .from("products")
-            .select(`*, farmers(id, name, district, village, photo_url, city), categories(name, emoji)`)
+            .select(`*, farmers(id, name, district, village, photo_url, city)`)
             .eq("id", productId)
             .single(),
           supabase.from("product_images").select("*").eq("product_id", productId).order("sort_order"),

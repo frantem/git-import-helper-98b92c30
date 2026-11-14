@@ -25,7 +25,7 @@ const NotFound = () => {
             На главную
           </Link>
           <Link to="/" className="text-primary underline hover:text-primary/90">
-            В каталог
+            На главную
           </Link>
         </div>
       </div>

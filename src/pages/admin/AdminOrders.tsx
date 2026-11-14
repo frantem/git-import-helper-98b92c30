@@ -62,11 +62,6 @@ interface Order {
   confirmation_method: string | null;
   referrer_farmer_id: string | null;
   referrer_farmer_name: string | null;
-  pickup_point: {
-    name: string;
-    address: string;
-    working_hours: string | null;
-  } | null;
   buyer: {
     phone: string | null;
     full_name: string | null;
@@ -146,7 +141,6 @@ export default function AdminOrders() {
         referrer_farmer_id,
         guest_name,
         guest_phone,
-        pickup_point:pickup_points(name, address, working_hours),
         order_items(
           id,
           quantity,
@@ -597,16 +591,6 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <MapPin className="h-4 w-4" />
                       <span>{order.delivery_address}</span>
-                    </div>
-                  )}
-
-                  {order.pickup_point && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{order.pickup_point.name}</span>
-                      {order.pickup_point.working_hours && (
-                        <span className="text-xs">({order.pickup_point.working_hours})</span>
-                      )}
                     </div>
                   )}
 

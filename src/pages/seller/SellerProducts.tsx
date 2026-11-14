@@ -72,7 +72,6 @@ export default function SellerProducts() {
   const [farmerId, setFarmerId] = useState<string | null>(null);
   const [storeType, setStoreType] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -86,7 +85,6 @@ export default function SellerProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productImages, setProductImages] = useState<string[]>([]);
   const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [mainVariant, setMainVariant] = useState<ProductVariant>({ label: "", price: 0, discount_percent: 0 });
   const [productForm, setProductForm] = useState({
     title: "", description: "", category_id: "", image_url: "",
@@ -114,15 +112,11 @@ export default function SellerProducts() {
     setFarmerId(farmer.id);
     setStoreType((farmer as { store_type?: string | null }).store_type ?? null);
 
-    const [productsRes, categoriesRes] = await Promise.all([
-      supabase.from("products").select("*").eq("farmer_id", farmer.id)
-        .eq("is_deleted", false)
-        .order("is_active", { ascending: false }).order("created_at", { ascending: false }),
-      supabase.from("categories").select("id, name, slug").order("sort_order"),
-    ]);
+    const productsRes = await supabase.from("products").select("*").eq("farmer_id", farmer.id)
+      .eq("is_deleted", false)
+      .order("is_active", { ascending: false }).order("created_at", { ascending: false });
 
     if (productsRes.data) setProducts(productsRes.data);
-    if (categoriesRes.data) setCategories(categoriesRes.data);
     setIsLoading(false);
   };
 
@@ -190,7 +184,6 @@ export default function SellerProducts() {
   const handleSaveProduct = async () => {
     if (!farmerId || savingRef.current) return;
     if (!productForm.title.trim()) { toast.error("Введите название товара"); return; }
-    if (selectedCategoryIds.length === 0) { toast.error("Выберите хотя бы одну категорию"); return; }
     if (!isApparel && !hasRequiredFoodDetails(productForm)) {
       toast.error("Заполните состав и срок хранения"); return;
     }
@@ -205,7 +198,7 @@ export default function SellerProducts() {
       const productData = {
         title: productForm.title, description: productForm.description || null,
         price: priceInKopecks, old_price: oldPriceInKopecks, unit: mainVariant.label,
-        category_id: selectedCategoryIds[0], image_url: productForm.image_url || null,
+        image_url: productForm.image_url || null,
         farmer_id: farmerId, prep_time_minutes: productForm.prep_time_minutes || 0,
         order_lead_time_hours: productForm.order_lead_time_hours || 0,
         composition: productForm.composition || null,
@@ -226,10 +219,6 @@ export default function SellerProducts() {
             if (productImages.length > 0) await supabase.from("product_images").insert(productImages.map((url, i) => ({ product_id: pid, image_url: url, sort_order: i })));
           })(),
           (async () => {
-            await supabase.from("product_categories").delete().eq("product_id", pid);
-            if (selectedCategoryIds.length > 0) await supabase.from("product_categories").insert(selectedCategoryIds.map(catId => ({ product_id: pid, category_id: catId })));
-          })(),
-          (async () => {
             await supabase.from("product_variants").delete().eq("product_id", pid);
             await supabase.from("product_variants").insert([
               { product_id: pid, label: mainVariant.label, price: mainVariant.price, unit: mainVariant.label, is_default: true, sort_order: 0, discount_percent: mainVariant.discount_percent || 0 },
@@ -247,7 +236,6 @@ export default function SellerProducts() {
         const pid = newProduct.id;
         await Promise.all([
           productImages.length > 0 ? supabase.from("product_images").insert(productImages.map((url, i) => ({ product_id: pid, image_url: url, sort_order: i }))) : Promise.resolve(),
-          selectedCategoryIds.length > 0 ? supabase.from("product_categories").insert(selectedCategoryIds.map(catId => ({ product_id: pid, category_id: catId }))) : Promise.resolve(),
           supabase.from("product_variants").insert([
             { product_id: pid, label: mainVariant.label, price: mainVariant.price, unit: mainVariant.label, is_default: true, sort_order: 0, discount_percent: mainVariant.discount_percent || 0 },
             ...productVariants.map((v, i) => ({ product_id: pid, label: v.label, price: v.price, unit: v.label, is_default: false, sort_order: i + 1, discount_percent: v.discount_percent || 0 }))
@@ -278,7 +266,6 @@ export default function SellerProducts() {
     await Promise.all([
       supabase.from("product_images").delete().eq("product_id", deleteConfirmId),
       supabase.from("product_variants").delete().eq("product_id", deleteConfirmId),
-      supabase.from("product_categories").delete().eq("product_id", deleteConfirmId),
       supabase.from("product_addons").delete().eq("product_id", deleteConfirmId),
       (supabase as any).from("product_custom_fields").delete().eq("product_id", deleteConfirmId),
     ]);
@@ -309,10 +296,9 @@ export default function SellerProducts() {
 
   const handleEditProduct = async (product: Product) => {
     clearDraft("seller_product_draft");
-    const [imagesRes, variantsRes, catRes] = await Promise.all([
+    const [imagesRes, variantsRes] = await Promise.all([
       supabase.from("product_images").select("image_url").eq("product_id", product.id).order("sort_order"),
       supabase.from("product_variants").select("*").eq("product_id", product.id).order("sort_order"),
-      supabase.from("product_categories").select("category_id").eq("product_id", product.id),
     ]);
 
     setEditingProduct(product);
@@ -325,9 +311,6 @@ export default function SellerProducts() {
       carbs: (product as any).carbs ?? "", shelf_life: (product as any).shelf_life || "",
     });
     setProductImages(imagesRes.data?.map(img => img.image_url) || []);
-
-    const categoryIds = catRes.data?.map(pc => pc.category_id) || [];
-    setSelectedCategoryIds(categoryIds.length > 0 ? categoryIds : [product.category_id]);
 
     if (variantsRes.data && variantsRes.data.length > 0) {
       const first = variantsRes.data[0];
@@ -499,24 +482,6 @@ export default function SellerProducts() {
             <div className="space-y-2">
               <Label>Название <span className="text-destructive">*</span></Label>
               <Input value={productForm.title} onChange={(e) => setProductForm({ ...productForm, title: e.target.value })} placeholder="Название товара" />
-            </div>
-            <div className="space-y-2">
-              <Label>Категории <span className="text-destructive">*</span></Label>
-              <p className="text-xs text-muted-foreground mb-2">Можно выбрать несколько категорий</p>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg">
-                {categories.map((cat) => (
-                  <label key={cat.id} className="flex items-center gap-2 cursor-pointer p-2 rounded min-h-[44px]">
-                    <Checkbox
-                      checked={selectedCategoryIds.includes(cat.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) setSelectedCategoryIds([...selectedCategoryIds, cat.id]);
-                        else setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== cat.id));
-                      }}
-                    />
-                    <span className="text-sm text-foreground">{cat.name}</span>
-                  </label>
-                ))}
-              </div>
             </div>
             <div className="space-y-2">
               <Label>Описание</Label>

@@ -190,8 +190,7 @@ export default function SellerProfile() {
         .select(`
           id, title, slug, price, old_price, image_url, unit, is_new, farmer_id,
           category_id, prep_time_minutes, order_lead_time_hours,
-          description, composition, shelf_life,
-          categories(name, slug, emoji, sort_order)
+          description, composition, shelf_life
         `)
         .eq("farmer_id", farmerData.id)
         .eq("is_active", true)
@@ -217,10 +216,10 @@ export default function SellerProfile() {
         image:
           p.image_url ||
           "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=400&fit=crop",
-        category: p.categories?.slug || "",
-        categoryName: p.categories?.name || "Другое",
-        categoryEmoji: (p.categories as any)?.emoji ?? null,
-        categorySort: (p.categories as any)?.sort_order ?? 999,
+        category: "",
+        categoryName: "Все товары",
+        categoryEmoji: null,
+        categorySort: 0,
         rating: null,
         reviews: 0,
         seller: farmerData.name,

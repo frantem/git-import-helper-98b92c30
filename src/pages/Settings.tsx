@@ -405,7 +405,7 @@ export default function Settings() {
       <Header />
 
       <main className="container mx-auto px-4 py-4">
-        <PageHeader title="Настройки" backPath="/profile" />
+        <PageHeader title="Настройки" backPath="/seller" />
 
         <div className="max-w-md mx-auto space-y-6">
           {(fromCart || forceReset) && (

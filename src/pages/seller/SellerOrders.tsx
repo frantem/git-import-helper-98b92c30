@@ -49,7 +49,6 @@ interface SellerOrder {
   payment_method: string | null;
   confirmation_method: string | null;
   referrer_farmer_name: string | null;
-  pickup_point: { name: string; address: string; working_hours: string | null } | null;
   buyer: { full_name: string | null; phone: string | null } | null;
   items: SellerOrderItem[];
   itemsTotal: number;
@@ -116,7 +115,6 @@ export default function SellerOrders() {
         id, quantity, unit_price, status, confirmed_at, variant_label, custom_fields,
         product:products(id, title, slug),
         order:orders(id, created_at, status, delivery_type, delivery_address, delivery_date, notes, estimated_delivery_time, payment_method, confirmation_method, buyer_id, referrer_farmer_id, guest_name, guest_phone,
-          pickup_point:pickup_points(name, address, working_hours)
         )
       `)
       .eq("farmer_id", farmer.id)
@@ -184,7 +182,6 @@ export default function SellerOrders() {
           payment_method: e.order.payment_method ?? null,
           confirmation_method: e.order.confirmation_method ?? null,
           referrer_farmer_name: e.order.referrer_farmer_id ? (referrerMap.get(e.order.referrer_farmer_id) || null) : null,
-          pickup_point: e.order.pickup_point,
           buyer: buyer
             ? { full_name: buyer.full_name, phone: buyer.phone }
             : guestName
@@ -538,16 +535,6 @@ export default function SellerOrders() {
                     <div className="flex items-center gap-2 text-sm text-primary mb-2">
                       <User className="h-4 w-4" />
                       <span>Пришёл от: {order.referrer_farmer_name}</span>
-                    </div>
-                  )}
-
-                  {order.pickup_point && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{order.pickup_point.name}</span>
-                      {order.pickup_point.working_hours && (
-                        <span className="text-xs">({order.pickup_point.working_hours})</span>
-                      )}
                     </div>
                   )}
 

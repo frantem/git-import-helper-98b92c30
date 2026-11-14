@@ -74,8 +74,6 @@ export function useProducts() {
           prep_time_minutes,
           order_lead_time_hours,
           farmers!inner(name, store_type, published_to_marketplace),
-          categories(name, slug),
-          product_categories(categories(name, slug)),
           product_variants(id, label, price, unit, is_default, sort_order)
         `)
         .eq("is_active", true)
@@ -162,7 +160,7 @@ export function transformProduct(
     discount: p.old_price ? Math.round((1 - p.price / p.old_price) * 100) : undefined,
     image: p.image_url || "/placeholder.svg",
     category: primaryCategory,
-    categories: categorySlugs.length > 0 ? categorySlugs : (p.categories?.slug ? [p.categories.slug] : []),
+    categories: categorySlugs,
     rating: ratings ? ratings.sum / ratings.count : null,
     reviews: ratings?.count || 0,
     seller: p.farmers?.name || "Фермер",

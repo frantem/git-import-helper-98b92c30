@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { compressImage } from "@/lib/imageUtils";
-import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Share2, Star, ShoppingCart, Loader2, ChevronRight } from "lucide-react";
 
 import { useSellerNavContext } from "@/hooks/useSellerNavContext";
 import { ProductReviews } from "@/components/ProductReviews";
@@ -59,7 +59,6 @@ export default function Product() {
   const {
     user
   } = useAuth();
-  const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -113,47 +112,6 @@ export default function Product() {
   }, [variants, selectedVariantId]);
   const selectedVariant = useMemo(() => variants.find(v => v.id === selectedVariantId) || null, [variants, selectedVariantId]);
 
-  // Check if product is in favorites
-  useEffect(() => {
-    const checkFavorite = async () => {
-      if (!user || !dbProduct?.id) return;
-      const {
-        data
-      } = await supabase.from("favorites").select("id").eq("user_id", user.id).eq("product_id", dbProduct.id).maybeSingle();
-      setIsFavorite(!!data);
-    };
-    checkFavorite();
-  }, [user, dbProduct?.id]);
-  const toggleFavorite = async () => {
-    if (!user) {
-      toast.error("Войдите, чтобы добавить в избранное");
-      return;
-    }
-    if (!dbProduct?.id) {
-      toast.error("Избранное доступно только для товаров из каталога");
-      return;
-    }
-    if (isFavorite) {
-      const {
-        error
-      } = await supabase.from("favorites").delete().eq("user_id", user.id).eq("product_id", dbProduct.id);
-      if (!error) {
-        setIsFavorite(false);
-        toast.success("Удалено из избранного");
-      }
-    } else {
-      const {
-        error
-      } = await supabase.from("favorites").insert({
-        user_id: user.id,
-        product_id: dbProduct.id
-      });
-      if (!error) {
-        setIsFavorite(true);
-        toast.success("Добавлено в избранное");
-      }
-    }
-  };
   const fetchReviews = useCallback(async () => {
     const productId = dbProduct?.id;
     if (!productId) return;
@@ -699,9 +657,7 @@ export default function Product() {
 
             {/* Actions */}
             <div className="absolute right-4 top-4 flex gap-2 z-10">
-              <button onClick={toggleFavorite} aria-label={isFavorite ? "Убрать из избранного" : "В избранное"} className="rounded-full bg-card/80 p-2 backdrop-blur-sm transition-colors hover:bg-card">
-                <Heart className={cn("h-5 w-5", isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} />
-              </button>
+
               <button onClick={e => {
               e.preventDefault();
               e.stopPropagation();

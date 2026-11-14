@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
       <SEO title="Политика конфиденциальности | Locus" description="Политика конфиденциальности маркетплейса LOCUS (locusfood.by) — порядок обработки и защиты персональных данных." canonical="https://locusfood.by/privacy-policy" />
       <Header />
       <main className="container mx-auto px-3 py-4 max-w-3xl">
-        <PageHeader title="Политика конфиденциальности" backPath="/profile" />
+        <PageHeader title="Политика конфиденциальности" backPath="/seller" />
 
         <div className="rounded-2xl bg-card p-4 md:p-6 shadow-sm space-y-6 text-sm text-foreground leading-relaxed">
           <p className="text-xs text-muted-foreground">Дата вступления в силу: 15 мая 2026 г.</p>

@@ -9,7 +9,7 @@ export default function Oferta() {
       <SEO title="Публичная оферта | Locus" description="Публичная оферта маркетплейса LOCUS (locusfood.by) на оказание услуг покупателям." canonical="https://locusfood.by/oferta" />
       <Header />
       <main className="container mx-auto px-3 py-4 max-w-3xl">
-        <PageHeader title="Публичная оферта" backPath="/profile" />
+        <PageHeader title="Публичная оферта" backPath="/seller" />
 
         <div className="rounded-2xl bg-card p-4 md:p-6 shadow-sm space-y-6 text-sm text-foreground leading-relaxed">
           <p className="text-xs text-muted-foreground">Дата публикации: 15 мая 2026 г.</p>
