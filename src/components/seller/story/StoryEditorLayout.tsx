@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Loader2, X } from "lucide-react";
 import { STORY_W, STORY_H } from "./StoryCanvas";
@@ -116,7 +115,7 @@ export function StoryEditorLayout({
           </div>
         )}
       </main>
-      <BottomNavigation />
+      
       {previewUrl && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-black/90 p-4">
           <button

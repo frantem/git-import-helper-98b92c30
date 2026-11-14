@@ -17,7 +17,7 @@ export const CategoryCircles = memo(function CategoryCircles({ categories }: Cat
         {categories.map((cat) => (
           <Link
             key={cat.id}
-            to={`/catalog?category=${cat.slug}`}
+            to="/"
             className="flex flex-shrink-0 flex-col items-center gap-1.5 w-[68px]"
           >
             <div

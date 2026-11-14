@@ -37,7 +37,7 @@ export function CartConflictDialog() {
             className="w-full"
             onClick={() => {
               cancelConflict();
-              navigate("/cart");
+              navigate("/checkout");
             }}
           >
             Оформить текущий заказ

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -232,7 +231,7 @@ export default function Settings() {
   const tryNavigateAfterCart = (latestPhone: string) => {
     if (!fromCart) return;
     if (profile.full_name && latestPhone && profile.delivery_address) {
-      navigate("/cart");
+      navigate("/checkout");
     }
   };
 
@@ -396,7 +395,7 @@ export default function Settings() {
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        <BottomNavigation />
+        
       </div>
     );
   }
@@ -683,7 +682,7 @@ export default function Settings() {
         onVerified={handlePhoneVerified}
       />
 
-      <BottomNavigation />
+      
     </div>
   );
 }

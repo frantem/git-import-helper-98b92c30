@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,7 +106,7 @@ export default function Orders() {
             <Button>Войти</Button>
           </Link>
         </main>
-        <BottomNavigation />
+        
       </div>);
 
   }
@@ -130,7 +129,7 @@ export default function Orders() {
             <p className="text-muted-foreground mb-4">
               Перейдите в каталог и выберите свежие продукты
             </p>
-            <Link to="/catalog">
+            <Link to="/">
               <Button>Перейти в каталог</Button>
             </Link>
           </div> :
@@ -212,7 +211,7 @@ export default function Orders() {
         }
       </main>
 
-      <BottomNavigation />
+      
     </div>);
 
 }

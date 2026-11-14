@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -344,7 +343,7 @@ export default function AdminCommission() {
           </Link>
         </div>
       </main>
-      <BottomNavigation />
+      
     </div>
   );
 }

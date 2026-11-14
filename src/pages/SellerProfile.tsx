@@ -321,8 +321,8 @@ export default function SellerProfile() {
         <Header />
         <main className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-xl font-bold text-foreground mb-2">Продавец не найден</h1>
-          <Link to="/catalog" className="text-primary hover:underline">
-            Вернуться в каталог
+          <Link to="/" className="text-primary hover:underline">
+            На главную Locus
           </Link>
         </main>
       </div>
@@ -453,6 +453,18 @@ export default function SellerProfile() {
             rating={averageRating}
             reviewCount={totalReviewCount}
           />
+
+          {/* 9. Плашка платформы: витрина — на Locus */}
+          <p className="pt-1 text-center text-[11.5px] leading-relaxed text-muted-foreground">
+            Сайт работает на платформе{" "}
+            <Link to="/" className="font-semibold text-foreground/80 hover:text-foreground">
+              Locus
+            </Link>
+            <span className="mx-1.5 text-border">•</span>
+            <Link to="/seller-application" className="hover:text-foreground">
+              Создать свою витрину
+            </Link>
+          </p>
         </div>
       </main>
       </div>

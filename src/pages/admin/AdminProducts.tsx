@@ -2,7 +2,6 @@ import { hasRequiredFoodDetails, optionalNutrition } from "@/lib/productFoodDeta
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -353,7 +352,7 @@ export default function AdminProducts() {
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </main>
-        <BottomNavigation />
+        
       </div>
     );
   }
@@ -408,7 +407,7 @@ export default function AdminProducts() {
           )}
         </div>
       </main>
-      <BottomNavigation />
+      
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>

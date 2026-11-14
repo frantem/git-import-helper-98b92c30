@@ -136,7 +136,7 @@ export default function CheckoutUnified() {
   const paymentList = paymentChoices();
   const canSubmit = !submitting && !sellerLoading && deliveryList.some((option) => option.id === delivery);
   const pickupSchedule = formatPickupSchedule(farmer?.pickup_slots ?? null);
-  const storeUrl = farmer?.slug ? `/seller/${farmer.slug}` : farmer ? `/seller/${farmer.id}` : "/catalog";
+  const storeUrl = farmer?.slug ? `/seller/${farmer.slug}` : farmer ? `/seller/${farmer.id}` : "/";
 
   useEffect(() => {
     if (authLoading) return;
@@ -337,7 +337,7 @@ export default function CheckoutUnified() {
           Добавьте товары — оформление займёт меньше минуты.
         </p>
         <Link
-          to="/catalog"
+          to="/"
           className="mt-5 inline-flex h-11 items-center rounded-xl bg-primary px-5 text-[14px] font-semibold text-primary-foreground"
         >
           Перейти в каталог

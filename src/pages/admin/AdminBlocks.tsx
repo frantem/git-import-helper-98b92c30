@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -542,7 +541,7 @@ export default function AdminBlocks() {
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        <BottomNavigation />
+        
       </div>
     );
   }
@@ -976,7 +975,7 @@ export default function AdminBlocks() {
         </Tabs>
       </main>
 
-      <BottomNavigation />
+      
     </div>
   );
 }

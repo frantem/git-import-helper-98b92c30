@@ -1,5 +1,4 @@
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, Navigate } from "react-router-dom";
@@ -31,7 +30,7 @@ export default function Admin() {
           <p className="text-muted-foreground mb-4">Эта страница доступна только администраторам</p>
           <Link to="/"><Button>На главную</Button></Link>
         </main>
-        <BottomNavigation />
+        
       </div>
     );
   }
@@ -107,7 +106,7 @@ export default function Admin() {
           </Link>
         </div>
       </main>
-      <BottomNavigation />
+      
     </div>
   );
 }

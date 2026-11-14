@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
@@ -607,7 +606,7 @@ export default function Checkout() {
             </Button>
           </div>
         </main>
-        <BottomNavigation />
+        
       </div>;
   }
   return <div className="min-h-screen pb-32 md:pb-0 bg-[#faf5ea]">
@@ -1018,6 +1017,6 @@ export default function Checkout() {
         </Button>
       </div>
 
-      <BottomNavigation />
+      
     </div>;
 }

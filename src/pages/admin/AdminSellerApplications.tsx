@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -155,7 +154,7 @@ export default function AdminSellerApplications() {
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        <BottomNavigation />
+        
       </div>
     );
   }
@@ -284,7 +283,7 @@ export default function AdminSellerApplications() {
         )}
       </main>
 
-      <BottomNavigation />
+      
     </div>
   );
 }

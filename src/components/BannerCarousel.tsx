@@ -85,12 +85,12 @@ export const BannerCarousel = memo(function BannerCarousel({ banners }: BannerCa
       return `/product/${banner.linkProductId}`;
     }
     if (banner.linkCategory) {
-      return `/catalog?category=${banner.linkCategory}`;
+      return "/";
     }
     if (banner.linkUrl) {
       return banner.linkUrl;
     }
-    return "/catalog";
+    return "/";
   };
 
   return (

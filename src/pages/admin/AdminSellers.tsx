@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -131,7 +130,7 @@ export default function AdminSellers() {
         <main className="container mx-auto px-4 py-16 flex justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </main>
-        <BottomNavigation />
+        
       </div>
     );
   }
@@ -263,7 +262,7 @@ export default function AdminSellers() {
         )}
       </main>
 
-      <BottomNavigation />
+      
     </div>
   );
 }

@@ -1,7 +1,6 @@
-import { User, Package, Heart, Settings, ChevronRight, LogOut, Clock, X, Shield, Store, Sparkles } from "lucide-react";
+import { User, Package, Settings, ChevronRight, LogOut, Clock, X, Shield, Store, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
@@ -10,7 +9,6 @@ import { usePendingOrdersCount } from "@/hooks/usePendingOrdersCount";
 
 const menuItems = [
 { icon: Package, label: "Мои заказы", path: "/orders" },
-{ icon: Heart, label: "Избранное", path: "/favorites" },
 { icon: Settings, label: "Настройки", path: "/settings" }];
 
 
@@ -285,7 +283,7 @@ export default function Profile() {
         </div>
       </main>
 
-      <BottomNavigation />
+      
     </div>);
 
 }

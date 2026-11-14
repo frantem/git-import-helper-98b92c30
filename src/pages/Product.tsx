@@ -2,8 +2,6 @@ import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import { compressImage } from "@/lib/imageUtils";
 import { ArrowLeft, Heart, Share2, Star, ShoppingCart, Loader2, ChevronRight } from "lucide-react";
 
-import { Header } from "@/components/Header";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { useSellerNavContext } from "@/hooks/useSellerNavContext";
 import { ProductReviews } from "@/components/ProductReviews";
 import { useCart } from "@/contexts/CartContext";
@@ -393,6 +391,13 @@ export default function Product() {
   } : undefined, [selectedVariant]);
   const cartCustomFields = useMemo(() => customFields.length > 0 ? buildCustomFieldsData() : undefined, [customFields, customFieldValues]);
   const cartAddons = useMemo(() => addons.length > 0 ? buildAddonsData() : undefined, [addons, selectedCheckboxAddons, selectedRadioAddon]);
+  const sellerName = dbProduct?.farmers?.name ?? product?.seller ?? null;
+  const sellerHref = sellerSlug
+    ? `/seller/${sellerSlug}`
+    : dbProduct?.farmers?.id
+      ? `/seller/${dbProduct.farmers.id}`
+      : null;
+
   const currentItemKey = useMemo(() => {
     if (!product) return null;
     return getItemKey({ product: product as any, quantity: 1, variant: cartVariantData, customFields: cartCustomFields, addons: cartAddons });
@@ -403,24 +408,21 @@ export default function Product() {
     return item ? item.quantity : 0;
   }, [items, currentItemKey, getItemKey]);
   if (isLoadingProduct) {
-    return <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <Header />
+    return <div className="min-h-screen bg-background">
         <main className="container mx-auto flex items-center justify-center px-4 py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
-        <BottomNavigation />
+        
       </div>;
   }
   if (!product) {
-    return <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <Header />
+    return <div className="min-h-screen bg-background">
         <main className="container mx-auto flex flex-col items-center justify-center px-4 py-16">
           <h1 className="mb-2 text-xl font-bold text-foreground">Товар не найден</h1>
-          <Link to="/catalog">
-            <Button variant="default">Вернуться в каталог</Button>
+          <Link to={sellerHref ?? "/"}>
+            <Button variant="default">{sellerHref ? "В магазин" : "На главную"}</Button>
           </Link>
         </main>
-        <BottomNavigation />
       </div>;
   }
 
@@ -475,17 +477,6 @@ export default function Product() {
       updateQuantity(currentItemKey, currentQuantity - 1);
     } else {
       removeFromCart(currentItemKey);
-    }
-  };
-  const handleGoBack = () => {
-    if (sellerSlug) {
-      navigate(`/seller/${sellerSlug}`);
-      return;
-    }
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate("/catalog");
     }
   };
   const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -639,7 +630,7 @@ export default function Product() {
   ];
   const hasNutrition = nutrition.some(n => n.value != null);
 
-  return <div className="min-h-screen bg-background pb-20 md:pb-0">
+  return <div className="min-h-screen bg-background">
       <SEO
         title={productSeoTitle}
         description={productSeoDescription}
@@ -649,22 +640,31 @@ export default function Product() {
         jsonLd={allJsonLd as unknown as Record<string, unknown> | Record<string, unknown>[]}
         noindex={!!isArchived}
       />
-      <Header />
+
+      <div className="border-b border-[#EFECE6] bg-[#FCFBF9]">
+        <div className="container mx-auto flex h-12 items-center px-3 md:px-4">
+          {sellerHref ? (
+            <Link
+              to={sellerHref}
+              className="inline-flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-[#1A1A1A]"
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              <span className="truncate">Назад в магазин{sellerName ? ` ${sellerName}` : ""}</span>
+            </Link>
+          ) : (
+            <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A1A1A]">
+              <ArrowLeft className="h-4 w-4" />
+              На главную
+            </Link>
+          )}
+        </div>
+      </div>
 
       <main className="container mx-auto px-0 pb-6 md:px-4 md:py-6 bg-[#faf5ea]">
         <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
           {/* Product image(s) */}
           <div className="relative lg:flex-1">
             {/* Floating back button over image */}
-            <button
-              type="button"
-              onClick={handleGoBack}
-              aria-label={sellerSlug ? "В магазин продавца" : "Назад"}
-              className="absolute left-4 top-4 z-10 flex h-10 items-center justify-center gap-1.5 rounded-full bg-black/35 px-3 text-primary-foreground backdrop-blur-md transition-colors hover:bg-black/50 md:hidden"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              {sellerSlug && <span className="text-[12px] font-semibold">В магазин</span>}
-            </button>
 
             {allImages.length > 1 ? <Carousel className="w-full">
                 <CarouselContent>
@@ -965,7 +965,7 @@ export default function Product() {
           </section>
       </main>
 
-      <BottomNavigation />
+      
 
     </div>;
 }

@@ -830,8 +830,7 @@ export default function ForSellers() {
             <nav className="flex flex-wrap gap-5">
               <Link to="/oferta" className="hover:text-white">Оферта</Link>
               <Link to="/privacy" className="hover:text-white">Политика</Link>
-              <Link to="/delivery" className="hover:text-white">Доставка</Link>
-              <Link to="/catalog" className="hover:text-white">Локальные витрины Витебска</Link>
+              <Link to="/seller-application" className="hover:text-white">Создать витрину</Link>
             </nav>
           </div>
         </Container>

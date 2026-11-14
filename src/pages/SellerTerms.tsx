@@ -1,6 +1,5 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { PageHeader } from "@/components/PageHeader";
 import { SEO } from "@/components/SEO";
 
@@ -198,7 +197,7 @@ export default function SellerTerms() {
         </div>
       </main>
       <Footer />
-      <BottomNavigation />
+      
     </div>
   );
 }

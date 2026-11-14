@@ -17,7 +17,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate("/");
     }
   };
 
@@ -63,7 +63,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header({ var
 
         {/* Cart - desktop only */}
         <Link
-          to="/cart"
+          to="/checkout"
           className={cn(
             "relative hidden flex-shrink-0 rounded-full p-2 md:flex",
             isOverlay

@@ -12,16 +12,13 @@ import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { ScrollManager } from "@/components/ScrollManager";
 import { trackVisitorSource } from "@/lib/visitorSource";
 import { CookieBanner } from "@/components/CookieBanner";
-import Index from "./pages/Index";
 import { CartConflictDialog } from "@/components/CartConflictDialog";
 
-const Catalog = lazy(() => import("./pages/Catalog"));
 const Product = lazy(() => import("./pages/Product"));
 const CheckoutUnified = lazy(() => import("./pages/CheckoutUnified"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Orders = lazy(() => import("./pages/Orders"));
-const Favorites = lazy(() => import("./pages/Favorites"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const SellerProducts = lazy(() => import("./pages/seller/SellerProducts"));
 const SellerOrders = lazy(() => import("./pages/seller/SellerOrders"));
@@ -45,7 +42,6 @@ const Admin = lazy(() => import("./pages/Admin"));
 const AdminSellers = lazy(() => import("./pages/admin/AdminSellers"));
 const AdminSellerApplications = lazy(() => import("./pages/admin/AdminSellerApplications"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
-const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
 
 const AdminBlocks = lazy(() => import("./pages/admin/AdminBlocks"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
@@ -55,9 +51,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Oferta = lazy(() => import("./pages/Oferta"));
 const SellerTerms = lazy(() => import("./pages/SellerTerms"));
-const Delivery = lazy(() => import("./pages/Delivery"));
 const CookiesPolicy = lazy(() => import("./pages/CookiesPolicy"));
-const LocalLanding = lazy(() => import("./pages/LocalLanding"));
 const ForSellers = lazy(() => import("./pages/ForSellers"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -88,15 +82,13 @@ const App = () => (
             <ChunkErrorBoundary>
               <Suspense fallback={null}>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/catalog" element={<Catalog />} />
+                  <Route path="/" element={<ForSellers />} />
+                  <Route path="/for-sellers" element={<Navigate to="/" replace />} />
                   <Route path="/product/:id" element={<Product />} />
-                  <Route path="/cart" element={<Navigate to="/checkout" replace />} />
                   <Route path="/checkout" element={<CheckoutUnified />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/orders" element={<Orders />} />
-                  <Route path="/favorites" element={<Favorites />} />
                   <Route path="/seller" element={<SellerDashboard />} />
                   <Route path="/seller/products" element={<SellerProducts />} />
                   <Route path="/seller/orders" element={<SellerOrders />} />
@@ -121,7 +113,6 @@ const App = () => (
                   <Route path="/admin/sellers" element={<AdminSellers />} />
                   <Route path="/admin/applications" element={<AdminSellerApplications />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
-                  <Route path="/admin/banners" element={<AdminBanners />} />
                   
                   <Route path="/admin/blocks" element={<AdminBlocks />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
@@ -130,10 +121,7 @@ const App = () => (
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/oferta" element={<Oferta />} />
                   <Route path="/seller-terms" element={<SellerTerms />} />
-                  <Route path="/delivery" element={<Delivery />} />
                   <Route path="/cookies" element={<CookiesPolicy />} />
-                  <Route path="/vitebsk/:slug" element={<LocalLanding />} />
-                  <Route path="/for-sellers" element={<ForSellers />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

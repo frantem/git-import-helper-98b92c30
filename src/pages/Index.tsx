@@ -1,6 +1,5 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { BottomNavigation } from "@/components/BottomNavigation";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { CategoryCircles } from "@/components/CategoryCircles";
 import { ProductCard } from "@/components/ProductCard";
@@ -114,7 +113,7 @@ const Index = () => {
       case "category":
         return `/catalog?category=${block.category_filter}`;
       default:
-        return "/catalog";
+        return "/";
     }
   };
 
@@ -209,7 +208,7 @@ const Index = () => {
       <Footer />
 
 
-      <BottomNavigation />
+      
     </div>
   );
 };
