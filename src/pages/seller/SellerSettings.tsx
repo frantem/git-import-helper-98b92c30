@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SellerTopBar } from "@/components/seller/SellerTopBar";
+import { SellerAppearanceCard } from "@/components/seller/SellerAppearanceCard";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -285,6 +286,13 @@ export default function SellerSettings() {
               placeholder="например, Витебск или Полоцк"
             />
             <p className="text-xs text-muted-foreground">Отображается в шапке вашей витрины для покупателей</p>
+          </div>
+
+          <div className="pt-4 border-t border-border">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-3">
+              Оформление витрины
+            </h2>
+            <SellerAppearanceCard />
           </div>
 
           <div className="pt-4 border-t border-border">

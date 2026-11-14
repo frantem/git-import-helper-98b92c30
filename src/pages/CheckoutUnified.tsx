@@ -217,14 +217,14 @@ export default function CheckoutUnified() {
     [farmer?.address_details],
   );
 
-  const pickupAddress = useMemo(
-    () =>
-      [farmer?.city, farmer?.street, farmer?.address_details]
-        .map((part) => part?.trim())
-        .filter(Boolean)
-        .join(", "),
-    [farmer],
-  );
+  const pickupAddress = useMemo(() => {
+    // Продавец сам пишет адрес в одном поле — не дублируем город и улицу
+    if (farmer?.address_details?.trim()) return farmer.address_details.trim();
+    return [farmer?.city, farmer?.street]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(", ");
+  }, [farmer]);
 
   const contactHref = useMemo(() => {
     const c = farmer?.contacts;
@@ -516,14 +516,14 @@ export default function CheckoutUnified() {
                 <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed text-foreground">{farmer.delivery_terms}</p>
               </div>
             )}
-            {delivery === "self" && receivingOptions.includes("self") && apparel && storeLines.length > 0 && (
+            {delivery === "self" && receivingOptions.includes("self") && storeLines.length > 1 && (
               <div className="mt-3 rounded-xl border border-border bg-secondary/40 p-3">
                 <div className="mb-2 flex items-center gap-2">
                   <Store className="h-4 w-4 text-primary" />
                   <p className="text-[13.5px] font-semibold text-foreground">
-                    {storeLines.length > 1
+                    {apparel
                       ? "Забрать или примерить можно в любом из магазинов:"
-                      : "Забрать или примерить можно по адресу:"}
+                      : "Забрать заказ можно в любом из пунктов:"}
                   </p>
                 </div>
                 <ul className="space-y-1.5">
@@ -536,7 +536,7 @@ export default function CheckoutUnified() {
                 </ul>
               </div>
             )}
-            {delivery === "self" && receivingOptions.includes("self") && !apparel && (pickupAddress || pickupSchedule.length > 0) && (
+            {delivery === "self" && receivingOptions.includes("self") && storeLines.length <= 1 && (pickupAddress || pickupSchedule.length > 0) && (
               <div className="mt-3 border-l-2 border-primary pl-3 text-[14px] leading-relaxed text-foreground">
                 {pickupAddress && <p className="break-words">Забрать: {pickupAddress}</p>}
                 {pickupSchedule.length > 0 && <div className="mt-1 text-[13px] text-secondary-foreground"><p className="font-medium">График выдачи</p>{pickupSchedule.map((line) => <p key={line}>{line}</p>)}</div>}

@@ -1,81 +1,38 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, MapPin, Plus, Store, Trash2, Truck } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { SellerTopBar } from "@/components/seller/SellerTopBar";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, MapPin, Truck } from "lucide-react";
-import { toast } from "sonner";
-import PickupSettingsSection, { PickupSlots, DEFAULT_PICKUP_SLOTS } from "@/components/PickupSettingsSection";
+import { Textarea } from "@/components/ui/textarea";
 
-interface DeliveryDraft {
-  pickupEnabled: boolean;
-  deliveryEnabled: boolean;
-  deliveryTerms: string;
-  address: { city: string; street: string; address_details: string };
-  pickupSlots: PickupSlots;
-  maxOrdersPerDay: number;
-  busyDates: string[];
-}
-
-
+/**
+ * Получение заказов — по модели Shopify: две карточки.
+ * Самовывоз: включён/выключен, список адресов (у кого несколько магазинов — несколько строк).
+ * Доставка: включена/выключена, свободное описание условий.
+ */
 export default function SellerDelivery() {
   const { user, role, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [farmerId, setFarmerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const savingRef = useRef(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
 
   const [pickupEnabled, setPickupEnabled] = useState(true);
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
   const [deliveryTerms, setDeliveryTerms] = useState("");
-  const [address, setAddress] = useState({ city: "", street: "", address_details: "" });
-
-  const [pickupSlots, setPickupSlots] = useState<PickupSlots>(DEFAULT_PICKUP_SLOTS);
+  const [city, setCity] = useState("");
+  const [addresses, setAddresses] = useState<string[]>([""]);
   const [isApparel, setIsApparel] = useState(false);
-  const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(5);
-  const [busyDates, setBusyDates] = useState<Date[]>([]);
-
-  const draftKey = user ? `seller_delivery_draft_${user.id}` : null;
-
-  const saveDraft = useCallback(() => {
-    if (!draftKey || !dataLoaded) return;
-    const snapshot: DeliveryDraft = {
-      pickupEnabled,
-      deliveryEnabled,
-      deliveryTerms,
-      address,
-      pickupSlots,
-      maxOrdersPerDay,
-      busyDates: busyDates.filter((d) => !isNaN(d.getTime())).map((d) => d.toISOString()),
-    };
-    localStorage.setItem(draftKey, JSON.stringify(snapshot));
-  }, [draftKey, dataLoaded, pickupEnabled, deliveryEnabled, deliveryTerms, address, pickupSlots, maxOrdersPerDay, busyDates]);
-
-  useEffect(() => {
-    if (!dataLoaded || !draftKey) return;
-    const onHide = () => saveDraft();
-    const onVis = () => { if (document.visibilityState === "hidden") saveDraft(); };
-    window.addEventListener("pagehide", onHide);
-    document.addEventListener("visibilitychange", onVis);
-    saveDraft();
-    return () => {
-      window.removeEventListener("pagehide", onHide);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, [saveDraft, dataLoaded, draftKey]);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/auth"); return; }
-    if (role !== "seller" && role !== "admin") { navigate("/"); return; }
+    if (!user) return;
 
     const fetchData = async () => {
       const { data: farmer } = await supabase
@@ -84,160 +41,129 @@ export default function SellerDelivery() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!farmer) { setIsLoading(false); return; }
-      setFarmerId(farmer.id);
-
-      const f = farmer as any;
-      setIsApparel(f.store_type === "apparel" || f.store_type === "craft");
-      let pEnabled = f.pickup_enabled ?? true;
-      let dEnabled = f.delivery_enabled ?? false;
-      let terms = f.delivery_terms || "";
-      let addr = {
-        city: f.city || "",
-        street: f.street || "",
-        address_details: f.address_details || "",
-      };
-      let slots: PickupSlots = f.pickup_slots ? (f.pickup_slots as PickupSlots) : DEFAULT_PICKUP_SLOTS;
-      let maxOrders = f.max_orders_per_day != null ? Number(f.max_orders_per_day) : 5;
-      let busy: Date[] = f.busy_dates ? (f.busy_dates as string[]).map((d) => new Date(d + "T00:00:00")) : [];
-
-      const saved = localStorage.getItem(`seller_delivery_draft_${user.id}`);
-      if (saved) {
-        try {
-          const draft: DeliveryDraft = JSON.parse(saved);
-          if (draft.pickupEnabled != null) pEnabled = draft.pickupEnabled;
-          if (draft.deliveryEnabled != null) dEnabled = draft.deliveryEnabled;
-          if (draft.deliveryTerms != null) terms = draft.deliveryTerms;
-          if (draft.address) addr = { ...addr, ...draft.address };
-          if (draft.pickupSlots) slots = draft.pickupSlots;
-          if (draft.maxOrdersPerDay != null) maxOrders = draft.maxOrdersPerDay;
-          if (draft.busyDates) busy = draft.busyDates.map((s) => new Date(s));
-        } catch {}
+      if (!farmer) {
+        setIsLoading(false);
+        return;
       }
 
-      setPickupEnabled(pEnabled);
-      setDeliveryEnabled(dEnabled);
-      setDeliveryTerms(terms);
-      setAddress(addr);
-      setPickupSlots(slots);
-      setMaxOrdersPerDay(maxOrders);
-      setBusyDates(busy);
+      const f = farmer as Record<string, unknown>;
+      setFarmerId(farmer.id);
+      setIsApparel(f.store_type === "apparel" || f.store_type === "craft");
+      setPickupEnabled((f.pickup_enabled as boolean | null) ?? true);
+      setDeliveryEnabled((f.delivery_enabled as boolean | null) ?? false);
+      setDeliveryTerms((f.delivery_terms as string | null) ?? "");
+      setCity((f.city as string | null) ?? "");
 
+      const details = ((f.address_details as string | null) ?? "").trim();
+      const lines = details
+        ? details.split("\n").map((line) => line.trim()).filter(Boolean)
+        : [];
+      setAddresses(lines.length > 0 ? lines : [""]);
       setIsLoading(false);
-      setDataLoaded(true);
     };
-    fetchData();
-  }, [user, role, authLoading]);
 
-  const handleSave = async () => {
-    if (!farmerId || savingRef.current) return;
+    void fetchData();
+  }, [user, authLoading]);
 
-    if (!pickupEnabled && !deliveryEnabled) {
-      toast.error("Выберите хотя бы один способ получения заказа");
-      return;
-    }
-
-    if (deliveryEnabled && !deliveryTerms.trim()) {
-      toast.error("Укажите условия доставки");
-      return;
-    }
-
-    savingRef.current = true;
-    setIsSaving(true);
-    try {
-      const formatDate = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const validBusy = busyDates.filter((d) => !isNaN(d.getTime()));
-
-      const { error } = await supabase
-        .from("farmers")
-        .update({
-          pickup_enabled: pickupEnabled,
-          delivery_enabled: deliveryEnabled,
-          delivery_terms: deliveryEnabled ? deliveryTerms.trim() : null,
-          city: address.city || null,
-          street: address.street || null,
-          address_details: address.address_details || null,
-          pickup_slots: pickupSlots as any,
-          max_orders_per_day: maxOrdersPerDay,
-          busy_dates: validBusy.map(formatDate) as any,
-        } as any)
-        .eq("id", farmerId);
-
-      if (error) { toast.error("Ошибка при сохранении: " + error.message); return; }
-
-      if (draftKey) localStorage.removeItem(draftKey);
-      toast.success("Настройки сохранены");
-    } catch (e: any) {
-      toast.error("Ошибка сохранения: " + (e?.message || "неизвестная ошибка"));
-    } finally {
-      savingRef.current = false;
-      setIsSaving(false);
-    }
+  const updateAddress = (index: number, value: string) => {
+    setAddresses((prev) => prev.map((item, i) => (i === index ? value : item)));
   };
 
-  if (authLoading || isLoading) {
+  const addAddress = () => setAddresses((prev) => (prev.length >= 10 ? prev : [...prev, ""]));
+
+  const removeAddress = (index: number) => {
+    setAddresses((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [""];
+    });
+  };
+
+  const handleSave = async () => {
+    if (!farmerId) return;
+    if (!pickupEnabled && !deliveryEnabled) {
+      toast.error("Включите хотя бы один способ получения заказа");
+      return;
+    }
+
+    const cleanedAddresses = addresses.map((line) => line.trim()).filter(Boolean);
+    if (pickupEnabled && cleanedAddresses.length === 0) {
+      toast.error("Укажите адрес, где покупатель заберёт заказ");
+      return;
+    }
+    if (deliveryEnabled && !deliveryTerms.trim()) {
+      toast.error("Опишите условия доставки");
+      return;
+    }
+
+    setIsSaving(true);
+    const { error } = await supabase
+      .from("farmers")
+      .update({
+        city: city.trim() || null,
+        address_details: cleanedAddresses.length > 0 ? cleanedAddresses.join("\n") : null,
+        pickup_enabled: pickupEnabled,
+        delivery_enabled: deliveryEnabled,
+        delivery_terms: deliveryEnabled ? deliveryTerms.trim() : null,
+      } as never)
+      .eq("id", farmerId);
+    setIsSaving(false);
+
+    if (error) {
+      toast.error("Не удалось сохранить");
+      return;
+    }
+    toast.success("Сохранено");
+  };
+
+  if (isLoading || authLoading) {
     return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <SellerTopBar />
-        <main className="container mx-auto px-4 py-16 flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </main>
-        <SellerBottomNav />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
-  if (!farmerId) {
+  if (!farmerId || (role !== "seller" && role !== "admin")) {
     return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <SellerTopBar />
-        <main className="container mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground">Профиль продавца не найден</p>
-        </main>
-        <SellerBottomNav />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center">
+        <Store className="h-10 w-10 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Нужен аккаунт продавца</p>
+        <Link to="/seller-application">
+          <Button>Создать витрину</Button>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-0">
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
       <SellerTopBar />
-      <main className="container mx-auto px-3 py-4 bg-[#faf5ea]">
-        <div className="flex items-center gap-2 mb-4">
+      <main className="mx-auto w-full max-w-xl px-3 py-4">
+        <div className="mb-4 flex items-center gap-2">
           <Link to="/seller">
-            <Button variant="ghost" className="p-2 min-h-[44px] min-w-[44px]">
-              <ArrowLeft className="h-6 w-6" />
+            <Button variant="ghost" className="min-h-[44px] min-w-[44px] p-2">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-foreground">Доставка и самовывоз</h1>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Получение заказов</h1>
+            <p className="text-xs text-muted-foreground">Как покупатель получит свой заказ</p>
+          </div>
         </div>
 
-        <div className="space-y-4 rounded-xl bg-card p-4">
-          {/* График работы, лимит заказов и стоп-даты — только для еды */}
-          {!isApparel && (
-            <PickupSettingsSection
-              pickupSlots={pickupSlots}
-              onPickupSlotsChange={setPickupSlots}
-              maxOrdersPerDay={maxOrdersPerDay}
-              onMaxOrdersChange={setMaxOrdersPerDay}
-              busyDates={busyDates}
-              onBusyDatesChange={setBusyDates}
-            />
-          )}
-
+        <div className="space-y-3">
           {/* Самовывоз */}
-          <div className="pt-4 border-t border-border">
+          <section className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-medium text-foreground">
-                    {isApparel ? "Самовывоз и примерка в магазинах" : "Самовывоз"}
+                  <h2 className="font-semibold text-foreground">
+                    {isApparel ? "Самовывоз и примерка" : "Самовывоз"}
                   </h2>
                   <p className="text-xs text-muted-foreground">
                     {isApparel
-                      ? "Покупатель может забрать заказ или прийти на примерку в ваши магазины"
+                      ? "Покупатель заберёт заказ или примерит его у вас"
                       : "Покупатель забирает заказ у вас"}
                   </p>
                 </div>
@@ -246,60 +172,56 @@ export default function SellerDelivery() {
             </div>
 
             {pickupEnabled && (
-              <div className="pt-4 border-t border-border">
-                <h3 className="font-medium text-foreground mb-3">
-                  {isApparel ? "Адреса магазинов и режим работы" : "Адрес для самовывоза"}
-                </h3>
-                {isApparel ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={address.address_details}
-                      onChange={(e) => setAddress({ ...address, address_details: e.target.value })}
-                      placeholder={"1. ТЦ «Марко-Сити», пав. 42 (ежедневно 10:00–20:00)\n2. ТЦ «Беларусь», 2 этаж, пав. 15 (10:00–19:00)\n3. ул. Ленина, 12 (10:00–20:00)"}
-                      rows={5}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Укажите каждую точку с новой строки — покупатель увидит их при оформлении заказа.
-                    </p>
-                    <div className="space-y-2 pt-2">
-                      <Label>Город</Label>
-                      <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="Витебск" />
+              <div className="mt-4 space-y-3 border-t border-border pt-4">
+                <div className="space-y-2">
+                  <Label>Город</Label>
+                  <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Витебск" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{addresses.length > 1 ? "Адреса и режим работы" : "Адрес и режим работы"}</Label>
+                  {addresses.map((line, index) => (
+                    <div key={index} className="flex items-start gap-1.5">
+                      <Textarea
+                        value={line}
+                        onChange={(e) => updateAddress(index, e.target.value)}
+                        placeholder="1. ТЦ «Марко-Сити», пав. 42 (ежедневно 10:00–20:00)"
+                        rows={2}
+                        className="min-h-[54px]"
+                      />
+                      {addresses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeAddress(index)}
+                          aria-label="Удалить адрес"
+                          className="mt-1 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label>Населённый пункт</Label>
-                      <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="Витебск" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Улица</Label>
-                      <Input value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} placeholder="Центральная" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Дом, подъезд, квартира</Label>
-                      <Input value={address.address_details} onChange={(e) => setAddress({ ...address, address_details: e.target.value })} placeholder="д.37, подъезд 2, этаж 2, кв.61" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Адрес будет показан покупателю при самовывозе</p>
-                  </div>
-                )}
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={addAddress} className="w-full">
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Добавить ещё адрес
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Укажите каждую точку отдельно — покупатель увидит их при оформлении заказа.
+                  </p>
+                </div>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Собственная доставка */}
-          <div className="pt-4 border-t border-border">
+          {/* Доставка */}
+          <section className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2">
                 <Truck className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-medium text-foreground">
-                    {isApparel ? "Доставка (Европочта, Белпочта, курьер)" : "Доставка"}
-                  </h2>
+                  <h2 className="font-semibold text-foreground">Доставка</h2>
                   <p className="text-xs text-muted-foreground">
-                    {isApparel
-                      ? "Отправка заказов по городу и Беларуси"
-                      : "Напишите как Вы можете доставить или отправить заказ покупателю"}
+                    Почта или курьер по городу и Беларуси
                   </p>
                 </div>
               </div>
@@ -307,8 +229,8 @@ export default function SellerDelivery() {
             </div>
 
             {deliveryEnabled && (
-              <div className="mt-4 space-y-2">
-                <Label htmlFor="delivery-terms">Условия доставки</Label>
+              <div className="mt-4 space-y-2 border-t border-border pt-4">
+                <Label htmlFor="delivery-terms">Условия и стоимость доставки</Label>
                 <Textarea
                   id="delivery-terms"
                   value={deliveryTerms}
@@ -316,16 +238,16 @@ export default function SellerDelivery() {
                   placeholder={
                     isApparel
                       ? "Европочта до отделения — 5 BYN (1-3 дня).\nПри заказе от 100 BYN — доставка бесплатная.\nТакже отправляем Белпочтой."
-                      : "Например: 8 руб., только по Витебску, бесплатно от 50 руб., в другие города — Европочтой за отдельную плату"
+                      : "Например: курьер по Витебску — 5 BYN, бесплатно от 50 BYN. Европочта и Белпочта — по тарифам."
                   }
                   rows={4}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Напишите в свободной форме как Вы можете отправить или доставить покупателю товар.
+                  Покупатель увидит этот текст при оформлении заказа.
                 </p>
               </div>
             )}
-          </div>
+          </section>
 
           <Button onClick={handleSave} className="w-full" disabled={isSaving}>
             {isSaving ? "Сохранение..." : "Сохранить"}

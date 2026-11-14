@@ -32,7 +32,7 @@ interface Product {
   unit: string;
   image_url: string | null;
   description: string | null;
-  category_id: string;
+  category_label: string | null;
   is_active: boolean;
 }
 
@@ -87,7 +87,7 @@ export default function SellerProducts() {
   const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
   const [mainVariant, setMainVariant] = useState<ProductVariant>({ label: "", price: 0, discount_percent: 0 });
   const [productForm, setProductForm] = useState({
-    title: "", description: "", category_id: "", image_url: "",
+    title: "", description: "", category_label: "", image_url: "",
     prep_time_minutes: "" as any, order_lead_time_hours: "" as any, composition: "", calories: "" as any,
 
     protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "",
@@ -199,6 +199,7 @@ export default function SellerProducts() {
         title: productForm.title, description: productForm.description || null,
         price: priceInKopecks, old_price: oldPriceInKopecks, unit: mainVariant.label,
         image_url: productForm.image_url || null,
+        category_label: productForm.category_label.trim() || null,
         farmer_id: farmerId, prep_time_minutes: productForm.prep_time_minutes || 0,
         order_lead_time_hours: productForm.order_lead_time_hours || 0,
         composition: productForm.composition || null,
@@ -303,7 +304,7 @@ export default function SellerProducts() {
 
     setEditingProduct(product);
     setProductForm({
-      title: product.title, description: product.description || "", category_id: product.category_id,
+      title: product.title, description: product.description || "", category_label: product.category_label || "",
       image_url: product.image_url || "", prep_time_minutes: (product as any).prep_time_minutes || "",
       order_lead_time_hours: (product as any).order_lead_time_hours || "",
       composition: (product as any).composition || "", calories: (product as any).calories ?? "",
@@ -353,10 +354,9 @@ export default function SellerProducts() {
     setEditingProduct(null);
     setProductImages([]);
     setProductVariants([]);
-    setSelectedCategoryIds([]);
     setCustomFields([]);
     setMainVariant({ label: "", price: 0, discount_percent: 0 });
-    setProductForm({ title: "", description: "", category_id: "", image_url: "", prep_time_minutes: "" as any, order_lead_time_hours: "" as any, composition: "", calories: "" as any, protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "" });
+    setProductForm({ title: "", description: "", category_label: "", image_url: "", prep_time_minutes: "" as any, order_lead_time_hours: "" as any, composition: "", calories: "" as any, protein: "" as any, fat: "" as any, carbs: "" as any, shelf_life: "" });
     setMainPriceInput("");
     setVariantPriceInputs({});
     setProductAddons([]);
@@ -482,6 +482,23 @@ export default function SellerProducts() {
             <div className="space-y-2">
               <Label>Название <span className="text-destructive">*</span></Label>
               <Input value={productForm.title} onChange={(e) => setProductForm({ ...productForm, title: e.target.value })} placeholder="Название товара" />
+            </div>
+            <div className="space-y-2">
+              <Label>Категория</Label>
+              <Input
+                list="seller-category-options"
+                value={productForm.category_label}
+                onChange={(e) => setProductForm({ ...productForm, category_label: e.target.value })}
+                placeholder="Платья, Сумки, Свечи…"
+              />
+              <datalist id="seller-category-options">
+                {Array.from(new Set(products.map((p) => p.category_label).filter(Boolean))).map((label) => (
+                  <option key={label as string} value={label as string} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                Разделы вашей витрины. Введите новое название или выберите уже созданное — на витрине товары сгруппируются по категориям.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Описание</Label>
