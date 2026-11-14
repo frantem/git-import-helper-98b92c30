@@ -152,7 +152,7 @@ export default function SellerSettings() {
         .update({
           name: settingsForm.name,
           description: settingsForm.description || null,
-          district: settingsForm.district,
+          district: settingsForm.village || settingsForm.district || "",
           village: settingsForm.village || null,
           photo_url: settingsForm.photo_url || null,
           slug: slug || null,
@@ -242,6 +242,10 @@ export default function SellerSettings() {
         </div>
 
         <div className="space-y-4 rounded-xl bg-card p-4">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Бренд и информация
+          </h2>
+
           {/* Avatar */}
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -260,7 +264,7 @@ export default function SellerSettings() {
               </label>
             </div>
             <div>
-              <h3 className="font-medium text-foreground">{settingsForm.name || "Ваша ферма"}</h3>
+              <h3 className="font-medium text-foreground">{settingsForm.name || "Ваш магазин"}</h3>
               <p className="text-sm text-muted-foreground">{uploadingAvatar ? "Загрузка..." : "Нажмите на камеру для изменения фото"}</p>
             </div>
           </div>
@@ -271,19 +275,22 @@ export default function SellerSettings() {
           </div>
           <div className="space-y-2">
             <Label>Описание</Label>
-            <Textarea value={settingsForm.description} onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })} placeholder="Расскажите о вашей ферме" />
+            <Textarea value={settingsForm.description} onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })} placeholder="Расскажите о вашем деле" />
           </div>
           <div className="space-y-2">
-            <Label>Район</Label>
-            <Input value={settingsForm.district} onChange={(e) => setSettingsForm({ ...settingsForm, district: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <Label>Населённый пункт</Label>
-            <Input value={settingsForm.village} onChange={(e) => setSettingsForm({ ...settingsForm, village: e.target.value })} />
+            <Label>Город или населённый пункт</Label>
+            <Input
+              value={settingsForm.village}
+              onChange={(e) => setSettingsForm({ ...settingsForm, village: e.target.value })}
+              placeholder="например, Витебск или Полоцк"
+            />
+            <p className="text-xs text-muted-foreground">Отображается в шапке вашей витрины для покупателей</p>
           </div>
 
           <div className="pt-4 border-t border-border">
-            <h3 className="font-medium text-foreground mb-3">Адрес страницы</h3>
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-3">
+              Адрес витрины
+            </h2>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Ваша ссылка</Label>
@@ -319,7 +326,10 @@ export default function SellerSettings() {
           </div>
 
           {/* Telegram-уведомления */}
-          <div className="pt-4 border-t border-border space-y-3">
+          <div id="telegram" className="scroll-mt-24 space-y-3 border-t border-border pt-4">
+            <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Уведомления о заказах
+            </h2>
             <div className="flex items-center gap-2">
               <Send className="h-4 w-4 text-primary" />
               <h3 className="font-medium text-foreground">Telegram-уведомления</h3>

@@ -220,6 +220,19 @@ export function SellerOnboarding() {
       }
       const result = data as unknown as { slug?: string; created?: boolean };
       trackMetaEvent("StartTrial", { store_type: storeType });
+
+      // Письмо администратору о новом магазине — не блокирует переход в кабинет
+      if (result?.created) {
+        void supabase.functions.invoke("send-seller-application-notification", {
+          body: {
+            name: storeName.trim(),
+            phone: formatPhone(phone),
+            store_type: storeType,
+            slug: result?.slug || slug,
+          },
+        });
+      }
+
       window.location.assign(result?.created ? "/seller?welcome=1" : "/seller");
     } catch {
       setError("Ошибка сети. Попробуйте ещё раз.");

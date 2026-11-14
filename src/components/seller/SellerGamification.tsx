@@ -76,9 +76,9 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
   const hasThree = productsCount >= 3;
   const hasTelegram = Boolean(farmer.telegram_chat_id);
 
+  const shopBranded = hasLogo && hasDescription;
   const xp =
-    (hasLogo ? 40 : 0) +
-    (hasDescription ? 30 : 0) +
+    (shopBranded ? 70 : 0) +
     (hasProduct ? 60 : 0) +
     (hasDeliveryConfigured ? 50 : 0) +
     (hasTelegram ? 50 : 0) +
@@ -120,30 +120,20 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
   const tasks = useMemo(
     () => [
       {
-        id: "logo",
+        id: "brand",
         icon: ImagePlus,
-        xp: 40,
-        title: "Загрузите логотип или фото",
-        hint: "Витрина с логотипом выглядит как настоящий бренд, а не как страница-рыба.",
-        done: hasLogo,
-        doneLabel: "Выполнено (+40 XP)",
-        action: { label: "Загрузить фото", to: "/seller/settings" },
-      },
-      {
-        id: "description",
-        icon: UserRound,
-        xp: 30,
-        title: "Добавьте описание магазина",
-        hint: "Расскажите в двух-трёх предложениях, что вы делаете и чем отличаетесь.",
-        done: hasDescription,
-        doneLabel: "Выполнено (+30 XP)",
-        action: { label: "Написать о себе", to: "/seller/settings" },
+        xp: 70,
+        title: "Оформите витрину",
+        hint: "Логотип, название, описание вашего дела и город — чтобы витрина выглядела профессионально.",
+        done: shopBranded,
+        doneLabel: "Выполнено (+70 XP)",
+        action: { label: "Заполнить профиль", to: "/seller/settings" },
       },
       {
         id: "product",
         icon: Package,
         xp: 60,
-        title: "Добавьте свой первый товар",
+        title: "Добавьте первый товар",
         hint: "Название, цена и фото — этого достаточно, чтобы принять первый заказ.",
         done: hasProduct,
         doneLabel: "Выполнено (+60 XP)",
@@ -163,7 +153,7 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
         id: "telegram",
         icon: Send,
         xp: 50,
-        title: "Подключите Telegram для уведомлений",
+        title: "Подключите Telegram для заказов",
         hint: "Заказ придёт сообщением в бот, и вы подтвердите его одной кнопкой.",
         done: hasTelegram,
         doneLabel: "Выполнено (+50 XP)",
@@ -173,7 +163,7 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
         id: "three",
         icon: Store,
         xp: 40,
-        title: "Добавьте 3 или более товаров",
+        title: "Добавьте 3 товара",
         hint: "С тремя товарами витрина выглядит убедительно для нового покупателя.",
         done: hasThree,
         doneLabel: "Выполнено (+40 XP)",
@@ -190,7 +180,8 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
         action: { label: "Скопировать ссылку", onClick: copyLink },
       },
     ],
-    [hasLogo, hasDescription, hasProduct, hasDeliveryConfigured, hasTelegram, hasThree, linkShared],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shopBranded, hasProduct, hasDeliveryConfigured, hasTelegram, hasThree, linkShared],
   );
 
   const pending = tasks.filter((task) => !task.done);
@@ -227,23 +218,6 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
             : "Максимальный уровень — витрина готова к продажам без нареканий"}
         </p>
       </div>
-
-      {/* Выполненные — компактной строкой */}
-      {pending.length < tasks.length && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {tasks
-            .filter((task) => task.done)
-            .map((task) => (
-              <span
-                key={task.id}
-                className="inline-flex items-center gap-1 rounded-full bg-[#E7F2EA] px-2.5 py-1 text-[11.5px] font-medium text-[#1F6B3B]"
-              >
-                <Check className="h-3 w-3" />
-                {task.doneLabel}
-              </span>
-            ))}
-        </div>
-      )}
 
       {/* Задачи по приоритету */}
       <div className="mt-3 space-y-2.5">
@@ -287,6 +261,24 @@ export function SellerGamification({ farmer, productsCount, hasDeliveryConfigure
           );
         })}
       </div>
+
+      {/* Выполненные шаги — внизу, чтобы не мешали активным */}
+      {pending.length < tasks.length && (
+        <div className="mt-3 space-y-1.5">
+          {tasks
+            .filter((task) => task.done)
+            .map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-2 rounded-xl bg-[#F1F5EF] px-3 py-2 text-[12.5px] text-[#4E6B4A]"
+              >
+                <Check className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{task.title}</span>
+                <span className="ml-auto shrink-0 text-[11.5px] font-semibold">+{task.xp} XP</span>
+              </div>
+            ))}
+        </div>
+      )}
 
       {/* Публикация в общем каталоге — только для еды */}
       {isFood && (

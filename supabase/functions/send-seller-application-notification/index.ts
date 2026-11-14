@@ -1,13 +1,20 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL");
+const ADMIN_EMAIL = "art.2000.art@mail.ru";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+/** Экранирование, чтобы название магазина не ломало письмо. */
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -15,51 +22,36 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { application_id } = await req.json();
-    if (!application_id) {
-      return new Response(JSON.stringify({ error: "application_id is required" }), {
+    const { name, phone, store_type, slug } = await req.json();
+
+    if (!name || !phone || !slug) {
+      return new Response(JSON.stringify({ error: "name, phone and slug are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    if (!ADMIN_EMAIL || !RESEND_API_KEY) {
-      console.error("Missing ADMIN_EMAIL or RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      console.error("Missing RESEND_API_KEY");
       return new Response(JSON.stringify({ error: "Email not configured" }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
-
-    const { data: app, error } = await supabaseAdmin
-      .from("seller_applications")
-      .select("*")
-      .eq("id", application_id)
-      .single();
-
-    if (error || !app) {
-      console.error("Application fetch error:", error);
-      return new Response(JSON.stringify({ error: "Application not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    const date = new Date(app.created_at).toLocaleString("ru-RU", { timeZone: "Europe/Minsk" });
+    const storeLabel = store_type === "food" ? "Еда и сладости" : "Одежда и крафт";
+    const safeName = escapeHtml(String(name));
+    const safePhone = escapeHtml(String(phone));
+    const safeSlug = escapeHtml(String(slug));
+    const registeredAt = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Minsk" });
 
     const html = `
-      <h1>📝 Новая заявка на продавца!</h1>
-      <p><strong>Имя:</strong> ${app.name}</p>
-      <p><strong>Телефон:</strong> ${app.phone}</p>
-      <p><strong>Район:</strong> ${app.district}</p>
-      <p><strong>Населённый пункт:</strong> ${app.village || "не указан"}</p>
-      <p><strong>Описание:</strong> ${app.description || "не указано"}</p>
-      <p><strong>Дата подачи:</strong> ${date}</p>
+      <h2>🎉 На Locus зарегистрировался новый продавец!</h2>
+      <p><strong>Название магазина:</strong> ${safeName}</p>
+      <p><strong>Телефон:</strong> ${safePhone}</p>
+      <p><strong>Тип витрины:</strong> ${storeLabel}</p>
+      <p><strong>Ссылка на витрину:</strong> <a href="https://locusfood.by/seller/${safeSlug}">locusfood.by/seller/${safeSlug}</a></p>
+      <p><strong>Время регистрации (Минск):</strong> ${registeredAt}</p>
     `;
 
     const res = await fetch("https://api.resend.com/emails", {
@@ -71,7 +63,7 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         from: Deno.env.get("SENDER_EMAIL") || "Locus <info@locusfood.by>",
         to: [ADMIN_EMAIL],
-        subject: `📝 Новая заявка на продавца: ${app.name}`,
+        subject: `🎉 Новый продавец на Locus: ${name}`,
         html,
       }),
     });
@@ -85,7 +77,7 @@ serve(async (req: Request) => {
       });
     }
 
-    console.log("Seller application notification sent to", ADMIN_EMAIL);
+    console.log("New seller notification sent to", ADMIN_EMAIL);
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
