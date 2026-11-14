@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Palette,
   Send,
   Settings,
   ShoppingBag,
@@ -32,7 +33,8 @@ const MENU = [
   { icon: ShoppingBag, label: "Заказы", to: "/seller/orders" },
   { icon: Users, label: "Клиенты", to: "/seller/clients" },
   { icon: Truck, label: "Способы получения и доставка", to: "/seller/delivery" },
-  { icon: Settings, label: "Настройки витрины", to: "/seller/settings" },
+  { icon: Settings, label: "Информация на витрине", to: "/seller/settings" },
+  { icon: Palette, label: "Оформление витрины", to: "/seller/page" },
   { icon: CreditCard, label: "Тариф и подписка", to: "/seller/tariffs" },
   { icon: Send, label: "Сторис для соцсетей", to: "/seller/story" },
 ];

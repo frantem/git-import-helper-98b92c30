@@ -208,6 +208,22 @@ export default function SellerProfile() {
       }
 
       const productRows = productsData || [];
+
+      const productIds = productRows.map((p) => p.id);
+      const { data: variantsData } = productIds.length
+        ? await supabase
+            .from("product_variants")
+            .select("id, product_id, label, price, unit, sort_order")
+            .in("product_id", productIds)
+            .order("sort_order")
+        : { data: [] as { id: string; product_id: string; label: string; price: number; unit: string }[] };
+
+      const variantsByProduct = new Map<string, { id: string; label: string; price: number; unit: string }[]>();
+      (variantsData ?? []).forEach((v) => {
+        const list = variantsByProduct.get(v.product_id) ?? [];
+        list.push({ id: v.id, label: v.label, price: v.price, unit: v.unit });
+        variantsByProduct.set(v.product_id, list);
+      });
       const mappedProducts: Product[] = productRows.map((p) => ({
         id: p.id,
         name: p.title,
@@ -222,6 +238,7 @@ export default function SellerProfile() {
         categoryName: (p as { category_label?: string | null }).category_label || "Все товары",
         categoryEmoji: null,
         categorySort: 0,
+        variants: variantsByProduct.get(p.id) ?? [],
         rating: null,
         reviews: 0,
         seller: farmerData.name,
@@ -350,15 +367,34 @@ export default function SellerProfile() {
 
   return (
     <div className={`seller-theme-${themeName} ${storefrontIsApparel ? "seller-apparel" : ""} min-h-screen bg-background pb-0`}>
+      {!storefrontIsApparel && <Header />}
       <SEO
-        title={`${farmer.name} — фермерские продукты на Locus`}
+        title={
+          storefrontIsApparel
+            ? `${farmer.name} — одежда с примеркой${locationLabel ? ` в ${locationLabel}` : ""}`
+            : `${farmer.name} — фермерские продукты на Locus`
+        }
         description={
-          farmer.unique_fact || farmer.description || `Продукты от ${farmer.name}. ${farmer.district}.`
+          storefrontIsApparel
+            ? farmer.unique_fact ||
+              farmer.description ||
+              `${farmer.name}: одежда и аксессуары с примеркой в магазине${locationLabel ? `, ${locationLabel}` : ""}.`
+            : farmer.unique_fact || farmer.description || `Продукты от ${farmer.name}. ${farmer.district}.`
         }
         image={farmer.hero_media_type === "image" ? farmer.hero_media_url || undefined : farmer.photo_url || undefined}
+        canonical={`https://locusfood.by/seller/${sellerSlug}`}
+        jsonLd={
+          storefrontIsApparel
+            ? {
+                "@context": "https://schema.org",
+                "@type": "ClothingStore",
+                name: farmer.name,
+                address: farmer.city || undefined,
+                image: farmer.hero_media_url || undefined,
+              }
+            : undefined
+        }
       />
-      <Header />
-
       <div className="mx-auto w-full max-w-6xl">
       {/* 1. Компактная шапка: имя, статус, рейтинг, связь */}
       <SellerHero
@@ -378,6 +414,7 @@ export default function SellerProfile() {
         sellerSlug={sellerSlug}
         contactHref={canShowContacts ? sellerContactHref(farmer.contacts) : null}
         instagram={farmer.contacts?.instagram}
+        isApparel={storefrontIsApparel}
       />
 
       {storefrontIsApparel && (
@@ -425,13 +462,24 @@ export default function SellerProfile() {
                 Не удалось загрузить товары. Обновите страницу.
               </div>
             ) : products.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                У продавца пока нет товаров
+              <div className="rounded-2xl border border-dashed border-neutral-300 px-4 py-10 text-center">
+                <p className="text-[15px] font-medium text-neutral-900">Скоро здесь появятся вещи</p>
+                <p className="mx-auto mt-1 max-w-xs text-[13px] leading-relaxed text-neutral-500">
+                  {storefrontIsApparel
+                    ? "Магазин готовит первую коллекцию. Загляните позже или напишите продавцу — подскажем, когда будет готово."
+                    : "Продавец ещё не добавил товары."}
+                </p>
               </div>
             ) : (
               groupedProducts.map((group, groupIndex) => (
                 <section key={group.slug} id={catSectionId(group.slug)} className="mb-5 scroll-mt-3">
-                  <h2 className="mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl">
+                  <h2
+                    className={
+                      storefrontIsApparel
+                        ? "mb-3 border-b border-neutral-200 pb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-neutral-500"
+                        : "mb-2 font-sans text-[18px] font-bold tracking-tight text-foreground md:text-2xl"
+                    }
+                  >
                     {group.emoji ? `${group.emoji} ` : ""}
                     {group.name}
                   </h2>

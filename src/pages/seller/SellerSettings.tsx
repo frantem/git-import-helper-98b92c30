@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SellerTopBar } from "@/components/seller/SellerTopBar";
-import { SellerAppearanceCard } from "@/components/seller/SellerAppearanceCard";
 import { SellerBottomNav } from "@/components/seller/SellerBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Camera, Copy, Send } from "lucide-react";
+import { ArrowLeft, Camera, ChevronRight, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 
@@ -239,7 +238,7 @@ export default function SellerSettings() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-foreground">Настройки</h1>
+          <h1 className="text-xl font-bold text-foreground">Информация на витрине</h1>
         </div>
 
         <div className="space-y-4 rounded-xl bg-card p-4">
@@ -292,7 +291,18 @@ export default function SellerSettings() {
             <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-3">
               Оформление витрины
             </h2>
-            <SellerAppearanceCard />
+            <Link
+              to="/seller/page"
+              className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-3 transition-colors hover:bg-secondary/40"
+            >
+              <div className="min-w-0 pr-3">
+                <p className="text-sm font-medium text-foreground">Обложка, цвет и контакты</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Фото или видео шапки, цвет кнопок, факт о бренде, мессенджеры
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+            </Link>
           </div>
 
           <div className="pt-4 border-t border-border">

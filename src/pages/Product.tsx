@@ -406,6 +406,10 @@ export default function Product() {
   const displayReviewCount = reviews.length > 0 ? reviews.length : product.reviews || 0;
 
   const handleBuyNow = () => {
+    if (isApparel && variants.length > 0 && !selectedVariantId) {
+      toast.error("Выберите размер");
+      return;
+    }
     if (!allCustomFieldsFilled) {
       toast.error("Заполните все обязательные поля");
       return;
@@ -883,9 +887,30 @@ export default function Product() {
                 <p className="text-sm text-muted-foreground mt-1">
                   Этот товар больше недоступен для заказа
                 </p>
-              </div> : <Button variant="buy" size="lg" className="mt-4 w-full" onClick={handleBuyNow}>
-                Купить сейчас
-              </Button>}
+              </div> : (
+                <div className="sticky bottom-3 z-30 mt-4 flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+                  <div className="min-w-0 pl-1">
+                    <p className="text-[15px] font-semibold leading-none text-neutral-900">
+                      {currentPrice.formatted}<BynSymbol />
+                    </p>
+                    <p className="mt-1 truncate text-[11px] text-neutral-500">
+                      {isApparel
+                        ? selectedVariant
+                          ? `Размер ${selectedVariant.label}`
+                          : "Выберите размер"
+                        : displayUnit}
+                    </p>
+                  </div>
+                  <Button
+                    variant="buy"
+                    size="lg"
+                    className={cn("ml-auto flex-1", isApparel && "bg-neutral-900 text-white hover:bg-neutral-800")}
+                    onClick={handleBuyNow}
+                  >
+                    Купить сейчас
+                  </Button>
+                </div>
+              )}
 
             {/* Description */}
             {product.description && (

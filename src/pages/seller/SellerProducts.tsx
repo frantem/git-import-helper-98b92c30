@@ -197,7 +197,7 @@ export default function SellerProducts() {
 
       const productData = {
         title: productForm.title, description: productForm.description || null,
-        price: priceInKopecks, old_price: oldPriceInKopecks, unit: mainVariant.label,
+        price: priceInKopecks, old_price: oldPriceInKopecks, unit: isApparel ? "шт" : mainVariant.label,
         image_url: productForm.image_url || null,
         category_label: productForm.category_label.trim() || null,
         farmer_id: farmerId, prep_time_minutes: productForm.prep_time_minutes || 0,
@@ -222,8 +222,8 @@ export default function SellerProducts() {
           (async () => {
             await supabase.from("product_variants").delete().eq("product_id", pid);
             await supabase.from("product_variants").insert([
-              { product_id: pid, label: mainVariant.label, price: mainVariant.price, unit: mainVariant.label, is_default: true, sort_order: 0, discount_percent: mainVariant.discount_percent || 0 },
-              ...productVariants.map((v, i) => ({ product_id: pid, label: v.label, price: v.price, unit: v.label, is_default: false, sort_order: i + 1, discount_percent: v.discount_percent || 0 }))
+              { product_id: pid, label: isApparel ? mainVariant.label || "шт" : mainVariant.label, price: mainVariant.price, unit: isApparel ? "шт" : mainVariant.label, is_default: true, sort_order: 0, discount_percent: mainVariant.discount_percent || 0 },
+              ...productVariants.map((v, i) => ({ product_id: pid, label: v.label, price: isApparel ? priceInKopecks : v.price, unit: isApparel ? "шт" : v.label, is_default: false, sort_order: i + 1, discount_percent: isApparel ? mainVariant.discount_percent || 0 : v.discount_percent || 0 }))
             ]);
           })(),
           saveCustomFields(pid),
@@ -238,8 +238,8 @@ export default function SellerProducts() {
         await Promise.all([
           productImages.length > 0 ? supabase.from("product_images").insert(productImages.map((url, i) => ({ product_id: pid, image_url: url, sort_order: i }))) : Promise.resolve(),
           supabase.from("product_variants").insert([
-            { product_id: pid, label: mainVariant.label, price: mainVariant.price, unit: mainVariant.label, is_default: true, sort_order: 0, discount_percent: mainVariant.discount_percent || 0 },
-            ...productVariants.map((v, i) => ({ product_id: pid, label: v.label, price: v.price, unit: v.label, is_default: false, sort_order: i + 1, discount_percent: v.discount_percent || 0 }))
+            { product_id: pid, label: isApparel ? mainVariant.label || "шт" : mainVariant.label, price: mainVariant.price, unit: isApparel ? "шт" : mainVariant.label, is_default: true, sort_order: 0, discount_percent: mainVariant.discount_percent || 0 },
+            ...productVariants.map((v, i) => ({ product_id: pid, label: v.label, price: isApparel ? priceInKopecks : v.price, unit: isApparel ? "шт" : v.label, is_default: false, sort_order: i + 1, discount_percent: isApparel ? mainVariant.discount_percent || 0 : v.discount_percent || 0 }))
           ]),
           saveCustomFields(pid),
           saveAddons(pid),
@@ -367,6 +367,27 @@ export default function SellerProducts() {
     const updated = [...productVariants]; (updated[index] as any)[field] = value; setProductVariants(updated);
   };
   const removeVariant = (index: number) => setProductVariants(productVariants.filter((_, i) => i !== index));
+
+  /** Одежда: размеры вводятся строкой через запятую, цена у всех одна. */
+  const addSizes = () => {
+    const labels = sizeInput
+      .split(/[,\n;]+/)
+      .map((label) => label.trim())
+      .filter(Boolean);
+    if (labels.length === 0) return;
+    setProductVariants((prev) => {
+      const existing = new Set(prev.map((v) => v.label.trim().toLowerCase()));
+      const next = [...prev];
+      labels.forEach((label) => {
+        if (!existing.has(label.toLowerCase())) {
+          next.push({ label, price: mainVariant.price, discount_percent: 0 });
+          existing.add(label.toLowerCase());
+        }
+      });
+      return next;
+    });
+    setSizeInput("");
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -560,7 +581,9 @@ export default function SellerProducts() {
               <Label className="text-base font-medium">Стоимость <span className="text-destructive">*</span></Label>
               <p className="text-xs text-muted-foreground">Основная цена товара.</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder={isApparel ? "1 шт." : "250 г"} className="h-9 w-24" />
+                {!isApparel && (
+                  <Input value={mainVariant.label} onChange={(e) => setMainVariant({ ...mainVariant, label: e.target.value })} placeholder="250 г" className="h-9 w-24" />
+                )}
                 <div className="flex items-center gap-1">
                   <Input type="text" inputMode="decimal" value={mainPriceInput}
                     onChange={(e) => setMainPriceInput(e.target.value.replace(/[^0-9.,]/g, ''))}
@@ -577,46 +600,91 @@ export default function SellerProducts() {
               </div>
             </div>
 
-            {/* Additional Variants */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>{isApparel ? "Размеры и цвета" : "Дополнительные варианты"}</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-                  <Plus className="h-3 w-3 mr-1" />Добавить
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {isApparel
-                  ? "Укажите размер, цвет или комплектацию — например «Размер: M» или «Цвет: Бежевый»."
-                  : "Дополнительная фасовка или объём: 0,5 л, 1 кг."}
-              </p>
-              {productVariants.length > 0 && (
-                <div className="space-y-2">
-                  {productVariants.map((variant, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 rounded-lg border border-border">
-                      <Input value={variant.label} onChange={(e) => updateVariant(index, 'label', e.target.value)} placeholder={isApparel ? "Размер: M" : "0,5 л"} className="h-9 flex-1" />
-                      <div className="flex items-center gap-1">
-                        <Input type="text" inputMode="decimal"
-                          value={variantPriceInputs[index] ?? kopecksToRublesString(variant.price)}
-                          onChange={(e) => setVariantPriceInputs(prev => ({ ...prev, [index]: e.target.value.replace(/[^0-9.,]/g, '') }))}
-                          onBlur={() => { const k = parseRublesToKopecks(variantPriceInputs[index] ?? ""); updateVariant(index, 'price', k); setVariantPriceInputs(prev => ({ ...prev, [index]: kopecksToRublesString(k) })); }}
-                          placeholder="4.50" className="h-9 w-24 text-center" />
-                        <span className="text-sm text-muted-foreground">₽</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Input type="number" value={variant.discount_percent || ""}
-                          onChange={(e) => updateVariant(index, 'discount_percent', Math.min(99, Math.max(0, parseInt(e.target.value) || 0)))}
-                          placeholder="0" className="h-9 w-14 text-center" max={99} />
-                        <span className="text-sm text-muted-foreground">%</span>
-                      </div>
-                      <button type="button" onClick={() => removeVariant(index)} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-destructive rounded">
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
+            {/* Размеры: одежда — простой список, еда — фасовка с ценой */}
+            {isApparel ? (
+              <div className="space-y-2">
+                <Label>Размеры</Label>
+                {productVariants.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {productVariants.map((variant, index) => (
+                      <span
+                        key={`${variant.label}-${index}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-sm"
+                      >
+                        {variant.label}
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          aria-label={`Удалить размер ${variant.label}`}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={sizeInput}
+                    onChange={(e) => setSizeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSizes();
+                      }
+                    }}
+                    placeholder="S, M, L или 42, 44, 46"
+                    className="h-9 flex-1"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={addSizes}>
+                    <Plus className="mr-1 h-3 w-3" />
+                    Добавить
+                  </Button>
                 </div>
-              )}
-            </div>
+                <p className="text-xs text-muted-foreground">
+                  Цена одна для всех размеров. Если размеров нет — оставьте пустым, товар будет без выбора.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Дополнительные варианты</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addVariant}>
+                    <Plus className="mr-1 h-3 w-3" />Добавить
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Дополнительная фасовка или объём: 0,5 л, 1 кг.
+                </p>
+                {productVariants.length > 0 && (
+                  <div className="space-y-2">
+                    {productVariants.map((variant, index) => (
+                      <div key={index} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                        <Input value={variant.label} onChange={(e) => updateVariant(index, 'label', e.target.value)} placeholder="0,5 л" className="h-9 flex-1" />
+                        <div className="flex items-center gap-1">
+                          <Input type="text" inputMode="decimal"
+                            value={variantPriceInputs[index] ?? kopecksToRublesString(variant.price)}
+                            onChange={(e) => setVariantPriceInputs(prev => ({ ...prev, [index]: e.target.value.replace(/[^0-9.,]/g, '') }))}
+                            onBlur={() => { const k = parseRublesToKopecks(variantPriceInputs[index] ?? ""); updateVariant(index, 'price', k); setVariantPriceInputs(prev => ({ ...prev, [index]: kopecksToRublesString(k) })); }}
+                            placeholder="4.50" className="h-9 w-24 text-center" />
+                          <span className="text-sm text-muted-foreground">₽</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Input type="number" value={variant.discount_percent || ""}
+                            onChange={(e) => updateVariant(index, 'discount_percent', Math.min(99, Math.max(0, parseInt(e.target.value) || 0)))}
+                            placeholder="0" className="h-9 w-14 text-center" max={99} />
+                          <span className="text-sm text-muted-foreground">%</span>
+                        </div>
+                        <button type="button" onClick={() => removeVariant(index)} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded p-2 text-destructive">
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Prep time */}
             {!isApparel && (
@@ -683,7 +751,8 @@ export default function SellerProducts() {
               </div>
             </div>
 
-            {/* Add-ons */}
+            {/* Добавки — только для еды */}
+            {!isApparel && (
             <div className="space-y-3 p-3 rounded-lg border border-border">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Добавки</Label>
@@ -717,7 +786,10 @@ export default function SellerProducts() {
               ))}
             </div>
 
-            {/* Custom fields */}
+            )}
+
+            {/* Дополнительные поля — только для еды */}
+            {!isApparel && (
             <div className="space-y-3 p-3 rounded-lg border border-border">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Дополнительные поля</Label>
@@ -774,6 +846,7 @@ export default function SellerProducts() {
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Fixed bottom save button */}

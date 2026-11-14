@@ -52,6 +52,13 @@ export interface Product {
     price: number;
     unit: string;
   };
+  /** Все размеры/варианты товара — нужны для чипов в каталоге одежды. */
+  variants?: {
+    id: string;
+    label: string;
+    price: number;
+    unit: string;
+  }[];
 }
 
 export function useProducts() {

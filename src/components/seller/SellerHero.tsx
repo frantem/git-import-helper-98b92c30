@@ -25,6 +25,8 @@ interface SellerHeroProps {
   contactHref?: string | null;
   /** Ник в Instagram из контактов продавца. */
   instagram?: string | null;
+  /** Витрина одежды: высокий кадр 4:5 и кнопка «Смотреть каталог». */
+  isApparel?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export const SellerHero = memo(function SellerHero({
   sellerSlug,
   contactHref,
   instagram,
+  isApparel = false,
 }: SellerHeroProps) {
   const cleanLocation = locationLabel?.replace(/^📍\s*/, "").trim();
   const displayName = cleanSellerName(name);
@@ -61,7 +64,10 @@ export const SellerHero = memo(function SellerHero({
           <img
             src={cdnImage(coverUrl, "banner")}
             alt=""
-            className="h-[190px] w-full object-cover sm:h-56"
+            className={cn(
+              "w-full object-cover",
+              isApparel ? "h-[380px] sm:h-[460px]" : "h-[190px] sm:h-56",
+            )}
             loading="eager"
             decoding="async"
           />
@@ -117,7 +123,12 @@ export const SellerHero = memo(function SellerHero({
             )}
           </div>
 
-          <h1 className="mt-1.5 px-2 text-center text-[19px] font-bold leading-tight text-white drop-shadow-sm sm:text-xl">
+          <h1
+            className={cn(
+              "mt-1.5 px-2 text-center font-bold leading-tight text-white drop-shadow-sm",
+              isApparel ? "text-[26px] tracking-[-0.02em] sm:text-[32px]" : "text-[19px] sm:text-xl",
+            )}
+          >
             {displayName}
           </h1>
 
@@ -177,6 +188,17 @@ export const SellerHero = memo(function SellerHero({
           )}
         </div>
       </div>
+
+      {isApparel && (
+        <div className="mt-3 flex justify-center">
+          <a
+            href="#seller-catalog"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-neutral-900 px-7 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-opacity hover:opacity-90"
+          >
+            Смотреть каталог
+          </a>
+        </div>
+      )}
     </section>
   );
 });

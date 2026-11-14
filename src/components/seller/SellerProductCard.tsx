@@ -8,6 +8,7 @@ import { isFoodProduct } from "@/lib/storefrontKind";
 import { formatPrice, calculateOldPrice } from "@/lib/priceUtils";
 import { BynSymbol } from "@/components/ui/byn-symbol";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { toast } from "sonner";
 
 /** «~30мин. / ~3ч. / ~2дн.» — как на главной странице маркетплейса. */
 function formatPrepTime(prepMinutes?: number, leadHours?: number): { label: string; isInStock: boolean } {
@@ -58,6 +59,11 @@ export const SellerProductCard = memo(function SellerProductCard({
   const { items, addToCart, updateQuantity, removeFromCart, getItemKey } = useCart();
   const navigate = useNavigate();
   const [justAdded, setJustAdded] = useState(false);
+  const [sizeId, setSizeId] = useState<string | null>(null);
+  const sizes = isApparel
+    ? (product as Product & { variants?: { id: string; label: string; price: number; unit: string }[] }).variants ?? []
+    : [];
+  const chosenVariant = sizes.find((variant) => variant.id === sizeId) ?? product.defaultVariant;
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(product.id);
 
@@ -81,8 +87,12 @@ export const SellerProductCard = memo(function SellerProductCard({
       return;
     }
 
-    if (product.defaultVariant) {
-      addToCart(product, product.defaultVariant);
+    if (isApparel && sizes.length > 0 && !sizeId) {
+      toast.message("Выберите размер");
+      return;
+    }
+    if (chosenVariant) {
+      addToCart(product, chosenVariant);
     } else {
       addToCart(product);
     }
@@ -217,12 +227,38 @@ export const SellerProductCard = memo(function SellerProductCard({
           {product.name}
         </h3>
 
+        {isApparel && sizes.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {sizes.slice(0, 6).map((variant) => (
+              <button
+                key={variant.id}
+                type="button"
+                aria-pressed={sizeId === variant.id}
+                aria-label={`Размер ${variant.label}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSizeId(variant.id);
+                }}
+                className={cn(
+                  "min-w-8 rounded-md border px-2 py-1 text-[11.5px] font-medium transition-colors",
+                  sizeId === variant.id
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900",
+                )}
+              >
+                {variant.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mt-1 flex items-baseline gap-1.5">
           <span className={cn("shrink-0 whitespace-nowrap text-[16px] font-bold leading-none", isLowestPrice ? "text-[#d41111]" : "text-foreground")}>
             {priceFormatted.formatted}
             <BynSymbol />
           </span>
-          {unitLabel && (
+          {unitLabel && !isApparel && (
             <span className="min-w-0 truncate text-[10px] leading-none text-muted-foreground">за {unitLabel}</span>
           )}
         </div>
