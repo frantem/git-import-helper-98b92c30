@@ -15,11 +15,10 @@ import { SellerDelivery } from "@/components/seller/SellerDelivery";
 import { SellerTrustFooter, type SellerContacts } from "@/components/seller/SellerTrustFooter";
 import { SellerStickyCart } from "@/components/seller/SellerStickyCart";
 import { isApparelStore } from "@/lib/storefrontKind";
+import { isLegacyTheme, sellerThemeStyle } from "@/lib/sellerTheme";
 import { SellerCategoryTabs, catSectionId } from "@/components/seller/SellerCategoryTabs";
 import { SellerApparelTrust } from "@/components/seller/SellerApparelTrust";
 import { SellerPickupSpots } from "@/components/seller/SellerPickupSpots";
-
-const THEMES = ["forest", "terracotta", "night", "sand"] as const;
 
 /** Одна ссылка для быстрой связи: мессенджер важнее телефона. */
 function sellerContactHref(contacts?: SellerContacts | null): string | null {
@@ -347,7 +346,9 @@ export default function SellerProfile() {
     );
   }
 
-  const themeName = THEMES.includes((farmer.theme || "") as never) ? farmer.theme : "forest";
+  const themeName = isLegacyTheme(farmer.theme) ? (farmer.theme as string) : "forest";
+  const themeStyle = sellerThemeStyle(farmer.theme);
+  const themeClassName = isLegacyTheme(farmer.theme) ? `seller-theme-${themeName}` : "";
   const sellerSlug = farmer.slug || farmer.id;
 
   // Карточка товара — та же, что на главной странице маркетплейса
@@ -366,7 +367,7 @@ export default function SellerProfile() {
   const canShowContacts = true;
 
   return (
-    <div className={`seller-theme-${themeName} ${storefrontIsApparel ? "seller-apparel" : ""} min-h-screen bg-background pb-0`}>
+    <div className={`${themeClassName} ${storefrontIsApparel ? "seller-apparel" : ""} min-h-screen bg-background pb-0`} style={themeStyle}>
       {!storefrontIsApparel && <Header />}
       <SEO
         title={

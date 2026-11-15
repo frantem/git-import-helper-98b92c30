@@ -291,7 +291,7 @@ export const SellerProductCard = memo(function SellerProductCard({
             onClick={handleAddToCart}
             disabled={isOutOfStock}
             className={cn(
-              "mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[hsl(var(--seller-deep))] text-[13px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.97]",
+              "mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[hsl(var(--seller-deep))] text-[13px] font-semibold text-[hsl(var(--seller-deep-foreground))] transition-transform duration-150 active:scale-[0.97]",
               justAdded && "scale-[0.96]",
               isOutOfStock && "pointer-events-none bg-muted text-muted-foreground",
             )}

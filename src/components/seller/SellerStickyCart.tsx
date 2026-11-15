@@ -35,11 +35,11 @@ export function SellerStickyCart({
         <button
           type="button"
           onClick={onCheckout}
-          className="sticky-cart-in flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--seller-deep))] px-4 py-2.5 text-left text-primary-foreground shadow-[0_10px_30px_-8px_rgba(0,0,0,0.45)] transition-transform active:scale-[0.99] md:mx-auto md:max-w-xl"
+          className="sticky-cart-in flex w-full items-center gap-3 rounded-2xl bg-[hsl(var(--seller-deep))] px-4 py-2.5 text-left text-[hsl(var(--seller-deep-foreground))] shadow-[0_10px_30px_-8px_rgba(0,0,0,0.45)] transition-transform active:scale-[0.99] md:mx-auto md:max-w-xl"
         >
           <span className="min-w-0 flex-1">
             <span className="block text-[14px] font-bold leading-tight">Оформить заказ</span>
-            <span className="mt-0.5 block truncate text-[11.5px] text-primary-foreground/75">
+            <span className="mt-0.5 block truncate text-[11.5px] text-[hsl(var(--seller-deep-foreground))]/75">
               {totalItems} тов. на {price.formatted}
               <BynSymbol className="ml-0.5 inline-block h-2.5 w-2.5 align-baseline" />
             </span>

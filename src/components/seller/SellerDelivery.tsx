@@ -117,7 +117,7 @@ function DeliverySheet({
           <button
             type="button"
             onClick={onClose}
-            className="h-11 w-full rounded-xl bg-[hsl(var(--seller-deep))] text-[13.5px] font-semibold text-primary-foreground"
+            className="h-11 w-full rounded-xl bg-[hsl(var(--seller-deep))] text-[13.5px] font-semibold text-[hsl(var(--seller-deep-foreground))]"
           >
             Понятно
           </button>

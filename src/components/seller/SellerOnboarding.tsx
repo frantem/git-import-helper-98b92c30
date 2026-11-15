@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Sparkles, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import { compressImage } from "@/lib/imageUtils";
+import { BRAND_PRESETS, isHexColor } from "@/lib/sellerTheme";
 
-type Step = "details" | "code" | "store";
+type Step = "details" | "code" | "store" | "branding";
 type StoreType = "food" | "apparel";
 
 /** 9 цифр → «+375 29 123-45-67» */
@@ -45,14 +47,14 @@ const STORE_TYPES: { id: StoreType; emoji: string; title: string; hint: string }
   {
     id: "food",
     emoji: "🍰",
-    title: "Еда и сладости",
-    hint: "Для кондитеров, пекарен, сыроварен и фермеров: граммовки, время приготовления, слоты самовывоза.",
+    title: "Еда, десерты и ферма",
+    hint: "Вес, КБЖУ, свежесть и график готовки — для кондитеров, пекарен и фермеров.",
   },
   {
     id: "apparel",
     emoji: "👗",
-    title: "Одежда, аксессуары и крафт",
-    hint: "Для брендов одежды, украшений и свечей: размеры, наличие, Европочта и Белпочта, примерка в шоуруме, оплата ЕРИП.",
+    title: "Одежда, обувь и крафт",
+    hint: "Примерка, размеры и вертикальные фото 3:4 — для брендов одежды и ручной работы.",
   },
 ];
 
@@ -69,6 +71,10 @@ export function SellerOnboarding() {
   const [code, setCode] = useState(["", "", "", ""]);
   const [storeName, setStoreName] = useState("");
   const [storeType, setStoreType] = useState<StoreType>("food");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [brandColor, setBrandColor] = useState("#2F5D45");
+  const [uniqueFact, setUniqueFact] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
@@ -197,6 +203,32 @@ export function SellerOnboarding() {
     else codeRefs.current[Math.min(index + digits.length, 3)]?.focus();
   };
 
+  const uploadLogo = async (file: File) => {
+    setError(null);
+    setUploadingLogo(true);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id;
+      if (!userId) {
+        setError("Не удалось загрузить логотип — обновите страницу и попробуйте снова.");
+        return;
+      }
+      const compressed = await compressImage(file, "avatar");
+      const ext = compressed.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, compressed, { upsert: true, contentType: compressed.type });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      setLogoUrl(data.publicUrl);
+    } catch {
+      setError("Не удалось загрузить логотип. Попробуйте ещё раз.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const createStore = async () => {
     setError(null);
     if (storeName.trim().length < 2) {
@@ -218,7 +250,21 @@ export function SellerOnboarding() {
         );
         return;
       }
-      const result = data as unknown as { slug?: string; created?: boolean };
+      const result = data as unknown as { id?: string; slug?: string; created?: boolean };
+
+      // Каркас бренда: логотип, акцентный цвет и позиционирование.
+      if (result?.id && result.created) {
+        const { error: updateError } = await supabase
+          .from("farmers")
+          .update({
+            photo_url: logoUrl || null,
+            theme: brandColor || "#2F5D45",
+            unique_fact: uniqueFact.trim() || null,
+          })
+          .eq("id", result.id);
+        if (updateError) console.error("Failed to save storefront brand:", updateError);
+      }
+
       trackMetaEvent("StartTrial", { store_type: storeType });
 
       // Письмо администратору о новом магазине — не блокирует переход в кабинет
@@ -241,7 +287,19 @@ export function SellerOnboarding() {
     }
   };
 
+  const goBack = () => {
+    if (step === "details") navigate(-1);
+    else if (step === "branding") setStep("store");
+    else setStep("details");
+  };
+
+  const backLabel = step === "details" ? "Назад" : step === "branding" ? "Назад" : "Изменить номер";
+
   const slug = slugPreview(storeName);
+  const factPlaceholder =
+    storeType === "apparel"
+      ? "Локальный бренд льняной одежды из Витебска"
+      : "Авторские торты и бенто на заказ";
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FCFBF9]">
@@ -251,23 +309,23 @@ export function SellerOnboarding() {
         </Link>
         <button
           type="button"
-          onClick={() => (step === "details" ? navigate(-1) : setStep("details"))}
+          onClick={goBack}
           className="inline-flex items-center gap-1 text-[13px] font-medium text-[#6B655C]"
         >
           <ArrowLeft className="h-4 w-4" />
-          {step === "details" ? "Назад" : "Изменить номер"}
+          {backLabel}
         </button>
       </header>
 
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-10">
         {/* Прогресс */}
         <div className="mb-6 flex items-center gap-1.5">
-          {["details", "code", "store"].map((item, index) => (
+          {["details", "code", "store", "branding"].map((item, index) => (
             <span
               key={item}
               className={cn(
                 "h-1 flex-1 rounded-full transition-colors",
-                index <= ["details", "code", "store"].indexOf(step) ? "bg-[#E5453D]" : "bg-[#E7E2D8]",
+                index <= ["details", "code", "store", "branding"].indexOf(step) ? "bg-[#E5453D]" : "bg-[#E7E2D8]",
               )}
             />
           ))}
@@ -437,8 +495,138 @@ export function SellerOnboarding() {
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-600">{error}</p>}
 
             <Button
+              onClick={() => {
+                setError(null);
+                if (storeName.trim().length < 2) {
+                  setError("Придумайте название витрины");
+                  return;
+                }
+                setStep("branding");
+              }}
+              className="h-12 w-full rounded-xl bg-[#E5453D] text-[15px] font-semibold hover:bg-[#D43830]"
+            >
+              Далее →
+            </Button>
+
+            <p className="flex items-center justify-center gap-1.5 text-center text-[12px] text-[#8A8478]">
+              <Sparkles className="h-3.5 w-3.5" />
+              30 дней бесплатно, карта не нужна
+            </p>
+          </div>
+        )}
+
+        {step === "branding" && (
+          <div className="space-y-4">
+            <div>
+              <h1 className="font-['Fraunces'] text-[28px] leading-[1.1] tracking-[-0.02em] text-[#1A1A1A]">
+                Стиль вашего бренда
+              </h1>
+              <p className="mt-2 text-[14px] leading-snug text-[#6B655C]">
+                Логотип, цвет и одна строка о вас — витрина соберётся под ваш бренд.
+              </p>
+            </div>
+
+            {/* Логотип */}
+            <div>
+              <span className="mb-1.5 block text-[12px] font-medium text-[#6B655C]">Логотип или фото</span>
+              <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-[#E7E2D8] bg-white/60 p-3">
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F1EDE4]">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Логотип" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[24px] font-bold text-[#6B655C]">
+                      {storeName.trim().charAt(0).toUpperCase() || "•"}
+                    </span>
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold text-[#1A1A1A]">
+                    {uploadingLogo ? "Загружаем…" : "Загрузить изображение"}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] text-[#8A8478]">Круглый аватар витрины, JPG или PNG</span>
+                </span>
+                <Upload className="h-4 w-4 shrink-0 text-[#8A8478]" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingLogo}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadLogo(file);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+
+            {/* Цвет бренда */}
+            <div>
+              <span className="mb-1.5 block text-[12px] font-medium text-[#6B655C]">Цвет бренда</span>
+              <div className="grid grid-cols-4 gap-2">
+                {BRAND_PRESETS.map((preset) => {
+                  const selected = brandColor.toUpperCase() === preset.hex.toUpperCase();
+                  return (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => setBrandColor(preset.hex)}
+                      className={cn(
+                        "rounded-xl border p-2 text-left transition-colors",
+                        selected ? "border-[#E5453D] bg-white shadow-sm" : "border-[#E7E2D8] bg-white/60",
+                      )}
+                    >
+                      <span
+                        className="block h-8 w-8 rounded-full ring-1 ring-black/5"
+                        style={{ backgroundColor: preset.hex }}
+                      />
+                      <span className="mt-1.5 block text-[11px] font-semibold leading-tight text-[#1A1A1A]">
+                        {preset.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label className="mt-3 flex items-center gap-3 rounded-xl border border-[#E7E2D8] bg-white/60 p-2.5">
+                <input
+                  type="color"
+                  value={isHexColor(brandColor) ? brandColor : "#2F5D45"}
+                  onChange={(event) => setBrandColor(event.target.value)}
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+                  aria-label="Свой цвет бренда"
+                />
+                <input
+                  value={brandColor}
+                  onChange={(event) => setBrandColor(event.target.value)}
+                  placeholder="#2F5D45"
+                  maxLength={7}
+                  className="w-full bg-transparent text-[14px] font-medium text-[#1A1A1A] outline-none"
+                />
+                <span className="shrink-0 text-[12px] text-[#8A8478]">Свой цвет</span>
+              </label>
+            </div>
+
+            {/* Позиционирование */}
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-medium text-[#6B655C]">Короткое позиционирование</span>
+              <Input
+                value={uniqueFact}
+                onChange={(event) => setUniqueFact(event.target.value)}
+                placeholder={factPlaceholder}
+                maxLength={120}
+                className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px]"
+              />
+              <span className="mt-1.5 block text-[12px] text-[#8A8478]">
+                Одна строка, которая появится под названием витрины.
+              </span>
+            </label>
+
+            {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-600">{error}</p>}
+
+            <Button
               onClick={createStore}
-              disabled={loading}
+              disabled={loading || uploadingLogo}
               className="h-12 w-full rounded-xl bg-[#E5453D] text-[15px] font-semibold hover:bg-[#D43830]"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Открыть мой магазин →"}

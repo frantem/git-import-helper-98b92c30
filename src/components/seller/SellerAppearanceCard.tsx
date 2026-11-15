@@ -9,15 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { compressImage } from "@/lib/imageUtils";
 import { cdnImage } from "@/lib/imageCdn";
+import { BRAND_PRESETS, themeToHex } from "@/lib/sellerTheme";
 
 const MAX_VIDEO_MB = 15;
-
-const THEMES: { value: string; label: string; swatch: string }[] = [
-  { value: "forest", label: "Лес", swatch: "#2F5D45" },
-  { value: "terracotta", label: "Терракота", swatch: "#B4553A" },
-  { value: "night", label: "Ночной синий", swatch: "#243A56" },
-  { value: "sand", label: "Песок", swatch: "#C2A878" },
-];
 
 /**
  * Оформление витрины: обложка, цветовая тема, факт о бренде и контакты.
@@ -35,7 +29,7 @@ export function SellerAppearanceCard() {
     hero_media_url: "",
     hero_media_type: "",
     unique_fact: "",
-    theme: "forest",
+    theme: "#2F5D45",
     contact_phone: "",
     contact_instagram: "",
     contact_telegram: "",
@@ -63,7 +57,7 @@ export function SellerAppearanceCard() {
       hero_media_url: farmer.hero_media_url || "",
       hero_media_type: farmer.hero_media_type || "",
       unique_fact: row.unique_fact || "",
-      theme: row.theme || "forest",
+      theme: themeToHex(row.theme),
       contact_phone: row.contacts?.phone || "",
       contact_instagram: row.contacts?.instagram || "",
       contact_telegram: row.contacts?.telegram || "",
@@ -116,7 +110,7 @@ export function SellerAppearanceCard() {
         hero_media_url: hero.hero_media_url || null,
         hero_media_type: hero.hero_media_url ? hero.hero_media_type || "image" : null,
         unique_fact: hero.unique_fact.trim() || null,
-        theme: hero.theme || "forest",
+        theme: hero.theme || "#2F5D45",
         contacts: {
           phone: hero.contact_phone.trim() || null,
           instagram: hero.contact_instagram.trim() || null,
@@ -215,19 +209,36 @@ export function SellerAppearanceCard() {
       <div className="space-y-2">
         <Label>Цвет кнопок и акцентов</Label>
         <div className="flex flex-wrap gap-2">
-          {THEMES.map((t) => (
+          {BRAND_PRESETS.map((t) => (
             <button
-              key={t.value}
+              key={t.hex}
               type="button"
-              onClick={() => setHero({ ...hero, theme: t.value })}
+              onClick={() => setHero({ ...hero, theme: t.hex })}
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${
-                hero.theme === t.value ? "border-primary bg-primary/10 font-medium" : "border-border"
+                hero.theme.toUpperCase() === t.hex.toUpperCase() ? "border-primary bg-primary/10 font-medium" : "border-border"
               }`}
             >
-              <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: t.swatch }} />
+              <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: t.hex }} />
               {t.label}
             </button>
           ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={/^#[0-9a-f]{6}$/i.test(hero.theme) ? hero.theme : "#2F5D45"}
+            onChange={(e) => setHero({ ...hero, theme: e.target.value })}
+            className="h-9 w-9 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
+            aria-label="Свой цвет"
+          />
+          <Input
+            value={hero.theme}
+            onChange={(e) => setHero({ ...hero, theme: e.target.value })}
+            placeholder="#2F5D45"
+            maxLength={7}
+            className="w-32"
+          />
+          <span className="text-xs text-muted-foreground">Свой цвет</span>
         </div>
       </div>
 

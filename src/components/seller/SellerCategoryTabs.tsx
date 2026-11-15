@@ -42,7 +42,7 @@ export function SellerCategoryTabs({ categories }: { categories: Category[] }) {
               className={cn(
                 "h-8 shrink-0 whitespace-nowrap rounded-full px-3 text-[12px] font-medium transition-colors",
                 isActive
-                  ? "bg-[hsl(var(--seller-deep))] text-primary-foreground"
+                  ? "bg-[hsl(var(--seller-deep))] text-[hsl(var(--seller-deep-foreground))]"
                   : "bg-card text-foreground/80 ring-1 ring-black/[0.05]",
               )}
             >

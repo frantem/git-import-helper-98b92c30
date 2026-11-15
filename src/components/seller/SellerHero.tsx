@@ -117,7 +117,7 @@ export const SellerHero = memo(function SellerHero({
                 decoding="async"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center bg-[hsl(var(--seller-deep))] text-[24px] font-bold text-primary-foreground">
+              <span className="flex h-full w-full items-center justify-center bg-[hsl(var(--seller-deep))] text-[24px] font-bold text-[hsl(var(--seller-deep-foreground))]">
                 {displayName.trim().charAt(0).toUpperCase()}
               </span>
             )}
@@ -193,7 +193,7 @@ export const SellerHero = memo(function SellerHero({
         <div className="mt-3 flex justify-center">
           <a
             href="#seller-catalog"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-neutral-900 px-7 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-opacity hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-[hsl(var(--seller-deep))] px-7 text-[12px] font-semibold uppercase tracking-[0.1em] text-[hsl(var(--seller-deep-foreground))] transition-opacity hover:opacity-90"
           >
             Смотреть каталог
           </a>

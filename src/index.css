@@ -55,6 +55,7 @@
     /* Seller page theme (default: forest). Overridden by .seller-theme-* */
     --seller-bg: 44 60% 95%;
     --seller-deep: 149 35% 21%;
+    --seller-deep-foreground: 0 0% 100%;
     --seller-accent: 74 92% 45%;
     --seller-accent-foreground: 149 40% 12%;
 
