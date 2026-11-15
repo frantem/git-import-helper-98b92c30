@@ -546,7 +546,7 @@ export function SellerOnboarding() {
                 className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px] tracking-wide"
               />
               <span className="mt-1.5 block text-[12px] text-[#8A8478]">
-                Покупатели увидят его в контактах витрины. SMS не отправляем.
+                Покупатели увидят его в контактах витрины
               </span>
             </label>
 
