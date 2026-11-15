@@ -35,101 +35,6 @@ export type Database = {
         }
         Relationships: []
       }
-      banners: {
-        Row: {
-          color_gradient: string
-          created_at: string
-          discount_text: string | null
-          id: string
-          image_url: string
-          is_active: boolean
-          link_category: string | null
-          link_product_id: string | null
-          link_url: string | null
-          sort_order: number
-          subtitle: string | null
-          title: string
-        }
-        Insert: {
-          color_gradient?: string
-          created_at?: string
-          discount_text?: string | null
-          id?: string
-          image_url: string
-          is_active?: boolean
-          link_category?: string | null
-          link_product_id?: string | null
-          link_url?: string | null
-          sort_order?: number
-          subtitle?: string | null
-          title: string
-        }
-        Update: {
-          color_gradient?: string
-          created_at?: string
-          discount_text?: string | null
-          id?: string
-          image_url?: string
-          is_active?: boolean
-          link_category?: string | null
-          link_product_id?: string | null
-          link_url?: string | null
-          sort_order?: number
-          subtitle?: string | null
-          title?: string
-        }
-        Relationships: []
-      }
-      categories: {
-        Row: {
-          created_at: string
-          emoji: string | null
-          id: string
-          image_url: string | null
-          name: string
-          parent_id: string | null
-          seo_description: string | null
-          seo_keywords: string | null
-          seo_title: string | null
-          slug: string
-          sort_order: number | null
-        }
-        Insert: {
-          created_at?: string
-          emoji?: string | null
-          id?: string
-          image_url?: string | null
-          name: string
-          parent_id?: string | null
-          seo_description?: string | null
-          seo_keywords?: string | null
-          seo_title?: string | null
-          slug: string
-          sort_order?: number | null
-        }
-        Update: {
-          created_at?: string
-          emoji?: string | null
-          id?: string
-          image_url?: string | null
-          name?: string
-          parent_id?: string | null
-          seo_description?: string | null
-          seo_keywords?: string | null
-          seo_title?: string | null
-          slug?: string
-          sort_order?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       email_change_codes: {
         Row: {
           attempts: number
@@ -220,6 +125,7 @@ export type Database = {
           pickup_slots: Json | null
           plan: string
           posts_block_title: string | null
+          published_to_marketplace: boolean
           rating: number | null
           slug: string | null
           store_type: string
@@ -261,6 +167,7 @@ export type Database = {
           pickup_slots?: Json | null
           plan?: string
           posts_block_title?: string | null
+          published_to_marketplace?: boolean
           rating?: number | null
           slug?: string | null
           store_type?: string
@@ -302,6 +209,7 @@ export type Database = {
           pickup_slots?: Json | null
           plan?: string
           posts_block_title?: string | null
+          published_to_marketplace?: boolean
           rating?: number | null
           slug?: string | null
           store_type?: string
@@ -316,107 +224,6 @@ export type Database = {
           user_id?: string | null
           vacation_dates?: Json | null
           village?: string | null
-        }
-        Relationships: []
-      }
-      favorites: {
-        Row: {
-          created_at: string
-          id: string
-          product_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          product_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          product_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "favorites_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      homepage_block_products: {
-        Row: {
-          block_id: string
-          id: string
-          product_id: string
-          sort_order: number
-        }
-        Insert: {
-          block_id: string
-          id?: string
-          product_id: string
-          sort_order?: number
-        }
-        Update: {
-          block_id?: string
-          id?: string
-          product_id?: string
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "homepage_block_products_block_id_fkey"
-            columns: ["block_id"]
-            isOneToOne: false
-            referencedRelation: "homepage_blocks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "homepage_block_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      homepage_blocks: {
-        Row: {
-          block_type: string
-          category_filter: string | null
-          created_at: string
-          emoji: string | null
-          id: string
-          is_active: boolean
-          max_items: number | null
-          sort_order: number
-          title: string
-        }
-        Insert: {
-          block_type?: string
-          category_filter?: string | null
-          created_at?: string
-          emoji?: string | null
-          id?: string
-          is_active?: boolean
-          max_items?: number | null
-          sort_order?: number
-          title: string
-        }
-        Update: {
-          block_type?: string
-          category_filter?: string | null
-          created_at?: string
-          emoji?: string | null
-          id?: string
-          is_active?: boolean
-          max_items?: number | null
-          sort_order?: number
-          title?: string
         }
         Relationships: []
       }
@@ -556,13 +363,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_pickup_point_id_fkey"
-            columns: ["pickup_point_id"]
-            isOneToOne: false
-            referencedRelation: "pickup_points"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "orders_referrer_farmer_id_fkey"
             columns: ["referrer_farmer_id"]
             isOneToOne: false
@@ -619,33 +419,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pickup_points: {
-        Row: {
-          address: string
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          working_hours: string | null
-        }
-        Insert: {
-          address: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          working_hours?: string | null
-        }
-        Update: {
-          address?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          working_hours?: string | null
-        }
-        Relationships: []
-      }
       product_addons: {
         Row: {
           created_at: string
@@ -677,39 +450,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "product_addons_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      product_categories: {
-        Row: {
-          category_id: string
-          id: string
-          product_id: string
-        }
-        Insert: {
-          category_id: string
-          id?: string
-          product_id: string
-        }
-        Update: {
-          category_id?: string
-          id?: string
-          product_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_categories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_categories_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -868,6 +608,7 @@ export type Database = {
           calories: number | null
           carbs: number | null
           category_id: string | null
+          category_label: string | null
           composition: string | null
           created_at: string
           description: string | null
@@ -895,6 +636,7 @@ export type Database = {
           calories?: number | null
           carbs?: number | null
           category_id?: string | null
+          category_label?: string | null
           composition?: string | null
           created_at?: string
           description?: string | null
@@ -922,6 +664,7 @@ export type Database = {
           calories?: number | null
           carbs?: number | null
           category_id?: string | null
+          category_label?: string | null
           composition?: string | null
           created_at?: string
           description?: string | null
@@ -946,13 +689,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "products_farmer_id_fkey"
             columns: ["farmer_id"]
@@ -1070,48 +806,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      seller_applications: {
-        Row: {
-          admin_comment: string | null
-          created_at: string
-          description: string | null
-          district: string | null
-          id: string
-          name: string
-          phone: string
-          status: string
-          updated_at: string
-          user_id: string
-          village: string | null
-        }
-        Insert: {
-          admin_comment?: string | null
-          created_at?: string
-          description?: string | null
-          district?: string | null
-          id?: string
-          name: string
-          phone: string
-          status?: string
-          updated_at?: string
-          user_id: string
-          village?: string | null
-        }
-        Update: {
-          admin_comment?: string | null
-          created_at?: string
-          description?: string | null
-          district?: string | null
-          id?: string
-          name?: string
-          phone?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-          village?: string | null
-        }
-        Relationships: []
       }
       seller_posts: {
         Row: {
@@ -1375,6 +1069,10 @@ export type Database = {
       }
       mark_order_confirmed_if_all: {
         Args: { _order_id: string }
+        Returns: boolean
+      }
+      toggle_marketplace_publishing: {
+        Args: { p_enabled: boolean }
         Returns: boolean
       }
       update_seller_store_type: {
