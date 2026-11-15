@@ -12,6 +12,8 @@ import { BRAND_PRESETS, isHexColor } from "@/lib/sellerTheme";
 type Step = "details" | "code" | "store" | "branding";
 type StoreType = "food" | "apparel";
 
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 /** 9 цифр → «+375 29 123-45-67» */
 function formatPhone(digits: string) {
   const d = digits.slice(0, 9);
@@ -59,16 +61,18 @@ const STORE_TYPES: { id: StoreType; emoji: string; title: string; hint: string }
 ];
 
 /**
- * Онбординг продавца: имя и телефон → код из SMS → название и тип витрины.
- * Никаких заявок и модерации: магазин создаётся сразу и открывается кабинет.
+ * Онбординг продавца: имя, email и пароль → код на почту → название, тип витрины
+ * и брендинг. Никаких заявок и модерации: магазин создаётся сразу.
  */
 export function SellerOnboarding() {
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>("details");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState(["", "", "", ""]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [storeName, setStoreName] = useState("");
   const [storeType, setStoreType] = useState<StoreType>("food");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -113,14 +117,18 @@ export function SellerOnboarding() {
       setError("Напишите, как вас зовут");
       return;
     }
-    if (phone.replace(/\D/g, "").length !== 9) {
-      setError("Введите номер в формате +375 29 123-45-67");
+    if (!isValidEmail(email.trim())) {
+      setError("Введите корректный адрес электронной почты");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Пароль должен быть не короче 6 символов");
       return;
     }
     setLoading(true);
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke("send-otp", {
-        body: { phone: `+375${phone}` },
+      const { data, error: invokeError } = await supabase.functions.invoke("send-email-otp", {
+        body: { email: email.trim().toLowerCase() },
       });
       const response = data as { success?: boolean; error?: string; retry_after?: number } | null;
       if (invokeError || !response?.success) {
@@ -128,7 +136,7 @@ export function SellerOnboarding() {
         return;
       }
       setResendIn(response.retry_after ?? 60);
-      setCode(["", "", "", ""]);
+      setCode(["", "", "", "", "", ""]);
       setStep("code");
       window.setTimeout(() => codeRefs.current[0]?.focus(), 80);
     } catch {
@@ -142,8 +150,13 @@ export function SellerOnboarding() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke("verify-otp", {
-        body: { phone: `+375${phone}`, code: fullCode },
+      const { data, error: invokeError } = await supabase.functions.invoke("verify-email-otp", {
+        body: {
+          email: email.trim().toLowerCase(),
+          code: fullCode,
+          password,
+          full_name: name.trim(),
+        },
       });
       const response = data as {
         success?: boolean;
@@ -154,7 +167,7 @@ export function SellerOnboarding() {
 
       if (invokeError || !response?.success || !response.access_token || !response.refresh_token) {
         setError(response?.error || "Неверный код");
-        setCode(["", "", "", ""]);
+        setCode(["", "", "", "", "", ""]);
         return;
       }
 
@@ -178,7 +191,7 @@ export function SellerOnboarding() {
         return;
       }
 
-      trackMetaEvent("CompleteRegistration", { method: "phone", status: true });
+      trackMetaEvent("CompleteRegistration", { method: "email", status: true });
       setStep("store");
     } catch {
       setError("Ошибка сети. Попробуйте ещё раз.");
@@ -195,12 +208,12 @@ export function SellerOnboarding() {
     }
     const next = [...code];
     digits.split("").forEach((digit, offset) => {
-      if (index + offset < 4) next[index + offset] = digit;
+      if (index + offset < 6) next[index + offset] = digit;
     });
     setCode(next);
     const filled = next.join("");
-    if (filled.length === 4) void verifyCode(filled);
-    else codeRefs.current[Math.min(index + digits.length, 3)]?.focus();
+    if (filled.length === 6) void verifyCode(filled);
+    else codeRefs.current[Math.min(index + digits.length, 5)]?.focus();
   };
 
   const uploadLogo = async (file: File) => {
@@ -251,8 +264,10 @@ export function SellerOnboarding() {
         return;
       }
       const result = data as unknown as { id?: string; slug?: string; created?: boolean };
+      const phoneDigits = contactPhone.replace(/\D/g, "").slice(0, 9);
+      const formattedPhone = phoneDigits.length === 9 ? formatPhone(phoneDigits) : "";
 
-      // Каркас бренда: логотип, акцентный цвет и позиционирование.
+      // Каркас бренда: логотип, акцентный цвет, позиционирование и контактный телефон.
       if (result?.id && result.created) {
         const { error: updateError } = await supabase
           .from("farmers")
@@ -260,9 +275,21 @@ export function SellerOnboarding() {
             photo_url: logoUrl || null,
             theme: brandColor || "#2F5D45",
             unique_fact: uniqueFact.trim() || null,
+            ...(formattedPhone ? { contacts: { phone: formattedPhone } } : {}),
           })
           .eq("id", result.id);
         if (updateError) console.error("Failed to save storefront brand:", updateError);
+
+        // Контактный телефон также сохраняем в профиль пользователя.
+        if (formattedPhone) {
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData.user) {
+            await supabase
+              .from("profiles")
+              .update({ phone: `+375${phoneDigits}` })
+              .eq("user_id", authData.user.id);
+          }
+        }
       }
 
       trackMetaEvent("StartTrial", { store_type: storeType });
@@ -272,7 +299,8 @@ export function SellerOnboarding() {
         void supabase.functions.invoke("send-seller-application-notification", {
           body: {
             name: storeName.trim(),
-            phone: formatPhone(phone),
+            phone: formattedPhone,
+            email: email.trim().toLowerCase(),
             store_type: storeType,
             slug: result?.slug || slug,
           },
@@ -288,12 +316,12 @@ export function SellerOnboarding() {
   };
 
   const goBack = () => {
-    if (step === "details") navigate(-1);
-    else if (step === "branding") setStep("store");
-    else setStep("details");
+    if (step === "branding") setStep("store");
+    else if (step === "code") setStep("details");
+    else navigate(-1);
   };
 
-  const backLabel = step === "details" ? "Назад" : step === "branding" ? "Назад" : "Изменить номер";
+  const backLabel = step === "code" ? "Изменить данные" : "Назад";
 
   const slug = slugPreview(storeName);
   const factPlaceholder =
@@ -338,7 +366,7 @@ export function SellerOnboarding() {
                 Создайте свою витрину
               </h1>
               <p className="mt-2 text-[14px] leading-snug text-[#6B655C]">
-                Два поля и код из SMS — магазин откроется сразу, без заявок и ожидания.
+                Имя, почта и пароль, код из письма — магазин откроется сразу, без заявок и ожидания.
               </p>
             </div>
 
@@ -348,25 +376,33 @@ export function SellerOnboarding() {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Анна"
-                autoComplete="given-name"
+                autoComplete="name"
                 className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px]"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-[12px] font-medium text-[#6B655C]">Номер телефона</span>
+              <span className="mb-1 block text-[12px] font-medium text-[#6B655C]">Электронная почта</span>
               <Input
-                value={formatPhone(phone)}
-                onChange={(event) => {
-                  let digits = event.target.value.replace(/\D/g, "");
-                  if (digits.startsWith("375")) digits = digits.slice(3);
-                  else if (digits.startsWith("80")) digits = digits.slice(2);
-                  setPhone(digits.slice(0, 9));
-                }}
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="+375 29 123-45-67"
-                className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px] tracking-wide"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="example@mail.com"
+                className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-medium text-[#6B655C]">Пароль</span>
+              <Input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                autoComplete="new-password"
+                placeholder="Минимум 6 символов"
+                className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px]"
               />
             </label>
 
@@ -377,11 +413,11 @@ export function SellerOnboarding() {
               disabled={loading}
               className="h-12 w-full rounded-xl bg-[#E5453D] text-[15px] font-semibold hover:bg-[#D43830]"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Получить код в SMS"}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Получить код на почту"}
             </Button>
 
             <p className="text-center text-[12px] leading-snug text-[#8A8478]">
-              Код бесплатный. Регистрация не нужна — только телефон.
+              Код придёт письмом. Он нужен, чтобы подтвердить вашу почту.
             </p>
           </div>
         )}
@@ -393,11 +429,11 @@ export function SellerOnboarding() {
                 Введите код
               </h1>
               <p className="mt-2 text-[14px] leading-snug text-[#6B655C]">
-                Мы отправили 4 цифры на {formatPhone(phone)}
+                Мы отправили 6 цифр на {email.trim().toLowerCase()}
               </p>
             </div>
 
-            <div className="flex justify-center gap-2.5">
+            <div className="flex justify-center gap-2">
               {code.map((digit, index) => (
                 <input
                   key={index}
@@ -412,10 +448,10 @@ export function SellerOnboarding() {
                     }
                   }}
                   inputMode="numeric"
-                  autoComplete="one-time-code"
+                  autoComplete={index === 0 ? "one-time-code" : "off"}
                   maxLength={1}
                   aria-label={`Цифра ${index + 1}`}
-                  className="h-14 w-14 rounded-xl border border-[#E7E2D8] bg-white text-center text-[22px] font-bold text-[#1A1A1A] outline-none focus:border-[#E5453D]"
+                  className="h-14 w-12 rounded-xl border border-[#E7E2D8] bg-white text-center text-[22px] font-bold text-[#1A1A1A] outline-none focus:border-[#E5453D]"
                 />
               ))}
             </div>
@@ -424,7 +460,7 @@ export function SellerOnboarding() {
 
             <div className="flex items-center justify-between text-[13px] text-[#6B655C]">
               <button type="button" onClick={() => setStep("details")} className="font-medium underline">
-                Изменить номер
+                Изменить данные
               </button>
               <button
                 type="button"
@@ -492,6 +528,28 @@ export function SellerOnboarding() {
               </div>
             </div>
 
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-medium text-[#6B655C]">
+                Контактный телефон для покупателей
+              </span>
+              <Input
+                value={formatPhone(contactPhone)}
+                onChange={(event) => {
+                  let digits = event.target.value.replace(/\D/g, "");
+                  if (digits.startsWith("375")) digits = digits.slice(3);
+                  else if (digits.startsWith("80")) digits = digits.slice(2);
+                  setContactPhone(digits.slice(0, 9));
+                }}
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="+375 29 123-45-67"
+                className="h-12 rounded-xl border-[#E7E2D8] bg-white text-[16px] tracking-wide"
+              />
+              <span className="mt-1.5 block text-[12px] text-[#8A8478]">
+                Покупатели увидят его в контактах витрины. SMS не отправляем.
+              </span>
+            </label>
+
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-600">{error}</p>}
 
             <Button
@@ -499,6 +557,10 @@ export function SellerOnboarding() {
                 setError(null);
                 if (storeName.trim().length < 2) {
                   setError("Придумайте название витрины");
+                  return;
+                }
+                if (contactPhone.replace(/\D/g, "").length !== 9) {
+                  setError("Введите контактный телефон в формате +375 29 123-45-67");
                   return;
                 }
                 setStep("branding");

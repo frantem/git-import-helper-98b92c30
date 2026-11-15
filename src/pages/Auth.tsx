@@ -34,7 +34,7 @@ export default function Auth() {
   const initialMode = searchParams.get("mode");
   const isReset = initialMode === "reset";
 
-  const [tab, setTab] = useState<Tab>("phone");
+  const [tab, setTab] = useState<Tab>("email");
   const [emailMode, setEmailMode] = useState<EmailMode>("login");
 
   // Phone flow state
@@ -239,21 +239,21 @@ export default function Auth() {
             <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
               <button
                 type="button"
-                onClick={() => { setTab("phone"); setPhoneRegisterMode("login"); }}
-                className={`rounded-md py-2 text-sm font-medium transition ${
-                  tab === "phone" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                По телефону
-              </button>
-              <button
-                type="button"
                 onClick={() => { setTab("email"); setEmailMode("login"); }}
                 className={`rounded-md py-2 text-sm font-medium transition ${
                   tab === "email" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
                 }`}
               >
                 По Email
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTab("phone"); setPhoneRegisterMode("login"); }}
+                className={`rounded-md py-2 text-sm font-medium transition ${
+                  tab === "phone" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                По телефону
               </button>
             </div>
 
